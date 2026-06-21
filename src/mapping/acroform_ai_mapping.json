@@ -1,0 +1,751 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "acroform_sample",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Heurisztikus leképezés (AI API nem elérhető). Felülvizsgálat szükséges.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "loan_product_name",
+      "label": "Loan Product Name",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_purpose",
+      "label": "Loan Purpose",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_amount",
+      "label": "Loan Amount",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_term_months",
+      "label": "Loan Term Months",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_interest_period",
+      "label": "Loan Interest Period",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_down_payment",
+      "label": "Loan Down Payment",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_monthly_payment",
+      "label": "Loan Monthly Payment",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_name",
+      "label": "Borrower Name",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_birth_name",
+      "label": "Borrower Birth Name",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_mother_name",
+      "label": "Borrower Mother Name",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_birth_place",
+      "label": "Borrower Birth Place",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_birth_date",
+      "label": "Borrower Birth Date",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_personal_id",
+      "label": "Borrower Personal Id",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_tax_id",
+      "label": "Borrower Tax Id",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_id_card_number",
+      "label": "Borrower Id Card Number",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_zip",
+      "label": "Borrower Zip",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_city",
+      "label": "Borrower City",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_street",
+      "label": "Borrower Street",
+      "field_type": "text",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_floor",
+      "label": "Borrower Floor",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_door",
+      "label": "Borrower Door",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_phone",
+      "label": "Borrower Phone",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_email",
+      "label": "Borrower Email",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_employer",
+      "label": "Borrower Employer",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "borrower_monthly_income",
+      "label": "Borrower Monthly Income",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_role_coborrower",
+      "label": "Coborrower Role Coborrower",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_role_guarantor",
+      "label": "Coborrower Role Guarantor",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_role_beneficiary",
+      "label": "Coborrower Role Beneficiary",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_name",
+      "label": "Coborrower Name",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_birth_name",
+      "label": "Coborrower Birth Name",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_mother_name",
+      "label": "Coborrower Mother Name",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_birth_place",
+      "label": "Coborrower Birth Place",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_birth_date",
+      "label": "Coborrower Birth Date",
+      "field_type": "date",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_personal_id",
+      "label": "Coborrower Personal Id",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_tax_id",
+      "label": "Coborrower Tax Id",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_id_card_number",
+      "label": "Coborrower Id Card Number",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_zip",
+      "label": "Coborrower Zip",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_city",
+      "label": "Coborrower City",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_street",
+      "label": "Coborrower Street",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_floor",
+      "label": "Coborrower Floor",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_door",
+      "label": "Coborrower Door",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_phone",
+      "label": "Coborrower Phone",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_email",
+      "label": "Coborrower Email",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_employer",
+      "label": "Coborrower Employer",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_monthly_income",
+      "label": "Coborrower Monthly Income",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_consent_data",
+      "label": "Coborrower Consent Data",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "coborrower_consent_khr",
+      "label": "Coborrower Consent Khr",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_type_apartment",
+      "label": "Property Type Apartment",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_type_house",
+      "label": "Property Type House",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_type_land",
+      "label": "Property Type Land",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_type_commercial",
+      "label": "Property Type Commercial",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_zip",
+      "label": "Property Zip",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_city",
+      "label": "Property City",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_street",
+      "label": "Property Street",
+      "field_type": "text",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_floor",
+      "label": "Property Floor",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_door",
+      "label": "Property Door",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_parcel_number",
+      "label": "Property Parcel Number",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_area_sqm",
+      "label": "Property Area Sqm",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_rooms",
+      "label": "Property Rooms",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_year_built",
+      "label": "Property Year Built",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property_estimated_value",
+      "label": "Property Estimated Value",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_type_apartment",
+      "label": "Property2 Type Apartment",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_type_house",
+      "label": "Property2 Type House",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_type_land",
+      "label": "Property2 Type Land",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_type_commercial",
+      "label": "Property2 Type Commercial",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_zip",
+      "label": "Property2 Zip",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_city",
+      "label": "Property2 City",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_street",
+      "label": "Property2 Street",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_parcel_number",
+      "label": "Property2 Parcel Number",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_area_sqm",
+      "label": "Property2 Area Sqm",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "property2_estimated_value",
+      "label": "Property2 Estimated Value",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "appraiser_name",
+      "label": "Appraiser Name",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "appraiser_id",
+      "label": "Appraiser Id",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "appraisal_date",
+      "label": "Appraisal Date",
+      "field_type": "date",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "appraisal_value",
+      "label": "Appraisal Value",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    }
+  ]
+}

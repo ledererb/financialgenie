@@ -1,0 +1,208 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "IGAZOLÁS – kamattámogatásos kölcsön és/vagy támogatás iránti kérelem átvételéről és az elbírálás határidejéről",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": null,
+  "page_structure": {
+    "1": "global"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "igenylo_nev_1",
+      "label": "Igénylő neve (1. személy)",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 230,
+        "y": 178,
+        "width": 220,
+        "height": 22
+      },
+      "notes": "Az 'Igazolom, hogy' szöveg utáni első pontozott vonal – első igénylő neve"
+    },
+    {
+      "pdf_field_name": "igenylo_nev_2",
+      "label": "Igénylő neve (2. személy)",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 470,
+        "y": 178,
+        "width": 230,
+        "height": 22
+      },
+      "notes": "Az 'Igazolom, hogy' sorában a második pontozott vonal – második igénylő neve (adóstárs)"
+    },
+    {
+      "pdf_field_name": "ingatlan_cim",
+      "label": "Ingatlan címe (sz. alatti)",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 200,
+        "width": 590,
+        "height": 22
+      },
+      "notes": "A '… sz. alatti ingatlannal kapcsolatos' szöveg előtti pontozott vonal – az ingatlan címe/helyrajzi száma"
+    },
+    {
+      "pdf_field_name": "otp_regio",
+      "label": "OTP Bank régió neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 222,
+        "width": 240,
+        "height": 22
+      },
+      "notes": "Az OTP Bank Nyrt. után szereplő '…régió' pontozott mező – banki adminisztrációs adat, nem képezhető le kanonikus modellre"
+    },
+    {
+      "pdf_field_name": "otp_fiok",
+      "label": "OTP Bank fiók neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 355,
+        "y": 222,
+        "width": 260,
+        "height": 22
+      },
+      "notes": "A régió után szereplő '…fiókja' pontozott mező – banki adminisztrációs adat"
+    },
+    {
+      "pdf_field_name": "termek_csok_plusz_lakashitel",
+      "label": "CSOK Plusz Lakáshitel (jelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 298,
+        "width": 18,
+        "height": 18
+      },
+      "notes": "Termékválasztó checkbox – CSOK Plusz Lakáshitel"
+    },
+    {
+      "pdf_field_name": "termek_otthon_start_lakashitel",
+      "label": "Otthon Start Lakáshitel (jelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 333,
+        "width": 18,
+        "height": 18
+      },
+      "notes": "Termékválasztó checkbox – Otthon Start Lakáshitel"
+    },
+    {
+      "pdf_field_name": "termek_uj_falusi_csok_tamogatas",
+      "label": "Új Falusi CSOK támogatás (jelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 372,
+        "width": 18,
+        "height": 18
+      },
+      "notes": "Termékválasztó checkbox – Új Falusi CSOK támogatás"
+    },
+    {
+      "pdf_field_name": "termek_otthonteremtesi_lakashitel_falusi_csok",
+      "label": "Otthonteremtési Lakáshitel (Új Falusi CSOK hitel) (jelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 408,
+        "width": 18,
+        "height": 18
+      },
+      "notes": "Termékválasztó checkbox – Otthonteremtési Lakáshitel / Új Falusi CSOK hitel"
+    },
+    {
+      "pdf_field_name": "termek_adovisszateritesi_tamogatas_afa",
+      "label": "Adóvisszatérítési támogatás (Új Falusi ÁFA) (jelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 444,
+        "width": 18,
+        "height": 18
+      },
+      "notes": "Termékválasztó checkbox – Adóvisszatérítési támogatás / Új Falusi ÁFA"
+    },
+    {
+      "pdf_field_name": "kelt_datum",
+      "label": "Kelt (dátum)",
+      "field_type": "date",
+      "canonical_field": null,
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 560,
+        "width": 230,
+        "height": 22
+      },
+      "notes": "Az igazolás keltezésének dátuma – banki adminisztrációs adat, nem szerepel a kanonikus modellben"
+    },
+    {
+      "pdf_field_name": "kozvetito_alairas",
+      "label": "A kérelmet átvevő közvetítő (értékesítő) aláírása",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 430,
+        "y": 618,
+        "width": 270,
+        "height": 22
+      },
+      "notes": "Közvetítő/értékesítő aláírásának helye – nem képezhető le kanonikus adatmodellre"
+    },
+    {
+      "pdf_field_name": "igenylo_alairas",
+      "label": "Kamat(támogatást) igénylő aláírása",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 97,
+        "y": 710,
+        "width": 270,
+        "height": 22
+      },
+      "notes": "Az igénylő aláírásának helye az átvétel igazolásához – nem képezhető le kanonikus adatmodellre"
+    }
+  ]
+}

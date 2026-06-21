@@ -1,0 +1,116 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Hozzajarulo_nyilatkozat_munkunkaviszony_es_jovedelemadatok_ellenorzesehez",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 7 mező, 3 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "Alulírott munkavállaló (Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 257.4,
+        "y": 115.8,
+        "width": 269.2,
+        "height": 10.0
+      },
+      "notes": "MUNKAVISZONY ÉS JÖVEDELEMADATOK MUNKÁLTATÓ ÁLTALI VISSZAELLENŐRZÉSÉHEZ nyilatkozattal"
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 147.4,
+        "y": 133.1,
+        "width": 379.6,
+        "height": 10.0
+      },
+      "notes": "nyilatkozattal hozzájárulok"
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "(Neve",
+      "field_type": "text",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 104.4,
+        "y": 167.5,
+        "width": 199.8,
+        "height": 10.0
+      },
+      "notes": "a munkáltatóm Cégjegyzék"
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "száma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 104.4,
+        "y": 184.8,
+        "width": 367.3,
+        "height": 10.0
+      },
+      "notes": "Cégjegyzék a köztünk fennálló munkaviszonyomra és a jövedelmemre vonatkozó adataimat az OTP Bank Nyrt. részére (a továbbiakban: Hitelező) telefonon/telefaxon/e-mailen keresztül átadja az alábbi"
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "1.",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 103.3,
+        "y": 262.6,
+        "width": 382.7,
+        "height": 10.0
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma"
+    },
+    {
+      "pdf_field_name": "flat_1_6",
+      "label": "2.",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 103.3,
+        "y": 274.6,
+        "width": 384.3,
+        "height": 10.0
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma"
+    },
+    {
+      "pdf_field_name": "flat_1_7",
+      "label": "3.",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 103.3,
+        "y": 286.6,
+        "width": 384.3,
+        "height": 10.0
+      },
+      "notes": ""
+    }
+  ]
+}

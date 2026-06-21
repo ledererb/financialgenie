@@ -1,0 +1,755 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "OTP Bank Nyrt. – Jelzáloghitel-kérelem / Lakáshitel igénylőlap",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": null,
+  "page_structure": {
+    "1": "global + per_participant (adós)",
+    "2": "per_participant (adóstárs/kezes/haszonélvező)",
+    "3": "per_property"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "loan_product_name",
+      "label": "Hitel típusa / Termék neve",
+      "field_type": "text",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az igényelt hitelkonstrukció neve (pl. OTP Lakáshitel)"
+    },
+    {
+      "pdf_field_name": "loan_purpose",
+      "label": "Hitel célja",
+      "field_type": "text",
+      "canonical_field": "loan.loan_purpose",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Pl. vásárlás, építés, felújítás"
+    },
+    {
+      "pdf_field_name": "loan_amount",
+      "label": "Igényelt hitelösszeg (Ft)",
+      "field_type": "number",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_term_months",
+      "label": "Futamidő (hónap)",
+      "field_type": "number",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_interest_period",
+      "label": "Kamatperiódus",
+      "field_type": "text",
+      "canonical_field": "loan.interest_period",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Pl. fix, változó, 5 éves kamatperiódus"
+    },
+    {
+      "pdf_field_name": "loan_down_payment",
+      "label": "Önerő összege (Ft)",
+      "field_type": "number",
+      "canonical_field": "loan.down_payment",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "loan_monthly_payment",
+      "label": "Becsült havi törlesztő (Ft)",
+      "field_type": "number",
+      "canonical_field": "loan.monthly_payment",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Tájékoztató jellegű, bank által számított érték is lehet"
+    },
+    {
+      "pdf_field_name": "borrower_name",
+      "label": "Név (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_birth_name",
+      "label": "Születési név (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_mother_name",
+      "label": "Anyja neve (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_birth_place",
+      "label": "Születési hely (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_birth_date",
+      "label": "Születési idő (éééé.hh.nn) (adós)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós; formátum: éééé.hh.nn"
+    },
+    {
+      "pdf_field_name": "borrower_personal_id",
+      "label": "Személyi ig. szám (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_tax_id",
+      "label": "Adóazonosító jel (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_id_card_number",
+      "label": "Személyi szám (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós; a TAJ-tól különböző személyi azonosító"
+    },
+    {
+      "pdf_field_name": "borrower_zip",
+      "label": "Irányítószám – Állandó lakcím (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_city",
+      "label": "Település – Állandó lakcím (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_street",
+      "label": "Utca, házszám – Állandó lakcím (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós; utca és házszám együtt egy mezőben"
+    },
+    {
+      "pdf_field_name": "borrower_floor",
+      "label": "Emelet (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós; emelet/ajtó a teljes cím részei, külön kanonikus mező nem létezik rájuk"
+    },
+    {
+      "pdf_field_name": "borrower_door",
+      "label": "Ajtó (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós; emelet/ajtó a teljes cím részei, külön kanonikus mező nem létezik rájuk"
+    },
+    {
+      "pdf_field_name": "borrower_phone",
+      "label": "Telefonszám (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_email",
+      "label": "E-mail cím (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_employer",
+      "label": "Munkáltató neve (adós)",
+      "field_type": "text",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "borrower_monthly_income",
+      "label": "Havi nettó jövedelem (Ft) (adós)",
+      "field_type": "number",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerep: adós"
+    },
+    {
+      "pdf_field_name": "coborrower_role_coborrower",
+      "label": "Szerepkör: Adóstárs",
+      "field_type": "checkbox",
+      "canonical_field": "participant.role",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Értéke: 'adóstárs'; jelölőnégyzet-csoport részeként értelmezendő"
+    },
+    {
+      "pdf_field_name": "coborrower_role_guarantor",
+      "label": "Szerepkör: Kezes",
+      "field_type": "checkbox",
+      "canonical_field": "participant.role",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Értéke: 'kezes'"
+    },
+    {
+      "pdf_field_name": "coborrower_role_beneficiary",
+      "label": "Szerepkör: Haszonélvező",
+      "field_type": "checkbox",
+      "canonical_field": "participant.role",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Értéke: 'haszonélvező'"
+    },
+    {
+      "pdf_field_name": "coborrower_name",
+      "label": "Név (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_birth_name",
+      "label": "Születési név (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_mother_name",
+      "label": "Anyja neve (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_birth_place",
+      "label": "Születési hely (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_birth_date",
+      "label": "Születési idő (éééé.hh.nn) (adóstárs/kezes)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_personal_id",
+      "label": "Személyi ig. szám (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_tax_id",
+      "label": "Adóazonosító jel (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_id_card_number",
+      "label": "Személyi szám (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_zip",
+      "label": "Irányítószám – Állandó lakcím (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_city",
+      "label": "Település – Állandó lakcím (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_street",
+      "label": "Utca, házszám – Állandó lakcím (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_floor",
+      "label": "Emelet (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Nincs önálló kanonikus mező; a teljes cím részeként kezelendő"
+    },
+    {
+      "pdf_field_name": "coborrower_door",
+      "label": "Ajtó (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Nincs önálló kanonikus mező; a teljes cím részeként kezelendő"
+    },
+    {
+      "pdf_field_name": "coborrower_phone",
+      "label": "Telefonszám (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_email",
+      "label": "E-mail cím (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_employer",
+      "label": "Munkáltató neve (adóstárs/kezes)",
+      "field_type": "text",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_monthly_income",
+      "label": "Havi nettó jövedelem (Ft) (adóstárs/kezes)",
+      "field_type": "number",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szerep: adóstárs/kezes/haszonélvező"
+    },
+    {
+      "pdf_field_name": "coborrower_consent_data",
+      "label": "Hozzájárulok személyes adataim kezeléséhez",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Nyilatkozat jelölőnégyzet; nem képezhető le a kanonikus adatmodellre"
+    },
+    {
+      "pdf_field_name": "coborrower_consent_khr",
+      "label": "Hozzájárulok a KHR lekérdezéshez",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Nyilatkozat jelölőnégyzet; nem képezhető le a kanonikus adatmodellre"
+    },
+    {
+      "pdf_field_name": "property_type_apartment",
+      "label": "Ingatlan típusa: Lakás",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Értéke: 'lakás'; 1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_type_house",
+      "label": "Ingatlan típusa: Családi ház",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Értéke: 'családi ház'; 1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_type_land",
+      "label": "Ingatlan típusa: Telek",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Értéke: 'telek'; 1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_type_commercial",
+      "label": "Ingatlan típusa: Üzlethelyiség",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Értéke: 'üzlethelyiség'; 1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_zip",
+      "label": "Irányítószám – Ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.zip_code",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_city",
+      "label": "Település – Ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.city",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_street",
+      "label": "Utca, házszám – Ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.street",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan; utca és házszám együtt"
+    },
+    {
+      "pdf_field_name": "property_floor",
+      "label": "Emelet – Ingatlan",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan; nincs önálló kanonikus mező"
+    },
+    {
+      "pdf_field_name": "property_door",
+      "label": "Ajtó – Ingatlan",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan; nincs önálló kanonikus mező"
+    },
+    {
+      "pdf_field_name": "property_parcel_number",
+      "label": "Helyrajzi szám",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_area_sqm",
+      "label": "Terület (m²)",
+      "field_type": "number",
+      "canonical_field": "property.area_sqm",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_rooms",
+      "label": "Szobák száma",
+      "field_type": "number",
+      "canonical_field": "property.number_of_rooms",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_year_built",
+      "label": "Építés éve",
+      "field_type": "number",
+      "canonical_field": "property.year_built",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan"
+    },
+    {
+      "pdf_field_name": "property_estimated_value",
+      "label": "Becsült forgalmi érték (Ft)",
+      "field_type": "number",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "1. fedezeti ingatlan; ügyfél által megadott becsült érték"
+    },
+    {
+      "pdf_field_name": "property2_type_apartment",
+      "label": "2. ingatlan típusa: Lakás",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_type_house",
+      "label": "2. ingatlan típusa: Családi ház",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_type_land",
+      "label": "2. ingatlan típusa: Telek",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_type_commercial",
+      "label": "2. ingatlan típusa: Üzlethelyiség",
+      "field_type": "checkbox",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_zip",
+      "label": "Irányítószám – 2. ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.zip_code",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_city",
+      "label": "Település – 2. ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.city",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_street",
+      "label": "Utca, házszám – 2. ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.street",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_parcel_number",
+      "label": "Helyrajzi szám – 2. ingatlan",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_area_sqm",
+      "label": "Terület (m²) – 2. ingatlan",
+      "field_type": "number",
+      "canonical_field": "property.area_sqm",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "property2_estimated_value",
+      "label": "Becsült forgalmi érték (Ft) – 2. ingatlan",
+      "field_type": "number",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "2. fedezeti ingatlan (opcionális)"
+    },
+    {
+      "pdf_field_name": "appraiser_name",
+      "label": "Értékbecslő neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Bank által kitöltendő mező; nem szerepel a kanonikus adatmodellben"
+    },
+    {
+      "pdf_field_name": "appraiser_id",
+      "label": "Értékbecslő igazolvány sz.",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Bank által kitöltendő mező; nem szerepel a kanonikus adatmodellben"
+    },
+    {
+      "pdf_field_name": "appraisal_date",
+      "label": "Értékbecslés dátuma",
+      "field_type": "date",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Bank által kitöltendő mező; nem szerepel a kanonikus adatmodellben"
+    },
+    {
+      "pdf_field_name": "appraisal_value",
+      "label": "Megállapított forgalmi érték (Ft)",
+      "field_type": "number",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Bank által megállapított érték; az estimated_value mezőre képezhető, de felülírja az ügyfél által megadott becsült értéket – megkülönböztetés ajánlott"
+    }
+  ]
+}

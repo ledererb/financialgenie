@@ -1,0 +1,86 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Partner_nyilatkozat_hiteligeny_leadasakor",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 5 mező, 1 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "Értékesítő /Mobilbankár neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 102.6,
+        "y": 176.4,
+        "width": 272.5,
+        "height": 12.0
+      },
+      "notes": "Értékesítő /Mobilbankár neve )"
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "mező_2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 56.5,
+        "y": 204.0,
+        "width": 471.0,
+        "height": 12.0
+      },
+      "notes": "Értékesítő /Mobilbankár neve ) vállalkozás neve) kötelezettséget vállalok arra, hogy"
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "Hiteligénylő neve",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 183.2,
+        "y": 259.2,
+        "width": 127.9,
+        "height": 12.0
+      },
+      "notes": "a hiteligénylés benyújtásáról szóló átvételi Hiteligénylő neve ) ügyfelet tájékoztatom, az"
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 79.6,
+        "y": 342.0,
+        "width": 130.5,
+        "height": 12.0
+      },
+      "notes": "ügyfél részére azt a helyszíni szemléig eljuttatom. Értékesítő/Mobilbankár aláírása"
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "mező_5",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 305.5,
+        "y": 369.6,
+        "width": 222.0,
+        "height": 12.0
+      },
+      "notes": "Értékesítő/Mobilbankár aláírása"
+    }
+  ]
+}

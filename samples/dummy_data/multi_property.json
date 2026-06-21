@@ -1,0 +1,83 @@
+{
+  "deal_id": "SF-420058",
+  "salesforce_stage": "Dokumentáció készítés",
+  "loan": {
+    "loan_amount": 42000000,
+    "loan_term_months": 240,
+    "interest_period": "5 év fix",
+    "loan_purpose": "Lakásvásárlás + felújítás",
+    "product_name": "OTP Lakáshitel",
+    "down_payment": null,
+    "monthly_payment": null
+  },
+  "participants": [
+    {
+      "role": "adós",
+      "name": "Horváth József",
+      "birth_name": "Horváth József",
+      "mother_name": "Vincze Krisztina",
+      "birth_place": "Budapest",
+      "birth_date": "1982-04-07",
+      "personal_id": "4578025BF",
+      "tax_id": "8292391911",
+      "id_card_number": "130115DH",
+      "address": {
+        "zip_code": "2030",
+        "city": "Érd",
+        "street": "Múzeum körút",
+        "house_number": "16",
+        "floor": "4",
+        "door": "17"
+      },
+      "mailing_address": {
+        "zip_code": "1082",
+        "city": "Budapest",
+        "street": "Béke utca",
+        "house_number": "4",
+        "floor": "6",
+        "door": null
+      },
+      "phone": "+36 30 197 9508",
+      "email": "józsef.horváth@freemail.hu",
+      "employer": "Mercedes-Benz Manufacturing Kft.",
+      "monthly_income": 354000,
+      "is_active": true
+    }
+  ],
+  "properties": [
+    {
+      "address": {
+        "zip_code": "5000",
+        "city": "Szolnok",
+        "street": "Thököly út",
+        "house_number": "19",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "23397/4/D/3",
+      "area_sqm": 93.0,
+      "property_type": "üzlethelyiség",
+      "estimated_value": 47000000,
+      "year_built": 1981,
+      "number_of_rooms": 4
+    },
+    {
+      "address": {
+        "zip_code": "1117",
+        "city": "Budapest",
+        "street": "Damjanich utca",
+        "house_number": "24",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "7680/9/C/1",
+      "area_sqm": 152.0,
+      "property_type": "ház",
+      "estimated_value": 144000000,
+      "year_built": 1998,
+      "number_of_rooms": 4
+    }
+  ],
+  "created_at": "2026-05-28",
+  "notes": null
+}

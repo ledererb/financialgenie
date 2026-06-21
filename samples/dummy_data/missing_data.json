@@ -1,0 +1,60 @@
+{
+  "deal_id": "SF-838183",
+  "salesforce_stage": "Dokumentáció készítés",
+  "loan": {
+    "loan_amount": 30000000,
+    "loan_term_months": 240,
+    "interest_period": null,
+    "loan_purpose": null,
+    "product_name": null,
+    "down_payment": null,
+    "monthly_payment": null
+  },
+  "participants": [
+    {
+      "role": "adós",
+      "name": "Kovács István",
+      "birth_name": null,
+      "mother_name": "Nagy Mária",
+      "birth_place": null,
+      "birth_date": "1985-03-15",
+      "personal_id": null,
+      "tax_id": "8123456789",
+      "id_card_number": null,
+      "address": {
+        "zip_code": "1052",
+        "city": "Budapest",
+        "street": "Váci utca",
+        "house_number": "10",
+        "floor": null,
+        "door": null
+      },
+      "mailing_address": null,
+      "phone": null,
+      "email": null,
+      "employer": null,
+      "monthly_income": null,
+      "is_active": true
+    }
+  ],
+  "properties": [
+    {
+      "address": {
+        "zip_code": "1025",
+        "city": "Budapest",
+        "street": "Móricz Zsigmond körtér",
+        "house_number": "79",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "22718/6/A/2",
+      "area_sqm": 182.0,
+      "property_type": "üzlethelyiség",
+      "estimated_value": 38000000,
+      "year_built": 1989,
+      "number_of_rooms": 3
+    }
+  ],
+  "created_at": "2026-06-18",
+  "notes": "Hiányos adatokkal – teljességellenőrzés tesztelésére."
+}

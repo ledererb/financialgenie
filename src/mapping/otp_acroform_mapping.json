@@ -1,0 +1,415 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "OTP Lakáshitel Igénylő – PoC minta",
+  "form_type": "acroform",
+  "approved": true,
+  "approved_by": "PoC auto-generated",
+  "notes": "Minta mapping a generált AcroForm PDF-hez. A mezőnevek közvetlenül a PDF-ből származnak.",
+  "page_structure": {
+    "1": "global",
+    "2": "per_participant",
+    "3": "per_property"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "loan_product_name",
+      "label": "Termék neve",
+      "field_type": "text",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_purpose",
+      "label": "Hitel célja",
+      "field_type": "text",
+      "canonical_field": "loan.loan_purpose",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_amount",
+      "label": "Hitelösszeg",
+      "field_type": "number",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_term_months",
+      "label": "Futamidő (hónap)",
+      "field_type": "number",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_interest_period",
+      "label": "Kamatperiódus",
+      "field_type": "text",
+      "canonical_field": "loan.interest_period",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_down_payment",
+      "label": "Önerő",
+      "field_type": "number",
+      "canonical_field": "loan.down_payment",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "loan_monthly_payment",
+      "label": "Havi törlesztő",
+      "field_type": "number",
+      "canonical_field": "loan.monthly_payment",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_name",
+      "label": "Adós neve",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_birth_name",
+      "label": "Adós születési neve",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_mother_name",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_birth_place",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_birth_date",
+      "label": "Születési dátum",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_personal_id",
+      "label": "Személyi igazolvány szám",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_tax_id",
+      "label": "Adóazonosító jel",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_id_card_number",
+      "label": "Személyi szám",
+      "field_type": "text",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_zip",
+      "label": "Irányítószám",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_city",
+      "label": "Település",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_street",
+      "label": "Utca, házszám",
+      "field_type": "text",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_phone",
+      "label": "Telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_email",
+      "label": "E-mail",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_employer",
+      "label": "Munkáltató",
+      "field_type": "text",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "borrower_monthly_income",
+      "label": "Havi nettó jövedelem",
+      "field_type": "number",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
+      "page_number": 1
+    },
+    {
+      "pdf_field_name": "coborrower_name",
+      "label": "Adóstárs/kezes neve",
+      "field_type": "text",
+      "canonical_field": "participant[1].name",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_birth_name",
+      "label": "Adóstárs születési neve",
+      "field_type": "text",
+      "canonical_field": "participant[1].birth_name",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_mother_name",
+      "label": "Adóstárs anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant[1].mother_name",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_birth_place",
+      "label": "Adóstárs születési helye",
+      "field_type": "text",
+      "canonical_field": "participant[1].birth_place",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_birth_date",
+      "label": "Adóstárs születési dátuma",
+      "field_type": "date",
+      "canonical_field": "participant[1].birth_date",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_personal_id",
+      "label": "Adóstárs személyi szám",
+      "field_type": "text",
+      "canonical_field": "participant[1].personal_id",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_tax_id",
+      "label": "Adóstárs adóazonosító",
+      "field_type": "text",
+      "canonical_field": "participant[1].tax_id",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_zip",
+      "label": "Adóstárs irányítószám",
+      "field_type": "text",
+      "canonical_field": "participant[1].address.zip_code",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_city",
+      "label": "Adóstárs település",
+      "field_type": "text",
+      "canonical_field": "participant[1].address.city",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_street",
+      "label": "Adóstárs utca",
+      "field_type": "text",
+      "canonical_field": "participant[1].address.street",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_phone",
+      "label": "Adóstárs telefon",
+      "field_type": "text",
+      "canonical_field": "participant[1].phone",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_email",
+      "label": "Adóstárs e-mail",
+      "field_type": "text",
+      "canonical_field": "participant[1].email",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_employer",
+      "label": "Adóstárs munkáltató",
+      "field_type": "text",
+      "canonical_field": "participant[1].employer",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "coborrower_monthly_income",
+      "label": "Adóstárs havi jövedelem",
+      "field_type": "number",
+      "canonical_field": "participant[1].monthly_income",
+      "confidence": "high",
+      "page_number": 2
+    },
+    {
+      "pdf_field_name": "property_zip",
+      "label": "Ingatlan irányítószám",
+      "field_type": "text",
+      "canonical_field": "property.address.zip_code",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_city",
+      "label": "Ingatlan település",
+      "field_type": "text",
+      "canonical_field": "property.address.city",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_street",
+      "label": "Ingatlan utca",
+      "field_type": "text",
+      "canonical_field": "property.address.street",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_parcel_number",
+      "label": "Helyrajzi szám",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_area_sqm",
+      "label": "Terület (m²)",
+      "field_type": "number",
+      "canonical_field": "property.area_sqm",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_rooms",
+      "label": "Szobák száma",
+      "field_type": "number",
+      "canonical_field": "property.number_of_rooms",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_year_built",
+      "label": "Építés éve",
+      "field_type": "number",
+      "canonical_field": "property.year_built",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property_estimated_value",
+      "label": "Becsült érték",
+      "field_type": "number",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_zip",
+      "label": "2. ingatlan irányítószám",
+      "field_type": "text",
+      "canonical_field": "property[1].address.zip_code",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_city",
+      "label": "2. ingatlan település",
+      "field_type": "text",
+      "canonical_field": "property[1].address.city",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_street",
+      "label": "2. ingatlan utca",
+      "field_type": "text",
+      "canonical_field": "property[1].address.street",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_parcel_number",
+      "label": "2. ingatlan helyrajzi szám",
+      "field_type": "text",
+      "canonical_field": "property[1].parcel_number",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_area_sqm",
+      "label": "2. ingatlan terület",
+      "field_type": "number",
+      "canonical_field": "property[1].area_sqm",
+      "confidence": "high",
+      "page_number": 3
+    },
+    {
+      "pdf_field_name": "property2_estimated_value",
+      "label": "2. ingatlan becsült érték",
+      "field_type": "number",
+      "canonical_field": "property[1].estimated_value",
+      "confidence": "high",
+      "page_number": 3
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "deal_id": "SF-577531",
+  "salesforce_stage": "Dokumentáció készítés",
+  "loan": {
+    "loan_amount": 66000000,
+    "loan_term_months": 300,
+    "interest_period": "10 év fix",
+    "loan_purpose": "Lakásvásárlás",
+    "product_name": "OTP Lakáshitel Plus",
+    "down_payment": 19800000,
+    "monthly_payment": 220000
+  },
+  "participants": [
+    {
+      "role": "adós",
+      "name": "Németh Ferenc",
+      "birth_name": "Németh Ferenc",
+      "mother_name": "Balogh Ágnes",
+      "birth_place": "Kaposvár",
+      "birth_date": "1981-10-17",
+      "personal_id": "7330294DF",
+      "tax_id": "8763332266",
+      "id_card_number": "843436DJ",
+      "address": {
+        "zip_code": "3000",
+        "city": "Miskolc",
+        "street": "Thököly út",
+        "house_number": "120",
+        "floor": null,
+        "door": null
+      },
+      "mailing_address": null,
+      "phone": "+36 20 822 5424",
+      "email": "ferenc.németh@gmail.com",
+      "employer": "BKV Zrt.",
+      "monthly_income": 492000,
+      "is_active": true
+    },
+    {
+      "role": "adóstárs",
+      "name": "Papp Éva",
+      "birth_name": "Török Éva",
+      "mother_name": "Molnár Krisztina",
+      "birth_place": "Érd",
+      "birth_date": "1981-09-22",
+      "personal_id": "8990455CH",
+      "tax_id": "8931536987",
+      "id_card_number": "129068AJ",
+      "address": {
+        "zip_code": "1063",
+        "city": "Budapest",
+        "street": "Béke utca",
+        "house_number": "102",
+        "floor": null,
+        "door": "10"
+      },
+      "mailing_address": {
+        "zip_code": "3000",
+        "city": "Miskolc",
+        "street": "Rákóczi út",
+        "house_number": "69",
+        "floor": "9",
+        "door": null
+      },
+      "phone": "+36 30 514 5274",
+      "email": "éva.papp@citromail.hu",
+      "employer": "Bosch Csoport Magyarország",
+      "monthly_income": 1086000,
+      "is_active": true
+    },
+    {
+      "role": "kezes",
+      "name": "Rácz Attila",
+      "birth_name": "Rácz Attila",
+      "mother_name": "Mészáros Erzsébet",
+      "birth_place": "Budapest",
+      "birth_date": "1981-01-16",
+      "personal_id": "7921594DH",
+      "tax_id": "8236174684",
+      "id_card_number": "543642AH",
+      "address": {
+        "zip_code": "7400",
+        "city": "Kaposvár",
+        "street": "Arany János utca",
+        "house_number": "61",
+        "floor": "7",
+        "door": null
+      },
+      "mailing_address": null,
+      "phone": "+36 30 757 2575",
+      "email": "attila.rácz@gmail.com",
+      "employer": "Continental Automotive Hungary Kft.",
+      "monthly_income": 499000,
+      "is_active": true
+    }
+  ],
+  "properties": [
+    {
+      "address": {
+        "zip_code": "5000",
+        "city": "Szolnok",
+        "street": "Jókai Mór utca",
+        "house_number": "38",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "52785/8/D/4",
+      "area_sqm": 66.0,
+      "property_type": "ház",
+      "estimated_value": 30000000,
+      "year_built": 1966,
+      "number_of_rooms": 3
+    }
+  ],
+  "created_at": "2026-08-03",
+  "notes": null
+}

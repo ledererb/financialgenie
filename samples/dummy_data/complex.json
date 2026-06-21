@@ -1,0 +1,151 @@
+{
+  "deal_id": "SF-970630",
+  "salesforce_stage": "Dokumentáció készítés",
+  "loan": {
+    "loan_amount": 96000000,
+    "loan_term_months": 360,
+    "interest_period": "végig fix",
+    "loan_purpose": "Új építésű lakás vásárlás",
+    "product_name": "OTP Zöld Otthon Lakáshitel",
+    "down_payment": 24000000,
+    "monthly_payment": 274285
+  },
+  "participants": [
+    {
+      "role": "adós",
+      "name": "Mészáros Ferenc",
+      "birth_name": "Mészáros Ferenc",
+      "mother_name": "Molnár Andrea",
+      "birth_place": "Székesfehérvár",
+      "birth_date": "1978-12-28",
+      "personal_id": "1555556CF",
+      "tax_id": "8454995268",
+      "id_card_number": "895710CI",
+      "address": {
+        "zip_code": "6000",
+        "city": "Kecskemét",
+        "street": "Rákóczi út",
+        "house_number": "104",
+        "floor": null,
+        "door": null
+      },
+      "mailing_address": null,
+      "phone": "+36 20 611 3485",
+      "email": "ferenc.mészáros@outlook.hu",
+      "employer": "Wizz Air Hungary Kft.",
+      "monthly_income": 1158000,
+      "is_active": true
+    },
+    {
+      "role": "adóstárs",
+      "name": "Takács Éva",
+      "birth_name": "Balogh Éva",
+      "mother_name": "Papp Éva",
+      "birth_place": "Budapest",
+      "birth_date": "1982-06-07",
+      "personal_id": "4842544BF",
+      "tax_id": "8219816245",
+      "id_card_number": "143399CF",
+      "address": {
+        "zip_code": "2030",
+        "city": "Érd",
+        "street": "Kossuth Lajos utca",
+        "house_number": "28",
+        "floor": null,
+        "door": "3"
+      },
+      "mailing_address": null,
+      "phone": "+36 30 897 9736",
+      "email": "éva.takács@citromail.hu",
+      "employer": "Wizz Air Hungary Kft.",
+      "monthly_income": 348000,
+      "is_active": true
+    },
+    {
+      "role": "haszonélvező",
+      "name": "Molnár Miklós",
+      "birth_name": "Molnár Miklós",
+      "mother_name": "Mészáros Ilona",
+      "birth_place": "Szeged",
+      "birth_date": "1966-07-11",
+      "personal_id": "4539539CG",
+      "tax_id": "8250212323",
+      "id_card_number": "469858DF",
+      "address": {
+        "zip_code": "1044",
+        "city": "Budapest",
+        "street": "Múzeum körút",
+        "house_number": "22",
+        "floor": null,
+        "door": null
+      },
+      "mailing_address": null,
+      "phone": "+36 70 586 2857",
+      "email": "miklós.molnár@freemail.hu",
+      "employer": "MOL Nyrt.",
+      "monthly_income": 311000,
+      "is_active": true
+    },
+    {
+      "role": "adóstárs",
+      "name": "[TÖRÖLT] Horváth János",
+      "birth_name": "Horváth János",
+      "mother_name": "Kiss Gabriella",
+      "birth_place": "Kaposvár",
+      "birth_date": "1976-08-11",
+      "personal_id": "6693536CH",
+      "tax_id": "8313790199",
+      "id_card_number": "247916AJ",
+      "address": {
+        "zip_code": "1132",
+        "city": "Budapest",
+        "street": "Jókai Mór utca",
+        "house_number": "9",
+        "floor": "10",
+        "door": "10"
+      },
+      "mailing_address": null,
+      "phone": "+36 30 794 2025",
+      "email": "jános.horváth@outlook.hu",
+      "employer": "Bosch Csoport Magyarország",
+      "monthly_income": 1018000,
+      "is_active": false
+    }
+  ],
+  "properties": [
+    {
+      "address": {
+        "zip_code": "1035",
+        "city": "Budapest",
+        "street": "Bartók Béla út",
+        "house_number": "79",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "48112/19/A/4",
+      "area_sqm": 2668.0,
+      "property_type": "telek",
+      "estimated_value": 49000000,
+      "year_built": null,
+      "number_of_rooms": null
+    },
+    {
+      "address": {
+        "zip_code": "2100",
+        "city": "Gödöllő",
+        "street": "Arany János utca",
+        "house_number": "38",
+        "floor": "7",
+        "door": "4"
+      },
+      "parcel_number": "21053/18/D/2",
+      "area_sqm": 89.0,
+      "property_type": "lakás",
+      "estimated_value": 74000000,
+      "year_built": 2004,
+      "number_of_rooms": 4
+    }
+  ],
+  "created_at": "2025-08-11",
+  "notes": "Komplex ügylet: több szereplő, több ingatlan, van inaktív szereplő is."
+}

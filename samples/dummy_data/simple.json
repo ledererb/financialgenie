@@ -1,0 +1,67 @@
+{
+  "deal_id": "SF-901881",
+  "salesforce_stage": "Dokumentáció készítés",
+  "loan": {
+    "loan_amount": 11000000,
+    "loan_term_months": 240,
+    "interest_period": "végig fix",
+    "loan_purpose": "Lakásvásárlás",
+    "product_name": "OTP Lakáshitel",
+    "down_payment": 2936375,
+    "monthly_payment": 39426
+  },
+  "participants": [
+    {
+      "role": "adós",
+      "name": "Szabó Gyula",
+      "birth_name": "Szabó Gyula",
+      "mother_name": "Vincze Judit",
+      "birth_place": "Székesfehérvár",
+      "birth_date": "1972-10-31",
+      "personal_id": "4609479CH",
+      "tax_id": "8400424560",
+      "id_card_number": "252560BH",
+      "address": {
+        "zip_code": "6720",
+        "city": "Szeged",
+        "street": "Váci utca",
+        "house_number": "113",
+        "floor": "9",
+        "door": "38"
+      },
+      "mailing_address": {
+        "zip_code": "2100",
+        "city": "Gödöllő",
+        "street": "Arany János utca",
+        "house_number": "46",
+        "floor": "6",
+        "door": "9"
+      },
+      "phone": "+36 70 167 9155",
+      "email": "gyula.szabó@freemail.hu",
+      "employer": "Magyar Posta Zrt.",
+      "monthly_income": 1168000,
+      "is_active": true
+    }
+  ],
+  "properties": [
+    {
+      "address": {
+        "zip_code": "5000",
+        "city": "Szolnok",
+        "street": "Nádor utca",
+        "house_number": "63",
+        "floor": null,
+        "door": null
+      },
+      "parcel_number": "82864/6/D/4",
+      "area_sqm": 199.0,
+      "property_type": "üzlethelyiség",
+      "estimated_value": 136000000,
+      "year_built": 1971,
+      "number_of_rooms": 2
+    }
+  ],
+  "created_at": "2025-08-18",
+  "notes": null
+}

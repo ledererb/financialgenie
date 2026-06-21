@@ -1,0 +1,356 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Zold_Lakashitel_Fiataloknak_Nyilatkozat_elso_lakastulajdonrol_20251201",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 23 mező, 13 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 92.4,
+        "y": 180.5,
+        "width": 411.9,
+        "height": 9.0
+      },
+      "notes": "Alulírott"
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 135.6,
+        "y": 196.1,
+        "width": 366.2,
+        "height": 9.0
+      },
+      "notes": "Alulírott"
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 122.7,
+        "y": 211.6,
+        "width": 379.2,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "Születési hely, idő",
+      "field_type": "text",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 161.6,
+        "y": 227.2,
+        "width": 339.7,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "mező_5",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 145.8,
+        "y": 567.0,
+        "width": 316.4,
+        "height": 9.0
+      },
+      "notes": "1. Lakás címe"
+    },
+    {
+      "pdf_field_name": "flat_1_6",
+      "label": "Helyrajzi száma",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 162.2,
+        "y": 582.6,
+        "width": 299.6,
+        "height": 9.0
+      },
+      "notes": "Lakás címe Jogszabályon alapuló"
+    },
+    {
+      "pdf_field_name": "flat_1_7",
+      "label": "Tulajdoni hányadom mértéke a lakásban",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 257.2,
+        "y": 598.0,
+        "width": 206.3,
+        "height": 9.0
+      },
+      "notes": "Jogszabályon alapuló 5"
+    },
+    {
+      "pdf_field_name": "flat_2_8",
+      "label": "mező_8",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 145.8,
+        "y": 116.5,
+        "width": 319.0,
+        "height": 9.0
+      },
+      "notes": "2. Lakás címe"
+    },
+    {
+      "pdf_field_name": "flat_2_9",
+      "label": "Helyrajzi száma",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 162.2,
+        "y": 132.1,
+        "width": 302.1,
+        "height": 9.0
+      },
+      "notes": "Lakás címe Jogszabályon alapuló haszonélvezeti joggal"
+    },
+    {
+      "pdf_field_name": "flat_2_10",
+      "label": "Tulajdoni hányadom mértéke a lakásban",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 257.2,
+        "y": 147.5,
+        "width": 203.8,
+        "height": 9.0
+      },
+      "notes": "Jogszabályon alapuló haszonélvezeti joggal □ terhelt"
+    },
+    {
+      "pdf_field_name": "flat_2_11",
+      "label": "mező_11",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 145.8,
+        "y": 240.7,
+        "width": 307.4,
+        "height": 9.0
+      },
+      "notes": "3. Lakás címe"
+    },
+    {
+      "pdf_field_name": "flat_2_12",
+      "label": "Helyrajzi száma",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 162.2,
+        "y": 256.3,
+        "width": 290.6,
+        "height": 9.0
+      },
+      "notes": "Lakás címe Jogszabályon alapuló haszonélvezeti joggal"
+    },
+    {
+      "pdf_field_name": "flat_2_13",
+      "label": "Tulajdoni hányadom mértéke a lakásban",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 257.2,
+        "y": 271.8,
+        "width": 197.3,
+        "height": 9.0
+      },
+      "notes": "Jogszabályon alapuló haszonélvezeti joggal □ terhelt"
+    },
+    {
+      "pdf_field_name": "flat_2_14",
+      "label": "mező_14",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 324.9,
+        "y": 384.1,
+        "width": 145.4,
+        "height": 9.0
+      },
+      "notes": "kijelentem, hogy (település)"
+    },
+    {
+      "pdf_field_name": "flat_2_15",
+      "label": "mező_15",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 88.7,
+        "y": 399.6,
+        "width": 322.6,
+        "height": 9.0
+      },
+      "notes": "(település) □ közeli hozzátartozóm 6"
+    },
+    {
+      "pdf_field_name": "flat_2_16",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 110.3,
+        "y": 492.7,
+        "width": 252.4,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_2_17",
+      "label": "mező_17",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 354.1,
+        "y": 523.8,
+        "width": 142.5,
+        "height": 9.0
+      },
+      "notes": "Igénylő Előttünk, mint tanúk előtt:"
+    },
+    {
+      "pdf_field_name": "flat_2_18",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 110.0,
+        "y": 565.2,
+        "width": 175.7,
+        "height": 9.0
+      },
+      "notes": "Igénylő Előttünk, mint tanúk előtt:"
+    },
+    {
+      "pdf_field_name": "flat_2_19",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 340.3,
+        "y": 565.2,
+        "width": 161.4,
+        "height": 9.0
+      },
+      "notes": "Előttünk, mint tanúk előtt:"
+    },
+    {
+      "pdf_field_name": "flat_2_20",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": {
+        "x": 123.0,
+        "y": 580.7,
+        "width": 150.9,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_2_21",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 353.2,
+        "y": 580.7,
+        "width": 148.5,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_2_22",
+      "label": "Aláírás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 127.3,
+        "y": 596.2,
+        "width": 158.4,
+        "height": 9.0
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_2_23",
+      "label": "Aláírás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 357.5,
+        "y": 596.2,
+        "width": 145.6,
+        "height": 9.0
+      },
+      "notes": "6"
+    }
+  ]
+}

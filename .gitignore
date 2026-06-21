@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Output PDF-ek (generált)
+output/
+
+# Env / secrets
+.env
+*.env
+
+# PyMuPDF cache
+*.fitz
+
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Agents
+.agents/
+
+# Other projects/unrelated folders
+peksnack_ugralos/
+
