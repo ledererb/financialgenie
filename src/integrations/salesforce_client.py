@@ -97,9 +97,71 @@ class SalesforceClient:
 
         logger.info(f"{len(self._state.deals)} mock ügylet betöltve")
 
+    def _parse_address_string(self, addr_str: str, zip_code: str = None) -> dict:
+        """Parses a Hungarian address string into a structured dictionary."""
+        if not addr_str:
+            return {"zip_code": zip_code or "", "city": "", "street": "", "house_number": ""}
+        
+        import re
+        # Find 4-digit zip code
+        zip_match = re.search(r'\b\d{4}\b', addr_str)
+        detected_zip = zip_match.group(0) if zip_match else (zip_code or "")
+        
+        clean_str = addr_str
+        if zip_match:
+            clean_str = clean_str.replace(detected_zip, "").strip()
+            
+        # Split by comma or space
+        parts = [p.strip() for p in clean_str.split(",") if p.strip()]
+        city = ""
+        street_and_num = clean_str
+        
+        if len(parts) >= 2:
+            city = parts[0]
+            street_and_num = ",".join(parts[1:])
+        else:
+            words = clean_str.split()
+            if words:
+                city = words[0]
+                street_and_num = " ".join(words[1:])
+                
+        # Match house number (digits followed by optional letters/symbols)
+        num_match = re.search(r'\s+(\d+[\w\-/]*)(.*)', street_and_num)
+        street = street_and_num
+        house_number = ""
+        floor = None
+        door = None
+        
+        if num_match:
+            house_number = num_match.group(1)
+            rest = num_match.group(2).strip()
+            street = street_and_num[:num_match.start()].strip()
+            
+            # Floor and door matching
+            floor_match = re.search(r'(\d+)\.?\s*(em|emelet)', rest, re.IGNORECASE)
+            door_match = re.search(r'(\d+)\.?\s*(aj|ajto|ajtó)', rest, re.IGNORECASE)
+            
+            if floor_match:
+                floor = floor_match.group(1)
+            if door_match:
+                door = door_match.group(1)
+                
+        return {
+            "zip_code": str(detected_zip),
+            "city": city,
+            "street": street,
+            "house_number": house_number,
+            "floor": floor,
+            "door": door
+        }
+
     def get_deal(self, deal_id: str) -> Optional[dict]:
         """
         Ügylet lekérése azonosító alapján.
+        
+        Lekéri az Opportunity adatait, a kapcsolódó Contact (Szereplők) 
+        adatokat a lookup mezők alapján, és a Property__c (Ingatlanok) 
+        adatokat az Opportunity_Property_Role__c kapcsolótáblán keresztül.
         
         Returns:
             Ügylet adatok dict-ként, vagy None ha nem található.
@@ -117,11 +179,159 @@ class SalesforceClient:
             return deal
         else:
             try:
-                result = self._sf.Opportunity.get(deal_id)
-                logger.info(f"Ügylet lekérve (SF): {deal_id}")
-                return result
+                # 1. Opportunity lekérése
+                opp = self._sf.Opportunity.get(deal_id)
+                logger.info(f"Opportunity lekérve (SF): {deal_id}")
+                
+                # 2. Szereplők ID-inak kigyűjtése lookup-okból
+                roles_map = {
+                    "adós": opp.get("Opportunity_Contact_Name__c"),
+                    "adóstárs_1": opp.get("First_Co_debtor__c"),
+                    "adóstárs_2": opp.get("Second_Co_debtor__c"),
+                    "adóstárs_3": opp.get("Third_Co_debtor__c"),
+                    "kezes": opp.get("Mortgagor__c"),
+                    "haszonélvező": opp.get("Usufructuary__c")
+                }
+                
+                contact_ids = [cid for cid in roles_map.values() if cid]
+                contacts = {}
+                
+                # 3. Contact adatok lekérdezése
+                if contact_ids:
+                    id_list_str = ",".join(f"'{cid}'" for cid in contact_ids)
+                    contact_fields = (
+                        "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
+                        "Place_of_Birth__c, Date_of_birth__c, ID_Card_Number__c, Tax_ID__c, "
+                        "Address_Card_Number__c, Permanent_address__c, Phone, Email, "
+                        "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
+                        "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
+                        "Current_employment_started__c, ZIP__c"
+                    )
+                    query_str = f"SELECT {contact_fields} FROM Contact WHERE Id IN ({id_list_str})"
+                    contact_results = self._sf.query(query_str)
+                    for c_rec in contact_results.get("records", []):
+                        contacts[c_rec["Id"]] = c_rec
+
+                # 4. Résztvevők listájának felépítése
+                participants_records = []
+                for role_label, cid in roles_map.items():
+                    if not cid or cid not in contacts:
+                        continue
+                    c = contacts[cid]
+                    
+                    role_str = "adóstárs" if role_label.startswith("adóstárs") else role_label
+                    address_dict = self._parse_address_string(c.get("Permanent_address__c"), c.get("ZIP__c"))
+                    
+                    participant_record = {
+                        "role": role_str,
+                        "name": c.get("Name") or f"{c.get('FirstName', '')} {c.get('LastName', '')}".strip(),
+                        "birth_name": c.get("Szuletesi_nev__c"),
+                        "mother_name": c.get("Mother_s_Name__c"),
+                        "birth_place": c.get("Place_of_Birth__c"),
+                        "birth_date": c.get("Date_of_birth__c"),
+                        "personal_id": c.get("ID_Card_Number__c"),
+                        "tax_id": c.get("Tax_ID__c"),
+                        "id_card_number": c.get("Address_Card_Number__c"),
+                        "address": address_dict,
+                        "phone": c.get("Phone"),
+                        "email": c.get("Email"),
+                        "employer": c.get("Name_of_employer__c"),
+                        "monthly_income": c.get("Average_monthly_net_income__c"),
+                        "is_active": True
+                    }
+                    participants_records.append(participant_record)
+
+                # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
+                properties_records = []
+                prop_role_query = (
+                    f"SELECT Property__c, Ingatlan_szerepe__c "
+                    f"FROM Opportunity_Property_Role__c "
+                    f"WHERE Opportunity__c = '{deal_id}'"
+                )
+                prop_role_results = self._sf.query(prop_role_query)
+                prop_roles = prop_role_results.get("records", [])
+                
+                if prop_roles:
+                    prop_ids = [pr["Property__c"] for pr in prop_roles if pr.get("Property__c")]
+                    if prop_ids:
+                        id_list_str = ",".join(f"'{pid}'" for pid in prop_ids)
+                        prop_fields = (
+                            "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
+                            "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
+                            "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
+                            "Ingatlan_emelet__c"
+                        )
+                        prop_query = f"SELECT {prop_fields} FROM Property__c WHERE Id IN ({id_list_str})"
+                        prop_results = self._sf.query(prop_query)
+                        props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
+                        
+                        for pr in prop_roles:
+                            pid = pr.get("Property__c")
+                            if not pid or pid not in props_by_id:
+                                continue
+                            p = props_by_id[pid]
+                            
+                            street_parts = []
+                            if p.get("Ingatlan_kozterulet_neve__c"):
+                                street_parts.append(p.get("Ingatlan_kozterulet_neve__c"))
+                            if p.get("Ingatlan_Kozterulet_jellege__c"):
+                                street_parts.append(p.get("Ingatlan_Kozterulet_jellege__c"))
+                            
+                            street_name = " ".join(street_parts).strip()
+                            zip_val = p.get("Ingatlan_irsz__c")
+                            zip_str = str(int(zip_val)) if zip_val else ""
+                            
+                            prop_record = {
+                                "property_type": p.get("Property_Type__c") or "lakás",
+                                "parcel_number": p.get("Ingatlan_hrsz__c") or "",
+                                "area_sqm": p.get("Ingatlan_alapterulet__c"),
+                                "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
+                                "address": {
+                                    "zip_code": zip_str,
+                                    "city": p.get("Ingatlan_telepules__c") or "",
+                                    "street": street_name,
+                                    "house_number": p.get("Ingatlan_hazszam__c") or "",
+                                    "floor": p.get("Ingatlan_emelet__c"),
+                                    "door": None
+                                }
+                            }
+                            properties_records.append(prop_record)
+
+                # 6. Futamidő meghatározása (első résztvevő Term_in_year_c__c mezőjéből ha van)
+                loan_term_months = 240 # alapértelmezett 20 év
+                for cid in contact_ids:
+                    if cid in contacts and contacts[cid].get("Term_in_year_c__c"):
+                        try:
+                            term_years = float(contacts[cid]["Term_in_year_c__c"])
+                            loan_term_months = int(term_years * 12)
+                            break
+                        except (ValueError, TypeError):
+                            pass
+
+                # 7. Normalizált formátum összeállítása
+                normalized_sf_data = {
+                    "Id": opp.get("Id"),
+                    "StageName": opp.get("StageName"),
+                    "Amount__c": opp.get("Hitel_sszeg__c") or opp.get("Amount"),
+                    "Loan_Term__c": loan_term_months,
+                    "Interest_Period__c": None,
+                    "Loan_Purpose__c": opp.get("Hitelc_l__c"),
+                    "Product_Name__c": opp.get("Term_k__c"),
+                    "Down_Payment__c": None,
+                    "Monthly_Payment__c": None,
+                    "CreatedDate": opp.get("CreatedDate"),
+                    "Description": opp.get("Description") or opp.get("remark__c"),
+                    "Participants__r": {
+                        "records": participants_records
+                    },
+                    "Properties__r": {
+                        "records": properties_records
+                    }
+                }
+                logger.info(f"Ügylet sikeresen lekérve a Salesforce-ból: {deal_id}")
+                return normalized_sf_data
             except Exception as e:
-                logger.error(f"Ügylet lekérési hiba: {e}")
+                logger.error(f"Hiba a Salesforce ügyletlekérdezés közben: {e}")
                 return None
 
     def list_deals(self) -> list[dict]:

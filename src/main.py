@@ -481,6 +481,17 @@ def main():
         default=None,
         help="Output könyvtár",
     )
+    parser.add_argument(
+        "--salesforce", "-sf",
+        action="store_true",
+        help="Valódi Salesforce sandbox használata",
+    )
+    parser.add_argument(
+        "--deal", "-d",
+        type=str,
+        default=None,
+        help="Kifejezett Salesforce Opportunity ID",
+    )
 
     args = parser.parse_args()
 
@@ -497,8 +508,22 @@ def main():
         from generate_dummy_data import generate_all_scenarios
         generate_all_scenarios(dummy_dir)
 
+    # Salesforce kliens inicializálása
+    if args.salesforce:
+        from config import settings
+        print("\n☁️  Kapcsolódás a Salesforce Sandbox-hoz...")
+        sf_client = SalesforceClient(
+            username=settings.SF_USERNAME,
+            password=settings.SF_PASSWORD,
+            security_token=settings.SF_SECURITY_TOKEN,
+            domain=settings.SF_DOMAIN,
+            mock_mode=False
+        )
+    else:
+        sf_client = SalesforceClient(mock_mode=True, mock_data_dir=dummy_dir)
+
     pipeline = FormFillerPipeline(
-        sf_client=SalesforceClient(mock_mode=True, mock_data_dir=dummy_dir),
+        sf_client=sf_client,
         output_dir=args.output_dir or PROJECT_ROOT / "output",
     )
 
@@ -567,12 +592,14 @@ def main():
     print(f"   Forgatókönyv: {args.scenario}")
 
     # Ügylet kiválasztása
-    deals = pipeline.sf_client.list_deals()
-    if not deals:
-        print("⚠️  Nincs elérhető ügylet")
-        return
-
-    deal_id = deals[0]["deal_id"]
+    if args.deal:
+        deal_id = args.deal
+    else:
+        deals = pipeline.sf_client.list_deals()
+        if not deals:
+            print("⚠️  Nincs elérhető ügylet")
+            return
+        deal_id = deals[0]["deal_id"]
     result = pipeline.run_for_deal(deal_id, template_pdf, mapping)
 
     # Eredmény
