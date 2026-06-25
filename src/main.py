@@ -405,7 +405,7 @@ class FormFillerPipeline:
                 if 0 <= page_idx < len(doc):
                     page = doc[page_idx]
                     coords = f.coordinates
-                    point = fitz.Point(coords["x"], coords["y"] + coords.get("height", 12))
+                    point = fitz.Point(coords["x"], coords["y"] + coords.get("height", 12) - 3)
                     page.insert_text(
                         point,
                         str(value),
