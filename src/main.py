@@ -396,8 +396,8 @@ class FormFillerPipeline:
         doc = fitz.open(str(template))
 
         for f in mapping.fields:
-            if f.coordinates and f.canonical_field and f.canonical_field in field_data:
-                value = field_data[f.canonical_field]
+            if f.coordinates and f.pdf_field_name and f.pdf_field_name in field_data:
+                value = field_data[f.pdf_field_name]
                 if not value:
                     continue
 
@@ -408,12 +408,12 @@ class FormFillerPipeline:
                     point = fitz.Point(coords["x"], coords["y"] + coords.get("height", 12))
                     page.insert_text(
                         point,
-                        value,
+                        str(value),
                         fontsize=10,
                         fontname="helv",
                         color=(0, 0, 0),
                     )
-                    logger.debug(f"   Overlay: {f.label} = {value[:50]} @ ({coords['x']}, {coords['y']})")
+                    logger.debug(f"   Overlay: {f.label} = {str(value)[:50]} @ ({coords['x']}, {coords['y']})")
 
         doc.save(str(output))
         doc.close()
