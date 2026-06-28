@@ -39,7 +39,16 @@ from src.engine.document_assembler import DocumentAssembler, ProductType
 from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement
 from src.engine.completeness_checker import CompletenessChecker, CompletenessStatus
 from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
-from src.ai.field_recognizer import FieldRecognizer, MappingConfig, print_mapping_summary
+from src.ai.field_recognizer import (
+    FieldRecognizer,
+    MappingConfig,
+    print_mapping_summary,
+)
+from src.ai.legal_classifier import (
+    LegalClassifier,
+    extract_unmapped_checkboxes,
+    fill_legal_declarations_on_pdf,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +166,21 @@ class FormFillerPipeline:
             output_path = self._fill_pdf(actual_template, deal, field_data, mapping_config)
             result["output_path"] = str(output_path)
             logger.info(f"   ✓ Kitöltött PDF: {output_path}")
+
+            # 5b. Jogi nyilatkozatok automatikus kitöltése (AI + config hibrid).
+            # A canonical mapping MELLÉ jön: a leképezetlen checkbox-okat kategóriák
+            # szerint pipálja be (consent → true, decline → false, stb.).
+            try:
+                legal_count = self._fill_legal_declarations(
+                    output_path, mapping_config, deal
+                )
+                if legal_count:
+                    logger.info(
+                        "   ✓ Jogi nyilatkozat: %d checkbox módosítva", legal_count
+                    )
+            except Exception as e:
+                result["issues"].append(f"Jogi nyilatkozat hiba: {e}")
+                logger.warning(f"   ⚠️ Jogi nyilatkozat hiba: {e}")
         except Exception as e:
             result["issues"].append(f"PDF kitöltési hiba: {e}")
             logger.error(f"   ✗ PDF kitöltési hiba: {e}")
@@ -444,6 +468,61 @@ class FormFillerPipeline:
                 )
 
         return output_path
+
+    def _fill_legal_declarations(
+        self,
+        pdf_path: Path,
+        mapping: MappingConfig,
+        deal: DealData,
+    ) -> int:
+        """
+        Jogi nyilatkozat checkbox-ok automatikus kitöltése a már
+        kitöltött PDF-en (canonical mapping MELLÉ).
+
+        Lépések:
+        1. Kinyeri a canonical_field nélküli checkbox-okat a mapping-ből.
+        2. LegalClassifier.classify_batch() → kategóriák.
+        3. LegalClassifier.apply_defaults(deal) → true/false értékek.
+        4. Beírja az értékeket a PDF AcroForm checkbox-aiba.
+
+        Returns:
+            Módosított checkbox mezők száma.
+        """
+        unmapped = extract_unmapped_checkboxes(mapping)
+        if not unmapped:
+            logger.debug("Nincsenek leképezetlen checkbox-ok – jogi lépés kihagyva.")
+            return 0
+
+        classifier = LegalClassifier()
+        classified = classifier.classify_batch(unmapped)
+        values = classifier.apply_defaults(classified, deal)
+
+        if not values:
+            logger.info(
+                "   Jogi nyilatkozat: %d mező vizsgálva, de egyetlen sem "
+                "illeszkedett egy 'always' vagy 'conditional' szabályhoz.",
+                len(unmapped),
+            )
+            return 0
+
+        modified = fill_legal_declarations_on_pdf(Path(pdf_path), values)
+        if modified:
+            logger.info(
+                "   Jogi nyilatkozat: %d/%d checkbox beállítva "
+                "(vizsgált leképezetlen: %d).",
+                modified,
+                len(values),
+                len(unmapped),
+            )
+        else:
+            logger.info(
+                "   Jogi nyilatkozat: %d érték kalkulálva, de a PDF-ben nem "
+                "található a hozzá tartozó AcroForm checkbox (mapping: %d "
+                "leképezetlen checkbox).",
+                len(values),
+                len(unmapped),
+            )
+        return modified
 
     # =========================================================================
     # ELAVULT metódusok – korábban inline pikepdf/PyMuPDF logikát tartalmaztak.

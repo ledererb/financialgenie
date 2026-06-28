@@ -1,0 +1,26 @@
+Kategorizáld az alábbi banki nyomtatvány checkbox mezőket!
+
+Kategóriák:
+- consent: Hozzájárulás / tudomásulvétel ("elfogadom", "tudomásul veszem", "hozzájárulok") – default: checked
+- data_sharing: Adatkezelési / adattovábbítási hozzájárulás – default: checked
+- bank_info: Banki tájékoztatás megkapásához / elolvasásához kapcsolódó – default: checked
+- decline: Lemondás / elutasítás ("nem járulok hozzá", "lemondok") – default: unchecked
+- property_state: Ingatlan állapotára / tulajdoni lapra vonatkozó nyilatkozat – default: unchecked
+- conditional: Feltételes nyilatkozat (CSOK, ÁFA, kamattámogatás, stb.) – adatoktól függ
+- product_choice: Termékválasztás – default: N/A, ember dönt
+- unknown: Nem besorolható
+
+Mezők:
+{pdf_field_list}
+
+Válasz: CSAK JSON tömböt adj, semmi más szöveget! Formátum:
+[{{"f": "mező_név", "c": "kategória"}}, ...]
+
+Szabályok:
+1. Minden megadott mezőnek szerepelnie kell a válaszban (vagy "unknown" kategóriával).
+2. Ha a mező nevében szerepel a "nem" / "nem járulok" / "lemond" → decline.
+3. Ha a mező nevében szerepel a CSOK / ÁFA / kamattámogatás → conditional.
+4. Ha a mező nevében szerepel "adatkezelés" / "adattovábbítás" / "GDPR" → data_sharing.
+5. Ha "hozzájárulok" / "elfogadom" / "tudomásul" / "kijelentem" → consent vagy bank_info.
+6. Ha "tulajdoni lap" / "ingatlan állapota" / "tehermentes" → property_state.
+7. Bizonytalan esetben "unknown".

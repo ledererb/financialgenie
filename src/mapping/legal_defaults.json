@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "description": "Jogi nyilatkozatok alapértelmezett értékei (AI + config hibrid rendszer). A LegalClassifier ezt használja, hogy kategória → true/false értékké alakítsa a leképezetlen checkboxokat.",
+  "categories": {
+    "consent": {
+      "default_value": true,
+      "description": "Általános jogi hozzájárulások (elfogadom, tudomásul veszem, hozzájárulok)",
+      "apply_when": "always"
+    },
+    "data_sharing": {
+      "default_value": true,
+      "description": "Adatkezelési / adattovábbítási hozzájárulások",
+      "apply_when": "always"
+    },
+    "bank_info": {
+      "default_value": true,
+      "description": "Banki tájékoztatás (kondíciók, szerződés) megkapásához / elolvasásához kapcsolódó",
+      "apply_when": "always"
+    },
+    "decline": {
+      "default_value": false,
+      "description": "Lemondó / elutasító nyilatkozatok (nem járulok hozzá, lemondok)",
+      "apply_when": "always"
+    },
+    "property_state": {
+      "default_value": false,
+      "description": "Ingatlan állapotára / tulajdoni lapra vonatkozó nyilatkozatok (alapértelmezetten nem pipált, kivéve ha van rá adat)",
+      "apply_when": "always"
+    },
+    "product_choice": {
+      "default_value": null,
+      "description": "Termékválasztás – emberi döntés kell",
+      "apply_when": "manual"
+    },
+    "conditional": {
+      "default_value": null,
+      "description": "Feltételes nyilatkozat (pl. CSOK, ÁFA, kamattámogatás) – az conditional_rules dönti el",
+      "apply_when": "conditional"
+    },
+    "unknown": {
+      "default_value": null,
+      "description": "AI nem tudta besorolni – emberi review szükséges",
+      "apply_when": "manual"
+    }
+  },
+  "conditional_rules": [
+    {
+      "if": { "products_contains": "csok_plusz" },
+      "category": "conditional",
+      "default_value": true,
+      "note": "CSOK Plusz nyilatkozatok automatikus pipálása, ha a termék szerepel az ügyletben"
+    },
+    {
+      "if": { "products_contains": "csok" },
+      "category": "conditional",
+      "default_value": true,
+      "note": "CSOK nyilatkozatok automatikus pipálása"
+    },
+    {
+      "if": { "products_contains": "piaci_hitel" },
+      "category": "conditional",
+      "default_value": true,
+      "note": "Piaci hitel nyilatkozatok automatikus pipálása"
+    },
+    {
+      "if": { "products_contains": "zold_lakashitel" },
+      "category": "conditional",
+      "default_value": true,
+      "note": "Zöld lakáshitel nyilatkozatok automatikus pipálása"
+    },
+    {
+      "if": { "products_contains": "afa_tamogatas" },
+      "category": "conditional",
+      "default_value": true,
+      "note": "ÁFA támogatás nyilatkozatok automatikus pipálása"
+    }
+  ],
+  "overrides": {
+    "_comment": "Konkrét PDF mezőnév → bool felülírás. Ha egy mező itt szerepel, ez él az AI kategória felett."
+  }
+}
