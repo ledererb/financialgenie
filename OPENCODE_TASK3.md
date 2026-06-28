@@ -1,3 +1,55 @@
+# OpenCode Task: Finish pipeline modularization (remaining work)
+
+## Context
+FinancialGenie PoC. The `src/pipeline/` module was already committed (`8b364bd`). Three things remain:
+
+## 1. Create `scripts/analyze_pdf.py`
+
+A generic PDF analyzer (from DOCUMENT_PROCESSOR_LEARNINGS.md).
+
+```bash
+Usage: python scripts/analyze_pdf.py <path/to/pdf>
+```
+
+Outputs structured JSON to stdout:
+```json
+{
+  "filename": "elozetes_ertekbecsles.pdf",
+  "page_count": 18,
+  "has_acroform": true,
+  "acroform_fields": 1029,
+  "field_names": ["Check Box 1", "Text Field 1", ...],
+  "field_types": {"Check Box 1": "checkbox", "Text Field 1": "text"},
+  "name_quality": "generic" | "descriptive" | "mixed",
+  "flat_placeholders": {
+    "underlines": 0,
+    "checkbox_boxes": 0,
+    "dots": 0
+  },
+  "sample_labels_per_page": [
+    {"page": 1, "labels": ["Ingatlan címe", "Helyrajzi szám", ...]},
+    ...
+  ],
+  "recommended_mode": "acroform" | "overlay" | "analyze_first",
+  "guess": "A PDF valószínűleg egy OTP-s nyomtatvány, 18 oldal, 1029 generikus AcroForm mezővel."
+}
+```
+
+Use PyMuPDF (fitz) for:
+- AcroForm field detection (widget annotations) — `doc[page].widgets()`
+- Field name + type extraction
+- Page-by-page text block extraction (`doc[page].get_text("blocks")`)
+- Flat PDF placeholder detection (underlines, □ boxes, dots)
+
+Import logic from `scripts/analyze_flat_pdf.py` for flat PDF detection.
+
+## 2. Update `ARCHITECTURE.md`
+
+It currently describes the old monolithic pipeline. Update to describe the new `src/pipeline/` 4-pass architecture.
+
+**Full replacement content:**
+
+```markdown
 # FinancialGenie Architecture
 
 ## Overview
@@ -77,3 +129,24 @@ All AI: **DeepSeek V4 Flash** (`deepseek-v4-flash`)
 - Temperature: 0.0 (deterministic)
 - JSON mode: `response_format: {"type": "json_object"}`
 - Thinking mode disabled: `"thinking": {"type": "disabled"}`
+```
+
+## 3. Fix `src/main.py` import
+
+The import on line 55 is unused:
+```python
+from src.pipeline import PipelineOrchestrator, PipelineResult
+```
+Keep the import (it's fine to have it), but add a TODO comment above it. No other changes needed to main.py since the old FormFillerPipeline still works as the main entry point. The pipeline module is available for programmatic use starting from imports.
+
+## Implementation Rules
+
+1. Test `scripts/analyze_pdf.py` on one of the actual PDFs in the project root:
+   ```bash
+   cd /workspace/financialgenie
+   python scripts/analyze_pdf.py elozetes_ertekbecsles.pdf
+   python scripts/analyze_pdf.py partner_nyilatkozat.pdf
+   ```
+2. Verify both versions produce valid JSON output.
+3. Commit and push after finishing all items.
+4. Don't change any other files.

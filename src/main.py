@@ -52,6 +52,11 @@ from src.ai.legal_classifier import (
     extract_unmapped_checkboxes,
     fill_legal_declarations_on_pdf,
 )
+# TODO: cseréld le a FormFillerPipeline.run_for_deal() hívást a
+# PipelineOrchestrator.run() hívására, hogy a teljes útvonal a modularizált
+# 4-pass pipeline-on menjen át (pass1_data → pass2_mapping → pass3_fill →
+# pass4_writeback). Jelenleg csak programmatic API-ként elérhető az import.
+from src.pipeline import PipelineOrchestrator, PipelineResult
 
 logger = logging.getLogger(__name__)
 
