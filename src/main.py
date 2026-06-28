@@ -527,6 +527,15 @@ class FormFillerPipeline:
         # felismeréssel kitöltjük az első jövedelemsort (összeg/deviza/checkbox).
         self._fill_income_fields(field_data, mapping, borrower_data, co_borrower_data)
 
+        # === Karakter-szintű (1 doboz = 1 karakter) mezők szétosztása ===
+        # Az értékbecslés PDF-ben sok sorban kis (13.7–15.1 pt széles) dobozok
+        # találhatók, amelyek egy-egy karaktert várnak. A fenti mapping-ciklus
+        # viszont minden egyes dobozba beírja a TELJES canonical értéket (pl.
+        # minden "Text Field 412..446" → "450 000"). Ez a lépés felismeri a
+        # keskeny dobozokat (ugyanazon canonical + ugyanabban a sorban), és
+        # karakterenként szétosztja köztük az értéket.
+        self._distribute_char_fields(field_data, mapping)
+
         return field_data
 
     def _fill_income_fields(
@@ -583,6 +592,147 @@ class FormFillerPipeline:
                     if val:
                         field_data[pdf_name] = val
                     break
+
+    # --- karakter-szintű dobozok küszöbértékei ---
+    CHAR_BOX_MAX_WIDTH = 20.0   # pt – ennél keskenyebb = 1 karakteres doboz
+    CHAR_BOX_ROW_TOLERANCE = 5.0  # pt – y-irányú tűrés azonos sorként
+
+    # Canonical-ek, ahol a dobozok CSAK számjegyet várnak (szeparátorok: szóköz,
+    # pont, per, plusz, kötőjel – mind kihagyásra kerül).
+    _DIGITS_ONLY_CANONICALS = frozenset({
+        "participant.monthly_income",
+        "participant.tax_id",
+        "participant.dependents",
+        "participant.birth_date",
+        "participant.residence_since",
+        "participant.phone",
+        "loan.loan_amount",
+        "loan.loan_term_months",
+        "loan.down_payment",
+        "loan.monthly_payment",
+        "loan.purchase_price",
+        "loan.csok_amount",
+        "loan.afa_support",
+        "loan.housing_savings",
+        "property.estimated_value",
+        "property.area_sqm",
+        "property.year_built",
+        "property.number_of_rooms",
+        "property.parcel_number",
+    })
+
+    # Canonical-ek, ahol számjegy + betű is előfordulhat (személyi igazolvány,
+    # rendszám stb.) – csak a szóközt és írásjeleket távolítjuk el.
+    _ALNUM_CANONICALS = frozenset({
+        "participant.personal_id",
+        "participant.id_card_number",
+    })
+
+    def _explode_for_boxes(self, canonical: str, value: str) -> list[str]:
+        """
+        Egy canonical értéket karakterekre bont a dobozelrendezéshez.
+
+        - Numerikus/dátum canonicaloknál (lásd _DIGITS_ONLY_CANONICALS) csak
+          a számjegyeket tartjuk meg (szóköz, pont, per, plusz, kötőjel eldobva).
+        - Az _ALNUM_CANONICALS-nél számjegy + betű, írásjelek nélkül.
+        - Minden másnál csak a szóközt dobjuk el (betűk, írásjelek maradnak).
+        """
+        if value is None:
+            return []
+        s = str(value)
+        if canonical in self._DIGITS_ONLY_CANONICALS:
+            return [c for c in s if c.isdigit()]
+        if canonical in self._ALNUM_CANONICALS:
+            return [c for c in s if c.isalnum()]
+        return [c for c in s if not c.isspace()]
+
+    def _distribute_char_fields(
+        self,
+        field_data: dict,
+        mapping: MappingConfig,
+    ) -> None:
+        """
+        Karakter-szintű dobozok szétosztása.
+
+        Felismeri a mapping-ben azokat a keskeny (< CHAR_BOX_MAX_WIDTH pt)
+        szövegdobozokat, amelyek
+          (a) ugyanahhoz a canonical_field-hez tartoznak, ÉS
+          (b) ugyanabban a sorban helyezkednek el (azonos page, y ± tűrés),
+        és karakterenként (1 doboz = 1 karakter) szétosztja köztük a canonical
+        értékét. A széles mezők (pl. a teljes telefonszámot mutató doboz) nem
+        keskenyek, így kimaradnak és megtartják a teljes értéket.
+
+        Mindkét mapping-formátumot kezeli, mert a MappingConfig már
+        egységesíti az OTP v5-ös (`coordinates: null`) és az értékbecslés
+        (`coordinates: {x,y,width,height}`) formátumot: ahol nincsenek
+        koordináták vagy a mező széles, ott egyszerűen nem történik semmi.
+        """
+        # 1) Keskeny, canonical-lal rendelkező mezők gyűjtése pozícióval.
+        #    pdf_field_name -> (canonical, page, y, x)
+        candidates: dict[str, tuple[str, int, float, float]] = {}
+        for f in mapping.fields:
+            if not f.canonical_field or not f.coordinates:
+                continue
+            coords = f.coordinates
+            width = float(coords.get("width", 0) or 0)
+            if width <= 0 or width >= self.CHAR_BOX_MAX_WIDTH:
+                continue
+            if (f.field_type or FieldType.TEXT) == FieldType.CHECKBOX:
+                continue
+            candidates[f.pdf_field_name] = (
+                f.canonical_field,
+                int(f.page_number or 1),
+                float(coords.get("y", 0) or 0),
+                float(coords.get("x", 0) or 0),
+            )
+
+        if not candidates:
+            return
+
+        # 2) (canonical, page) csoportonként sorokba (y-cluster) rendezés.
+        by_page_canon: dict[tuple[str, int], list[str]] = {}
+        for name, (canon, page, _y, _x) in candidates.items():
+            by_page_canon.setdefault((canon, page), []).append(name)
+
+        groups: dict[tuple, list[str]] = {}
+        for (canon, page), names in by_page_canon.items():
+            names.sort(key=lambda n: (candidates[n][2], candidates[n][3]))
+            current_row_y: float | None = None
+            row_idx = 0
+            for n in names:
+                y = candidates[n][2]
+                if current_row_y is None or abs(y - current_row_y) > self.CHAR_BOX_ROW_TOLERANCE:
+                    current_row_y = y
+                    row_idx += 1
+                groups.setdefault((canon, page, row_idx), []).append(n)
+
+        # 3) Minden egynél több dobozos csoportban karakterenként szétosztunk.
+        modified_rows = 0
+        for (canon, _page, _row), names in groups.items():
+            if len(names) <= 1:
+                continue
+            # A teljes érték: bármelyik dobozból kiolvasható (a mapping-ciklus
+            # mindegyikbe ugyanazt írta). Ha egy sem szerepel field_data-ben
+            # (pl. nincs adat), akkor nem nyúlunk hozzá.
+            full_val = None
+            for n in names:
+                if n in field_data:
+                    full_val = field_data[n]
+                    break
+            if full_val is None:
+                continue
+
+            chars = self._explode_for_boxes(canon, str(full_val))
+            for i, n in enumerate(names):
+                field_data[n] = chars[i] if i < len(chars) else ""
+            modified_rows += 1
+
+        if modified_rows:
+            logger.info(
+                "   🔤 Karakter-doboz szétosztás: %d sor, példa canonical: %s",
+                modified_rows,
+                next(iter(groups))[0],
+            )
 
     def _resolve_legal(
         self,

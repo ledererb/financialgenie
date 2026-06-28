@@ -145,3 +145,111 @@ class TestMappingConfig:
         high = otp_mapping.high_confidence_fields
         assert len(high) > 0
         assert all(f.confidence.value == "high" for f in high)
+
+
+class TestCharBoxDistribution:
+    """Karakter-szintű doboz-szétosztás tesztek (értékbecslés PDF)."""
+
+    def _make_mapping(self, fields_spec):
+        """fields_spec: lista (pdf_name, canonical, width, y, x)"""
+        from src.ai.field_recognizer import (
+            RecognizedField, FieldType, MappingConfidence,
+        )
+        return MappingConfig(
+            bank_name="Test",
+            form_name="test",
+            form_type="acroform",
+            fields=[
+                RecognizedField(
+                    pdf_field_name=name,
+                    label=name,
+                    field_type=FieldType.TEXT,
+                    canonical_field=canon,
+                    confidence=MappingConfidence.HIGH,
+                    page_number=1,
+                    coordinates={"x": x, "y": y, "width": w, "height": 19.0},
+                )
+                for (name, canon, w, y, x) in fields_spec
+            ],
+        )
+
+    def test_digits_only_income_distribution(self):
+        """Havi jövedelem 6 keskeny dobozba → 1 számjegy dobozonként."""
+        mapping = self._make_mapping([
+            (f"income_{i}", "participant.monthly_income", 13.7, 500.0, 100 + i * 16)
+            for i in range(6)
+        ])
+        fd = {f"income_{i}": "450 000" for i in range(6)}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        assert [fd[f"income_{i}"] for i in range(6)] == list("450000")
+
+    def test_phone_keeps_plus_separators_stripped(self):
+        """Telefonszám: a '+' és szóközök leesnek, csak számjegy marad."""
+        mapping = self._make_mapping([
+            (f"phone_{i}", "participant.phone", 15.1, 100.0, 100 + i * 16)
+            for i in range(11)
+        ])
+        fd = {f"phone_{i}": "+36 20 611 3485" for i in range(11)}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        assert "".join(fd[f"phone_{i}"] for i in range(11)) == "36206113485"
+
+    def test_wide_field_keeps_full_value(self):
+        """A széles (≥20pt) mező nem vesz részt a szétosztásban."""
+        mapping = self._make_mapping([
+            ("wide", "participant.phone", 264.5, 100.0, 0),
+            *((f"n_{i}", "participant.phone", 15.1, 100.0, 300 + i * 16) for i in range(11)),
+        ])
+        fd = {n: "+36 20 611 3485" for n in ["wide"] + [f"n_{i}" for i in range(11)]}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        # széles megtartja a teljes értéket
+        assert fd["wide"] == "+36 20 611 3485"
+        # keskenyek számjegyenként
+        assert "".join(fd[f"n_{i}"] for i in range(11)) == "36206113485"
+
+    def test_different_rows_not_merged(self):
+        """Két különböző sorban lévő keskeny doboz nem keveredik össze."""
+        mapping = self._make_mapping([
+            *((f"r1_{i}", "participant.monthly_income", 13.7, 500.0, 100 + i * 16) for i in range(3)),
+            *((f"r2_{i}", "participant.monthly_income", 13.7, 600.0, 100 + i * 16) for i in range(3)),
+        ])
+        fd = {n: "450 000" for n in [f"r1_{i}" for i in range(3)] + [f"r2_{i}" for i in range(3)]}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        assert [fd[f"r1_{i}"] for i in range(3)] == ["4", "5", "0"]
+        assert [fd[f"r2_{i}"] for i in range(3)] == ["4", "5", "0"]
+
+    def test_personal_id_keeps_letters(self):
+        """Személyi igazolvány: betűk megtartva, írásjelek eldobva."""
+        mapping = self._make_mapping([
+            (f"id_{i}", "participant.personal_id", 15.1, 100.0, 100 + i * 16)
+            for i in range(8)
+        ])
+        fd = {f"id_{i}": "123456AB" for i in range(8)}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        assert "".join(fd[f"id_{i}"] for i in range(8)) == "123456AB"
+
+    def test_explode_for_boxes_helpers(self):
+        p = FormFillerPipeline()
+        assert p._explode_for_boxes("participant.monthly_income", "450 000") == list("450000")
+        assert p._explode_for_boxes("participant.birth_date", "1985.05.12") == list("19850512")
+        assert p._explode_for_boxes("participant.personal_id", "123-456/AB") == list("123456AB")
+        assert p._explode_for_boxes("participant.name", "Kovács János") == list("KovácsJános")
+
+    def test_no_coordinates_is_noop(self):
+        """Ha egy mezőnek nincsenek koordinátái (pl. OTP v5), nem történik semmi."""
+        from src.ai.field_recognizer import (
+            RecognizedField, FieldType, MappingConfidence,
+        )
+        mapping = MappingConfig(
+            bank_name="OTP", form_name="v5", form_type="acroform",
+            fields=[
+                RecognizedField(
+                    pdf_field_name="f1", label="x", field_type=FieldType.TEXT,
+                    canonical_field="participant.name",
+                    confidence=MappingConfidence.HIGH, page_number=1,
+                    coordinates=None,
+                ),
+            ],
+        )
+        fd = {"f1": "Kovács János"}
+        FormFillerPipeline()._distribute_char_fields(fd, mapping)
+        assert fd == {"f1": "Kovács János"}
