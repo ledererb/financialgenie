@@ -90,7 +90,7 @@ def run_mapping_pass(
     # (A canonical mapping már tartalmazza; külön lépés most nincs.)
     metrics["subpasses_run"].append("2_sf_label_match_skipped")
 
-    # --- Sub-pass 3: AI classification (dynamic V4 Pro) ------------------
+    # --- Sub-pass 3: AI classification (Claude Sonnet 4.6) ------------------
     # Feltételek:
     #   - Explicit `run_ai_subpass` kapcsoló (force / --dynamic-mapping)
     #   - VAGY nincs statikus mapping (has_static_mapping=False)
@@ -108,7 +108,7 @@ def run_mapping_pass(
 
     if should_run_ai and template_pdf is not None:
         logger.info(
-            "🤖 Pass 2 (mapping): sub-pass 3 – AI klasszifikáció (V4 Pro)"
+            "🤖 Pass 2 (mapping): sub-pass 3 – AI klasszifikáció (Claude Sonnet 4.6)"
         )
         ai_added = _run_dynamic_ai_subpass(
             pipeline=pipeline,
@@ -197,7 +197,7 @@ def _run_dynamic_ai_subpass(
     issues: list,
 ) -> int:
     """
-    Valódi AI sub-pass 3 – DeepSeek V4 Pro dinamikus klasszifikáció.
+    Valódi AI sub-pass 3 – Claude Sonnet 4.6 dinamikus klasszifikáció.
 
     Lépések:
       1. AcroForm mezők kinyerése a template PDF-ből (scripts/analyze_pdf).
@@ -296,8 +296,8 @@ def _run_dynamic_ai_subpass(
 
     recognizer = FieldRecognizer()
     if not recognizer._client:
-        issues.append("AI sub-pass: DEEPSEEK_API_KEY hiányzik.")
-        logger.warning("   ⚠️ DEEPSEEK_API_KEY hiányzik – AI sub-pass ugrása")
+        issues.append("AI sub-pass: ANTHROPIC_API_KEY hiányzik.")
+        logger.warning("   ⚠️ ANTHROPIC_API_KEY hiányzik – AI sub-pass ugrása")
         return 0
 
     classified = recognizer.dynamic_classify_fields(

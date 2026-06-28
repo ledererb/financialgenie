@@ -25,11 +25,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-#: A DeepSeek API-hoz használt modell azonosító (app-level DeepSeek V4 migráció).
-#: V4 Pro-t használunk minden AI híváshoz – nagyobb kontextusablak (64K vs 8K),
-#: megbízhatóbb JSON mód és pontosabb magyar nyelvű label-felismerés.
-#: Lassabb, de a klasszifikációs feladatra a pontosság a lényeg.
-AI_MODEL: str = "deepseek-v4-pro"
+#: Az AI mappinghez használt modell. Claude Sonnet 4.6 – kiváló magyar nyelvű
+#: banki/lakossági szövegértés, megbízható JSON output prompt-alapú instrukciókkal.
+AI_MODEL: str = "claude-sonnet-4-6"
 
 
 def _normalize_key(s: str) -> str:
@@ -394,12 +392,12 @@ Fontos szabályok:
         Inicializálás DeepSeek API kulccsal.
 
         Args:
-            api_key: DeepSeek API kulcs. Ha None, a DEEPSEEK_API_KEY env-ből olvassa.
+            api_key: Anthropic API kulcs. Ha None, az ANTHROPIC_API_KEY env-ből olvassa.
         """
         import os
 
         if api_key is None:
-            api_key = os.getenv("DEEPSEEK_API_KEY", "")
+            api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
         self._api_key = api_key or ""
         # A `_client` flag megőrzi a korábbi "van-e elérhető AI" szematikát:
@@ -407,7 +405,7 @@ Fontos szabályok:
         # fusson-e az AI ág vagy a heurisztikus/mock fallback.
         if not self._api_key:
             logger.warning(
-                "DEEPSEEK_API_KEY nincs beállítva. "
+                "ANTHROPIC_API_KEY nincs beállítva. "
                 "Az AI mezőfelismerés nem fog működni – használd a mock módot."
             )
             self._client = None
@@ -421,8 +419,10 @@ Fontos szabályok:
     @staticmethod
     def _convert_content(blocks: list) -> list:
         """
-        Anthropic-style content blokkok → OpenAI/DeepSeek chat-completions
-        content formátum. Képeket base64 data-URI-ként (image_url) küldünk.
+        Content blokkok normalizálása az Anthropic Messages API-hoz.
+        A kód eredetileg Anthropic formátumban építi a content blokkokat,
+        így a legtöbb esetben ez pass-through. Képeknél biztosítjuk a
+        ``"type": "base64"`` mezőt a source-ban.
         """
         out = []
         for b in blocks:
@@ -430,16 +430,14 @@ Fontos szabályok:
             if t == "text":
                 out.append({"type": "text", "text": b["text"]})
             elif t == "image":
-                src = b.get("source", {}) or {}
-                media = src.get("media_type", "image/png")
-                data = src.get("data", "")
-                out.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{media};base64,{data}"},
-                })
+                src = dict(b.get("source", {}))
+                src.setdefault("type", "base64")
+                out.append({"type": "image", "source": src})
+            else:
+                out.append(b)
         return out
 
-    def _deepseek_chat(
+    def _anthropic_chat(
         self,
         messages: list,
         system: str | None = None,
@@ -447,66 +445,74 @@ Fontos szabályok:
         json_mode: bool = True,
     ) -> str:
         """
-        Egy DeepSeek chat/completions hívás. Visszaadja az assistant válasz
+        Egy Anthropic Messages API hívás. Visszaadja az assistant válasz
         szövegét, vagy üres stringet hiba esetén.
 
         Args:
             messages: user/assistant üzenetek (content lehet str vagy blokk-lista).
-            system: opcionális system prompt.
+            system: opcionális system prompt (top-level mező, nem message).
             max_tokens: válasz token limit.
-            json_mode: ha True, `response_format: {"type": "json_object"}`-t küld.
-                Megköveteli, hogy a prompt JSON objektumot kérjen (a hívó
-                promptjai mind tartalmaznak JSON instrukciót).
+            json_mode: ha True, a system prompt végére fűzünk JSON-only instrukciót.
+                Az Anthropic API-nak nincs natív json_object mode-ja, ezért
+                prompt-szinten kényszerítjük.
         """
         import requests
 
-        full_messages = []
-        if system:
-            full_messages.append({"role": "system", "content": system})
-
+        api_messages = []
         for m in messages:
             role = m.get("role", "user")
             content = m.get("content")
             if isinstance(content, list):
                 content = self._convert_content(content)
-            full_messages.append({"role": role, "content": content})
+            api_messages.append({"role": role, "content": content})
 
-        # Detektáljuk van-e kép input – `response_format: json_object`
-        # nem kompatibilis az image inputtal (DeepSeek hibát dob).
-        has_images = any(
-            isinstance(m.get("content"), list)
-            and any(b.get("type") == "image" for b in m["content"])
-            for m in messages
-        )
+        # System prompt: ha json_mode, toldjuk hozzá az explicit JSON instrukciót
+        final_system = system or ""
+        if json_mode and "json" not in final_system.lower():
+            final_system = (
+                final_system
+                + "\n\nFONTOS: Csak érvényes JSON-t válaszolj, semmi mást. "
+                + "Ne használj markdown kódblokkot, csak a nyers JSON-t add vissza."
+            )
 
         payload = {
             "model": AI_MODEL,
-            "messages": full_messages,
             "max_tokens": max_tokens,
             "temperature": 0.0,
-            # DeepSeek V4 Flash thinking mode alapból ENABLED, ami felemészti a
-            # max_tokens keretet reasoning-ra és csonka választ eredményez.
-            # Kikapcsolása determinisztikus JSON outputot garantál.
-            "thinking": {"type": "disabled"},
+            "messages": api_messages,
         }
-        if json_mode and not has_images:
-            payload["response_format"] = {"type": "json_object"}
+        if final_system.strip():
+            payload["system"] = final_system.strip()
 
         try:
-            response = requests.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=120,
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"] or ""
+            for attempt in range(3):
+                response = requests.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": self._api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=120,
+                )
+                if response.status_code == 429:
+                    import time
+                    wait = (attempt + 1) * 3
+                    logger.warning(
+                        "  ⚠️ Rate limit (429), várakozás %ds...", wait
+                    )
+                    time.sleep(wait)
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                # Anthropic response: {"content": [{"type": "text", "text": "..."}], ...}
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        return block["text"] or ""
+                return ""
         except Exception as e:
-            logger.error(f"DeepSeek API hiba: {str(e)[:160]}")
+            logger.error(f"Anthropic API hiba: {str(e)[:160]}")
             return ""
 
     def recognize_acroform(self, pdf_path: Path) -> MappingConfig:
@@ -660,7 +666,7 @@ Ez a(z) '{section_name}' szekció."""
                 content.append({"type": "text", "text": fields_text})
 
                 try:
-                    response_text = self._deepseek_chat(
+                    response_text = self._anthropic_chat(
                         messages=[{"role": "user", "content": content}],
                         system=system,
                         max_tokens=8192,
@@ -945,7 +951,7 @@ Ha egy mező nem képezhető le, hagyd ki.
 PDF: {pdf_path.name}"""
 
         try:
-            response_text = self._deepseek_chat(
+            response_text = self._anthropic_chat(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=4096,
                 json_mode=True,
@@ -1036,7 +1042,7 @@ PDF: {pdf_path.name}"""
         """
         if not self._client:
             logger.warning(
-                "dynamic_classify_fields: DEEPSEEK_API_KEY hiányzik – "
+                "dynamic_classify_fields: ANTHROPIC_API_KEY hiányzik – "
                 "AI klasszifikáció kihagyva."
             )
             return fields
@@ -1082,7 +1088,7 @@ PDF: {pdf_path.name}"""
             batch = unmapped[start:start + self.DYNAMIC_BATCH_SIZE]
             batch_idx += 1
             logger.info(
-                "  🤖 V4 Pro batch %d/%d: %d mező (összes %d)",
+                "  🤖 Claude batch %d/%d: %d mező (összes %d)",
                 batch_idx,
                 (len(unmapped) + self.DYNAMIC_BATCH_SIZE - 1)
                 // self.DYNAMIC_BATCH_SIZE,
@@ -1106,18 +1112,18 @@ PDF: {pdf_path.name}"""
             )
 
             try:
-                response_text = self._deepseek_chat(
+                response_text = self._anthropic_chat(
                     messages=[{"role": "user", "content": user_msg}],
                     system=system_prompt,
                     max_tokens=8192,
                     json_mode=True,
                 )
             except Exception as e:
-                logger.error("  V4 Pro API hiba: %s", str(e)[:160])
+                logger.error("  Claude API hiba: %s", str(e)[:160])
                 continue
 
             if not response_text:
-                logger.warning("  V4 Pro batch %d: üres válasz", batch_idx)
+                logger.warning("  Claude batch %d: üres válasz", batch_idx)
                 continue
 
             # A válasz egy JSON objektum, ami tartalmaz egy tömböt (json_mode
@@ -1127,7 +1133,7 @@ PDF: {pdf_path.name}"""
                 json_str = self._extract_json(response_text)
                 parsed = json.loads(json_str)
             except (ValueError, json.JSONDecodeError) as e:
-                logger.warning("  V4 Pro JSON hiba: %s", str(e)[:120])
+                logger.warning("  Claude JSON hiba: %s", str(e)[:120])
                 continue
 
             if isinstance(parsed, dict):
@@ -1179,7 +1185,7 @@ PDF: {pdf_path.name}"""
             )
 
         logger.info(
-            "🏁 dynamic_classify_fields: %d/%d mező leképezve V4 Pro-val",
+            "🏁 dynamic_classify_fields: %d/%d mező leképezve Claude Sonnet 4.6-tal",
             total_mapped, len(unmapped),
         )
         return fields
@@ -1350,7 +1356,7 @@ PDF: {pdf_path.name}"""
         })
 
         try:
-            response_text = self._deepseek_chat(
+            response_text = self._anthropic_chat(
                 messages=[{"role": "user", "content": content}],
                 system=system,
                 max_tokens=16384,
@@ -1408,7 +1414,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             })
 
         try:
-            response_text = self._deepseek_chat(
+            response_text = self._anthropic_chat(
                 messages=[{"role": "user", "content": content}],
                 system=system,
                 max_tokens=16384,
@@ -1881,7 +1887,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--api-key",
         default=None,
-        help="DeepSeek API kulcs (default: DEEPSEEK_API_KEY env)",
+        help="Anthropic API kulcs (default: ANTHROPIC_API_KEY env)",
     )
 
     args = parser.parse_args()

@@ -275,7 +275,7 @@ class FormFillerPipeline:
         logger.info(f"   {len(field_data)} mező kitöltve (statikus mapping)")
 
         if dynamic_mapping or not has_static_mapping:
-            logger.info("🤖 4b. Dinamikus AI mapping (V4 Pro) — sub-pass 3")
+            logger.info("🤖 4b. Dinamikus AI mapping (Claude Sonnet 4.6) — sub-pass 3")
             try:
                 from src.pipeline.pass2_mapping import _run_dynamic_ai_subpass
                 added = _run_dynamic_ai_subpass(
