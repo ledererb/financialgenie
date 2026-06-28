@@ -322,12 +322,14 @@ class FormFillerPipeline:
             pdf_name = f.pdf_field_name
             canonical = f.canonical_field
 
-            # participant.role → checkbox, szöveggel nem töltjük
-            if canonical == "participant.role":
-                continue
-
             # Melyik participant-hoz tartozik a mező?
-            if canonical.startswith("participant."):
+            # Figyelem: a mapping participant.* ÉS participant[0].* /
+            # participant[1].* formátumban is adhatja meg a canonical nevet
+            # (indexelt = társigénylő). Mindkettőt kezelni kell.
+            # participant.role → checkbox, szöveggel nem töltjük.
+            if canonical in ("participant.role", "participant[1].role"):
+                continue
+            if canonical.startswith("participant.") or canonical.startswith("participant["):
                 # OTP convention: -társ suffix = társigénylő
                 is_co_borrower = (
                     "-társ" in pdf_name or
@@ -336,8 +338,15 @@ class FormFillerPipeline:
                     "SZA_IG_" in pdf_name and "-társ" in pdf_name
                 )
                 source = co_borrower_data if is_co_borrower else borrower_data
-                if canonical in source and source[canonical]:
-                    field_data[pdf_name] = source[canonical]
+                # A mapping participant[0]/participant[1] indexelt canonical
+                # neveket használ, de a borrower_data/co_borrower_data dict
+                # participant.* kulcsokat tartalmaz. Indexet levesszük a
+                # lookup előtt: participant[1].name → participant.name
+                source_key = canonical
+                if canonical.startswith("participant[") and "." in canonical:
+                    source_key = "participant." + canonical.split(".", 1)[1]
+                if source_key in source and source[source_key]:
+                    field_data[pdf_name] = source[source_key]
 
             elif canonical.startswith("loan."):
                 if canonical in loan_data and loan_data[canonical]:
@@ -416,10 +425,21 @@ class FormFillerPipeline:
             # AcroFormFiller dict[str,str] mapping-et vár (pdf_field_name → canonical).
             # A mapping.fields-ből kinyerjük ezt a leképezést.
             pdf_to_canonical = mapping.mapping_dict
+            # _prepare_field_data pdf_field_name kulcsokkal tér vissza, de az
+            # AcroFormFiller canonical kulcsú field_data-t vár (lásd
+            # _resolve_field_value: field_data.get(canonical_name)). Átalakítjuk.
+            canonical_field_data: dict[str, str] = {}
+            for f in mapping.fields:
+                if (
+                    f.canonical_field
+                    and f.pdf_field_name in field_data
+                    and field_data[f.pdf_field_name]
+                ):
+                    canonical_field_data[f.canonical_field] = field_data[f.pdf_field_name]
             result = filler.fill(
                 template_path=template_pdf,
                 output_path=output_path,
-                field_data=field_data,
+                field_data=canonical_field_data,
                 mapping=pdf_to_canonical,
             )
             if not result.success:
