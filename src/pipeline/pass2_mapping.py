@@ -245,15 +245,15 @@ def _run_dynamic_ai_subpass(
         return 0
 
     # 2. Unmapped szűrés
-    existing_names = {f.pdf_field_name for f in mapping.fields}
+    mapped_canonical = {f.pdf_field_name for f in mapping.fields if f.canonical_field}
     already_filled = set(field_data.keys())
     unmapped_names = [
         n for n in pdf_field_names
-        if n not in existing_names and n not in already_filled
+        if n not in mapped_canonical and n not in already_filled
     ]
     logger.info(
-        "   🔍 %d PDF mező, %d már mapping-ben, %d unmapped → AI-nak",
-        len(pdf_field_names), len(existing_names), len(unmapped_names),
+        "   🔍 %d PDF mező, %d canonical-mapped, %d unmapped → AI-nak",
+        len(pdf_field_names), len(mapped_canonical), len(unmapped_names),
     )
     metrics["ai_pdf_field_count"] = len(pdf_field_names)
     metrics["ai_unmapped_count"] = len(unmapped_names)
@@ -310,9 +310,9 @@ def _run_dynamic_ai_subpass(
     # 4. Új RecognizedField-ek hozzáadása a mapping-hez (form_type-on belül).
     newly_added: list[RecognizedField] = []
     for f in classified:
-        if f.canonical_field and f.pdf_field_name not in existing_names:
+        if f.canonical_field and f.pdf_field_name not in mapped_canonical:
             mapping.fields.append(f)
-            existing_names.add(f.pdf_field_name)
+            mapped_canonical.add(f.pdf_field_name)
             newly_added.append(f)
 
     if not newly_added:
