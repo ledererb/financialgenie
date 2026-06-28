@@ -208,6 +208,9 @@ class FormFillerPipeline:
         deal_id: str,
         template_pdf: Path,
         mapping_config: MappingConfig,
+        dynamic_mapping: bool = False,
+        has_static_mapping: bool = True,
+        coverage_threshold: float = 0.8,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
@@ -216,6 +219,15 @@ class FormFillerPipeline:
             deal_id: Salesforce ügylet azonosító
             template_pdf: A kitöltendő PDF sablon
             mapping_config: Mező-leképezés konfiguráció
+            dynamic_mapping: Ha True, lefut a V4 Pro AI sub-pass a
+                `_prepare_field_data` után, és kiegészíti a field_data-t
+                a leképezetlen PDF mezőkkel. Akkor is hasznos, ha van
+                statikus mapping (kiegészíti a hiányokat).
+            has_static_mapping: Jelzi, hogy a mapping_config egy
+                betöltött JSON-ból jön (True) vagy egy üres/dinamikus
+                mapping (False). Dinamikus módban kötelező az AI sub-pass.
+            coverage_threshold: AI sub-pass csak akkor fut (ha nem
+                `dynamic_mapping`), ha a canonical coverage ez alatt van.
             
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
@@ -257,10 +269,33 @@ class FormFillerPipeline:
             for warn in completeness.warnings:
                 logger.warning(f"   ⚠️ {warn.field_path} – {warn.message}")
 
-        # 4. Mezőadatok összeállítása
+        # 4. Mezőadatok összeállítása (+ opcionális AI dinamikus sub-pass)
         logger.info("📋 4. Mezőadatok összeállítása")
         field_data = self._prepare_field_data(deal, mapping_config)
-        logger.info(f"   {len(field_data)} mező kitöltve")
+        logger.info(f"   {len(field_data)} mező kitöltve (statikus mapping)")
+
+        if dynamic_mapping or not has_static_mapping:
+            logger.info("🤖 4b. Dinamikus AI mapping (V4 Pro) — sub-pass 3")
+            try:
+                from src.pipeline.pass2_mapping import _run_dynamic_ai_subpass
+                added = _run_dynamic_ai_subpass(
+                    pipeline=self,
+                    deal=deal,
+                    mapping=mapping_config,
+                    field_data=field_data,
+                    template_pdf=Path(template_pdf),
+                    metrics={},
+                    issues=result["issues"],
+                )
+                logger.info(
+                    "   ✓ Dinamikus mapping: %d új mező kapott értéket "
+                    "(field_data most: %d)",
+                    added, len(field_data),
+                )
+            except Exception as e:
+                msg = f"Dinamikus mapping hiba: {e}"
+                logger.warning(f"   ⚠️ {msg}")
+                result["issues"].append(msg)
 
         # 5. PDF kitöltés
         logger.info("📝 5. PDF kitöltés")
@@ -1231,7 +1266,11 @@ def _run_all_mappings(pipeline: "FormFillerPipeline", args) -> None:
         print(f"\n📄 {template.name}  →  {mp.name}  ({filler})")
 
         try:
-            res = pipeline.run_for_deal(deal_id, template, mapping)
+            res = pipeline.run_for_deal(
+                deal_id, template, mapping,
+                dynamic_mapping=bool(getattr(args, "dynamic_mapping", False)),
+                has_static_mapping=True,
+            )
         except Exception as e:
             print(f"   ✗ Kivétel: {e}")
             res = {
@@ -1340,6 +1379,21 @@ def main():
         help="Batch mód: végigmegy az összes src/mapping/*.json fájlon, "
              "megkeresi a hozzájuk tartozó PDF-et és mindegyikre lefuttatja "
              "a pipeline-t (AcroForm vagy overlay a `type` mező alapján).",
+    )
+    parser.add_argument(
+        "--dynamic-mapping", "--ai",
+        dest="dynamic_mapping",
+        action="store_true",
+        help="AI-alapú dinamikus mapping (DeepSeek V4 Pro). Mapping JSON "
+             "nélkül is működik: a pipeline futási időben klasszifikálja "
+             "a PDF mezőit. Ha van statikus mapping, az AI kiegészíti.",
+    )
+    parser.add_argument(
+        "--ai-model",
+        default="deepseek-v4-pro",
+        help="Modell az AI klasszifikációhoz (default: deepseek-v4-pro). "
+             "A tényleges modellt az src/ai/field_recognizer.py AI_MODEL "
+             "konstansa határozza meg; ez a flag csak naplózási célú.",
     )
 
     args = parser.parse_args()
@@ -1460,7 +1514,15 @@ def main():
             print("⚠️  Nincs elérhető ügylet")
             return
         deal_id = deals[0]["deal_id"]
-    result = pipeline.run_for_deal(deal_id, template_pdf, mapping)
+    has_static = not bool(getattr(args, "dynamic_mapping", False)) or (
+        args.mapping is not None
+        or (mapping is not None and getattr(mapping, "fields", None))
+    )
+    result = pipeline.run_for_deal(
+        deal_id, template_pdf, mapping,
+        dynamic_mapping=bool(getattr(args, "dynamic_mapping", False)),
+        has_static_mapping=has_static,
+    )
 
     # Eredmény
     print(f"\n{'='*60}")

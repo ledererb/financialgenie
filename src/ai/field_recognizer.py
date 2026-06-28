@@ -26,9 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 #: A DeepSeek API-hoz használt modell azonosító (app-level DeepSeek V4 migráció).
-#: Korábban "claude-sonnet-4-20250514" volt (Anthropic); most DeepSeek V4 Flash-t
-#: használjuk minden AI híváshoz – olcsóbb, gyorsabb, JSON mód támogatott.
-AI_MODEL: str = "deepseek-v4-flash"
+#: V4 Pro-t használunk minden AI híváshoz – nagyobb kontextusablak (64K vs 8K),
+#: megbízhatóbb JSON mód és pontosabb magyar nyelvű label-felismerés.
+#: Lassabb, de a klasszifikációs feladatra a pontosság a lényeg.
+AI_MODEL: str = "deepseek-v4-pro"
 
 
 def _normalize_key(s: str) -> str:
@@ -98,6 +99,92 @@ CANONICAL_FIELDS = {
     "property.year_built": "Építés éve",
     "property.number_of_rooms": "Szobák száma",
 }
+
+
+def _get_available_deal_fields(deal_data) -> list[str]:
+    """
+    Visszaadja azokat a canonical mezőket (CANONICAL_FIELDS kulcsok),
+    amelyekhez a deal-ben ténylegesen van adat.
+
+    Ez a "data-first" szűrő a dinamikus mapping-hez: csak ezekhez
+    érdemes AI mapping-et készíteni, különben a PDF üres mezőket
+    töltenénk ki.
+    """
+    available: list[str] = []
+    if deal_data is None:
+        return available
+
+    # Hiteladatok
+    loan = getattr(deal_data, "loan", None)
+    loan_checks = {
+        "loan.loan_amount": getattr(loan, "loan_amount", None),
+        "loan.loan_term_months": getattr(loan, "loan_term_months", None),
+        "loan.interest_period": getattr(loan, "interest_period", None),
+        "loan.loan_purpose": getattr(loan, "loan_purpose", None),
+        "loan.product_name": getattr(loan, "product_name", None),
+        "loan.product_type": getattr(loan, "product_type", None),
+        "loan.down_payment": getattr(loan, "down_payment", None),
+        "loan.monthly_payment": getattr(loan, "monthly_payment", None),
+        "loan.purchase_price": getattr(loan, "purchase_price", None),
+        "loan.csok_amount": getattr(loan, "csok_amount", None),
+        "loan.afa_support": getattr(loan, "afa_support", None),
+        "loan.housing_savings": getattr(loan, "housing_savings", None),
+        "loan.refinance_account": getattr(loan, "refinance_account", None),
+    }
+    for cf, val in loan_checks.items():
+        if val not in (None, "", 0):
+            available.append(cf)
+
+    # Szereplő adatok (első adós + első adóstárs)
+    for participant in getattr(deal_data, "active_participants", [])[:2]:
+        prefix = "participant"
+        p_checks = {
+            f"{prefix}.name": getattr(participant, "name", None),
+            f"{prefix}.birth_name": getattr(participant, "birth_name", None),
+            f"{prefix}.mother_name": getattr(participant, "mother_name", None),
+            f"{prefix}.birth_place": getattr(participant, "birth_place", None),
+            f"{prefix}.birth_date": getattr(participant, "birth_date", None),
+            f"{prefix}.personal_id": getattr(participant, "personal_id", None),
+            f"{prefix}.tax_id": getattr(participant, "tax_id", None),
+            f"{prefix}.id_card_number": getattr(participant, "id_card_number", None),
+            f"{prefix}.phone": getattr(participant, "phone", None),
+            f"{prefix}.email": getattr(participant, "email", None),
+            f"{prefix}.employer": getattr(participant, "employer", None),
+            f"{prefix}.monthly_income": getattr(participant, "monthly_income", None),
+        }
+        address = getattr(participant, "address", None)
+        if address is not None:
+            p_checks[f"{prefix}.address.full_address"] = getattr(address, "full_address", None)
+            p_checks[f"{prefix}.address.zip_code"] = getattr(address, "zip_code", None)
+            p_checks[f"{prefix}.address.city"] = getattr(address, "city", None)
+            p_checks[f"{prefix}.address.street"] = getattr(address, "street", None)
+            p_checks[f"{prefix}.address.house_number"] = getattr(address, "house_number", None)
+        for cf, val in p_checks.items():
+            if val not in (None, "", 0) and cf not in available:
+                available.append(cf)
+
+    # Ingatlan adatok (első ingatlan)
+    properties = getattr(deal_data, "properties", []) or []
+    if properties:
+        prop = properties[0]
+        pr_checks = {
+            "property.parcel_number": getattr(prop, "parcel_number", None),
+            "property.area_sqm": getattr(prop, "area_sqm", None),
+            "property.estimated_value": getattr(prop, "estimated_value", None),
+            "property.year_built": getattr(prop, "year_built", None),
+            "property.number_of_rooms": getattr(prop, "number_of_rooms", None),
+        }
+        paddress = getattr(prop, "address", None)
+        if paddress is not None:
+            pr_checks["property.address.full_address"] = getattr(paddress, "full_address", None)
+            pr_checks["property.address.zip_code"] = getattr(paddress, "zip_code", None)
+            pr_checks["property.address.city"] = getattr(paddress, "city", None)
+            pr_checks["property.address.street"] = getattr(paddress, "street", None)
+        for cf, val in pr_checks.items():
+            if val not in (None, "", 0) and cf not in available:
+                available.append(cf)
+
+    return available
 
 
 class FieldType(str, Enum):
@@ -867,6 +954,276 @@ PDF: {pdf_path.name}"""
             else:
                 logger.info("Nincs AcroForm mező – lapos PDF módban folytatom")
                 return self.recognize_flat(pdf_path)
+
+    # ------------------------------------------------------------------
+    # Dinamikus klasszifikáció (V4 Pro) – futási idejű mezőfelismerés
+    # ------------------------------------------------------------------
+    #
+    # Ezek a metódusok akkor hívódnak, ha egy PDF-hez nincs előre
+    # elkészített mapping JSON (pl. új nyomtatvány), és a pipeline a
+    # `--dynamic-mapping` kapcsolóval fut. Nem küldenek PDF képeket az
+    # AI-nak – tisztán szöveges (mezőnév + label + típus) input, így
+    # gyorsak és olcsók. 100-200 mező egy batch-ben feldolgozható.
+
+    #: Maximális mezőszám egy DeepSeek API hívásban. A V4 Pro 64K
+    #: kontextusablaka és JSON módja miatt ez bőven elegendő, de
+    #: token-költség és válasz-stabilitás szempontjából limitáljuk.
+    DYNAMIC_BATCH_SIZE: int = 100
+
+    def dynamic_classify_fields(
+        self,
+        fields: list[RecognizedField],
+        canonical_model_fields: list[str],
+        salesforce_field_descriptions: dict[str, str],
+        pdf_name: str = "",
+    ) -> list[RecognizedField]:
+        """
+        FUTÁSI IDEJŰ mezőklasszifikáció DeepSeek V4 Pro-val.
+
+        Bemenet: ismeretlen PDF mezők (label, típus, oldalszám).
+        Kimenet: canonical_field-dal feltöltött RecognizedField-ek.
+
+        NEM küld PDF képeket az AI-nak – tisztán szöveges, gyors, olcsó.
+        100-200 mező egy batch-ben feldolgozható; a `DYNAMIC_BATCH_SIZE`
+        feletti mezőhalmazt több API hívásra bontjuk.
+
+        Args:
+            fields: Még leképezetlen PDF mezők (RecognizedField lista).
+                A `canonical_field` itt tipikusan None; a `pdf_field_name`
+                és `label` már ki van töltve (a heurisztikus pass által).
+            canonical_model_fields: Azon canonical mezők, amelyekhez a
+                deal-ben ténylegesen van adat (csak ezekhez érdemes
+                mapping-et készíteni – "data-first" elv).
+            salesforce_field_descriptions: {canonical_field: leírás} dict
+                a kanonikus mezők emberi olvasatú leírásával (pl. a
+                CANONICAL_FIELDS katalógusból).
+            pdf_name: A PDF neve (csak logoláshoz).
+
+        Returns:
+            Ugyanaz a `fields` lista, de a `canonical_field` és
+            `confidence` mezőkkel frissítve ott, ahol az AI talált
+            egyértelmű leképezést. Ahol nem egyértelmű, ott None marad.
+        """
+        if not self._client:
+            logger.warning(
+                "dynamic_classify_fields: DEEPSEEK_API_KEY hiányzik – "
+                "AI klasszifikáció kihagyva."
+            )
+            return fields
+
+        # Csak a még leképezetlen mezőket küldjük az AI-nak.
+        unmapped = [f for f in fields if not f.canonical_field]
+        if not unmapped:
+            logger.info("dynamic_classify_fields: nincs leképezetlen mező")
+            return fields
+
+        if not canonical_model_fields:
+            logger.warning(
+                "dynamic_classify_fields: nincsenek elérhető canonical "
+                "mezők (Salesforce adat üres?) – AI klasszifikáció kihagyva."
+            )
+            return fields
+
+        # Canonical mezők leírásainak összeállítása (csak az elérhetőket).
+        canonical_desc_lines = []
+        for cf in canonical_model_fields:
+            desc = salesforce_field_descriptions.get(cf, "")
+            canonical_desc_lines.append(f"  - {cf}: {desc}" if desc else f"  - {cf}")
+        canonical_desc = "\n".join(canonical_desc_lines)
+
+        system_prompt = (
+            "Te egy banki nyomtatvány mező-klasszifikációs AI vagy.\n"
+            "A feladatod: az alábbi PDF mezőkhöz rendeld hozzá a megfelelő "
+            "canonical mezőt az alábbi listából.\n\n"
+            f"Kanonikus mezők:\n{canonical_desc}\n\n"
+            'Válaszul csak egy JSON objektumot adj: {"items": [{"pdf_field_name": "...", "canonical_field": "..."}]}\n'
+            "Ahol nem egyértelmű a leképezés, HAGYD KI (ne tippelj "
+            "LOW confidence-szel). Csak egyértelmű találatokat adj vissza. "
+            'Ha egyetlen mezőt sem tudsz leképezni, üres objektumot adj: {"items": []}'
+        )
+
+        # Index aRecognizedField-re, hogy az eredményt vissza tudjuk írni.
+        by_name = {f.pdf_field_name: f for f in unmapped}
+
+        total_mapped = 0
+        batch_idx = 0
+        # Mezők darabolása DYNAMIC_BATCH_SIZE darabos batchekre.
+        for start in range(0, len(unmapped), self.DYNAMIC_BATCH_SIZE):
+            batch = unmapped[start:start + self.DYNAMIC_BATCH_SIZE]
+            batch_idx += 1
+            logger.info(
+                "  🤖 V4 Pro batch %d/%d: %d mező (összes %d)",
+                batch_idx,
+                (len(unmapped) + self.DYNAMIC_BATCH_SIZE - 1)
+                // self.DYNAMIC_BATCH_SIZE,
+                len(batch),
+                len(unmapped),
+            )
+
+            # User üzenet: felsorolja a mezőket (név, label, típus, oldal).
+            field_lines = []
+            for f in batch:
+                label = (f.label or "").strip()
+                ftype = f.field_type.value if hasattr(f.field_type, "value") else str(f.field_type)
+                field_lines.append(
+                    f'  - "{f.pdf_field_name}" | label="{label}" | '
+                    f"típus={ftype} | oldal={f.page_number}"
+                )
+            user_msg = (
+                f"PDF: {pdf_name}\n"
+                f"Feldolgozandó mezők ({len(batch)} db):\n"
+                + "\n".join(field_lines)
+            )
+
+            try:
+                response_text = self._deepseek_chat(
+                    messages=[{"role": "user", "content": user_msg}],
+                    system=system_prompt,
+                    max_tokens=8192,
+                    json_mode=True,
+                )
+            except Exception as e:
+                logger.error("  V4 Pro API hiba: %s", str(e)[:160])
+                continue
+
+            if not response_text:
+                logger.warning("  V4 Pro batch %d: üres válasz", batch_idx)
+                continue
+
+            # A válasz egy JSON objektum, ami tartalmaz egy tömböt (json_mode
+            # kötelező). Több formátumot is támogatunk: {"items": [...]} vagy
+            # {"results": [...]} vagy közvetlenül [...].
+            try:
+                json_str = self._extract_json(response_text)
+                parsed = json.loads(json_str)
+            except (ValueError, json.JSONDecodeError) as e:
+                logger.warning("  V4 Pro JSON hiba: %s", str(e)[:120])
+                continue
+
+            if isinstance(parsed, dict):
+                # Próbáljuk a gyakori wrapper kulcsokból kivenni a tömböt.
+                items = None
+                for key in ("items", "results", "fields", "mappings", "data"):
+                    if isinstance(parsed.get(key), list):
+                        items = parsed[key]
+                        break
+                if items is None:
+                    # Ha a dict maga pdf_field_name → canonical_field térkép,
+                    # abból is felépíthetjük a listát.
+                    items = [
+                        {"pdf_field_name": k, "canonical_field": v}
+                        for k, v in parsed.items()
+                        if isinstance(v, str)
+                    ]
+            elif isinstance(parsed, list):
+                items = parsed
+            else:
+                items = []
+
+            batch_mapped = 0
+            valid_canonical = set(canonical_model_fields)
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                pdf_name_item = item.get("pdf_field_name")
+                canonical = item.get("canonical_field")
+                if not pdf_name_item or not canonical:
+                    continue
+                # Csak érvényes canonical mezőket fogadunk el (az AI
+                # négyzetesen kitalálhat ismeretlen neveket – ezeket
+                # eldobjuk, hogy a pipeline ne próbáljon meg nem létező
+                # adatot feloldani).
+                if canonical not in valid_canonical:
+                    continue
+                target = by_name.get(pdf_name_item)
+                if target is None:
+                    continue
+                target.canonical_field = canonical
+                target.confidence = MappingConfidence.MEDIUM
+                batch_mapped += 1
+
+            total_mapped += batch_mapped
+            logger.info(
+                "    ✅ batch %d: %d/%d mező leképezve",
+                batch_idx, batch_mapped, len(batch),
+            )
+
+        logger.info(
+            "🏁 dynamic_classify_fields: %d/%d mező leképezve V4 Pro-val",
+            total_mapped, len(unmapped),
+        )
+        return fields
+
+    def run_dynamic_mapping(
+        self,
+        pdf_path: Path,
+        fields_to_map: list[dict],
+        deal_data: "DealData",
+    ) -> dict[str, str]:
+        """
+        Teljes dinamikus mapping workflow magas szintű burkoló.
+
+        3 fázis:
+          1. PASS 1 – exact/heurisztikus match a FieldRecognizer beépített
+             OTP/kulcsszó térképével (0 AI cost).
+          2. PASS 2 – Salesforce data-first: csak azokat a canonical mezőket
+             kínáljuk fel az AI-nak, amelyekhez a deal-ben ténylegesen van
+             adat (csökkenti a hallucinációt).
+          3. PASS 3 – AI klasszifikáció (DeepSeek V4 Pro) a fennmaradó
+             leképezetlen mezőkre, szöveges inputtal (nincs PDF kép).
+
+        Args:
+            pdf_path: A feldolgozandó PDF útvonala (csak AcroForm-mezők
+                kinyeréséhez és logoláshoz kell).
+            fields_to_map: PDF-mező dict lista a scripts/analyze_pdf
+                kimenet formátumában ({name, type, page, ...}). Ez az,
+                amit a pipeline még nem tudott leképezni.
+            deal_data: Normalizált DealData (a canonical mezők
+                rendelkezésre állásának ellenőrzéséhez).
+
+        Returns:
+            {pdf_field_name: canonical_field} dict – csak az egyértelmű
+            leképezések kerülnek bele.
+        """
+        from src.models.canonical_model import DealData  # típus-tipp
+
+        logger.info("🔄 run_dynamic_mapping: %s (%d mező)", pdf_path.name, len(fields_to_map))
+
+        # --- 1. Heurisztikus alap-mapping (0 AI cost) --------------------
+        base_mapping = self._heuristic_map_fields(
+            fields_to_map, Path(pdf_path), "acroform"
+        )
+        fields = base_mapping.fields
+        mapped_count = sum(1 for f in fields if f.canonical_field)
+        logger.info(
+            "  PASS 1 (exact/heurisztika): %d/%d mező leképezve",
+            mapped_count, len(fields),
+        )
+
+        # --- 2. Salesforce data-first: elérhető canonical mezők -----------
+        available = _get_available_deal_fields(deal_data)
+        if not available:
+            logger.warning(
+                "  run_dynamic_mapping: a deal-ben nincs feldolgozható adat "
+                "– AI klasszifikáció kihagyva."
+            )
+            return {f.pdf_field_name: f.canonical_field for f in fields if f.canonical_field}
+
+        # --- 3. AI klasszifikáció (V4 Pro) a fennmaradó mezőkre -----------
+        self.dynamic_classify_fields(
+            fields=fields,
+            canonical_model_fields=sorted(available),
+            salesforce_field_descriptions=CANONICAL_FIELDS,
+            pdf_name=pdf_path.name,
+        )
+
+        result = {f.pdf_field_name: f.canonical_field for f in fields if f.canonical_field}
+        logger.info(
+            "  run_dynamic_mapping kész: %d/%d mező leképezve összesen",
+            len(result), len(fields),
+        )
+        return result
+
 
     def _extract_acroform_fields(self, pdf_path: Path) -> list[dict]:
         """AcroForm mezők kinyerése pikepdf-el."""

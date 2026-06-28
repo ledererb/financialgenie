@@ -55,6 +55,7 @@ class PipelineOrchestrator:
         pipeline,
         coverage_threshold: float = 0.8,
         force_ai_subpass: bool = False,
+        dynamic_mapping: bool = False,
     ):
         """
         Args:
@@ -65,12 +66,16 @@ class PipelineOrchestrator:
             coverage_threshold: Pass 1 lefedettség felett az AI sub-pass
                 kihagyható.
             force_ai_subpass: Ha True, AI sub-pass mindig fut (teszteléshez).
+            dynamic_mapping: `--dynamic-mapping` mód: mindig fut az AI
+                sub-pass, és `has_static_mapping` attól függ, volt-e
+                betöltött JSON (üres mapping = nincs statikus).
         """
         self.sf_client = sf_client
         self.normalizer = normalizer
         self.pipeline = pipeline
         self.coverage_threshold = coverage_threshold
         self.force_ai_subpass = force_ai_subpass
+        self.dynamic_mapping = dynamic_mapping
 
     def run(
         self,
@@ -78,6 +83,7 @@ class PipelineOrchestrator:
         template_pdf: Path,
         mapping,
         skip_writeback: bool = False,
+        has_static_mapping: Optional[bool] = None,
     ) -> PipelineResult:
         """
         Lefuttatja a teljes 4-pass pipeline-t egy ügyletre.
@@ -87,6 +93,10 @@ class PipelineOrchestrator:
             template_pdf: Kitöltendő template PDF útvonala.
             mapping: MappingConfig.
             skip_writeback: Ha True, a Pass 4-et átugorja (teszteléshez).
+            has_static_mapping: Explicit jelzi, hogy a `mapping` egy
+                betöltött JSON-ból jön (True) vagy egy dinamikus/üres
+                mapping (False). None esetén a `dynamic_mapping` flag
+                alapján döntünk.
 
         Returns:
             PipelineResult (tartalmazza mind a 4 pass eredményét).
@@ -109,19 +119,37 @@ class PipelineOrchestrator:
             )
 
         # --- Pass 2: mapping ----------------------------------------------
-        # AI sub-pass csak ha a coverage alacsony VAGY force.
-        run_ai = self.force_ai_subpass or data_result.coverage < self.coverage_threshold
-        if data_result.coverage >= self.coverage_threshold:
+        # AI sub-pass feltételek:
+        #   - force_ai_subpass (teszt) VAGY dynamic_mapping (cli flag) VAGY
+        #     coverage < threshold.
+        run_ai = (
+            self.force_ai_subpass
+            or self.dynamic_mapping
+            or data_result.coverage < self.coverage_threshold
+        )
+        # has_static_mapping: a hívó explicit megadhatja; ha nem, akkor
+        # dinamikus módban False, egyébként True.
+        if has_static_mapping is None:
+            has_static_mapping = not self.dynamic_mapping
+
+        if (not run_ai) and data_result.coverage >= self.coverage_threshold:
             logger.info(
                 "📊 Pass 1 coverage %.1f%% ≥ küszöb %.1f%% → AI sub-pass kihagyása",
                 data_result.coverage * 100,
                 self.coverage_threshold * 100,
             )
 
+        if self.dynamic_mapping:
+            logger.info(
+                "🤖 Dinamikus mapping mód (V4 Pro) – AI sub-pass mindig fut"
+            )
+
         field_data, mapping_result, legal_values = run_mapping_pass(
             self.pipeline, deal, mapping,
             coverage_threshold=self.coverage_threshold,
             run_ai_subpass=run_ai,
+            template_pdf=template_pdf,
+            has_static_mapping=has_static_mapping,
         )
         passes["mapping"] = mapping_result
         all_issues.extend(mapping_result.issues)
