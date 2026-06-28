@@ -98,6 +98,36 @@ CANONICAL_FIELDS = {
     "property.estimated_value": "Becsült érték (Ft)",
     "property.year_built": "Építés éve",
     "property.number_of_rooms": "Szobák száma",
+    "property.contact_name": "Ingatlan kapcsolattartó neve",
+    "property.contact_phone": "Ingatlan kapcsolattartó telefonszáma",
+    "property.rental_fee": "Bérleti díj (Ft/hó)",
+    "property.rental_fee_eur": "Bérleti díj (EUR/hó)",
+    "property.usage_type": "Ingatlan használat típusa (saját/bérbeadott/egyéb)",
+
+    # Hiteladatok – kiegészítő
+    "loan.product_type": "Termék típusa (piaci/CSOK/babaváró)",
+    "loan.purchase_price": "Vételár (Ft)",
+    "loan.csok_amount": "CSOK támogatás összege (Ft)",
+    "loan.afa_support": "ÁFA támogatás összege (Ft)",
+    "loan.housing_savings": "Lakástakarék összeg (Ft)",
+    "loan.refinance_account": "Kiváltott hitel számlaszáma",
+
+    # Szereplő adatok – kiegészítő
+    "participant.citizenship": "Állampolgárság",
+    "participant.employment_type": "Foglalkoztatás típusa (határozott/határozatlan)",
+    "participant.education": "Legmagasabb iskolai végzettség",
+    "participant.marital_status": "Családi állapot",
+    "participant.dependents": "Eltartottak száma",
+    "participant.residence_since": "Mióta lakik a jelenlegi lakóhelyén",
+    "participant.gender": "Nem (férfi/nő)",
+    "participant.id_document_type": "Személyi okmány típusa",
+    "participant.business_name": "Vállalkozás neve (ha vállalkozó)",
+    "participant.business_tax_id": "Vállalkozás adószáma",
+    "participant.employee_count": "Alkalmazottak száma (vállalkozóknál)",
+    "participant.employer_tax_id": "Munkáltató adószáma",
+    "participant.mailing_address_same": "Levelezési cím megegyezik az állandó lakcímmel",
+    "participant.nav_declaration": "NAV nyilatkozat szükséges",
+    "participant.is_active": "Aktív szereplő",
 }
 
 
