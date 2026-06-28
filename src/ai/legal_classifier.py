@@ -41,7 +41,7 @@ DEFAULT_CONFIG_PATH = (
 )
 
 #: Batch méret – hány mező legyen egy DeepSeek hívásban.
-BATCH_SIZE = 150
+BATCH_SIZE = 40
 
 
 def _normalize(s: str) -> str:
@@ -278,7 +278,7 @@ class LegalClassifier:
                 json={
                     "model": "deepseek-chat",
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 500,
+                    "max_tokens": 1500,
                     "temperature": 0.0,
                 },
                 timeout=60,
@@ -303,7 +303,11 @@ class LegalClassifier:
 
     def _parse_ai_response(self, text: str) -> dict[str, str]:
         """AI válasz (JSON tömb) parse-olása."""
-        json_str = self._extract_json(text)
+        try:
+            json_str = self._extract_json(text)
+        except Exception as exc:
+            logger.warning("LegalClassifier JSON kinyerés hiba: %s", str(exc)[:120])
+            json_str = "[]"
         try:
             items = json.loads(json_str)
         except json.JSONDecodeError as exc:
@@ -349,7 +353,8 @@ class LegalClassifier:
             start = text.index("{")
             end = text.rindex("}") + 1
             return text[start:end]
-        raise ValueError("Nem található JSON az AI válaszban")
+        logger.warning("LegalClassifier: nem található JSON az AI válaszban")
+        return "[]"
 
     # ------------------------------------------------------------------
     # Rule-based helpers
