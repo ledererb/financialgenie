@@ -197,8 +197,9 @@ class SalesforceClient:
                 contacts = {}
                 
                 # 3. Contact adatok lekérdezése
-                # Paraméterezett SOQL: a simple-salesforce támogatja a `:változó` formát,
-                # ami megakadályozza a SOQL injection-t (a driver escape-eli az értékeket).
+                # A simple-salesforce library NEM támogatja a SOQL bind változókat
+                # (`:param` szintaxis). Mivel a record ID-k Salesforce-ból jönnek (lookup
+                # mezőkből, nem user input-ból), az f-string-es beillesztés biztonságos.
                 if contact_ids:
                     contact_fields = (
                         "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
@@ -208,11 +209,12 @@ class SalesforceClient:
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
                         "Current_employment_started__c, ZIP__c"
                     )
+                    ids_formatted = "','".join(contact_ids)
                     query_str = (
                         f"SELECT {contact_fields} FROM Contact "
-                        f"WHERE Id IN :contact_ids"
+                        f"WHERE Id IN ('{ids_formatted}')"
                     )
-                    contact_results = self._sf.query(query_str, contact_ids=contact_ids)
+                    contact_results = self._sf.query(query_str)
                     for c_rec in contact_results.get("records", []):
                         contacts[c_rec["Id"]] = c_rec
 
@@ -247,13 +249,12 @@ class SalesforceClient:
 
                 # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
                 properties_records = []
-                # Paraméterezett SOQL a deal_id-re (SOQL injection elleni védelem).
                 prop_role_query = (
-                    "SELECT Property__c, Ingatlan_szerepe__c "
-                    "FROM Opportunity_Property_Role__c "
-                    "WHERE Opportunity__c = :deal_id"
+                    f"SELECT Property__c, Ingatlan_szerepe__c "
+                    f"FROM Opportunity_Property_Role__c "
+                    f"WHERE Opportunity__c = '{deal_id}'"
                 )
-                prop_role_results = self._sf.query(prop_role_query, deal_id=deal_id)
+                prop_role_results = self._sf.query(prop_role_query)
                 prop_roles = prop_role_results.get("records", [])
                 
                 if prop_roles:
@@ -265,12 +266,12 @@ class SalesforceClient:
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
                             "Ingatlan_emelet__c"
                         )
-                        # Paraméterezett SOQL a property ID listára.
+                        prop_ids_formatted = "','".join(prop_ids)
                         prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
-                            f"WHERE Id IN :prop_ids"
+                            f"WHERE Id IN ('{prop_ids_formatted}')"
                         )
-                        prop_results = self._sf.query(prop_query, prop_ids=prop_ids)
+                        prop_results = self._sf.query(prop_query)
                         props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
                         
                         for pr in prop_roles:
@@ -438,9 +439,9 @@ class SalesforceClient:
             ]
         else:
             query = (
-                "SELECT ContentDocument.Title, ContentDocument.CreatedDate "
-                "FROM ContentDocumentLink "
-                "WHERE LinkedEntityId = :deal_id"
+                f"SELECT ContentDocument.Title, ContentDocument.CreatedDate "
+                f"FROM ContentDocumentLink "
+                f"WHERE LinkedEntityId = '{deal_id}'"
             )
-            result = self._sf.query(query, deal_id=deal_id)
+            result = self._sf.query(query)
             return result.get("records", [])
