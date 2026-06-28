@@ -3,9 +3,9 @@ FinancialGenie – AI + config hibrid jogi nyilatkozat klasszifikátor
 
 A canonical_field nélküli (leképezetlen) checkbox-okat két lépésben kezeli:
 
-1. AI kategorizáló réteg – DeepSeek V3 (deepseek-chat) besorolja a mezőket
-   kategóriákba (consent, data_sharing, decline, conditional, stb.) a mező NEVE +
-   LABEL + oldal alapján. Batch módban dolgozik (100-200 mező / hívás).
+1. AI kategorizáló réteg – DeepSeek V4 Flash (deepseek-v4-flash) besorolja a
+   mezőket kategóriákba (consent, data_sharing, decline, conditional, stb.) a
+   mező NEVE + LABEL + oldal alapján. Batch módban dolgozik (100-200 mező / hívás).
 
 2. Config réteg – a legal_defaults.json alapján kategória → true/false érték.
    A conditional_rules a DealData.products alapján dönt.
@@ -56,8 +56,9 @@ class LegalClassifier:
     """
     AI + config hibrid: jogi nyilatkozatok automatikus kitöltése.
 
-    DeepSeek V3 (deepseek-chat) modellt használ chat completion formátumban,
-    közvetlen HTTP POST-tal (requests) az api.deepseek.com végpontra.
+    DeepSeek V4 Flash (deepseek-v4-flash) modellt használ chat completion
+    formátumban, közvetlen HTTP POST-tal (requests) az api.deepseek.com
+    végpontra.
     """
 
     # Szabályalapú kulcsszó → kategória tábla (a classify_rule_based fallback-hez).
@@ -276,10 +277,11 @@ class LegalClassifier:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "deepseek-chat",
+                    "model": "deepseek-v4-flash",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1500,
                     "temperature": 0.0,
+                    "response_format": {"type": "json_object"},
                 },
                 timeout=60,
             )
@@ -333,6 +335,27 @@ class LegalClassifier:
                 cat = str(cat).strip().lower()
                 if cat in valid_categories:
                     out[name] = cat
+            # json_object mód (DeepSeek) kötelező objektum választ, ezért a
+            # modell gyakran a tömböt egy kulcs alá csomagolja. Ha egyetlen
+            # list-érték van, rekurzívan feldolgozzuk azt is.
+            list_vals = [v for v in items.values() if isinstance(v, list)]
+            if list_vals and not out:
+                for sub in list_vals:
+                    out.update(self._parse_ai_response_list(sub, valid_categories))
+        return out
+
+    @staticmethod
+    def _parse_ai_response_list(
+        items: list, valid_categories: set
+    ) -> dict[str, str]:
+        out: dict[str, str] = {}
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("f") or item.get("name") or item.get("field")
+            cat = (item.get("c") or item.get("category") or "unknown").strip().lower()
+            if name and cat in valid_categories:
+                out[name] = cat
         return out
 
     @staticmethod
