@@ -207,9 +207,9 @@ class AcroFormFiller(BaseFiller):
         fields = acroform["/Fields"]
         self._fill_fields_recursive(fields, mapping, field_data, result)
 
-        # --- Flatten (opcionális) ---
+        # --- Flatten / ReadOnly (opcionális) ---
         if self.flatten:
-            self._flatten_acroform(pdf)
+            self._make_readonly(pdf)
 
         # --- Mentés ---
         try:
@@ -243,6 +243,11 @@ class AcroFormFiller(BaseFiller):
         Rekurzívan bejárja az AcroForm mező-fát és kitölti az értékeket.
 
         Az AcroForm mezők hierarchikusak lehetnek (/Kids al-mezők).
+        Típus-specifikus értékbeírás:
+        - /Tx (szövegmező): pikepdf.String
+        - /Btn (checkbox): pikepdf.Name("/Yes") ha a kitöltendő érték
+          truthy (a NoToggleToOff / 1-es /Ff bit mellett ez a konvenció)
+        - /Ch (dropdown/list): pikepdf.String
         """
         import pikepdf
 
@@ -280,17 +285,28 @@ class AcroFormFiller(BaseFiller):
                     )
                     continue
 
-                # Érték beírása
-                field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
+                # Típus-specifikus értékbeírás
+                field_type = str(field_obj.get("/FT", ""))
+                flags = int(field_obj.get("/Ff", 0))
+
+                if field_type == "/Btn":
+                    # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
+                    # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
+                    is_checked = self._is_truthy(value)
+                    if is_checked:
+                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
+                    else:
+                        # Kikapcsolt checkbox: /Off név
+                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
+                else:
+                    # Szöveg / dropdown / lista: String érték
+                    field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
 
                 # Megjelenítés frissítése – töröljük az /AP-t, hogy a
                 # PDF-olvasó újra renderelj a mezőt
                 if "/AP" in field_obj:
                     del field_obj["/AP"]
 
-                # NeedAppearances flag beállítása
-                field_obj_root = field_obj
-                # Mark as needing appearance regeneration
                 result.filled_fields.append(pdf_field_name)
                 logger.debug(
                     "Mező kitöltve: %s = %s (← %s)",
@@ -308,13 +324,30 @@ class AcroFormFiller(BaseFiller):
                 logger.warning("Mező kitöltési hiba: %s – %s", pdf_name, exc)
 
     @staticmethod
-    def _flatten_acroform(pdf: Any) -> None:
-        """
-        Flatten-eli az AcroForm mezőket (csak olvasható PDF).
+    def _is_truthy(value: Any) -> bool:
+        """Egy mezőérték truthy értelmezése checkbox kitöltéshez."""
+        if isinstance(value, bool):
+            return value
+        s = str(value).strip().lower()
+        if s in ("", "0", "false", "no", "nem", "off", "false", "x-", "-"):
+            return False
+        if s in ("yes", "igen", "true", "1", "x", "y", "i", "on"):
+            return True
+        # Bármi más nem-empty → truthy
+        return s != ""
 
-        Megjegyzés: pikepdf nem támogatja natívan a flatten-t,
-        ezért a /NeedAppearances flag-et állítjuk be, és az /Ff
-        (field flags) ReadOnly bitjét kapcsoljuk be.
+    @staticmethod
+    def _make_readonly(pdf: Any) -> None:
+        """
+        Csak-olvashatóvá teszi az AcroForm mezőket.
+
+        Megjegyzés: a pikepdf nem támogatja a valódi flatten-t (a megjelenő
+        réteg widget-ekké alakítását). Ez a metódus a /NeedAppearances flag
+        bekapcsolásával és minden mező ReadOnly bitjének (/Ff bit 1) beállításával
+        éri el, hogy a nézők ne tudják módosítani a kitöltött mezőket.
+
+        Ha valódi flatten-re van szükség (mezők tartalom-réteggé alakítása),
+        külső könyvtár (pl. Ghostscript vagy pdftk) szükséges.
         """
         import pikepdf
 

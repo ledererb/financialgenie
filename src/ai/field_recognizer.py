@@ -1,7 +1,7 @@
 """
 FinancialGenie – AI mezőfelismerő réteg
 
-Claude Sonnet 4.6 API-val felismeri egy üres banki nyomtatvány kitöltendő mezőit,
+Claude Sonnet 4 API-val felismeri egy üres banki nyomtatvány kitöltendő mezőit,
 és leképezi azokat a kanonikus adatmodellre. Az eredmény egy mapping-konfiguráció,
 amelyet emberi jóváhagyás után a determinisztikus kitöltőmotor használ.
 
@@ -16,12 +16,42 @@ Használat:
 import json
 import logging
 import base64
+import unicodedata
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+
+#: Az Anthropic API-hoz használt Claude modell azonosító (2a).
+#: Korábban a "claude-sonnet-4-6" string volt 4 helyen hardcode-olva;
+#: most egyetlen helyen, modul-szinten van deklarálva, így egyszerűen
+#: frissíthető, ha új modell-verzió érkezik.
+AI_MODEL: str = "claude-sonnet-4-20250514"
+
+
+def _normalize_key(s: str) -> str:
+    """
+    Ékezet- és formátum-agnosztikus kulcs-normalizálás (2b).
+
+    A magyar nyomtatványok PDF-mezőnevei gyakran tartalmaznak ékezeteket
+    (`név`, `állandó_lakcím`), és ezek kódolása (NFC vs. NFD), valamint a
+    betűméret/kiemelés változhat a PDF generátorától függően. Ez a helper:
+      1. Unicode NORMAL FORM D-ra bontja a stringet (szétválasztja a
+         kombináló jeleket az alap karakterektől),
+      2. Eldobja a kombináló jeleket (csak az alap karakterek maradnak),
+      3. Kisbetűsíti az egészet.
+
+    Így `"SZA_IG_név"`, `"SZA_IG_nev"`, `"sza_ig_név"` mind ugyanarra a
+    canonical kulcsra ("sza_ig_nev") képezhető.
+    """
+    if s is None:
+        return ""
+    nfd = unicodedata.normalize("NFD", s)
+    no_accents = "".join(ch for ch in nfd if not unicodedata.combining(ch))
+    return no_accents.lower()
 
 
 # --- A kanonikus modell mezőkatalógusa ---
@@ -201,7 +231,7 @@ class MappingConfig:
 
 class FieldRecognizer:
     """
-    AI-alapú mezőfelismerő – Claude Sonnet 4.6 API-val.
+    AI-alapú mezőfelismerő – Claude Sonnet 4 API-val.
 
     Egy üres PDF nyomtatványt elemez, felismeri a kitöltendő mezőket,
     és leképezi azokat a kanonikus adatmodellre.
@@ -420,7 +450,7 @@ Ez a(z) '{section_name}' szekció."""
 
                 try:
                     response = self._client.messages.create(
-                        model="claude-sonnet-4-6",
+                        model=AI_MODEL,
                         max_tokens=8192,
                         system=system,
                         messages=[{"role": "user", "content": content}],
@@ -708,7 +738,7 @@ PDF: {pdf_path.name}"""
 
         try:
             response = self._client.messages.create(
-                model="claude-sonnet-4-6",
+                model=AI_MODEL,
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -849,7 +879,7 @@ PDF: {pdf_path.name}"""
 
         try:
             response = self._client.messages.create(
-                model="claude-sonnet-4-6",
+                model=AI_MODEL,
                 max_tokens=16384,
                 system=system,
                 messages=[{"role": "user", "content": content}],
@@ -914,7 +944,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
 
         try:
             response = self._client.messages.create(
-                model="claude-sonnet-4-6",
+                model=AI_MODEL,
                 max_tokens=16384,
                 system=system,
                 messages=[{"role": "user", "content": content}],
@@ -1177,14 +1207,22 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         }
 
         fields = []
+        # OTP exact map előzetesen normalizálva (2b): az ékezetes/regiszter-
+        # érzékeny kulcsokat (`név`, `állandó_lakcím`) az `_normalize_key`
+        # helper-rel ékezet- és kisbetű-mentes formára hozzuk, így a PDF-ből
+        # érkező tetszőleges kódolású/kisbetűs mezőnév is megtalálja a map-ot.
+        otp_exact_map_normalized = {
+            _normalize_key(k): v for k, v in OTP_EXACT_MAP.items()
+        }
         for pdf_field in pdf_fields:
             field_name = pdf_field["name"]
             canonical = None
             confidence = MappingConfidence.LOW
 
-            # 1. Próbáljuk az OTP exact map-ből
-            if field_name in OTP_EXACT_MAP:
-                canonical = OTP_EXACT_MAP[field_name]
+            # 1. Próbáljuk az OTP exact map-ből – normalizált kulccsal.
+            normalized = _normalize_key(field_name)
+            if normalized in otp_exact_map_normalized:
+                canonical = otp_exact_map_normalized[normalized]
                 confidence = MappingConfidence.HIGH
             else:
                 # 2. Próbáljuk a kulcsszó alapú map-ből

@@ -74,7 +74,15 @@ class DataNormalizer:
     Kétféle bemenetet kezel:
     1. JSON dict (mock módban a dummy adatokból)
     2. Salesforce API válasz (éles módban)
+
+    Megjegyzés: a normalizáló CRUD-agnosztikus. A `_normalize_salesforce` csupán
+    az SF-specifikus oszlopneveket képezi a kanonikus mezőkre, de semmilyen
+    üzleti logikát nem tartalmaz, ami más CRM-re ne adaptálható lenne.
     """
+
+    #: Alapértelmezett futamidő hónapokban, ha a CRM nem szolgáltatja.
+    #: (Korábban magic number `240` volt a kódban – most egy nevesített konstans.)
+    DEFAULT_LOAN_TERM_MONTHS: int = 240
 
     def normalize_deal(self, raw_data: dict) -> DealData:
         """
@@ -103,15 +111,25 @@ class DataNormalizer:
 
     def _normalize_salesforce(self, sf_data: dict) -> DealData:
         """Salesforce API válaszból normalizálás."""
-        # Hiteladatok
+        # Hiteladatok (1c: új kanonikus mezők feltérképezése)
         loan = LoanDetails(
             loan_amount=self._safe_int(sf_data.get("Amount__c") or sf_data.get("Amount")),
-            loan_term_months=self._safe_int(sf_data.get("Loan_Term__c", 240)),
+            loan_term_months=self._safe_int(
+                sf_data.get("Loan_Term__c") or self.DEFAULT_LOAN_TERM_MONTHS
+            ),
             interest_period=sf_data.get("Interest_Period__c"),
             loan_purpose=sf_data.get("Loan_Purpose__c"),
             product_name=sf_data.get("Product_Name__c"),
+            product_type=sf_data.get("Product_Type__c"),
             down_payment=self._safe_int(sf_data.get("Down_Payment__c")),
             monthly_payment=self._safe_int(sf_data.get("Monthly_Payment__c")),
+            purchase_price=self._safe_int(sf_data.get("Purchase_Price__c")),
+            csok_amount=self._safe_int(sf_data.get("CSOK_Amount__c") or sf_data.get("Csok__c")),
+            afa_support=self._safe_int(sf_data.get("AFA_Support__c") or sf_data.get("Afa__c")),
+            housing_savings=self._safe_int(
+                sf_data.get("Housing_Savings__c") or sf_data.get("Lakastakarek__c")
+            ),
+            refinance_account=sf_data.get("Refinance_Account__c"),
         )
 
         # Szereplők

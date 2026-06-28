@@ -233,6 +233,22 @@ class CompletenessChecker:
 
         return report
 
+    @staticmethod
+    def _determine_status(report: CompletenessReport) -> CompletenessStatus:
+        """
+        A report issue-i alapján meghatározza az összesített státuszt.
+
+        - INCOMPLETE: van blokkoló (MISSING/EMPTY) hiba.
+        - WARNING: minden kötelező megvan, de vannak SUSPICIOUS/STRUCTURAL
+          nem-blokkoló figyelmeztetések.
+        - COMPLETE: nincs semmilyen hiba.
+        """
+        if report.blocking_issues:
+            return CompletenessStatus.INCOMPLETE
+        if report.warnings:
+            return CompletenessStatus.WARNING
+        return CompletenessStatus.COMPLETE
+
     def _check_structural(self, deal: DealData, report: CompletenessReport) -> None:
         """Strukturális validációk (pl. létezik-e szereplő, ingatlan)."""
         if not deal.participants:

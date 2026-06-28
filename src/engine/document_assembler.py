@@ -75,11 +75,33 @@ TARSADOS_SECTION = ("tarsados_adatlap", 31, 36)
 
 class DocumentAssembler:
     """
-    OTP master dokumentum automatikus darabolása.
+    OTP master dokumentum automatikus darbolása.
     
     A 97 oldalas PDF-ből a terméktípus, szereplőszám és
     ingatlaszám alapján összeállítja a végleges dokumentumot.
     """
+
+    #: A teljes (darabolatlan) OTP master PDF oldalainak száma.
+    #: Erre a magic-number-re épül a `is_master_pdf` detektálás.
+    MASTER_PDF_PAGE_COUNT: int = 97
+
+    def is_master_pdf(self, pdf_path: Path) -> bool:
+        """
+        Eldönti, hogy egy PDF a master (darabolandó) dokumentum-e.
+
+        A master PDF jellemzője, hogy oldalszáma eléri vagy meghaladja a
+        `MASTER_PDF_PAGE_COUNT`-ot (a teljes OTP nyomtatvány-csomag).
+        Ha ennél kevesebb oldal van, már összeállított / egyedi nyomtatvány.
+        """
+        pdf_path = Path(pdf_path)
+        if not pdf_path.exists():
+            return False
+        import pikepdf
+        try:
+            with pikepdf.open(pdf_path) as pdf:
+                return len(pdf.pages) >= self.MASTER_PDF_PAGE_COUNT
+        except Exception:
+            return False
 
     def assemble(
         self,

@@ -36,6 +36,9 @@ from src.models.canonical_model import DealData, ParticipantRole
 from src.normalizer.data_normalizer import DataNormalizer
 from src.integrations.salesforce_client import SalesforceClient
 from src.engine.document_assembler import DocumentAssembler, ProductType
+from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement
+from src.engine.completeness_checker import CompletenessChecker, CompletenessStatus
+from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
 from src.ai.field_recognizer import FieldRecognizer, MappingConfig, print_mapping_summary
 
 logger = logging.getLogger(__name__)
@@ -104,16 +107,15 @@ class FormFillerPipeline:
         logger.info(f"   Aktív szereplők: {len(deal.active_participants)}")
         logger.info(f"   Ingatlanok: {len(deal.properties)}")
 
-        # 3. Teljességellenőrzés
+        # 3. Teljességellenőrzés (professional CompletenessChecker)
         logger.info("✅ 3. Teljességellenőrzés")
         completeness = self._check_completeness(deal, mapping_config)
-        if completeness["missing"]:
-            logger.warning(f"   ⚠️ {len(completeness['missing'])} hiányzó mező")
-            for field_name in completeness["missing"]:
-                logger.warning(f"      - {field_name}")
-            result["issues"].extend(
-                [f"Hiányzó mező: {f}" for f in completeness["missing"]]
-            )
+        if completeness.status != CompletenessStatus.COMPLETE:
+            for issue in completeness.blocking_issues:
+                logger.warning(f"   ⚠️ [BLOKKOLÓ] {issue.field_path} – {issue.message}")
+                result["issues"].append(f"Hiányzó mező: {issue.field_path}")
+            for warn in completeness.warnings:
+                logger.warning(f"   ⚠️ {warn.field_path} – {warn.message}")
 
         # 4. Mezőadatok összeállítása
         logger.info("📋 4. Mezőadatok összeállítása")
@@ -123,15 +125,15 @@ class FormFillerPipeline:
         # 5. PDF kitöltés
         logger.info("📝 5. PDF kitöltés")
         try:
-            import fitz
-            doc_temp = fitz.open(str(template_pdf))
-            page_count = len(doc_temp)
-            doc_temp.close()
-            
+            assembler = DocumentAssembler()
             actual_template = template_pdf
-            if page_count == 97:
-                logger.info("   📂 97 oldalas Master PDF észlelve -> Automatikus Document Assembly (darabolás)...")
-                assembler = DocumentAssembler()
+            # Master PDF detektálás: a DocumentAssembler.is_master_pdf dönti el,
+            # nem egy `page_count == 97` magic number (dokumentum-agnosztikus).
+            if assembler.is_master_pdf(template_pdf):
+                logger.info(
+                    "   📂 Master PDF észlelve (≥%d oldal) → Automatikus Document Assembly (darabolás)...",
+                    assembler.MASTER_PDF_PAGE_COUNT,
+                )
                 temp_assembled_path = self.output_dir / f"assembled_{deal.deal_id}.pdf"
                 
                 products_enum = []
@@ -174,45 +176,28 @@ class FormFillerPipeline:
         result["success"] = True
         return result
 
-    def _check_completeness(self, deal: DealData, mapping: MappingConfig) -> dict:
-        """Teljességellenőrzés: hiányzó mezők azonosítása."""
-        missing = []
+    def _check_completeness(self, deal: DealData, mapping: MappingConfig):
+        """
+        Teljességellenőrzés a professional CompletenessChecker-rel.
 
-        # Kötelező hitel mezők
-        if not deal.loan.loan_amount:
-            missing.append("loan.loan_amount")
-        if not deal.loan.loan_term_months:
-            missing.append("loan.loan_term_months")
-
-        # Kötelező szereplő mezők
-        for i, p in enumerate(deal.active_participants):
-            prefix = f"participant[{i}]"
-            if not p.name:
-                missing.append(f"{prefix}.name")
-            if not p.birth_name:
-                missing.append(f"{prefix}.birth_name")
-            if not p.mother_name:
-                missing.append(f"{prefix}.mother_name")
-            if not p.birth_date:
-                missing.append(f"{prefix}.birth_date")
-            if not p.birth_place:
-                missing.append(f"{prefix}.birth_place")
-            if not p.tax_id:
-                missing.append(f"{prefix}.tax_id")
-            if not p.address:
-                missing.append(f"{prefix}.address")
-            if not p.phone:
-                missing.append(f"{prefix}.phone")
-
-        # Kötelező ingatlan mezők
-        for i, prop in enumerate(deal.properties):
-            prefix = f"property[{i}]"
-            if not prop.parcel_number:
-                missing.append(f"{prefix}.parcel_number")
-            if not prop.address:
-                missing.append(f"{prefix}.address")
-
-        return {"missing": missing, "total_required": len(missing) + 10}
+        A kötelező mezők a mapping-ből származnak (a canonical_field hivatkozások),
+        kiegészítve a strukturális ellenőrzésekkel (van adós, van ingatlan stb.).
+        """
+        required_fields = [
+            "loan.loan_amount",
+            "loan.loan_term_months",
+            "participant.*.name",
+            "participant.*.birth_name",
+            "participant.*.mother_name",
+            "participant.*.birth_date",
+            "participant.*.birth_place",
+            "participant.*.tax_id",
+            "participant.*.phone",
+            "property.*.parcel_number",
+        ]
+        checker = CompletenessChecker(run_suspicious_checks=True)
+        report = checker.check(deal, required_fields)
+        return report
 
     def _prepare_field_data(self, deal: DealData, mapping: MappingConfig) -> dict:
         """
@@ -229,10 +214,26 @@ class FormFillerPipeline:
         # === Kanonikus mezők összeállítása ===
         # Igénylő (borrower) adatai → "borrower.*"
         # Társigénylő (co_borrower) adatai → "co_borrower.*"
+        #
+        # A szerep-routing a RoleInstancePlanner-rel történik (role-alapú),
+        # nem pedig pozíció-alapú (i==0, i==1) indexeléssel. Így dokumentum-
+        # agnosztikus marad a logika: bármelyik szereplő, akinek az első
+        # BORROWER szerepe van, automatikusan igénylő lesz, a többi CO_BORROWER.
         borrower_data = {}
         co_borrower_data = {}
 
-        for i, participant in enumerate(deal.active_participants):
+        borrowers = deal.borrowers
+        co_borrowers = deal.co_borrowers
+
+        borrower = borrowers[0] if borrowers else None
+        co_borrower = co_borrowers[0] if co_borrowers else None
+
+        for participant, target in (
+            (borrower, "borrower"),
+            (co_borrower, "co_borrower"),
+        ):
+            if participant is None:
+                continue
             p_data = self._participant_to_dict(participant)
 
             if participant.address:
@@ -242,12 +243,12 @@ class FormFillerPipeline:
             elif participant.address:
                 p_data.update(self._address_to_dict(participant.address, "mailing_address"))
 
-            if i == 0:
+            if target == "borrower":
                 borrower_data = p_data
-            elif i == 1:
+            else:
                 co_borrower_data = p_data
 
-        # Hiteladatok
+        # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
         loan = deal.loan
         loan_data = {
             "loan.loan_amount": f"{loan.loan_amount:,}".replace(",", " ") if loan.loan_amount else "",
@@ -255,14 +256,14 @@ class FormFillerPipeline:
             "loan.interest_period": loan.interest_period or "",
             "loan.loan_purpose": loan.loan_purpose or "",
             "loan.product_name": loan.product_name or "",
-            "loan.product_type": loan.product_name or "",
+            "loan.product_type": loan.product_type or "",
             "loan.down_payment": f"{loan.down_payment:,}".replace(",", " ") if loan.down_payment else "",
             "loan.monthly_payment": f"{loan.monthly_payment:,}".replace(",", " ") if loan.monthly_payment else "",
-            "loan.purchase_price": "",
-            "loan.csok_amount": "",
-            "loan.afa_support": "",
-            "loan.housing_savings": "",
-            "loan.refinance_account": "",
+            "loan.purchase_price": f"{loan.purchase_price:,}".replace(",", " ") if loan.purchase_price else "",
+            "loan.csok_amount": f"{loan.csok_amount:,}".replace(",", " ") if loan.csok_amount else "",
+            "loan.afa_support": f"{loan.afa_support:,}".replace(",", " ") if loan.afa_support else "",
+            "loan.housing_savings": f"{loan.housing_savings:,}".replace(",", " ") if loan.housing_savings else "",
+            "loan.refinance_account": loan.refinance_account or "",
         }
 
         # Ingatlan adatok
@@ -377,76 +378,103 @@ class FormFillerPipeline:
         mapping: MappingConfig,
     ) -> Path:
         """
-        PDF kitöltés a mapping típusa szerint.
-        
-        AcroForm: közvetlen mezőfeltöltés pikepdf-el
-        Flat/overlay: koordináta-alapú szöveg elhelyezés
+        PDF kitöltés a professional engine osztályokkal (AcroFormFiller / OverlayFiller).
+
+        A korábbi inline pikepdf/PyMuPDF logika kiváltva – a konzolidált
+        implementáció a src/engine/pdf_filler.py-ban él.
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"filled_{deal.deal_id}_{timestamp}.pdf"
         output_path = self.output_dir / output_filename
 
         if mapping.form_type == "acroform":
-            self._fill_acroform(template_pdf, output_path, field_data)
+            filler = AcroFormFiller(flatten=False)
+            # AcroFormFiller dict[str,str] mapping-et vár (pdf_field_name → canonical).
+            # A mapping.fields-ből kinyerjük ezt a leképezést.
+            pdf_to_canonical = mapping.mapping_dict
+            result = filler.fill(
+                template_path=template_pdf,
+                output_path=output_path,
+                field_data=field_data,
+                mapping=pdf_to_canonical,
+            )
+            if not result.success:
+                logger.warning(
+                    "AcroForm kitöltés figyelmeztetések: %s", result.summary
+                )
         else:
-            self._fill_overlay(template_pdf, output_path, field_data, mapping)
+            # Overlay / lapos PDF: a mapping-ben lévő koordináták alapján
+            # TextPlacement objektumokat építünk a OverlayFiller számára.
+            #
+            # Az OverlayFiller canonical mező → érték formátumban várja a
+            # field_data-t, és `placements[canonical] = TextPlacement` formátumban
+            # a koordinátákat. A _prepare_field_data viszont pdf_field_name alapú
+            # field_data-t ad vissza — ezért mindkettőt canonical-alapúvá
+            # transzformáljuk a mapping.fields segítségével.
+            placements: dict[str, TextPlacement] = {}
+            canonical_field_data: dict[str, str] = {}
+            for f in mapping.fields:
+                if not (f.coordinates and f.canonical_field):
+                    continue
+                # A régi overlay logika egy kis y-offset-tel dolgozott a
+                # baseline alatt; ezt a TextPlacement.y-ben kompenzáljuk.
+                coords = f.coordinates
+                placements[f.canonical_field] = TextPlacement(
+                    x=float(coords.get("x", 0.0)),
+                    y=float(coords.get("y", 0.0)) + float(coords.get("height", 12.0) or 12.0) - 3,
+                    font_size=10.0,
+                    page_index=max(int(f.page_number) - 1, 0),
+                )
+                # pdf_field_name → value fölülírja a canonical kulcsot
+                if f.pdf_field_name in field_data:
+                    val = field_data[f.pdf_field_name]
+                    if val:
+                        canonical_field_data[f.canonical_field] = val
+
+            filler = OverlayFiller()
+            result = filler.fill(
+                template_path=template_pdf,
+                output_path=output_path,
+                field_data=canonical_field_data,
+                mapping=placements,
+            )
+            if not result.success:
+                logger.warning(
+                    "Overlay kitöltés figyelmeztetések: %s", result.summary
+                )
 
         return output_path
 
-    def _fill_acroform(self, template: Path, output: Path, field_data: dict):
-        """AcroForm PDF kitöltés pikepdf-el."""
-        import pikepdf
+    # =========================================================================
+    # ELAVULT metódusok – korábban inline pikepdf/PyMuPDF logikát tartalmaztak.
+    # A consolidation után a professional engine osztályok veszik át a helyüket
+    # (AcroFormFiller / OverlayFiller a src/engine/pdf_filler.py-ban).
+    # Kikommentelt másolat itt marad referenciaként / biztonsági mentésként.
+    # =========================================================================
 
-        with pikepdf.open(template) as pdf:
-            if "/AcroForm" in pdf.Root:
-                acroform = pdf.Root["/AcroForm"]
-                if "/Fields" in acroform:
-                    for field_ref in acroform["/Fields"]:
-                        try:
-                            f = field_ref
-                            field_name = str(f.get("/T", ""))
-                            if field_name in field_data:
-                                value = field_data[field_name]
-                                f["/V"] = pikepdf.String(value)
-                                # Appearance flag – a viewer újrarajzolja
-                                if "/AP" in f:
-                                    del f["/AP"]
-                                logger.debug(f"   Mező kitöltve: {field_name} = {value[:50]}")
-                        except Exception as e:
-                            logger.debug(f"   Mező kitöltési hiba: {e}")
+    # def _fill_acroform(self, template: Path, output: Path, field_data: dict):
+    #     """[ELAVULT] AcroForm PDF kitöltés pikepdf-el – most már AcroFormFiller."""
+    #     import pikepdf
+    #     with pikepdf.open(template) as pdf:
+    #         if "/AcroForm" in pdf.Root:
+    #             acroform = pdf.Root["/AcroForm"]
+    #             if "/Fields" in acroform:
+    #                 for field_ref in acroform["/Fields"]:
+    #                     try:
+    #                         f = field_ref
+    #                         field_name = str(f.get("/T", ""))
+    #                         if field_name in field_data:
+    #                             value = field_data[field_name]
+    #                             f["/V"] = pikepdf.String(value)
+    #                             if "/AP" in f:
+    #                                 del f["/AP"]
+    #     ...
 
-            pdf.save(output)
-
-    def _fill_overlay(
-        self, template: Path, output: Path, field_data: dict, mapping: MappingConfig
-    ):
-        """Lapos PDF overlay kitöltés – szövegréteg ráhelyezése."""
-        import fitz  # PyMuPDF
-
-        doc = fitz.open(str(template))
-
-        for f in mapping.fields:
-            if f.coordinates and f.pdf_field_name and f.pdf_field_name in field_data:
-                value = field_data[f.pdf_field_name]
-                if not value:
-                    continue
-
-                page_idx = f.page_number - 1
-                if 0 <= page_idx < len(doc):
-                    page = doc[page_idx]
-                    coords = f.coordinates
-                    point = fitz.Point(coords["x"], coords["y"] + coords.get("height", 12) - 3)
-                    page.insert_text(
-                        point,
-                        str(value),
-                        fontsize=10,
-                        fontname="helv",
-                        color=(0, 0, 0),
-                    )
-                    logger.debug(f"   Overlay: {f.label} = {str(value)[:50]} @ ({coords['x']}, {coords['y']})")
-
-        doc.save(str(output))
-        doc.close()
+    # def _fill_overlay(self, template, output, field_data, mapping):
+    #     """[ELAVULT] Overlay kitöltés – most már OverlayFiller."""
+    #     import fitz
+    #     doc = fitz.open(str(template))
+    #     ...
 
     def run_ai_recognition(self, pdf_path: Path, mode: str = "auto") -> MappingConfig:
         """

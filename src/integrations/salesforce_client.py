@@ -197,8 +197,9 @@ class SalesforceClient:
                 contacts = {}
                 
                 # 3. Contact adatok lekérdezése
+                # Paraméterezett SOQL: a simple-salesforce támogatja a `:változó` formát,
+                # ami megakadályozza a SOQL injection-t (a driver escape-eli az értékeket).
                 if contact_ids:
-                    id_list_str = ",".join(f"'{cid}'" for cid in contact_ids)
                     contact_fields = (
                         "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
                         "Place_of_Birth__c, Date_of_birth__c, ID_Card_Number__c, Tax_ID__c, "
@@ -207,8 +208,11 @@ class SalesforceClient:
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
                         "Current_employment_started__c, ZIP__c"
                     )
-                    query_str = f"SELECT {contact_fields} FROM Contact WHERE Id IN ({id_list_str})"
-                    contact_results = self._sf.query(query_str)
+                    query_str = (
+                        f"SELECT {contact_fields} FROM Contact "
+                        f"WHERE Id IN :contact_ids"
+                    )
+                    contact_results = self._sf.query(query_str, contact_ids=contact_ids)
                     for c_rec in contact_results.get("records", []):
                         contacts[c_rec["Id"]] = c_rec
 
@@ -243,26 +247,30 @@ class SalesforceClient:
 
                 # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
                 properties_records = []
+                # Paraméterezett SOQL a deal_id-re (SOQL injection elleni védelem).
                 prop_role_query = (
-                    f"SELECT Property__c, Ingatlan_szerepe__c "
-                    f"FROM Opportunity_Property_Role__c "
-                    f"WHERE Opportunity__c = '{deal_id}'"
+                    "SELECT Property__c, Ingatlan_szerepe__c "
+                    "FROM Opportunity_Property_Role__c "
+                    "WHERE Opportunity__c = :deal_id"
                 )
-                prop_role_results = self._sf.query(prop_role_query)
+                prop_role_results = self._sf.query(prop_role_query, deal_id=deal_id)
                 prop_roles = prop_role_results.get("records", [])
                 
                 if prop_roles:
                     prop_ids = [pr["Property__c"] for pr in prop_roles if pr.get("Property__c")]
                     if prop_ids:
-                        id_list_str = ",".join(f"'{pid}'" for pid in prop_ids)
                         prop_fields = (
                             "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
                             "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
                             "Ingatlan_emelet__c"
                         )
-                        prop_query = f"SELECT {prop_fields} FROM Property__c WHERE Id IN ({id_list_str})"
-                        prop_results = self._sf.query(prop_query)
+                        # Paraméterezett SOQL a property ID listára.
+                        prop_query = (
+                            f"SELECT {prop_fields} FROM Property__c "
+                            f"WHERE Id IN :prop_ids"
+                        )
+                        prop_results = self._sf.query(prop_query, prop_ids=prop_ids)
                         props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
                         
                         for pr in prop_roles:
@@ -430,9 +438,9 @@ class SalesforceClient:
             ]
         else:
             query = (
-                f"SELECT ContentDocument.Title, ContentDocument.CreatedDate "
-                f"FROM ContentDocumentLink "
-                f"WHERE LinkedEntityId = '{deal_id}'"
+                "SELECT ContentDocument.Title, ContentDocument.CreatedDate "
+                "FROM ContentDocumentLink "
+                "WHERE LinkedEntityId = :deal_id"
             )
-            result = self._sf.query(query)
+            result = self._sf.query(query, deal_id=deal_id)
             return result.get("records", [])

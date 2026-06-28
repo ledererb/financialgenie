@@ -110,8 +110,14 @@ class LoanDetails(BaseModel):
     interest_period: Optional[str] = Field(None, description="Kamatperiódus (pl. 5 év fix)")
     loan_purpose: Optional[str] = Field(None, description="Hitel célja (pl. lakásvásárlás)")
     product_name: Optional[str] = Field(None, description="Termék neve (pl. OTP Lakáshitel)")
+    product_type: Optional[str] = Field(None, description="Termék típusa (pl. piaci_hitel, csok_plusz)")
     down_payment: Optional[int] = Field(None, description="Önerő (Ft)")
     monthly_payment: Optional[int] = Field(None, description="Becsült havi törlesztő (Ft)")
+    purchase_price: Optional[int] = Field(None, description="Vételár (Ft)")
+    csok_amount: Optional[int] = Field(None, description="CSÖK támogatás összege (Ft)")
+    afa_support: Optional[int] = Field(None, description="ÁFA támogatás összege (Ft)")
+    housing_savings: Optional[int] = Field(None, description="Lakástakarék összeg (Ft)")
+    refinance_account: Optional[str] = Field(None, description="Refinanszírozott hitel számlaszáma")
 
 
 class DealData(BaseModel):
