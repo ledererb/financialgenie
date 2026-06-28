@@ -132,6 +132,52 @@ def _load_mapping_config(path: Path) -> MappingConfig:
     return MappingConfig.from_dict(data)
 
 
+def _resolve_template_for_mapping(mapping_path: Path) -> Path | None:
+    """
+    Egy mapping JSON-hez megkeresi a hozzá tartozó PDF sablont.
+
+    Feloldási sorrend:
+      1. `type: "overlay"` formátum `pdf` mezője (relatív út a projekt gyökérhöz).
+      2. `form_name + ".pdf"` a projekt gyökérben.
+      3. A mapping fájlnevéből levezetve (`<stem>_mapping` / `_overlay` suffix
+         levágása) + ".pdf".
+      4. `samples/` könyvtárban való keresés ugyanezekkel a nevekkel.
+
+    Ha egyik sem található, `None`-nal térünk vissza (a hívó átugorja).
+    """
+    try:
+        with open(mapping_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+
+    candidates: list[Path] = []
+
+    if data.get("type") == "overlay" and data.get("pdf"):
+        candidates.append(PROJECT_ROOT / data["pdf"])
+
+    form_name = (data.get("form_name") or "").strip()
+    if form_name:
+        candidates.append(PROJECT_ROOT / f"{form_name}.pdf")
+        candidates.append((PROJECT_ROOT / "samples" / f"{form_name}.pdf"))
+
+    stem = mapping_path.stem
+    for suffix in ("_mapping", "_overlay"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+    candidates.append(PROJECT_ROOT / f"{stem}.pdf")
+    candidates.append(PROJECT_ROOT / "samples" / f"{stem}.pdf")
+
+    for c in candidates:
+        try:
+            if c.exists() and c.is_file():
+                return c
+        except Exception:
+            continue
+    return None
+
+
 class FormFillerPipeline:
     """
     A nyomtatványkitöltő fő pipeline-ja.
@@ -754,6 +800,189 @@ class FormFillerPipeline:
         return mapping
 
 
+# Az összes ismert banki template PDF a working dir-ben, amelyeket a `--all`
+# batch mód sorrendben feldolgoz. A `.gitignore` kizárja a PDF-eket, így ezek
+# nem kerülnek commit-ra; itt csak a fájlnevek szerepelnek (nem az útvonalak).
+ALL_TEMPLATE_PDFS: list[str] = [
+    "OTP_Igenylesi_Dokumentumok_v5.pdf",
+    "V_fuggelek.pdf",
+    "partner_nyilatkozat.pdf",
+    "hozzajarulo_nyilatkozat.pdf",
+    "zold_lakashitel_nyilatkozat.pdf",
+    "CSOK_afa_igazolas.pdf",
+    "elozetes_ertekbecsles.pdf",
+]
+
+
+def _resolve_mapping_for_template(template_path: Path) -> Path | None:
+    """
+    Egy template PDF-hez megkeresi a hozzá tartozó mapping JSON-t.
+
+    Feloldási sorrend:
+      1. Pontos névegyezés: `{stem}_mapping.json`
+      2. Pontos névegyezés: `{stem}_overlay.json`
+      3. Prefix fallback: ha a template stem hosszabb, és van olyan mapping,
+         amelynek stem-je (suffix nélkül) a template stem prefixe (pl.
+         `zold_lakashitel_nyilatkozat.pdf` → `zold_lakashitel_overlay.json`).
+      4. Fordított prefix fallback: ha a mapping stem hosszabb.
+
+    Visszatér a mapping Path-jával vagy `None`-lal ha nincs találat.
+    """
+    mapping_dir = PROJECT_ROOT / "src" / "mapping"
+    stem = template_path.stem
+
+    # 1–2: pontos névegyezés (preferáljuk a _mapping.json-t)
+    for suffix in ("_mapping.json", "_overlay.json"):
+        candidate = mapping_dir / f"{stem}{suffix}"
+        if candidate.exists():
+            return candidate
+
+    # 3–4: prefix fallback (mindkét irányban)
+    def _stem_key(p: Path) -> str:
+        n = p.name
+        for suf in ("_mapping.json", "_overlay.json"):
+            if n.endswith(suf):
+                return n[: -len(suf)]
+        return p.stem
+
+    all_mappings = list(mapping_dir.glob("*_mapping.json")) + list(
+        mapping_dir.glob("*_overlay.json")
+    )
+    for mp in all_mappings:
+        k = _stem_key(mp)
+        if k and (stem.startswith(k) or k.startswith(stem)):
+            return mp
+
+    return None
+
+
+def _run_all_mappings(pipeline: "FormFillerPipeline", args) -> None:
+    """
+    Batch (`--all`) mód: végigmegy a `ALL_TEMPLATE_PDFS` listán, minden PDF-hez
+    automatikusan kiválasztja a hozzá tartozó mapping-et (`_resolve_mapping_for_template`),
+    és lefuttatja a pipeline-t. A végén összegző táblázatot ír ki.
+
+    A kitöltőmotor (AcroFormFiller vs OverlayFiller) a mapping `type` mezője
+    alapján dől el:
+      - `"type": "overlay"` → OverlayFiller TextPlacement-ekkel
+      - nincs `type` / bármi más → AcroFormFiller
+
+    A `--deal` és `--salesforce` ugyanúgy működik, mint az egyszeres módban.
+    Az output PDF-ek az `output/` mappába kerülnek.
+    """
+    # deal kiválasztása (ugyanaz a logika, mint a single módban)
+    if args.deal:
+        deal_id = args.deal
+    else:
+        deals = pipeline.sf_client.list_deals()
+        if not deals:
+            print("⚠️  Nincs elérhető ügylet")
+            return
+        deal_id = deals[0]["deal_id"]
+
+    # Csak azokat a template-eket dolgozzuk fel, amelyek tényleg léteznek.
+    templates: list[Path] = []
+    missing: list[str] = []
+    for name in ALL_TEMPLATE_PDFS:
+        p = PROJECT_ROOT / name
+        if p.exists():
+            templates.append(p)
+        else:
+            missing.append(name)
+
+    print(f"\n🚀 Batch mód: {len(templates)} template PDF feldolgozása (deal: {deal_id})")
+    print("=" * 70)
+    if missing:
+        print(f"⚠️  Hiányzó PDF-ek (átugorva): {', '.join(missing)}")
+
+    results = []
+    for template in templates:
+        # Mapping feloldása fájlnév-alapú egyezéssel
+        mp = _resolve_mapping_for_template(template)
+
+        if mp is None:
+            print(f"\n⏭️  {template.name}: nincs hozzá mapping – átugorva")
+            results.append({
+                "template": template.name,
+                "mapping": "(nincs)",
+                "filler": "-",
+                "status": "skipped",
+                "reason": "no mapping",
+                "output": None,
+                "issues": 0,
+            })
+            continue
+
+        # Mapping betöltése
+        try:
+            mapping = _load_mapping_config(mp)
+        except Exception as e:
+            print(f"\n⚠️  {template.name}: mapping betöltési hiba ({mp.name}): {e}")
+            results.append({
+                "template": template.name,
+                "mapping": mp.name,
+                "filler": "-",
+                "status": "error",
+                "reason": str(e),
+                "output": None,
+                "issues": 0,
+            })
+            continue
+
+        filler = "overlay" if mapping.form_type == "overlay" else "acroform"
+        print(f"\n📄 {template.name}  →  {mp.name}  ({filler})")
+
+        try:
+            res = pipeline.run_for_deal(deal_id, template, mapping)
+        except Exception as e:
+            print(f"   ✗ Kivétel: {e}")
+            res = {
+                "success": False,
+                "issues": [f"kivétel: {e}"],
+                "output_path": None,
+            }
+
+        results.append({
+            "template": template.name,
+            "mapping": mp.name,
+            "filler": filler,
+            "status": "ok" if res.get("success") else "failed",
+            "reason": "",
+            "output": res.get("output_path"),
+            "issues": len(res.get("issues", [])),
+        })
+
+    # --- Összesítés ---
+    print(f"\n{'=' * 70}")
+    print(f"📊 Batch összesítés ({len(results)} template)")
+    print(f"{'-' * 70}")
+    print(f"{'Template':40} {'Filler':9} {'Státusz':8} {'Issues':6}")
+    print(f"{'-' * 70}")
+    for r in results:
+        status = r["status"]
+        mark = {"ok": "✅", "failed": "❌", "skipped": "⏭️", "error": "⚠️"}.get(
+            status, "?"
+        )
+        filler = r.get("filler", "-")
+        issues = r.get("issues", 0)
+        print(
+            f"{r['template'][:40]:40} {filler:9} {mark} {status:6} {issues:>6}"
+        )
+    ok = sum(1 for r in results if r["status"] == "ok")
+    print(f"{'-' * 70}")
+    print(f"Sikeres: {ok}/{len(results)}")
+    # Output fájlok listája
+    outputs = [r["output"] for r in results if r.get("output")]
+    if outputs:
+        print(f"\n📁 Generált PDF-ek (output/):")
+        for o in outputs:
+            try:
+                print(f"   - {Path(o).name}")
+            except Exception:
+                print(f"   - {o}")
+    print("=" * 70)
+
+
 def main():
     """Fő belépési pont – CLI és demo futtatás."""
     import argparse
@@ -807,6 +1036,13 @@ def main():
         default=None,
         help="Kifejezett Salesforce Opportunity ID",
     )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Batch mód: végigmegy az összes src/mapping/*.json fájlon, "
+             "megkeresi a hozzájuk tartozó PDF-et és mindegyikre lefuttatja "
+             "a pipeline-t (AcroForm vagy overlay a `type` mező alapján).",
+    )
 
     args = parser.parse_args()
 
@@ -841,6 +1077,11 @@ def main():
         sf_client=sf_client,
         output_dir=args.output_dir or PROJECT_ROOT / "output",
     )
+
+    # --- Batch mód: az összes mapping feldolgozása ---
+    if args.all:
+        _run_all_mappings(pipeline, args)
+        return
 
     # 1. AI mezőfelismerés (ha kérték)
     mapping = None
