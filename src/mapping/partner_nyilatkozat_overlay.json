@@ -1,0 +1,75 @@
+{
+  "pdf": "partner_nyilatkozat.pdf",
+  "type": "overlay",
+  "bank_name": "OTP Bank",
+  "form_name": "partner_nyilatkozat",
+  "notes": "PyMuPDF placeholder detektor + DeepSeek V4 Flash klasszifikáció. 6 mező, 3 leképezve.",
+  "placements": [
+    {
+      "pdf_field_name": "flat_1_p1",
+      "label": "Értékesítő / Mobilbankár neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "x": 90.7,
+      "y": 653.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p2",
+      "label": "Értékesítő/Mobilbankár törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "x": 48.8,
+      "y": 626.1,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p3",
+      "label": "Ügynök/Alügynök vállalkozás neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "x": 290.2,
+      "y": 626.1,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p4",
+      "label": "Hiteligénylő neve",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "x": 162.8,
+      "y": 570.9,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p5",
+      "label": "Kelt",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "x": 72.0,
+      "y": 488.1,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p6",
+      "label": "Értékesítő/Mobilbankár aláírása",
+      "field_type": "text",
+      "canonical_field": "legal.signature_name",
+      "confidence": "high",
+      "x": 305.5,
+      "y": 460.5,
+      "page_index": 0,
+      "font_size": 11.0
+    }
+  ]
+}
