@@ -24,6 +24,7 @@ Használat:
 
 import json
 import logging
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -476,7 +477,18 @@ class FormFillerPipeline:
                 if canonical.startswith("participant[") and "." in canonical:
                     source_key = "participant." + canonical.split(".", 1)[1]
                 if source_key in source and source[source_key]:
-                    field_data[pdf_name] = source[source_key]
+                    val = source[source_key]
+                    # Fix 1: dátumkomponens szétválasztás (szül. év/hónap/nap,
+                    # mióta_lakik_év/hónap). A teljes dátum helyett csak a
+                    # pdf_name által kért komponenst írjuk be.
+                    if source_key in (
+                        "participant.birth_date",
+                        "participant.residence_since",
+                    ):
+                        split = self._split_date_component(pdf_name, val)
+                        if split is not None:
+                            val = split
+                    field_data[pdf_name] = val
 
             elif canonical.startswith("loan."):
                 if canonical in loan_data and loan_data[canonical]:
@@ -509,7 +521,68 @@ class FormFillerPipeline:
                 # Ezeket nem tároljuk a deal-ben; a kitöltésnél kihagyjuk.
                 pass
 
+        # === Fix 3: jövedelem mezők canonical_field=null esetre ===
+        # A mappingben a SZA_IG_jövedelem* mezők canonical_field-je null,
+        # de a participant.monthly_income rendelkezésre áll. Név-alapú
+        # felismeréssel kitöltjük az első jövedelemsort (összeg/deviza/checkbox).
+        self._fill_income_fields(field_data, mapping, borrower_data, co_borrower_data)
+
         return field_data
+
+    def _fill_income_fields(
+        self,
+        field_data: dict,
+        mapping: MappingConfig,
+        borrower_data: dict,
+        co_borrower_data: dict,
+    ) -> None:
+        """
+        Fix 3: a canonical_field nélküli jövedelem mezőket név-alapján
+        felismerve kitölti a participant.monthly_income értékével.
+
+        Kezelt minták (borrower + `-társ` co-borrower változat):
+        - `...jövedelem_összeg1` → havi jövedelem formázott értéke
+        - `...jövedelem_deviza1` → "HUF"
+        - `...jövedelem1` (checkbox) → "Yes" (első jövedelemtípus bepipálva)
+        - `...jövedelem_érk1` → "Yes" (bankszámlás érkezés, alapértelmezett)
+        """
+        # Regex-ek: a `1` indexet kötjük, hogy csak az első jövedelemsort
+        # töltsük (több jövedelemforrás esetén a többi marad üresen).
+        patterns = [
+            # (regex, value-fn)
+            (
+                re.compile(r"jövedelem_összeg1(?:-társ)?$", re.IGNORECASE),
+                lambda inc: inc,
+            ),
+            (
+                re.compile(r"jövedelem_deviza1(?:-társ)?$", re.IGNORECASE),
+                lambda inc: "HUF" if inc else "",
+            ),
+            (
+                re.compile(r"jövedelem1(?:-társ)?$", re.IGNORECASE),
+                lambda inc: "Yes" if inc else "",
+            ),
+            (
+                re.compile(r"jövedelem_érk1(?:-társ)?$", re.IGNORECASE),
+                lambda inc: "Yes" if inc else "",
+            ),
+        ]
+
+        for f in mapping.fields:
+            pdf_name = f.pdf_field_name
+            if not pdf_name or pdf_name in field_data:
+                continue
+            is_co = "-társ" in pdf_name
+            src = co_borrower_data if is_co else borrower_data
+            income = src.get("participant.monthly_income", "")
+            if not income:
+                continue
+            for pat, val_fn in patterns:
+                if pat.search(pdf_name):
+                    val = val_fn(income)
+                    if val:
+                        field_data[pdf_name] = val
+                    break
 
     def _resolve_legal(
         self,
@@ -535,6 +608,8 @@ class FormFillerPipeline:
 
     def _participant_to_dict(self, p) -> dict:
         """Participant → kanonikus dict."""
+        # employment_type inferencia: ha van munkáltató, alkalmazott
+        employment_type = p.employment_type or ("alkalmazott" if p.employer else "")
         d = {
             "participant.name": p.name,
             "participant.birth_name": p.birth_name or "",
@@ -549,34 +624,76 @@ class FormFillerPipeline:
             "participant.employer": p.employer or "",
             "participant.monthly_income": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",
             "participant.role": p.role.value,
-            "participant.gender": "",
-            "participant.citizenship": "magyar",
-            "participant.marital_status": "",
-            "participant.id_document_type": "",
-            "participant.education": "",
-            "participant.employment_type": "",
-            "participant.dependents": "",
-            "participant.employee_count": "",
-            "participant.nav_declaration": "",
-            "participant.mailing_address_same": "",
-            "participant.residence_since": "",
-            "participant.business_name": "",
-            "participant.business_tax_id": "",
-            "participant.employer_tax_id": "",
+            "participant.gender": p.gender or "",
+            "participant.citizenship": p.citizenship or "magyar",
+            "participant.marital_status": p.marital_status or "",
+            "participant.id_document_type": p.id_document_type or "",
+            "participant.education": p.education or "",
+            "participant.employment_type": employment_type,
+            "participant.dependents": str(p.dependents) if p.dependents is not None else "",
+            "participant.employee_count": str(p.employee_count) if p.employee_count is not None else "",
+            "participant.nav_declaration": "Yes" if p.nav_declaration else "",
+            "participant.mailing_address_same": "Yes" if p.mailing_address_same else "",
+            "participant.residence_since": p.residence_since.strftime("%Y.%m.%d") if p.residence_since else "",
+            "participant.business_name": p.business_name or "",
+            "participant.business_tax_id": p.business_tax_id or "",
+            "participant.employer_tax_id": p.employer_tax_id or "",
             "participant.kata_status": "",
         }
         return d
 
     def _address_to_dict(self, addr, prefix: str = "address") -> dict:
-        """Address → kanonikus dict."""
+        """Address → kanonikus dict.
+
+        Fix 5: a PDF külön mezőket tartalmazhat utca és házszám számára.
+        A `street` mező tartalmazza a kombinált "utca házszám" formát,
+        a `house_number` csak a házszámot. Ha a street eredetileg nem
+        tartalmazza a házszámot, automatikusan hozzáfűzzük.
+        """
+        combined_street = addr.street
+        if addr.house_number and addr.house_number not in (addr.street or ""):
+            combined_street = f"{addr.street} {addr.house_number}".strip()
         return {
             f"participant.{prefix}.full_address": addr.full_address,
             f"participant.{prefix}.zip_code": addr.zip_code,
             f"participant.{prefix}.city": addr.city,
-            f"participant.{prefix}.street": f"{addr.street} {addr.house_number}",
+            f"participant.{prefix}.street": combined_street,
             f"participant.{prefix}.house_number": addr.house_number,
             f"participant.{prefix}.country": "Magyarország",
         }
+
+    @staticmethod
+    def _split_date_component(pdf_name: str, date_str: str) -> str | None:
+        """
+        Fix 1: ha a pdf_name egy dátum év/hónap/nap komponensére hivatkozik,
+        visszaadja a dátum megfelelő részét; egyébként None.
+
+        Támogatott pdf_name kulcsszavak:
+          - év / year / _ev  → évszám (pl. "1978")
+          - hónap / honap / month → hónap (pl. "12")
+          - nap / day → nap (pl. "28")
+
+        Támogatott dátumformátumok: "1978.12.28", "1978-12-28", "1978. 12. 28."
+        """
+        if not date_str:
+            return None
+        name = pdf_name.lower()
+        parsed = None
+        for fmt in ("%Y.%m.%d", "%Y-%m-%d", "%Y. %m. %d."):
+            try:
+                parsed = datetime.strptime(date_str.strip(), fmt)
+                break
+            except ValueError:
+                continue
+        if parsed is None:
+            return None
+        if "év" in name or "year" in name or name.endswith("_ev") or name.endswith("_ev."):
+            return str(parsed.year)
+        if "hónap" in name or "honap" in name or "month" in name:
+            return str(parsed.month)
+        if "nap" in name or "day" in name:
+            return str(parsed.day)
+        return None
 
     def _fill_pdf(
         self,
@@ -597,25 +714,24 @@ class FormFillerPipeline:
 
         if mapping.form_type == "acroform":
             filler = AcroFormFiller(flatten=False)
-            # AcroFormFiller dict[str,str] mapping-et vár (pdf_field_name → canonical).
-            # A mapping.fields-ből kinyerjük ezt a leképezést.
-            pdf_to_canonical = mapping.mapping_dict
-            # _prepare_field_data pdf_field_name kulcsokkal tér vissza, de az
-            # AcroFormFiller canonical kulcsú field_data-t vár (lásd
-            # _resolve_field_value: field_data.get(canonical_name)). Átalakítjuk.
-            canonical_field_data: dict[str, str] = {}
-            for f in mapping.fields:
-                if (
-                    f.canonical_field
-                    and f.pdf_field_name in field_data
-                    and field_data[f.pdf_field_name]
-                ):
-                    canonical_field_data[f.canonical_field] = field_data[f.pdf_field_name]
+            # Korábban az AcroFormFiller canonical-kulcsú field_data-t várt,
+            # és a mapping (pdf_field → canonical) alapján oldotta fel az
+            # értékeket. Ez a megközelítés összeomlott, amikor több PDF mező
+            # ugyanarra a canonical névre hivatkozott (pl. szül_év / szül_hónap
+            # / szül_nap → participant.birth_date): a canonical_field_data
+            # dict-ben csak egyetlen érték maradhatott, így mindhárom mező
+            # ugyanazt a teljes dátumot kapta.
+            #
+            # Most identity mapping-et használunk: field_data már pdf_field_name
+            # kulccsal van indexelve (a _prepare_field_data-ban), és a mapping
+            # saját magára mutat. Így minden PDF mező a saját egyedi értékét
+            # kapja (évként "1978", hónapként "12", napként "28").
+            identity_mapping = {name: name for name in field_data}
             result = filler.fill(
                 template_path=template_pdf,
                 output_path=output_path,
-                field_data=canonical_field_data,
-                mapping=pdf_to_canonical,
+                field_data=field_data,
+                mapping=identity_mapping,
             )
             if not result.success:
                 logger.warning(
