@@ -4,7 +4,7 @@
   "form_type": "acroform",
   "approved": false,
   "approved_by": null,
-  "notes": "Context-based AI felismerés (1029 mező, 96 leképezve, 52 API hívás).",
+  "notes": "Salesforce-based label matching + AI fallback (1029 mező, 248 leképezve, 24 label-match, 128 AI fallback).",
   "page_structure": {},
   "fields": [
     {
@@ -14,7 +14,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 268.5,
+        "width": 11.3,
+        "height": 13.7
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -24,7 +29,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 342.6,
+        "width": 11.3,
+        "height": 13.7
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -49,7 +59,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 304.1,
+        "y": 182.6,
+        "width": 265.5,
+        "height": 19.3
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -59,7 +74,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 225.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -69,7 +89,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 352.3,
+        "y": 216.7,
+        "width": 217.2,
+        "height": 19.3
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -199,7 +224,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 307.0,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -374,7 +404,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 417.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -384,7 +419,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 452.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -484,7 +524,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 648.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -599,7 +644,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 724.8,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -709,10 +759,10 @@
     },
     {
       "pdf_field_name": "Text Field 346",
-      "label": "Előfizetéses",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Elérhetőséget biztosító Feltöltőkártyás",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 304.1,
@@ -720,14 +770,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 347",
-      "label": "Feltöltőkártyás",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Elérhetőséget biztosító Feltöltőkártyás",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 324.8,
@@ -735,14 +785,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 348",
-      "label": "Céges",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Elérhetőséget biztosító Feltöltőkártyás telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": {
         "x": 345.4,
@@ -750,14 +800,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 349",
-      "label": "Tulajdonos",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Elérhetőséget biztosító Feltöltőkártyás telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": {
         "x": 366.1,
@@ -765,14 +815,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 350",
-      "label": "Bérlő",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "biztosító Elérhetőséget telefonszám Feltöltőkártyás",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 386.8,
@@ -780,14 +830,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 351",
-      "label": "Családtag",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "biztosító telefonszám Elérhetőséget Feltöltőkártyás",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 407.5,
@@ -795,14 +845,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 352",
-      "label": "Egyéb (jogcím)",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "telefonszám biztosító",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 428.2,
@@ -810,14 +860,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 353",
-      "label": "Felsőfokú",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "telefonszám biztosító",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 448.9,
@@ -825,14 +875,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 354",
-      "label": "Szakképesítés",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 469.6,
@@ -840,14 +890,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 355",
-      "label": "Érettségi",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "telefonszám 3.",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 490.3,
@@ -855,14 +905,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 356",
-      "label": "8 általános vagy alacsonyabb",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "telefonszám 3. oldal/18",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 511.0,
@@ -870,7 +920,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 35",
@@ -879,7 +929,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 138.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -889,15 +944,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 212.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 357",
-      "label": "Tartózkodási hely évek",
+      "label": "Mióta lakik Mi az a Tulajdonos Ön Milyen Felsőfokú jogcímen jelenlegi 3. Egyéb l",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.address.city",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 26.3,
@@ -905,14 +965,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 358",
-      "label": "Tartózkodási hely hónapok",
+      "label": "Mióta az Mi lakik Milyen a Tulajdonos Ön 3. jelenlegi Felsőfokú jogcímen 4. legm",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.address.street",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 47.0,
@@ -920,14 +980,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 359",
-      "label": "Munkaviszony",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "lakik Tulajdonos Mióta Ön a az Felsőfokú jelenlegi Milyen Mi Egyéb legmagasabb 3",
+      "field_type": "text",
+      "canonical_field": "participant.address.house_number",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 67.6,
@@ -935,14 +995,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 360",
-      "label": "Vállalkozó",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "a lakik Tulajdonos jelenlegi jogcímen Mióta Ön év Felsőfokú legmagasabb az Milye",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 88.3,
@@ -950,14 +1010,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 361",
-      "label": "Nyugdíjas",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "jelenlegi év a lakik legmagasabb tartózkodási lakik Tulajdonos iskolai jogcímen ",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 120.2,
@@ -965,14 +1025,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 362",
-      "label": "Egyéb (munka típusa)",
-      "field_type": "checkbox",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "iskolai tartózkodási jelenlegi jelenlegi év lakik a hónap legmagasabb helyén? sz",
+      "field_type": "text",
+      "canonical_field": "participant.education",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 140.9,
@@ -980,7 +1040,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 42",
@@ -989,7 +1049,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 285.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -999,7 +1064,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 373.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -1009,7 +1079,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 442.0,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -1019,15 +1094,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 483.2,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 363",
-      "label": "Egyéb munkatípus szöveges",
+      "label": "GYES-en/GYED-en kültagja töltendő Kkt. vagy Bt. bel- esetén vállalkozás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.employer",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 213.4,
@@ -1035,7 +1115,7 @@
         "width": 215.5,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 61",
@@ -1044,7 +1124,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 566.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -1054,15 +1139,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 599.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 364",
-      "label": "Egyéb cégforma szöveges",
+      "label": "vagy Kht. Non-profit Őstermelő szervezet",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.employer",
+      "confidence": "medium",
       "page_number": 3,
       "coordinates": {
         "x": 74.5,
@@ -1070,7 +1160,7 @@
         "width": 222.9,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 72",
@@ -1079,7 +1169,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 94.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -1659,7 +1754,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 319.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -1799,10 +1899,10 @@
     },
     {
       "pdf_field_name": "Text Field 412",
-      "label": "Havi nettó jövedelem (Ft) / devizaösszeg (pl. EUR)",
+      "label": "havi nettó kérjük, bankszámlára kapja, OTP Ft / származó Banknál tüntesse jövede",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 165.2,
@@ -1810,14 +1910,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 413",
-      "label": "Havi nettó jövedelem (Ft) / devizaösszeg (pl. EUR)",
+      "label": "havi OTP / Ft nettó bankszámlára kérjük, Banknál jövedelem kapja, (pl. tüntesse ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 180.9,
@@ -1825,14 +1925,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 414",
-      "label": "Havi nettó jövedelem (Ft) / devizaösszeg (pl. EUR)",
+      "label": "nettó bankszámlára havi OTP / jövedelem Ft tüntesse Banknál érkező kérjük, (pl. ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 198.6,
@@ -1840,14 +1940,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 415",
-      "label": "Havi nettó jövedelem (OTP bankszámlára érkező) - Ft",
+      "label": "nettó bankszámlára Banknál havi jövedelem a fel OTP érkező / tüntesse Ft (pl. ve",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 214.4,
@@ -1855,14 +1955,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 416",
-      "label": "Havi nettó jövedelem (OTP bankszámlára érkező) - devizaösszeg",
+      "label": "nettó jövedelem bankszámlára (pl. Banknál érkező havi a fel vezetett OTP utolsó ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
       "page_number": 4,
       "coordinates": {
         "x": 230.2,
@@ -1870,14 +1970,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 417",
-      "label": "Havi nettó jövedelem (OTP bankszámlára érkező) - devizanem",
+      "label": "jövedelem érkező vezetett EUR) nettó devizaösszeget (pl. bankszámlára utolsó Ban",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 247.8,
@@ -1885,14 +1985,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 418",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - Ft",
+      "label": "jövedelem érkező /hó vezetett utolsó EUR) devizaösszeget nettó havi (pl. bankszá",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 263.6,
@@ -1900,14 +2000,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 419",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - devizaösszeg",
+      "label": "utolsó érkező jövedelem és havi /hó vezetett devizaösszeget EUR) nettó Más Ft ba",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 279.4,
@@ -1915,14 +2015,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 420",
-      "label": "Havi nettó jövedelem (OTP bankszámlára érkező) - utolsó havi Ft",
+      "label": "/ Ft havi (pl. OTP nettó / Ft származó EUR) bankszámlára jövedelem Banknál érkez",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 182.4,
@@ -1930,14 +2030,14 @@
         "width": 27.8,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 421",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - devizanem",
+      "label": "utolsó havi nettó a bankszámlára és érkező Más Ft / jövedelem banknál /hó vezete",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 304.1,
@@ -1945,14 +2045,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 422",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - utolsó havi Ft",
+      "label": "havi Más / nettó Ft utolsó bankszámlára devizanemet a jövedelem banknál és (pl. ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 319.8,
@@ -1960,14 +2060,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 423",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - utolsó havi devizaösszeg",
+      "label": "nettó bankszámlára havi Más / is. jövedelem Ft devizanemet banknál érkező utolsó",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 337.5,
@@ -1975,14 +2075,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 424",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - utolsó havi devizanem",
+      "label": "nettó bankszámlára banknál havi jövedelem Más is. érkező / Ft vezetett (pl. EUR)",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 353.3,
@@ -1990,14 +2090,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 425",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - második utolsó havi Ft",
+      "label": "nettó jövedelem bankszámlára (pl. banknál érkező havi is. vezetett utolsó Más EU",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
       "page_number": 4,
       "coordinates": {
         "x": 369.0,
@@ -2005,14 +2105,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 426",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - Ft",
+      "label": "jövedelem érkező vezetett EUR) nettó (pl. utolsó bankszámlára banknál /hó havi i",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 386.7,
@@ -2020,14 +2120,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 427",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - devizaösszeg",
+      "label": "jövedelem érkező /hó vezetett utolsó EUR) havi nettó (pl. banknál bankszámlára N",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 402.5,
@@ -2035,14 +2135,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 428",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - devizanem",
+      "label": "utolsó érkező jövedelem havi /hó vezetett nettó EUR) Nem készpénzben Ft / (pl. b",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 418.3,
@@ -2050,14 +2150,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 429",
-      "label": "Havi nettó jövedelem (más banknál vezetett bankszámlára érkező) - második utolsó havi Ft",
+      "label": "/ Ft havi (pl. Más nettó / Ft utolsó EUR) jövedelem bankszámlára banknál érkező ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 321.3,
@@ -2065,14 +2165,14 @@
         "width": 27.8,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 430",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - utolsó havi Ft",
+      "label": "utolsó havi nettó készpénzben érkező Nem jövedelem Ft / /hó vezetett jövedelem b",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 437.3,
@@ -2080,14 +2180,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 431",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - utolsó havi devizaösszeg",
+      "label": "havi Nem / nettó Ft utolsó készpénzben jövedelem bankszámlára, érkező érkező (pl",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 453.1,
@@ -2095,14 +2195,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 432",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - utolsó havi devizanem",
+      "label": "nettó készpénzben havi Nem / jövedelem Ft érkező utolsó bankszámlára, (pl. EUR) ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 470.7,
@@ -2110,14 +2210,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 433",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - második utolsó havi Ft",
+      "label": "nettó készpénzben havi jövedelem Nem érkező / bankszámlára, Ft (pl. EUR) utolsó ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 486.5,
@@ -2125,14 +2225,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 434",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - második utolsó havi devizaösszeg",
+      "label": "nettó bankszámlára, jövedelem (pl. készpénzben érkező havi utolsó Nem EUR) /hó /",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 502.3,
@@ -2140,14 +2240,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 435",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - második utolsó havi devizanem",
+      "label": "jövedelem érkező EUR) bankszámlára, nettó utolsó (pl. készpénzben /hó havi / EUR",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 520.0,
@@ -2155,14 +2255,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 436",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - harmadik utolsó havi Ft",
+      "label": "jövedelem érkező /hó utolsó EUR) bankszámlára, nettó (pl. készpénzben /hó",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 535.7,
@@ -2170,14 +2270,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 437",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - harmadik utolsó havi devizaösszeg",
+      "label": "utolsó jövedelem érkező /hó EUR) bankszámlára, (pl.",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 551.5,
@@ -2185,14 +2285,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 438",
-      "label": "Havi nettó jövedelem (nem bankszámlára, készpénzben érkező) - harmadik utolsó havi devizanem",
+      "label": "/ Ft havi (pl. Nem nettó / utolsó Ft EUR) jövedelem készpénzben /hó érkező banks",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 454.5,
@@ -2200,14 +2300,14 @@
         "width": 27.8,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 439",
-      "label": "Rokkantellátásból származó havi jövedelem (Ft)",
+      "label": "Ft / származó Ft / (pl. EUR) rokkantellátás (pl. havi nettó /hó EUR) Ft / /hó",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 165.2,
@@ -2215,14 +2315,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 440",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/ Ft / Ft (pl. havi EUR) (pl. /hó / EUR) Ft nettó jövedelem bankszámlára /hó (pl",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 180.9,
@@ -2230,14 +2330,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 441",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/ Ft (pl. / EUR) Ft nettó /hó (pl. havi bankszámlára EUR) /hó / jövedelem (pl. E",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 198.6,
@@ -2245,14 +2345,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 442",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/ (pl. EUR) Ft /hó / Ft (pl. nettó EUR) /hó jövedelem Ft (pl. EUR) /hó",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 214.4,
@@ -2260,14 +2360,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 443",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "(pl. EUR) (pl. /hó / Ft EUR) /hó / nettó Ft Ft (pl. jövedelem / érkező Ft EUR) /",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 230.2,
@@ -2275,14 +2375,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 444",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "EUR) (pl. /hó EUR) (pl. /hó jövedelem / Ft Ft érkező / / EUR) Ft / /hó",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 247.8,
@@ -2290,14 +2390,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 445",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/hó EUR) /hó (pl. EUR) Ft (pl. / jövedelem Ft / /hó havi utolsó (pl.",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 263.6,
@@ -2305,14 +2405,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 446",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/hó EUR) Ft /hó / (pl. EUR) Ft utolsó / (pl. (pl. havi EUR) (pl. Ft /",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": {
         "x": 279.4,
@@ -2320,7 +2420,7 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 447",
@@ -2354,10 +2454,10 @@
     },
     {
       "pdf_field_name": "Text Field 449",
-      "label": "Nem OTP Banknak fizetett havi törlesztőrészletek összege (Ft)",
+      "label": "/ Ft / Ft (pl. havi /hó EUR) (pl. /hó /hó / EUR) Ft nettó jövedelem bankszámlára",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.monthly_income",
+      "confidence": "high",
       "page_number": 4,
       "coordinates": {
         "x": 319.8,
@@ -2365,7 +2465,7 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 450",
@@ -3974,10 +4074,10 @@
     },
     {
       "pdf_field_name": "Text Field 557",
-      "label": "Egyéb jövedelem összege (Ft) - 11. sor",
+      "label": "kereset helyettesítő / Ft jövedelemkiegészítés, kiegészítése, munkaképességűek P",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
       "page_number": 5,
       "coordinates": {
         "x": 319.8,
@@ -3985,14 +4085,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 558",
-      "label": "Egyéb jövedelem összege (Ft) - 12. sor",
+      "label": "kereset helyettesítő jövedelemkiegészítés, / Ft kiegészítése, Vakok (pl. EUR) sz",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
       "page_number": 5,
       "coordinates": {
         "x": 337.5,
@@ -4000,14 +4100,14 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 559",
-      "label": "Egyéb jövedelem összege (Ft) - 13. sor",
+      "label": "kiegészítése, jövedelemkiegészítés, kereset Vakok helyettesítő / Ft (pl. EUR) sz",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "high",
       "page_number": 5,
       "coordinates": {
         "x": 353.3,
@@ -4015,7 +4115,7 @@
         "width": 13.7,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 560",
@@ -6379,7 +6479,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 199.7,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6404,7 +6509,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 232.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6414,7 +6524,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 266.1,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6479,10 +6594,10 @@
     },
     {
       "pdf_field_name": "Text Field 722",
-      "label": "Gyermekek száma",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Gyermekek Van fő fő száma Háztartás Igen mobiltelefonja? Elvált Mobil létszáma E",
+      "field_type": "text",
+      "canonical_field": "participant.dependents",
+      "confidence": "medium",
       "page_number": 6,
       "coordinates": {
         "x": 25.8,
@@ -6490,14 +6605,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 723",
-      "label": "Gyermekek száma",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Gyermekek Van Háztartás fő száma fő mobiltelefonja? Mobil Igen létszáma Elvált t",
+      "field_type": "text",
+      "canonical_field": "participant.dependents",
+      "confidence": "medium",
       "page_number": 6,
       "coordinates": {
         "x": 46.5,
@@ -6505,7 +6620,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 85",
@@ -6514,7 +6629,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 417.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6524,7 +6644,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 455.8,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6534,7 +6659,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 530.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6634,7 +6764,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 607.1,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6644,7 +6779,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 695.1,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6654,7 +6794,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 764.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6664,7 +6809,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 74.7,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6689,7 +6839,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 178.7,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6699,7 +6854,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 247.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6709,7 +6869,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 288.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6734,7 +6899,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 371.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6744,7 +6914,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 404.8,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -6769,7 +6944,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 535.0,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -7349,7 +7529,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 760.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -11959,10 +12144,10 @@
     },
     {
       "pdf_field_name": "Text Field 1078",
-      "label": "Igénylő neve (folytatás)",
+      "label": "hitelbírálathoz neve",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 303.6,
@@ -11970,7 +12155,7 @@
         "width": 265.5,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1079",
@@ -12019,10 +12204,10 @@
     },
     {
       "pdf_field_name": "Text Field 1082",
-      "label": "Születési idő (év, hónap, nap) - ismétlődő",
+      "label": "idő Születési Ingatlan év szerepe Előzetes adatai ingatlannak 1. Ingatlan hitelb",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 87.8,
@@ -12030,14 +12215,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1083",
-      "label": "Születési idő (év, hónap, nap) - ismétlődő",
+      "label": "év adatai idő hitelbírálatot az Születési szerepe Ingatlan igénylő hónap ügyletb",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 119.7,
@@ -12045,14 +12230,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1084",
-      "label": "Születési idő (év, hónap, nap) - ismétlődő",
+      "label": "év igénylő ügyletben adatai hónap idő hitelbírálatot kölcsön/támogatás az neve s",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 140.4,
@@ -12060,7 +12245,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1085",
@@ -12099,7 +12284,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 255.7,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -12269,10 +12459,10 @@
     },
     {
       "pdf_field_name": "Text Field 1098",
-      "label": "Értékelendő ingatlan tulajdoni hányada (számláló)",
+      "label": "Értékelendő jelzálogjog-bejegyzések / ingatlan Aktuális Utca, házszám, fennmarad",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.address.street",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 303.6,
@@ -12280,14 +12470,14 @@
         "width": 39.2,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1099",
-      "label": "Értékelendő ingatlan tulajdoni hányada (nevező)",
+      "label": "/ Értékelendő ingatlan házszám, jelzálogjog-bejegyzések tulajdoni Aktuális Utca,",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.address.house_number",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 352.2,
@@ -12295,14 +12485,14 @@
         "width": 39.2,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1100",
-      "label": "1. Tulajdoni lapon bejegyzett jelzálog összege",
+      "label": "1. Tulajdoni Az ingatlanon Devizanem HUF lapon a Ingatlan Hitel típusa kölcsön h",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 25.8,
@@ -12310,14 +12500,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1101",
-      "label": "1. Tulajdoni lapon bejegyzett jelzálog összege (folytatás)",
+      "label": "1. Az Tulajdoni ingatlanon Devizanem Ingatlan lapon Hitel a HUF kölcsön típusa h",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 46.5,
@@ -12325,14 +12515,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1102",
-      "label": "1. jelzálog devizanem HUF",
+      "label": "Tulajdoni ingatlanon 1. Devizanem Az lapon HUF a típusa Ingatlan kölcsön Hitel b",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 67.1,
@@ -12340,14 +12530,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1103",
-      "label": "1. jelzálog devizanem HUF",
+      "label": "a Tulajdoni lapon ingatlanon kölcsön bejegyzett 1. helyrajzi Devizanem Az HUF tí",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 92.9,
@@ -12355,14 +12545,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1104",
-      "label": "1. jelzálog devizanem EUR",
+      "label": "lapon kölcsön a bejegyzett Tulajdoni ingatlanon felvételét helyrajzi jelzálog De",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 113.5,
@@ -12370,14 +12560,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1105",
-      "label": "1. jelzálog devizanem EUR",
+      "label": "kölcsön lapon bejegyzett a felvételét jelzálog száma Tulajdoni ingatlanon követő",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 134.2,
@@ -12385,14 +12575,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1106",
-      "label": "1. jelzálog devizanem EUR",
+      "label": "bejegyzett felvételét jelzálog kölcsön követően lapon összege a száma is EUR fen",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 160.0,
@@ -12400,14 +12590,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1107",
-      "label": "1. jelzálog devizanem EUR",
+      "label": "jelzálog felvételét bejegyzett összege követően is kölcsön EUR fennmaradó Lakásh",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 180.6,
@@ -12415,14 +12605,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1108",
-      "label": "1. jelzálog devizanem EUR",
+      "label": "jelzálog követően összege EUR is felvételét bejegyzett fennmaradó Lakáshitel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 201.3,
@@ -12430,14 +12620,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1109",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "Aktuális fennmaradó jelzálogjog-bejegyzések tőketartozás / CHF Értékelendő Támog",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 303.6,
@@ -12445,14 +12635,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1110",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "Aktuális jelzálogjog-bejegyzések tőketartozás / fennmaradó CHF Értékelendő felso",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 324.2,
@@ -12460,14 +12650,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1111",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "Aktuális jelzálogjog-bejegyzések tőketartozás CHF Értékelendő / Támogatás felsor",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 344.9,
@@ -12475,14 +12665,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1112",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "tőketartozás / jelzálogjog-bejegyzések Aktuális felsorolása CHF Értékelendő Támo",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 370.7,
@@ -12490,14 +12680,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1113",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "tőketartozás felsorolása / jelzálogjog-bejegyzések ingatlan Aktuális CHF tulajdo",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 391.3,
@@ -12505,14 +12695,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1114",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "felsorolása tőketartozás ingatlan / tulajdoni hányada",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.property_type",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 412.0,
@@ -12520,14 +12710,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1115",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "felsorolása tulajdoni tőketartozás hányada Munkáltatói",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 437.7,
@@ -12535,14 +12725,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1116",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "felsorolása hányada tulajdoni Munkáltatói",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 458.4,
@@ -12550,14 +12740,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1117",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "hányada felsorolása Munkáltatói hitel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.employer",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": {
         "x": 479.1,
@@ -12565,7 +12755,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Check Box 146",
@@ -12574,7 +12764,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 525.7,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -12584,7 +12779,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 560.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -12594,15 +12794,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 611.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 1118",
-      "label": "2. jelzálog devizanem HUF",
+      "label": "2. Tulajdoni Igényelt Devizanem Ranghely HUF lapon hitel Hitel Önkormányzati típ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 25.8,
@@ -12610,14 +12815,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1119",
-      "label": "2. jelzálog devizanem HUF",
+      "label": "2. Tulajdoni Ranghely Igényelt Devizanem lapon Hitel hitel HUF előtti Önkormányz",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 46.5,
@@ -12625,14 +12830,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1120",
-      "label": "2. jelzálog devizanem HUF",
+      "label": "Tulajdoni Igényelt 2. Devizanem lapon Ranghely HUF hitel típusa előtti Szabad Hi",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 67.1,
@@ -12640,14 +12845,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1121",
-      "label": "2. jelzálog devizanem HUF",
+      "label": "hitel Tulajdoni lapon Igényelt előtti bejegyzett 2. Önkormányzati Devizanem Rang",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 92.9,
@@ -12655,14 +12860,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1122",
-      "label": "2. jelzálog devizanem EUR",
+      "label": "lapon előtti hitel bejegyzett Tulajdoni Igényelt ranghelyen Önkormányzati felhas",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 113.5,
@@ -12670,14 +12875,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1123",
-      "label": "2. jelzálog devizanem EUR",
+      "label": "előtti lapon bejegyzett hitel ranghelyen jelzálog hitel Tulajdoni Igényelt felha",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 134.2,
@@ -12685,14 +12890,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1124",
-      "label": "2. jelzálog devizanem EUR",
+      "label": "bejegyzett ranghelyen jelzálog előtti lapon összege hitel hitel EUR Lakáshitel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 160.0,
@@ -12700,14 +12905,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1125",
-      "label": "2. jelzálog devizanem EUR",
+      "label": "jelzálog ranghelyen bejegyzett összege előtti EUR Lakáshitel Lakáshitel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 180.6,
@@ -12715,14 +12920,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1126",
-      "label": "2. jelzálog devizanem EUR",
+      "label": "jelzálog összege EUR ranghelyen bejegyzett Lakáshitel Lakáshitel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 201.3,
@@ -12730,14 +12935,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1127",
-      "label": "1. jelzálog aktuális tőketartozás",
+      "label": "Aktuális Igényelt tőketartozás CHF hitel utáni Támogatás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 303.6,
@@ -12745,14 +12950,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1128",
-      "label": "1. jelzálog devizanem CHF",
+      "label": "Aktuális Igényelt tőketartozás hitel CHF utáni Támogatás Támogatás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 324.2,
@@ -12760,14 +12965,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1129",
-      "label": "1. jelzálog hitel típusa Támogatás",
+      "label": "Aktuális Igényelt tőketartozás CHF hitel utáni Támogatás Támogatás ranghelyen",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 344.9,
@@ -12775,14 +12980,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1130",
-      "label": "1. jelzálog ranghely Igényelt hitel utáni",
+      "label": "tőketartozás hitel Igényelt Aktuális utáni CHF ranghelyen Támogatás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 370.7,
@@ -12790,14 +12995,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1131",
-      "label": "1. jelzálog ranghely (egyéb)",
+      "label": "tőketartozás utáni hitel Igényelt ranghelyen Aktuális CHF",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 391.3,
@@ -12805,14 +13010,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1132",
-      "label": "1. jelzálog ranghely (folytatás)",
+      "label": "utáni tőketartozás hitel ranghelyen Igényelt",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 10,
       "coordinates": {
         "x": 412.0,
@@ -12820,7 +13025,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1133",
@@ -12874,7 +13079,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 686.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -12884,7 +13094,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 721.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -12894,15 +13109,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 772.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 1260",
-      "label": "Kapcsolattartó neve",
+      "label": "4 követő szükséges munkanapon helyszíni és nevét a a megrendelését , telefonszám",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
       "page_number": 11,
       "coordinates": {
         "x": 114.5,
@@ -12910,7 +13130,7 @@
         "width": 234.8,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1261",
@@ -12944,10 +13164,10 @@
     },
     {
       "pdf_field_name": "Text Field 1259",
-      "label": "Igénylő neve (folytatás)",
+      "label": ", Telefonszáma",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.phone",
+      "confidence": "high",
       "page_number": 11,
       "coordinates": {
         "x": 222.5,
@@ -12955,7 +13175,7 @@
         "width": 167.2,
         "height": 11.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 5010",
@@ -12989,10 +13209,10 @@
     },
     {
       "pdf_field_name": "Text Field 1138",
-      "label": "OTP-s bankszámlaszám első 3 számjegye",
+      "label": "OTP-s - számlája 117 nem Ha bankszámlaszám, javára 4. Értékbecslés költségét/díj",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
       "page_number": 13,
       "coordinates": {
         "x": 44.7,
@@ -13000,14 +13220,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1139",
-      "label": "OTP-s bankszámlaszám 4-6 számjegye",
+      "label": "OTP-s számlája - bankszámlaszám, 117 Felkérem nem javára partnereink Ha Értékbec",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "high",
       "page_number": 13,
       "coordinates": {
         "x": 62.5,
@@ -13015,7 +13235,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1140",
@@ -13574,10 +13794,10 @@
     },
     {
       "pdf_field_name": "Text Field 1172",
-      "label": "Vételár (első számjegy)",
+      "label": "A vásárolt 1. 2. Alapadatok ingatlan Igényelt 2.1 Kölcsön(ök) kölcsön Igényelt",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 26.3,
@@ -13585,14 +13805,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1173",
-      "label": "Vételár (második számjegy)",
+      "label": "A 1. vásárolt 2. ingatlan Alapadatok 2.1 Igényelt Igényelt vételára kölcsön Kölc",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 47.0,
@@ -13600,14 +13820,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1174",
-      "label": "Vételár (harmadik számjegy)",
+      "label": "vásárolt A Igényelt ingatlan 1. Alapadatok 2. vételára 2.1 kölcsön Kölcsön(ök) I",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 67.6,
@@ -13615,14 +13835,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1175",
-      "label": "Vételár (negyedik számjegy)",
+      "label": "ingatlan Alapadatok vásárolt vételára Igényelt A 1. kölcsön Kölcsön(ök) 2. (Épít",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 92.7,
@@ -13630,14 +13850,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1176",
-      "label": "Vételár (ötödik számjegy)",
+      "label": "ingatlan vételára kölcsön Alapadatok vásárolt (Építési Igényelt és Kölcsön(ök) c",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 113.4,
@@ -13645,14 +13865,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1177",
-      "label": "Vételár (hatodik számjegy)",
+      "label": "vételára ingatlan (Építési kölcsön Alapadatok és célra támogatás Igényelt teljes",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 134.1,
@@ -13660,14 +13880,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1178",
-      "label": "Vételár (hetedik számjegy)",
+      "label": "vételára (Építési célra és ingatlan támogatás kölcsön igénylése igényelt és össz",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 159.2,
@@ -13675,14 +13895,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1179",
-      "label": "Vételár (nyolcadik számjegy)",
+      "label": "(Építési célra támogatás vételára igényelt és Ft igénylése CSOK és kölcsön össze",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "high",
       "page_number": 14,
       "coordinates": {
         "x": 179.9,
@@ -13690,14 +13910,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1180",
-      "label": "Vételár (kilencedik számjegy)",
+      "label": "célra (Építési igényelt támogatás Ft és CSOK esetén vételára és Plusz előzetes t",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "property.estimated_value",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 200.6,
@@ -13705,14 +13925,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1181",
-      "label": "Igényelt kölcsön összege (első számjegy)",
+      "label": "Igényelt 2.1 Elfogadható kölcsön(ök) Kölcsön(ök) 2. Igényelt minimális 2.2",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 26.3,
@@ -13720,14 +13940,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1182",
-      "label": "Igényelt kölcsön összege (második számjegy)",
+      "label": "Igényelt 2.1 kölcsön(ök) 2. Elfogadható Kölcsön(ök) 2.2 Igényelt teljes minimáli",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 47.0,
@@ -13735,14 +13955,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1183",
-      "label": "Igényelt kölcsön összege (harmadik számjegy)",
+      "label": "Igényelt kölcsön(ök) Elfogadható 2.1 Igényelt Kölcsön(ök) 2. teljes minimális 2.",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "high",
       "page_number": 14,
       "coordinates": {
         "x": 67.6,
@@ -13750,14 +13970,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1184",
-      "label": "Igényelt kölcsön összege (negyedik számjegy)",
+      "label": "kölcsön(ök) Kölcsön(ök) Igényelt teljes Elfogadható minimális 2.1 Igényelt igény",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 92.7,
@@ -13765,14 +13985,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1185",
-      "label": "Igényelt kölcsön összege (ötödik számjegy)",
+      "label": "kölcsön(ök) teljes minimális Kölcsön(ök) összege kölcsön igénylése Igényelt kölc",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 113.4,
@@ -13780,14 +14000,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1186",
-      "label": "Igényelt kölcsön összege (hatodik számjegy)",
+      "label": "teljes összege kölcsön(ök) minimális igénylése Kölcsön(ök) kölcsönigény kölcsön ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 134.1,
@@ -13795,14 +14015,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1187",
-      "label": "Igényelt kölcsön összege (hetedik számjegy)",
+      "label": "összege teljes kölcsönigény igénylése esetén és kölcsön(ök) minimális összege ig",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 159.2,
@@ -13810,14 +14030,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1188",
-      "label": "Igényelt kölcsön összege (nyolcadik számjegy)",
+      "label": "összege kölcsönigény teljes igénylése támogatás esetén összege és töltendő Ft ig",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 179.9,
@@ -13825,14 +14045,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1189",
-      "label": "Igényelt kölcsön összege (kilencedik számjegy)",
+      "label": "esetén összege Ft összege töltendő támogatás kölcsönigény igénylése teljes Ft es",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 200.6,
@@ -13840,14 +14060,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1190",
-      "label": "Elfogadható minimális kölcsönigény (első számjegy)",
+      "label": "Elfogadható 2.2 Igényelt Támogatás minimális Támogatás(ok) kölcsön(ök) 2.1 Új cé",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 26.3,
@@ -13855,14 +14075,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1191",
-      "label": "Elfogadható minimális kölcsönigény (második számjegy)",
+      "label": "Elfogadható 2.2 Igényelt minimális 2.1 Támogatás(ok) Támogatás kölcsön(ök) Igény",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 47.0,
@@ -13870,14 +14090,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1192",
-      "label": "Elfogadható minimális kölcsönigény (harmadik számjegy)",
+      "label": "Elfogadható minimális 2.2 Igényelt Támogatás Támogatás(ok) lakás Új kölcsön(ök) ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 67.6,
@@ -13885,14 +14105,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1193",
-      "label": "Elfogadható minimális kölcsönigény (negyedik számjegy)",
+      "label": "minimális Elfogadható Támogatás(ok) kölcsön(ök) célja Igényelt kölcsönigény 2.2 ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 92.7,
@@ -13900,14 +14120,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1194",
-      "label": "Elfogadható minimális kölcsönigény (ötödik számjegy)",
+      "label": "minimális Támogatás(ok) kölcsönigény kölcsön(ök) Elfogadható célja vásárlása tel",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 113.4,
@@ -13915,14 +14135,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1195",
-      "label": "Elfogadható minimális kölcsönigény (hatodik számjegy)",
+      "label": "minimális kölcsönigény teljes Támogatás(ok) igénylése kölcsön(ök) összege célja ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 134.1,
@@ -13930,14 +14150,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1196",
-      "label": "Elfogadható minimális kölcsönigény (hetedik számjegy)",
+      "label": "kölcsönigény igénylése összege minimális összege teljes esetén Ft Támogatás(ok) ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 159.2,
@@ -13945,7 +14165,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1197",
@@ -13984,15 +14204,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 362.5,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 1199",
-      "label": "Támogatás célja - Új lakás vásárlása",
+      "label": "összege Igényelt Új 3. meglévő családi lakás Választott Támogatás Választott vás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 26.3,
@@ -14000,14 +14225,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1200",
-      "label": "Támogatás célja - Használt lakás vásárlása",
+      "label": "összege Igényelt 3. meglévő családi Új lakás Választott 2.2 vásárlása Támogatás ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 47.0,
@@ -14015,14 +14240,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1201",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre",
+      "label": "összege Igényelt lakás meglévő Új családi 3. Támogatás Választott Választott vás",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 67.6,
@@ -14030,14 +14255,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1202",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "meglévő családi lakás összege gyermekre Választott Igényelt célja Új otthonterem",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 92.7,
@@ -14045,14 +14270,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1203",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "meglévő gyermekre vásárlása családi otthonteremtési lakás konstrukció célja Vála",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 113.4,
@@ -14060,14 +14285,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1204",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "gyermekre otthonteremtési kölcsön(ök) meglévő vásárlása tekintettel családi kons",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 134.1,
@@ -14075,14 +14300,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1205",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "gyermekre otthonteremtési tekintettel kölcsön(ök) kedvezmény típusa vásárlása ig",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 159.2,
@@ -14090,14 +14315,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1206",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "tekintettel kedvezmény otthonteremtési gyermekre kölcsön(ök) forint (Falusi Ft t",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 179.9,
@@ -14105,14 +14330,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1207",
-      "label": "Igényelt Falusi CSOK összege meglévő gyermekre (folyt.)",
+      "label": "kedvezmény tekintettel Ft (Falusi otthonteremtési gyermekre forint CSOK) kölcsön",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 200.6,
@@ -14120,14 +14345,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1208",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre",
+      "label": "CSOK) (megelőlegezett Igényelt (Falusi Használt megelőlegezett Falusi lakás Ft P",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 304.1,
@@ -14135,14 +14360,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1209",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "Igényelt (megelőlegezett CSOK) Használt megelőlegezett Falusi lakás Egy 3.2-es C",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 324.8,
@@ -14150,14 +14375,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1210",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "(megelőlegezett Igényelt Használt Falusi megelőlegezett lakás Piaci CSOK) vásárl",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 345.4,
@@ -14165,14 +14390,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1211",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "(megelőlegezett Falusi megelőlegezett Használt Igényelt CSOK) lakás vásárlása ka",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 370.5,
@@ -14180,14 +14405,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1212",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "Falusi megelőlegezett CSOK) lakás (megelőlegezett családi összege Használt vásár",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 391.2,
@@ -14195,14 +14420,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1213",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "CSOK) Falusi vásárlása megelőlegezett összege családi lakás vállalt (megelőlegez",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 411.9,
@@ -14210,14 +14435,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1214",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "családi CSOK) összege vállalt vásárlása Falusi otthonteremtési megelőlegezett la",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 437.0,
@@ -14225,14 +14450,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1215",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "összege vállalt családi CSOK) otthonteremtési gyermekre vásárlása Falusi lakáshi",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 457.7,
@@ -14240,14 +14465,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1216",
-      "label": "Igényelt megelőlegezett Falusi CSOK összege vállalt gyermekre (folyt.)",
+      "label": "vállalt otthonteremtési összege gyermekre családi Ft CSOK) lakáshitel(ek) kedvez",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 478.4,
@@ -14255,7 +14480,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 171",
@@ -14264,7 +14489,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 474.3,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14274,15 +14504,20 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 632.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
       "pdf_field_name": "Text Field 1217",
-      "label": "Igényel törlesztési biztosítást? Igen",
+      "label": "Igényelt Építés7 Igényel kölcsön Új lakás Igen Kölcsön törlesztési célja vásárlá",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 26.3,
@@ -14290,14 +14525,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1218",
-      "label": "Igényel törlesztési biztosítást? Igen (folyt.)",
+      "label": "Igényelt Igényel kölcsön Építés7 Kölcsön Új lakás Futamidő törlesztési Igen össz",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 47.0,
@@ -14305,14 +14540,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1219",
-      "label": "Igényel törlesztési biztosítást? Igen (folyt.)",
+      "label": "Igényelt Építés7 kölcsön lakás Új Igényel Igen törlesztési összege Kölcsön vásár",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "medium",
       "page_number": 14,
       "coordinates": {
         "x": 67.6,
@@ -14320,7 +14555,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1220",
@@ -14339,10 +14574,10 @@
     },
     {
       "pdf_field_name": "Text Field 1221",
-      "label": "Igényel törlesztési biztosítást? Igen (folyt.)",
+      "label": "kölcsön összege vásárlása törlesztési Építés7 biztosítást? lakás Igényelt célja ",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "high",
       "page_number": 14,
       "coordinates": {
         "x": 113.4,
@@ -14350,7 +14585,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "salesforce-label-match"
     },
     {
       "pdf_field_name": "Text Field 1222",
@@ -14449,7 +14684,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 724.2,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14459,7 +14699,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 69.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14469,7 +14714,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 168.4,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14609,10 +14859,10 @@
     },
     {
       "pdf_field_name": "Text Field 1237",
-      "label": "Kölcsön futamideje (első számjegy)",
+      "label": "Kölcsön Nem futamideje év Nem Használt lakáscélú Ft lakás B-csomag",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
       "page_number": 15,
       "coordinates": {
         "x": 304.1,
@@ -14620,14 +14870,14 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Text Field 1238",
-      "label": "Kölcsön futamideje (második számjegy)",
+      "label": "Kölcsön futamideje év Nem lakáscélú Használt Nem lakás ingatlan B-csomag",
       "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "loan.loan_term_months",
+      "confidence": "medium",
       "page_number": 15,
       "coordinates": {
         "x": 324.8,
@@ -14635,7 +14885,7 @@
         "width": 15.1,
         "height": 19.3
       },
-      "notes": "nem képezhető le"
+      "notes": "ai-batch"
     },
     {
       "pdf_field_name": "Check Box 186",
@@ -14644,7 +14894,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 266.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14654,7 +14909,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 302.9,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14664,7 +14924,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 27.4,
+        "y": 430.8,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14809,7 +15074,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 26.9,
+        "y": 598.6,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
@@ -14969,7 +15239,12 @@
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
-      "coordinates": null,
+      "coordinates": {
+        "x": 41.1,
+        "y": 310.8,
+        "width": 8.5,
+        "height": 10.5
+      },
       "notes": "nem képezhető le"
     },
     {
