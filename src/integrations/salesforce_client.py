@@ -208,7 +208,7 @@ class SalesforceClient:
                         "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
                         "Current_employment_started__c, ZIP__c, "
-                        "Citizenship__c, Employment_Type_c__c, Employer_Tax_ID__c"
+                        "Citizenship__c, Employment_Type_c__c"
                     )
                     ids_formatted = "','".join(contact_ids)
                     query_str = (
@@ -251,7 +251,6 @@ class SalesforceClient:
                         "dependents": c.get("Dependents_count__c"),
                         "residence_since": c.get("Date_of_notification_for_residence__c"),
                         "business_name": c.get("Name_of_employer__c") if c.get("Employer_s_company_type__c") else None,
-                        "employer_tax_id": c.get("Employer_Tax_ID__c"),
                         "is_active": True
                     }
                     participants_records.append(participant_record)
