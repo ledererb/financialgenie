@@ -35,6 +35,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.models.canonical_model import DealData, ParticipantRole
 from src.normalizer.data_normalizer import DataNormalizer
 from src.integrations.salesforce_client import SalesforceClient
+from src.engine.document_assembler import DocumentAssembler, ProductType
 from src.ai.field_recognizer import FieldRecognizer, MappingConfig, print_mapping_summary
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,36 @@ class FormFillerPipeline:
         # 5. PDF kitöltés
         logger.info("📝 5. PDF kitöltés")
         try:
-            output_path = self._fill_pdf(template_pdf, deal, field_data, mapping_config)
+            import fitz
+            doc_temp = fitz.open(str(template_pdf))
+            page_count = len(doc_temp)
+            doc_temp.close()
+            
+            actual_template = template_pdf
+            if page_count == 97:
+                logger.info("   📂 97 oldalas Master PDF észlelve -> Automatikus Document Assembly (darabolás)...")
+                assembler = DocumentAssembler()
+                temp_assembled_path = self.output_dir / f"assembled_{deal.deal_id}.pdf"
+                
+                products_enum = []
+                for p in deal.products:
+                    try:
+                        products_enum.append(ProductType(p))
+                    except ValueError:
+                        pass
+                if not products_enum:
+                    products_enum = [ProductType.PIACI_HITEL]
+                
+                assembler.assemble(
+                    master_pdf=template_pdf,
+                    products=products_enum,
+                    num_participants=len(deal.active_participants),
+                    num_properties=len(deal.properties),
+                    output_path=temp_assembled_path
+                )
+                actual_template = temp_assembled_path
+                
+            output_path = self._fill_pdf(actual_template, deal, field_data, mapping_config)
             result["output_path"] = str(output_path)
             logger.info(f"   ✓ Kitöltött PDF: {output_path}")
         except Exception as e:
