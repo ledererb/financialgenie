@@ -282,6 +282,7 @@ class LegalClassifier:
                     "max_tokens": 1500,
                     "temperature": 0.0,
                     "response_format": {"type": "json_object"},
+                    "thinking": {"type": "disabled"},
                 },
                 timeout=60,
             )

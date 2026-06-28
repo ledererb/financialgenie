@@ -354,13 +354,25 @@ Fontos szabályok:
                 content = self._convert_content(content)
             full_messages.append({"role": role, "content": content})
 
+        # Detektáljuk van-e kép input – `response_format: json_object`
+        # nem kompatibilis az image inputtal (DeepSeek hibát dob).
+        has_images = any(
+            isinstance(m.get("content"), list)
+            and any(b.get("type") == "image" for b in m["content"])
+            for m in messages
+        )
+
         payload = {
             "model": AI_MODEL,
             "messages": full_messages,
             "max_tokens": max_tokens,
             "temperature": 0.0,
+            # DeepSeek V4 Flash thinking mode alapból ENABLED, ami felemészti a
+            # max_tokens keretet reasoning-ra és csonka választ eredményez.
+            # Kikapcsolása determinisztikus JSON outputot garantál.
+            "thinking": {"type": "disabled"},
         }
-        if json_mode:
+        if json_mode and not has_images:
             payload["response_format"] = {"type": "json_object"}
 
         try:
