@@ -69,6 +69,20 @@ class Participant(BaseModel):
     email: Optional[str] = Field(None, description="E-mail cím")
     employer: Optional[str] = Field(None, description="Munkáltató neve")
     monthly_income: Optional[int] = Field(None, description="Havi nettó jövedelem (Ft)")
+    citizenship: Optional[str] = Field(None, description="Állampolgárság")
+    employment_type: Optional[str] = Field(None, description="Foglalkoztatás típusa (határozott/határozatlan idejű)")
+    education: Optional[str] = Field(None, description="Legmagasabb iskolai végzettség")
+    marital_status: Optional[str] = Field(None, description="Családi állapot")
+    dependents: Optional[int] = Field(None, description="Eltartottak száma")
+    residence_since: Optional[date] = Field(None, description="Mióta lakik a lakóhelyén (dátum)")
+    gender: Optional[str] = Field(None, description="Nem (férfi/nő)")
+    id_document_type: Optional[str] = Field(None, description="Személyi igazolvány típusa")
+    business_name: Optional[str] = Field(None, description="Cégnév / vállalkozás neve (ha nem alkalmazott)")
+    business_tax_id: Optional[str] = Field(None, description="Cég adószáma")
+    employee_count: Optional[int] = Field(None, description="Alkalmazottak száma (vállalkozóknál)")
+    employer_tax_id: Optional[str] = Field(None, description="Munkáltató adószáma")
+    mailing_address_same: Optional[bool] = Field(None, description="Levelezési cím megegyezik az állandóval")
+    nav_declaration: Optional[bool] = Field(None, description="NAV nyilatkozat megtörtént")
     is_active: bool = Field(True, description="Aktív szereplő-e (nem kuka)")
 
     @property
@@ -101,6 +115,11 @@ class Property(BaseModel):
     estimated_value: Optional[int] = Field(None, description="Becsült érték (Ft)")
     year_built: Optional[int] = Field(None, description="Építés éve")
     number_of_rooms: Optional[int] = Field(None, description="Szobák száma")
+    contact_name: Optional[str] = Field(None, description="Kapcsolattartó neve (ingatlanhoz)")
+    contact_phone: Optional[str] = Field(None, description="Kapcsolattartó telefonja")
+    rental_fee: Optional[int] = Field(None, description="Bérleti díj (Ft)")
+    rental_fee_eur: Optional[int] = Field(None, description="Bérleti díj (EUR)")
+    usage_type: Optional[str] = Field(None, description="Használat típusa (saját/bérbeadott/egyéb)")
 
 
 class LoanDetails(BaseModel):

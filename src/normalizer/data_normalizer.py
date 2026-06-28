@@ -202,6 +202,14 @@ class DataNormalizer:
             monthly_income=self._safe_int(
                 p_data.get("Monthly_Income__c") or p_data.get("monthly_income")
             ),
+            citizenship=p_data.get("Citizenship__c") or p_data.get("citizenship"),
+            employment_type=p_data.get("Employment_Type__c") or p_data.get("employment_type"),
+            education=p_data.get("Education__c") or p_data.get("education"),
+            marital_status=p_data.get("Marital_Status__c") or p_data.get("marital_status"),
+            dependents=self._safe_int(p_data.get("Dependents__c") or p_data.get("dependents")),
+            residence_since=self._parse_date(p_data.get("Residence_Since__c") or p_data.get("residence_since")),
+            business_name=p_data.get("Business_Name__c") or p_data.get("business_name"),
+            employer_tax_id=p_data.get("Employer_Tax_ID__c") or p_data.get("employer_tax_id"),
             is_active=p_data.get("Is_Active__c", True) if "Is_Active__c" in p_data 
                        else p_data.get("is_active", True),
         )
@@ -242,6 +250,11 @@ class DataNormalizer:
             number_of_rooms=self._safe_int(
                 prop_data.get("Rooms__c") or prop_data.get("number_of_rooms")
             ),
+            contact_name=prop_data.get("Contact_Name__c") or prop_data.get("contact_name"),
+            contact_phone=prop_data.get("Contact_Phone__c") or prop_data.get("contact_phone"),
+            rental_fee=self._safe_int(prop_data.get("Rental_Fee__c") or prop_data.get("rental_fee")),
+            rental_fee_eur=self._safe_int(prop_data.get("Rental_Fee_EUR__c") or prop_data.get("rental_fee_eur")),
+            usage_type=prop_data.get("Usage_Type__c") or prop_data.get("usage_type"),
         )
 
     @staticmethod

@@ -207,7 +207,8 @@ class SalesforceClient:
                         "Address_Card_Number__c, Permanent_address__c, Phone, Email, "
                         "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
-                        "Current_employment_started__c, ZIP__c"
+                        "Current_employment_started__c, ZIP__c, "
+                        "Citizenship__c, Employment_Type_c__c, Employer_Tax_ID__c"
                     )
                     ids_formatted = "','".join(contact_ids)
                     query_str = (
@@ -243,6 +244,14 @@ class SalesforceClient:
                         "email": c.get("Email"),
                         "employer": c.get("Name_of_employer__c"),
                         "monthly_income": c.get("Average_monthly_net_income__c"),
+                        "citizenship": c.get("Citizenship__c"),
+                        "employment_type": c.get("Employment_Type_c__c"),
+                        "education": c.get("Highest_Educational_Qualification__c"),
+                        "marital_status": c.get("Marital_Status__c"),
+                        "dependents": c.get("Dependents_count__c"),
+                        "residence_since": c.get("Date_of_notification_for_residence__c"),
+                        "business_name": c.get("Name_of_employer__c") if c.get("Employer_s_company_type__c") else None,
+                        "employer_tax_id": c.get("Employer_Tax_ID__c"),
                         "is_active": True
                     }
                     participants_records.append(participant_record)
@@ -264,7 +273,8 @@ class SalesforceClient:
                             "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
                             "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                            "Ingatlan_emelet__c"
+                            "Ingatlan_emelet__c, Ingatlan_jellege__c, Ingatlan_energetika__c, "
+                            "Ingatlan_hasznalatbaveteli__c, Ingatlan_osztatlan__c, Ingatlan_megjegyzes__c"
                         )
                         prop_ids_formatted = "','".join(prop_ids)
                         prop_query = (
@@ -302,7 +312,8 @@ class SalesforceClient:
                                     "house_number": p.get("Ingatlan_hazszam__c") or "",
                                     "floor": p.get("Ingatlan_emelet__c"),
                                     "door": None
-                                }
+                                },
+                                "usage_type": p.get("Ingatlan_jellege__c") or p.get("Property_Type__c"),
                             }
                             properties_records.append(prop_record)
 
