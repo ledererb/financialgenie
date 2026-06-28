@@ -22,6 +22,12 @@ venv/
 # Output PDF-ek (generált)
 output/
 
+# Bemeneti PDF template-ek (nagy bináris fájlok)
+*.pdf
+
+# Mezőkivonatok
+*_fields.txt
+
 # Env / secrets
 .env
 *.env

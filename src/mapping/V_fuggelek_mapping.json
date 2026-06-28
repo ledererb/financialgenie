@@ -1,0 +1,1361 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "V_fuggelek",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Context-based AI felismerés (90 mező, 29 leképezve).",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "Szövegmező 1",
+      "label": "Ügyfél neve (természetes személy)",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 178.9,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 2",
+      "label": "Cég neve (jogi személy)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 178.9,
+        "width": 265.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 3",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 218.6,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 4",
+      "label": "Székhely",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 218.6,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 5",
+      "label": "Születési dátum (nap)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 258.3,
+        "width": 77.7,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 6",
+      "label": "Születési dátum (hónap)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 114.5,
+        "y": 258.3,
+        "width": 35.7,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 7",
+      "label": "Születési dátum (év)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 161.9,
+        "y": 258.3,
+        "width": 35.7,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 8",
+      "label": "Nyilvántartási szám/cégjegyzékszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 258.3,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 9",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 298.1,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 10",
+      "label": "Adószám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 298.1,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 11",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 337.8,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 12",
+      "label": "Telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 337.8,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 13",
+      "label": "Képviseletében eljáró személy neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 25.8,
+        "y": 377.5,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 14",
+      "label": "Képviseletében eljáró személy telefonszáma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 303.6,
+        "y": 377.5,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 1",
+      "label": "Termékválasztás - Lakossági a",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 478.1,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 6",
+      "label": "Termékválasztás - Vállalkozói",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 478.1,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 15",
+      "label": "Termék megnevezése (a)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 469.4,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 2",
+      "label": "Termékválasztás - Lakossági b",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 503.0,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 7",
+      "label": "Termékválasztás - Társasházi",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 503.0,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 16",
+      "label": "Termék megnevezése (b)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 494.4,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3",
+      "label": "Termékválasztás - Lakossági c",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 528.0,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 8",
+      "label": "Termékválasztás - Ingatlanlízing",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 528.0,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 17",
+      "label": "Termék megnevezése (c)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 519.3,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 4",
+      "label": "Termékválasztás - Lakossági d",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 565.4,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 9",
+      "label": "Termékválasztás - Lakástakarék",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 552.9,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 18",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 544.2,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 10",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 577.9,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 19",
+      "label": "Születési dátum",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 569.2,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 11",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 602.8,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 20",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 594.1,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 12",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 304.7,
+        "y": 627.7,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 21",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 431.1,
+        "y": 619.1,
+        "width": 138.4,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 14",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 663.6,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 15",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 677.8,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 16",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 692.0,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 17",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 706.2,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 18",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 720.3,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 19",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 734.5,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 190",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 26.9,
+        "y": 748.7,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 22",
+      "label": "Ügynökvállalkozás cég neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 37.1,
+        "y": 111.5,
+        "width": 256.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 23",
+      "label": "Közvetítői alvállalkozó cég neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 37.1,
+        "y": 153.2,
+        "width": 256.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 24",
+      "label": "Közvetítői alvállalkozó székhely",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 303.6,
+        "y": 153.2,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 25",
+      "label": "Közvetítői alvállalkozó céges törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 37.1,
+        "y": 194.9,
+        "width": 256.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 26",
+      "label": "Megbízott neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 37.1,
+        "y": 236.6,
+        "width": 256.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 27",
+      "label": "Megbízott egyéni törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 303.6,
+        "y": 236.6,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 29",
+      "label": "Ügynökvállalkozás székhely",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 37.1,
+        "y": 295.2,
+        "width": 256.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 30",
+      "label": "Ügynökvállalkozás céges törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": {
+        "x": 303.6,
+        "y": 295.2,
+        "width": 266.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "SZA_IG_hely.2",
+      "label": "Igénylő kelt helye (2. példány)",
+      "field_type": "text",
+      "canonical_field": "legal.signature_place",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": {
+        "x": 48.9,
+        "y": 420.2,
+        "width": 167.2,
+        "height": 11.3
+      },
+      "notes": "ismert név"
+    },
+    {
+      "pdf_field_name": "SZA_IG_dátum.2",
+      "label": "Igénylő dátum (2. példány)",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "page_number": 3,
+      "coordinates": {
+        "x": 223.2,
+        "y": 420.2,
+        "width": 167.2,
+        "height": 11.3
+      },
+      "notes": "ismert név"
+    },
+    {
+      "pdf_field_name": "Szövegmező 31",
+      "label": "Példányszám / Értékesítő",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": {
+        "x": 386.5,
+        "y": 566.9,
+        "width": 138.9,
+        "height": 19.8
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 32",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 197.1,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 33",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "medium",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 238.8,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 34",
+      "label": "Anyja születési neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 280.5,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 35",
+      "label": "Születési hely és idő",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 322.2,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 36",
+      "label": "Okmány típusa és száma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 363.9,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 37",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 405.6,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 38",
+      "label": "Vállalkozás teljes neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 464.1,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 39",
+      "label": "Székhelye",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 505.8,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 40",
+      "label": "Adószáma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 547.6,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 41",
+      "label": "Cégjegyzékszáma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 589.3,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 42",
+      "label": "Levelezési cím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 631.0,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 43",
+      "label": "Kapcsolattartó",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 25.8,
+        "y": 672.7,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 307",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": {
+        "x": 26.8,
+        "y": 732.3,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 308",
+      "label": "Nyilatkozat / hozzájárulás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": {
+        "x": 26.8,
+        "y": 51.3,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3010",
+      "label": "Tanú nyilatkozata: felolvasás és magyarázat",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 26.8,
+        "y": 100.1,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3011",
+      "label": "Tanú nyilatkozata: nyelvtudás",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 26.8,
+        "y": 137.5,
+        "width": 8.5,
+        "height": 10.5
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 44",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 116.9,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 45",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 158.6,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 46",
+      "label": "Anyja születési neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 200.3,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 47",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 242.0,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 48",
+      "label": "Születési dátum (év)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 297.9,
+        "y": 242.0,
+        "width": 76.9,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 49",
+      "label": "Születési dátum (hónap)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 398.7,
+        "y": 242.0,
+        "width": 35.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 50",
+      "label": "Születési dátum (nap)",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 475.9,
+        "y": 242.0,
+        "width": 35.5,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 51",
+      "label": "Okmány típusa és száma",
+      "field_type": "text",
+      "canonical_field": "participant.id_card_number",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 283.8,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 52",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": {
+        "x": 25.8,
+        "y": 325.5,
+        "width": 76.9,
+        "height": 19.3
+      },
+      "notes": "context-based classification"
+    },
+    {
+      "pdf_field_name": "Szövegmező 53",
+      "label": "Tanú neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": {
+        "x": 108.5,
+        "y": 325.5,
+        "width": 461.0,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 54",
+      "label": "Tanú nyilatkozata",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": {
+        "x": 110.5,
+        "y": 359.3,
+        "width": 141.2,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 55",
+      "label": "Tanú aláírása",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": {
+        "x": 120.3,
+        "y": 417.2,
+        "width": 141.2,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Sec_SZA_IG_hely.4",
+      "label": "Másodlagos kelt helye (4. példány)",
+      "field_type": "text",
+      "canonical_field": "legal.signature_place",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": {
+        "x": 48.9,
+        "y": 557.0,
+        "width": 167.2,
+        "height": 11.3
+      },
+      "notes": "ismert név"
+    },
+    {
+      "pdf_field_name": "Sec_SZA_IG_dátum.4",
+      "label": "Másodlagos aláírás dátum (4. példány)",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": {
+        "x": 223.2,
+        "y": 557.0,
+        "width": 167.2,
+        "height": 11.3
+      },
+      "notes": "ismert név"
+    },
+    {
+      "pdf_field_name": "Szövegmező 56",
+      "label": "1. Bizonyítványt kiállító intézmény neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 168.9,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 57",
+      "label": "1. Bizonyítvány száma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 197.7,
+        "width": 265.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 58",
+      "label": "1. Nyelvterület",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 222.4,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 59",
+      "label": "2. Bizonyítványt kiállító intézmény neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 246.7,
+        "width": 265.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 60",
+      "label": "2. Bizonyítvány száma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 276.0,
+        "width": 264.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 61",
+      "label": "2. Nyelvterület",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 303.6,
+        "y": 305.5,
+        "width": 265.5,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 62",
+      "label": "Tanú aláírása",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 25.8,
+        "y": 380.3,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 63",
+      "label": "Tanú neve (nyomtatott betűkkel)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 25.8,
+        "y": 422.0,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 64",
+      "label": "Hely, dátum",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 25.8,
+        "y": 592.9,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    },
+    {
+      "pdf_field_name": "Szövegmező 65",
+      "label": "Tanú aláírása (második)",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": {
+        "x": 25.8,
+        "y": 634.6,
+        "width": 543.8,
+        "height": 19.3
+      },
+      "notes": "nem képezhető le"
+    }
+  ]
+}
