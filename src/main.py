@@ -639,7 +639,9 @@ class FormFillerPipeline:
         """
         if value is None:
             return []
-        s = str(value)
+        # Change A: so ensure spaces are removed for numeric/date canonicals
+        # before extracting digits ("25 000 000" → "25000000").
+        s = str(value).replace(" ", "") if canonical in self._DIGITS_ONLY_CANONICALS else str(value)
         if canonical in self._DIGITS_ONLY_CANONICALS:
             return [c for c in s if c.isdigit()]
         if canonical in self._ALNUM_CANONICALS:
@@ -708,6 +710,7 @@ class FormFillerPipeline:
 
         # 3) Minden egynél több dobozos csoportban karakterenként szétosztunk.
         modified_rows = 0
+        distributed_keys: set[str] = set()
         for (canon, _page, _row), names in groups.items():
             if len(names) <= 1:
                 continue
@@ -725,6 +728,7 @@ class FormFillerPipeline:
             chars = self._explode_for_boxes(canon, str(full_val))
             for i, n in enumerate(names):
                 field_data[n] = chars[i] if i < len(chars) else ""
+                distributed_keys.add(n)
             modified_rows += 1
 
         if modified_rows:
@@ -733,6 +737,29 @@ class FormFillerPipeline:
                 modified_rows,
                 next(iter(groups))[0],
             )
+
+        # 4) Change B: Overflow protection — keskeny (<20pt) dobozok, amelyek
+        #    egyedül vannak a sorukon (nem kerültek karakter-szétosztásra), de
+        #    túl hosszú értéket kaptak (pl. teljes cím vagy "25 000 000" egy
+        #    15pt-es dobozban). Ezeket üresre állítjuk: jobb az üres doboz, mint
+        #    a túlcsorduló szemét.
+        overflow_cleared = 0
+        for name, (canon, _page, _y, _x) in candidates.items():
+            if name in distributed_keys:
+                continue
+            val = field_data.get(name, "")
+            if val is None:
+                continue
+            if len(str(val)) > 5:
+                field_data[name] = ""
+                overflow_cleared += 1
+
+        if overflow_cleared:
+            logger.info(
+                "   🛡️ Overflow protection: %d keskeny doboz tisztítva (túl hosszú érték).",
+                overflow_cleared,
+            )
+
 
     def _resolve_legal(
         self,

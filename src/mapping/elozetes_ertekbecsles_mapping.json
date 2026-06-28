@@ -956,7 +956,7 @@
       "pdf_field_name": "Text Field 357",
       "label": "Mióta lakik Mi az a Tulajdonos Ön Milyen Felsőfokú jogcímen jelenlegi 3. Egyéb l",
       "field_type": "text",
-      "canonical_field": "participant.address.city",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -971,7 +971,7 @@
       "pdf_field_name": "Text Field 358",
       "label": "Mióta az Mi lakik Milyen a Tulajdonos Ön 3. jelenlegi Felsőfokú jogcímen 4. legm",
       "field_type": "text",
-      "canonical_field": "participant.address.street",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -986,7 +986,7 @@
       "pdf_field_name": "Text Field 359",
       "label": "lakik Tulajdonos Mióta Ön a az Felsőfokú jelenlegi Milyen Mi Egyéb legmagasabb 3",
       "field_type": "text",
-      "canonical_field": "participant.address.house_number",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -1001,7 +1001,7 @@
       "pdf_field_name": "Text Field 360",
       "label": "a lakik Tulajdonos jelenlegi jogcímen Mióta Ön év Felsőfokú legmagasabb az Milye",
       "field_type": "text",
-      "canonical_field": "participant.address.zip_code",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -1016,7 +1016,7 @@
       "pdf_field_name": "Text Field 361",
       "label": "jelenlegi év a lakik legmagasabb tartózkodási lakik Tulajdonos iskolai jogcímen ",
       "field_type": "text",
-      "canonical_field": "participant.address.full_address",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -1031,7 +1031,7 @@
       "pdf_field_name": "Text Field 362",
       "label": "iskolai tartózkodási jelenlegi jelenlegi év lakik a hónap legmagasabb helyén? sz",
       "field_type": "text",
-      "canonical_field": "participant.education",
+      "canonical_field": "participant.residence_since",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": {
@@ -13136,7 +13136,7 @@
       "pdf_field_name": "Text Field 1261",
       "label": "Kapcsolattartó telefonszáma",
       "field_type": "text",
-      "canonical_field": null,
+      "canonical_field": "participant.phone",
       "confidence": "low",
       "page_number": 11,
       "coordinates": {
@@ -13646,7 +13646,7 @@
       "pdf_field_name": "Check Box 168",
       "label": "Tulajdoni lap lekérés díjának elfogadása",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 13,
       "coordinates": {
@@ -15101,7 +15101,7 @@
       "pdf_field_name": "Check Box 195",
       "label": "Előzetes hitelbírálat és értékbecslés tudomásulvétele",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 16,
       "coordinates": {
@@ -15116,7 +15116,7 @@
       "pdf_field_name": "Check Box 196",
       "label": "Adatkezelési nyilatkozat elfogadása",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 16,
       "coordinates": {
@@ -15131,7 +15131,7 @@
       "pdf_field_name": "Check Box 197",
       "label": "Tulajdoni lap lekéréséhez hozzájárulás",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 16,
       "coordinates": {
@@ -15146,7 +15146,7 @@
       "pdf_field_name": "Check Box 198",
       "label": "Térképmásolat lekéréséhez hozzájárulás",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 16,
       "coordinates": {
@@ -15161,7 +15161,7 @@
       "pdf_field_name": "Check Box 199",
       "label": "Ingatlan-nyilvántartási lap lekéréséhez hozzájárulás",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 16,
       "coordinates": {
@@ -15176,7 +15176,7 @@
       "pdf_field_name": "Check Box 200",
       "label": "Tulajdoni lap lekérésének költsége (OTP Lakáshitelek esetén ügyintézési díj)",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
@@ -15191,7 +15191,7 @@
       "pdf_field_name": "Check Box 201",
       "label": "Tulajdoni lap lekérésének költsége (Minősített Fogyasztóbarát Lakáshitel esetén)",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
@@ -15206,7 +15206,7 @@
       "pdf_field_name": "Check Box 202",
       "label": "Térképmásolat-lekérdezési díj",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
@@ -15221,7 +15221,7 @@
       "pdf_field_name": "Check Box 203",
       "label": "Nyilatkozat az előzetes hitelbírálat és értékbecslés eredménye rendelkezésre bocsátásának módjáról",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
@@ -15251,7 +15251,7 @@
       "pdf_field_name": "Check Box 208",
       "label": "Nyilatkozat az eredmény e-mailes megküldéséről",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.notification_preference",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
@@ -15266,7 +15266,7 @@
       "pdf_field_name": "Check Box 209",
       "label": "Adatkezelési nyilatkozat (GDPR)",
       "field_type": "checkbox",
-      "canonical_field": null,
+      "canonical_field": "legal.consent_given",
       "confidence": "low",
       "page_number": 17,
       "coordinates": {
