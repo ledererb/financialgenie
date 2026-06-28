@@ -1,0 +1,262 @@
+{
+  "pdf": "hozzajarulo_nyilatkozat.pdf",
+  "type": "overlay",
+  "bank_name": "OTP Bank",
+  "form_name": "hozzajarulo_nyilatkozat",
+  "notes": "PyMuPDF placeholder detektor + DeepSeek V4 Flash klasszifikáció. 23 mező, 21 leképezve.",
+  "placements": [
+    {
+      "pdf_field_name": "flat_1_p1",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "high",
+      "x": 237.7,
+      "y": 715.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p2",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "high",
+      "x": 412.6,
+      "y": 715.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p3",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "high",
+      "x": 138.9,
+      "y": 698.3,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p4",
+      "label": "Születési dátum",
+      "field_type": "date",
+      "canonical_field": "participant.birth_date",
+      "confidence": "high",
+      "x": 390.7,
+      "y": 698.3,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p5",
+      "label": "Munkáltató neve",
+      "field_type": "text",
+      "canonical_field": "employer.name",
+      "confidence": "high",
+      "x": 100.3,
+      "y": 663.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p6",
+      "label": "Cégjegyzék száma",
+      "field_type": "text",
+      "canonical_field": "employer.company_registration_number",
+      "confidence": "high",
+      "x": 103.2,
+      "y": 646.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p7",
+      "label": "Adószáma",
+      "field_type": "text",
+      "canonical_field": "employer.tax_id",
+      "confidence": "high",
+      "x": 317.1,
+      "y": 646.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p8",
+      "label": "Igényelt termék típusa 1",
+      "field_type": "text",
+      "canonical_field": "loan.product_type_name",
+      "confidence": "high",
+      "x": 106.9,
+      "y": 568.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p9",
+      "label": "Hitelkérelem száma 1",
+      "field_type": "text",
+      "canonical_field": "loan.application_number",
+      "confidence": "high",
+      "x": 290.2,
+      "y": 568.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p10",
+      "label": "Igényelt termék típusa 2",
+      "field_type": "text",
+      "canonical_field": "loan.product_type_name",
+      "confidence": "high",
+      "x": 106.9,
+      "y": 556.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p11",
+      "label": "Hitelkérelem száma 2",
+      "field_type": "text",
+      "canonical_field": "loan.application_number",
+      "confidence": "high",
+      "x": 291.8,
+      "y": 556.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p12",
+      "label": "Igényelt termék típusa 3",
+      "field_type": "text",
+      "canonical_field": "loan.product_type_name",
+      "confidence": "high",
+      "x": 106.9,
+      "y": 544.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p13",
+      "label": "Hitelkérelem száma 3",
+      "field_type": "text",
+      "canonical_field": "loan.application_number",
+      "confidence": "high",
+      "x": 291.8,
+      "y": 544.8,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p14",
+      "label": "Kelt hely",
+      "field_type": "text",
+      "canonical_field": "legal.signature_place",
+      "confidence": "high",
+      "x": 93.6,
+      "y": 221.2,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p15",
+      "label": "Kelt év",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "x": 315.3,
+      "y": 221.2,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p16",
+      "label": "Kelt hónap",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "x": 426.5,
+      "y": 221.2,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p17",
+      "label": "Kelt nap",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "x": 319.0,
+      "y": 180.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p18",
+      "label": "Aláírás név",
+      "field_type": "text",
+      "canonical_field": "legal.signature_name",
+      "confidence": "high",
+      "x": 99.6,
+      "y": 134.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p19",
+      "label": "Aláírás név 2",
+      "field_type": "text",
+      "canonical_field": "legal.signature_name",
+      "confidence": "high",
+      "x": 324.5,
+      "y": 134.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p20",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "high",
+      "x": 100.3,
+      "y": 117.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p21",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "high",
+      "x": 325.3,
+      "y": 117.5,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p22",
+      "label": "Aláírás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "x": 335.1,
+      "y": 100.2,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p23",
+      "label": "Üres sor",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "x": 76.3,
+      "y": 83.0,
+      "page_index": 0,
+      "font_size": 11.0
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "pdf": "CSOK_afa_igazolas.pdf",
+  "type": "overlay",
+  "bank_name": "OTP Bank",
+  "form_name": "CSOK_afa_igazolas",
+  "notes": "PyMuPDF placeholder detektor + DeepSeek V4 Flash klasszifikáció. 13 mező, 13 leképezve.",
+  "placements": [
+    {
+      "pdf_field_name": "flat_1_p1",
+      "label": "igénylő neve",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "x": 177.0,
+      "y": 718.4,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p2",
+      "label": "igénylő neve",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "high",
+      "x": 320.4,
+      "y": 718.4,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p3",
+      "label": "ingatlan címe",
+      "field_type": "text",
+      "canonical_field": "property.address.full_address",
+      "confidence": "high",
+      "x": 70.8,
+      "y": 701.1,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p4",
+      "label": "régió",
+      "field_type": "text",
+      "canonical_field": "region.name",
+      "confidence": "high",
+      "x": 70.8,
+      "y": 666.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p5",
+      "label": "fiók",
+      "field_type": "text",
+      "canonical_field": "branch.name",
+      "confidence": "high",
+      "x": 212.7,
+      "y": 666.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p6",
+      "label": "CSOK Plusz Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "x": 83.7,
+      "y": 579.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p7",
+      "label": "Otthon Start Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "x": 83.7,
+      "y": 562.3,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p8",
+      "label": "Új Falusi CSOK támogatás",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "x": 85.3,
+      "y": 538.9,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p9",
+      "label": "Otthonteremtési Lakáshitel (Új Falusi CSOK hitel)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "x": 83.7,
+      "y": 518.1,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p10",
+      "label": "Adóvisszatérítési támogatás (Új Falusi ÁFA)",
+      "field_type": "checkbox",
+      "canonical_field": "loan.product_name",
+      "confidence": "high",
+      "x": 83.7,
+      "y": 494.4,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p11",
+      "label": "Kelt",
+      "field_type": "date",
+      "canonical_field": "legal.signature_date",
+      "confidence": "high",
+      "x": 93.5,
+      "y": 363.2,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p12",
+      "label": "közvetítő aláírása",
+      "field_type": "text",
+      "canonical_field": "legal.signature_name",
+      "confidence": "high",
+      "x": 318.7,
+      "y": 328.7,
+      "page_index": 0,
+      "font_size": 11.0
+    },
+    {
+      "pdf_field_name": "flat_1_p13",
+      "label": "igénylő aláírása",
+      "field_type": "text",
+      "canonical_field": "legal.signature_name",
+      "confidence": "high",
+      "x": 70.8,
+      "y": 236.7,
+      "page_index": 0,
+      "font_size": 11.0
+    }
+  ]
+}
