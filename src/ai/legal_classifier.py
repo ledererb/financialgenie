@@ -3,14 +3,14 @@ FinancialGenie – AI + config hibrid jogi nyilatkozat klasszifikátor
 
 A canonical_field nélküli (leképezetlen) checkbox-okat két lépésben kezeli:
 
-1. AI kategorizáló réteg – Claude (field_recognizer.AI_MODEL) besorolja a mezőket
+1. AI kategorizáló réteg – DeepSeek V3 (deepseek-chat) besorolja a mezőket
    kategóriákba (consent, data_sharing, decline, conditional, stb.) a mező NEVE +
    LABEL + oldal alapján. Batch módban dolgozik (100-200 mező / hívás).
 
 2. Config réteg – a legal_defaults.json alapján kategória → true/false érték.
    A conditional_rules a DealData.products alapján dönt.
 
-Fallback: ha nincs ANTHROPIC_API_KEY, szabályalapú kulcsszó-illesztés
+Fallback: ha nincs DEEPSEEK_API_KEY, szabályalapú kulcsszó-illesztés
 (classify_rule_based).
 
 Ez a modul NEM módosítja a field_recognizer.py mapping pipeline-ját –
@@ -27,7 +27,6 @@ import unicodedata
 from pathlib import Path
 from typing import Optional
 
-from src.ai.field_recognizer import AI_MODEL
 from src.models.canonical_model import DealData
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ DEFAULT_CONFIG_PATH = (
     Path(__file__).resolve().parent.parent / "mapping" / "legal_defaults.json"
 )
 
-#: Batch méret – hány mező legyen egy Claude hívásban.
+#: Batch méret – hány mező legyen egy DeepSeek hívásban.
 BATCH_SIZE = 150
 
 
@@ -57,8 +56,8 @@ class LegalClassifier:
     """
     AI + config hibrid: jogi nyilatkozatok automatikus kitöltése.
 
-    Használja a field_recognizer.AI_MODEL-t a konzisztens modellkezeléshez,
-    így a model frissítése egyetlen helyen történik.
+    DeepSeek V3 (deepseek-chat) modellt használ chat completion formátumban,
+    közvetlen HTTP POST-tal (requests) az api.deepseek.com végpontra.
     """
 
     # Szabályalapú kulcsszó → kategória tábla (a classify_rule_based fallback-hez).
@@ -91,7 +90,7 @@ class LegalClassifier:
         Args:
             config_path: legal_defaults.json útvonala (default: src/mapping/).
             prompt_path: legal_classifier_prompt.txt útvonala.
-            api_key: Anthropic API kulcs. Ha None, ANTHROPIC_API_KEY env-ből.
+            api_key: DeepSeek API kulcs. Ha None, DEEPSEEK_API_KEY env-ből.
         """
         self.config_path = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
         self.prompt_path = Path(prompt_path) if prompt_path else DEFAULT_PROMPT_PATH
@@ -99,21 +98,12 @@ class LegalClassifier:
 
         if api_key is None:
             import os
-            api_key = os.getenv("ANTHROPIC_API_KEY", "")
+            api_key = os.getenv("DEEPSEEK_API_KEY", "")
 
-        self._client = None
-        if api_key:
-            try:
-                import anthropic
-                self._client = anthropic.Anthropic(api_key=api_key)
-            except ImportError:
-                logger.warning(
-                    "anthropic csomag nem elérhető – LegalClassifier rule-based "
-                    "módban fog működni. Telepítés: pip install anthropic"
-                )
-        else:
+        self._api_key = api_key or ""
+        if not self._api_key:
             logger.info(
-                "ANTHROPIC_API_KEY nincs beállítva – LegalClassifier rule-based "
+                "DEEPSEEK_API_KEY nincs beállítva – LegalClassifier rule-based "
                 "módot használ."
             )
 
@@ -168,7 +158,7 @@ class LegalClassifier:
         if not fields:
             return {}
 
-        if self._client is None:
+        if not self._api_key:
             logger.info(
                 "LegalClassifier: rule-based fallback (%d mező)", len(fields)
             )
@@ -265,7 +255,7 @@ class LegalClassifier:
     def _ai_classify_one_batch(
         self, batch: list[dict], template: str
     ) -> dict[str, str]:
-        """Egyetlen Claude hívás egy batch mezőre."""
+        """Egyetlen DeepSeek hívás egy batch mezőre."""
         # Kompakt lista: név | label | oldal
         lines = []
         for f in batch:
@@ -278,21 +268,33 @@ class LegalClassifier:
         prompt = template.replace("{pdf_field_list}", fields_text)
 
         try:
-            response = self._client.messages.create(
-                model=AI_MODEL,
-                max_tokens=4096,
-                messages=[{"role": "user", "content": prompt}],
+            import requests
+            response = requests.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 500,
+                    "temperature": 0.0,
+                },
+                timeout=60,
             )
+            response.raise_for_status()
         except Exception as exc:
             logger.error("LegalClassifier API hiba: %s", str(exc)[:160])
             return {}
 
         # Válasz kinyerése
-        text = ""
-        for block in response.content:
-            if hasattr(block, "text"):
-                text = block.text
-                break
+        try:
+            text = response.json()["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, ValueError) as exc:
+            logger.warning("LegalClassifier: érvénytelen AI válasz: %s", str(exc)[:120])
+            return {}
+
         if not text:
             logger.warning("LegalClassifier: üres AI válasz")
             return {}
