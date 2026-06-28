@@ -205,10 +205,23 @@ class SalesforceClient:
                         "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
                         "Place_of_Birth__c, Date_of_birth__c, ID_Card_Number__c, Tax_ID__c, "
                         "Address_Card_Number__c, Permanent_address__c, Phone, Email, "
-                        "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
-                        "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
-                        "Current_employment_started__c, ZIP__c, "
-                        "Citizenship__c, Employment_Type_c__c"
+                        "Name_of_employer__c, Occupation__c, Employer_s_company_type__c, "
+                        "Ownership_in_employer__c, Employment_Type_c__c, Foglalkozas_tipusa__c, "
+                        "Contract_start_date__c, Contract_end_date__c, "
+                        "Current_employment_started__c, Income_type__c, "
+                        "Average_monthly_net_income__c, Other_monthly_income__c, "
+                        "Other_income__c, Affordable_monthly_installments__c, "
+                        "Loan_amount__c, Loan_period__c, Term_in_year_c__c, "
+                        "Highest_Educational_Qualification__c, Marital_Status__c, "
+                        "Dependents_count__c, Numer_and_Age_of_Children__c, "
+                        "Residence_Status__c, ZIP__c, "
+                        "Date_of_notification_for_residence__c, Citizenship__c, "
+                        "Property_Type__c, Property_value__c, Property_encumbrances__c, "
+                        "Estimated_market_value__c, Loan_Purpose__c, "
+                        "Purpose_real_estate_address__c, Property_50pct_ownership_details__c, "
+                        "Bank__c, Preferalt_bank__c, Nem_preferalt_bank__c, "
+                        "Continuous_TB_2_years__c, State_Support__c, "
+                        "Monthly_Payment_details__c"
                     )
                     ids_formatted = "','".join(contact_ids)
                     query_str = (
@@ -243,13 +256,41 @@ class SalesforceClient:
                         "phone": c.get("Phone"),
                         "email": c.get("Email"),
                         "employer": c.get("Name_of_employer__c"),
-                        "monthly_income": c.get("Average_monthly_net_income__c"),
-                        "citizenship": c.get("Citizenship__c"),
+                        "occupation": c.get("Occupation__c"),
+                        "employer_company_type": c.get("Employer_s_company_type__c"),
+                        "ownership_in_employer": c.get("Ownership_in_employer__c"),
                         "employment_type": c.get("Employment_Type_c__c"),
+                        "foglalkozas_tipusa": c.get("Foglalkozas_tipusa__c"),
+                        "contract_start_date": c.get("Contract_start_date__c"),
+                        "contract_end_date": c.get("Contract_end_date__c"),
+                        "current_employment_started": c.get("Current_employment_started__c"),
+                        "income_type": c.get("Income_type__c"),
+                        "monthly_income": c.get("Average_monthly_net_income__c"),
+                        "other_monthly_income": c.get("Other_monthly_income__c"),
+                        "other_income": c.get("Other_income__c"),
+                        "affordable_monthly_installments": c.get("Affordable_monthly_installments__c"),
+                        "loan_amount_on_contact": c.get("Loan_amount__c"),
+                        "loan_period": c.get("Loan_period__c"),
+                        "monthly_payment_details": c.get("Monthly_Payment_details__c"),
+                        "citizenship": c.get("Citizenship__c"),
                         "education": c.get("Highest_Educational_Qualification__c"),
                         "marital_status": c.get("Marital_Status__c"),
                         "dependents": c.get("Dependents_count__c"),
+                        "children_count_and_age": c.get("Numer_and_Age_of_Children__c"),
+                        "residence_status": c.get("Residence_Status__c"),
                         "residence_since": c.get("Date_of_notification_for_residence__c"),
+                        "property_type": c.get("Property_Type__c"),
+                        "property_value": c.get("Property_value__c"),
+                        "property_encumbrances": c.get("Property_encumbrances__c"),
+                        "estimated_market_value": c.get("Estimated_market_value__c"),
+                        "loan_purpose": c.get("Loan_Purpose__c"),
+                        "purpose_real_estate_address": c.get("Purpose_real_estate_address__c"),
+                        "property_50pct_ownership": c.get("Property_50pct_ownership_details__c"),
+                        "preferred_bank": c.get("Preferalt_bank__c"),
+                        "non_preferred_bank": c.get("Nem_preferalt_bank__c"),
+                        "bank": c.get("Bank__c"),
+                        "continuous_tb_2y": c.get("Continuous_TB_2_years__c"),
+                        "state_support": c.get("State_Support__c"),
                         "business_name": c.get("Name_of_employer__c") if c.get("Employer_s_company_type__c") else None,
                         "is_active": True
                     }
