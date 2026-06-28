@@ -41,7 +41,10 @@ from src.engine.completeness_checker import CompletenessChecker, CompletenessSta
 from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
 from src.ai.field_recognizer import (
     FieldRecognizer,
+    FieldType,
     MappingConfig,
+    MappingConfidence,
+    RecognizedField,
     print_mapping_summary,
 )
 from src.ai.legal_classifier import (
@@ -51,6 +54,82 @@ from src.ai.legal_classifier import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Mapping betöltés — támogatja a klasszikus MappingConfig formátumot ÉS
+# az új `type: "overlay"` formátumot (placements[]) a lapos PDF-ekhez.
+# ---------------------------------------------------------------------------
+
+def _overlay_to_mapping_config(data: dict) -> MappingConfig:
+    """
+    Az új `{"type": "overlay", "placements": [...]}` formátum MappingConfig-ká
+    alakítása úgy, hogy a pipeline lentebb változatlanul tudjon dolgozni vele.
+
+    A placements-ben lévő `x`/`y`/`font_size`/`page_index` mezőket a
+    RecognizedField.coordinates dict-be csomagoljuk. A `form_type="overlay"`
+    jelzi a kitöltőnek, hogy a y koordináta már PDF (bottom-up) rendszerben van
+    (ellentétben a régi `form_type="flat"`-tel, ahol fitz top-down y volt és
+    egy y-offset transzformációt alkalmaztunk).
+    """
+    fields: list[RecognizedField] = []
+    for p in data.get("placements", []):
+        ftype_raw = p.get("field_type", "text")
+        try:
+            ft_enum = FieldType(ftype_raw)
+        except ValueError:
+            ft_enum = FieldType.TEXT
+        try:
+            conf = MappingConfidence(p.get("confidence", "medium"))
+        except ValueError:
+            conf = MappingConfidence.MEDIUM
+
+        page_index = int(p.get("page_index", 0))
+        fields.append(RecognizedField(
+            pdf_field_name=p.get("pdf_field_name", f"flat_{page_index}_{len(fields)+1}"),
+            label=p.get("label", ""),
+            field_type=ft_enum,
+            canonical_field=p.get("canonical_field"),
+            confidence=conf,
+            page_number=page_index + 1,  # MappingConfig 1-indexelt
+            coordinates={
+                "x": float(p.get("x", 0.0)),
+                "y": float(p.get("y", 0.0)),
+                "page_index": page_index,
+                "font_size": float(p.get("font_size", 10.0) or 10.0),
+                "overlay_field_type": ftype_raw,
+            },
+            notes=f"overlay field ({ftype_raw})",
+        ))
+
+    return MappingConfig(
+        bank_name=data.get("bank_name", "OTP Bank"),
+        form_name=data.get("form_name", data.get("pdf", "overlay")),
+        form_type="overlay",
+        fields=fields,
+        notes=data.get("notes"),
+    )
+
+
+def _load_mapping_config(path: Path) -> MappingConfig:
+    """
+    Mapping JSON betöltése. Két formátumot támogat:
+
+    1. Klasszikus MappingConfig (bank_name, form_name, form_type, fields).
+    2. Új `type: "overlay"` formátum (pdf, placements[]) — automatikusan
+       MappingConfig-ká alakítjuk `form_type="overlay"`-yel.
+
+    Az utóbbi akkor használatos, amikor egy lapos PDF-hez a
+    `scripts/analyze_flat_pdf.py` generált overlay koordinátákat.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if data.get("type") == "overlay" and "placements" in data:
+        logger.info("Overlay formátumú mapping felismerve: %s", path.name)
+        return _overlay_to_mapping_config(data)
+
+    return MappingConfig.from_dict(data)
 
 
 class FormFillerPipeline:
@@ -356,7 +435,52 @@ class FormFillerPipeline:
                 if canonical in prop_data and prop_data[canonical]:
                     field_data[pdf_name] = prop_data[canonical]
 
+            # --- Új canonical kategóriák az overlay / lapos PDF-ekhez ---
+            # Ezeket a scripts/analyze_flat_pdf.py generálta nyilatkozatok
+            # használják (legal.*, employer.*, region.*, branch.*).
+            elif canonical.startswith("legal."):
+                val = self._resolve_legal(canonical, borrower_data, co_borrower_data)
+                if val:
+                    field_data[pdf_name] = val
+
+            elif canonical.startswith("employer."):
+                # employer.* adatait a borrower participant adataiból
+                # vezetjük le (munkaviszony/jövedelem nyilatkozatok).
+                emp_map = {
+                    "employer.name": borrower_data.get("participant.employer", ""),
+                    "employer.tax_id": borrower_data.get("participant.employer_tax_id", ""),
+                    "employer.company_registration_number": borrower_data.get("participant.business_tax_id", ""),
+                }
+                if emp_map.get(canonical):
+                    field_data[pdf_name] = emp_map[canonical]
+
+            elif canonical in ("region.name", "branch.name"):
+                # Ezeket nem tároljuk a deal-ben; a kitöltésnél kihagyjuk.
+                pass
+
         return field_data
+
+    def _resolve_legal(
+        self,
+        canonical: str,
+        borrower_data: dict,
+        co_borrower_data: dict,
+    ) -> str:
+        """
+        Feloldja a legal.* canonical mezőket a nyilatkozatok overlay
+        kitöltéséhez.
+
+        - legal.signature_date → mai dátum (a kitöltés pillanatában)
+        - legal.signature_place → üres (nem tudjuk automatikusan)
+        - legal.signature_name  → igénylő neve
+        """
+        if canonical == "legal.signature_date":
+            return datetime.now().strftime("%Y.%m.%d.")
+        if canonical == "legal.signature_name":
+            return borrower_data.get("participant.name", "")
+        if canonical == "legal.signature_place":
+            return ""
+        return ""
 
     def _participant_to_dict(self, p) -> dict:
         """Participant → kanonikus dict."""
@@ -450,36 +574,70 @@ class FormFillerPipeline:
             # Overlay / lapos PDF: a mapping-ben lévő koordináták alapján
             # TextPlacement objektumokat építünk a OverlayFiller számára.
             #
-            # Az OverlayFiller canonical mező → érték formátumban várja a
-            # field_data-t, és `placements[canonical] = TextPlacement` formátumban
-            # a koordinátákat. A _prepare_field_data viszont pdf_field_name alapú
-            # field_data-t ad vissza — ezért mindkettőt canonical-alapúvá
-            # transzformáljuk a mapping.fields segítségével.
+            # Két overlay formátumot támogatunk:
+            # - form_type == "overlay" (új, scripts/analyze_flat_pdf.py által
+            #   generált): y már PDF (bottom-up) koordináta, font_size explicit,
+            #   page_index 0-alapú a coordinates-ben.
+            # - form_type == "flat" (régi FieldRecognizer overlay): fitz
+            #   top-down y, alkalmazni kell a +height-3 y-offset transzformációt.
+            #
+            # A placements dict-et pdf_field_name-alapú egyedi kulccsal
+            # indexeljük (`canonical__pdf_field_name`), hogy elkerüljük az
+            # ütközést ha ugyanaz a canonical_field többször szerepel (pl. két
+            # igénylő ugyanabban a nyilatkozatban).
+            is_new_overlay = mapping.form_type == "overlay"
             placements: dict[str, TextPlacement] = {}
-            canonical_field_data: dict[str, str] = {}
+            field_values: dict[str, str] = {}
+
             for f in mapping.fields:
                 if not (f.coordinates and f.canonical_field):
                     continue
-                # A régi overlay logika egy kis y-offset-tel dolgozott a
-                # baseline alatt; ezt a TextPlacement.y-ben kompenzáljuk.
                 coords = f.coordinates
-                placements[f.canonical_field] = TextPlacement(
-                    x=float(coords.get("x", 0.0)),
-                    y=float(coords.get("y", 0.0)) + float(coords.get("height", 12.0) or 12.0) - 3,
-                    font_size=10.0,
-                    page_index=max(int(f.page_number) - 1, 0),
+                overlay_field_type = coords.get("overlay_field_type") or (
+                    f.field_type.value if f.field_type else "text"
                 )
-                # pdf_field_name → value fölülírja a canonical kulcsot
-                if f.pdf_field_name in field_data:
-                    val = field_data[f.pdf_field_name]
-                    if val:
-                        canonical_field_data[f.canonical_field] = val
+
+                if is_new_overlay:
+                    x = float(coords.get("x", 0.0))
+                    # y már PDF bottom-up baseline koordináta
+                    y = float(coords.get("y", 0.0))
+                    font_size = float(coords.get("font_size", 10.0) or 10.0)
+                    page_index = int(
+                        coords.get("page_index", max(int(f.page_number) - 1, 0))
+                    )
+                else:
+                    # régi "flat": fitz top-down y → y-offset transzformáció
+                    x = float(coords.get("x", 0.0))
+                    y = float(coords.get("y", 0.0)) + float(
+                        coords.get("height", 12.0) or 12.0
+                    ) - 3
+                    font_size = 10.0
+                    page_index = max(int(f.page_number) - 1, 0)
+
+                key = f"{f.canonical_field}__{f.pdf_field_name}"
+                placements[key] = TextPlacement(
+                    x=x, y=y, font_size=font_size, page_index=page_index,
+                )
+
+                raw_val = field_data.get(f.pdf_field_name)
+
+                # Checkbox overlay: csak "X"-et rajzolunk ha truthy,
+                # egyébként kihagyjuk.
+                if overlay_field_type == "checkbox":
+                    if raw_val and str(raw_val).strip().lower() in (
+                        "1", "true", "yes", "igen", "x", "on",
+                    ):
+                        field_values[key] = "X"
+                    continue
+
+                if raw_val:
+                    field_values[key] = str(raw_val)
 
             filler = OverlayFiller()
             result = filler.fill(
                 template_path=template_pdf,
                 output_path=output_path,
-                field_data=canonical_field_data,
+                field_data=field_values,
                 mapping=placements,
             )
             if not result.success:
@@ -694,13 +852,19 @@ def main():
     # 2. Mapping betöltése
     if mapping is None:
         if args.mapping:
-            mapping = MappingConfig.load(args.mapping)
+            mapping = _load_mapping_config(args.mapping)
         else:
             # Keressük az elérhető mapping-eket
             mapping_dir = PROJECT_ROOT / "src" / "mapping"
+            # Előnyben részesítjük az *_overlay.json fájlokat, ha a template
+            # flat PDF. Minden más *_mapping.json marad a klasszikus útvonal.
             mappings = list(mapping_dir.glob("*_mapping.json"))
-            if mappings:
-                mapping = MappingConfig.load(mappings[0])
+            overlays = list(mapping_dir.glob("*_overlay.json"))
+            if overlays:
+                mapping = _load_mapping_config(overlays[0])
+                print(f"\n📋 Overlay mapping betöltve: {overlays[0].name}")
+            elif mappings:
+                mapping = _load_mapping_config(mappings[0])
                 print(f"\n📋 Mapping betöltve: {mappings[0].name}")
             else:
                 # Üres mapping (közvetlen kanonikus nevek használata)
