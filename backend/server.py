@@ -66,6 +66,7 @@ if str(_HERE) not in sys.path:
 from config import (  # noqa: E402
     MAPPING_DIR,
     PROJECT_ROOT,
+    RENDER_SCALE,
     list_pdfs,
     log,
     resolve_pdf,
@@ -156,17 +157,17 @@ def pdf_fields(pdf_id: str = Query(...)):
             coords = f.get("coordinates")
             if not coords:
                 continue
-            # Mapping coordinates are already in image px (top-left origin).
+            # Mapping coordinates are in points (72-DPI, top-left origin), scale to 150-DPI image pixels.
             fields.append(
                 {
                     "pdf_field_name": f["pdf_field_name"],
                     "field_type": f.get("field_type", "text"),
                     "page_number": f.get("page_number", 1),
                     "rect": {
-                        "x": float(coords.get("x", 0)),
-                        "y": float(coords.get("y", 0)),
-                        "width": float(coords.get("width", 0)),
-                        "height": float(coords.get("height", 0)),
+                        "x": round(float(coords.get("x", 0)) * RENDER_SCALE, 2),
+                        "y": round(float(coords.get("y", 0)) * RENDER_SCALE, 2),
+                        "width": round(float(coords.get("width", 0)) * RENDER_SCALE, 2),
+                        "height": round(float(coords.get("height", 0)) * RENDER_SCALE, 2),
                     },
                     "flags": {"readonly": False, "required": False, "multiline": False},
                     "options": None,

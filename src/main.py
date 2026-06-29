@@ -413,23 +413,41 @@ class FormFillerPipeline:
             # transzformáljuk a mapping.fields segítségével.
             placements: dict[str, TextPlacement] = {}
             canonical_field_data: dict[str, str] = {}
+            
+            # Load template PDF to determine page heights for Y axis inversion
+            import fitz
+            doc = fitz.open(str(template_pdf))
+            
             for f in mapping.fields:
                 if not (f.coordinates and f.canonical_field):
                     continue
-                # A régi overlay logika egy kis y-offset-tel dolgozott a
-                # baseline alatt; ezt a TextPlacement.y-ben kompenzáljuk.
+                
+                page_idx = max(int(f.page_number) - 1, 0)
+                if page_idx < len(doc):
+                    page_h = float(doc[page_idx].rect.height)
+                else:
+                    page_h = 842.0  # Fallback to standard A4 height
+                
                 coords = f.coordinates
+                y_top_left = float(coords.get("y", 0.0))
+                h = float(coords.get("height", 12.0) or 12.0)
+                
+                # Invert Y axis: ReportLab y0 is from bottom, mapping y0 is from top
+                y_bottom_left = page_h - y_top_left - h + 3
+                
                 placements[f.canonical_field] = TextPlacement(
                     x=float(coords.get("x", 0.0)),
-                    y=float(coords.get("y", 0.0)) + float(coords.get("height", 12.0) or 12.0) - 3,
+                    y=y_bottom_left,
                     font_size=10.0,
-                    page_index=max(int(f.page_number) - 1, 0),
+                    page_index=page_idx,
                 )
-                # pdf_field_name → value fölülírja a canonical kulcsot
+                
+                # pdf_field_name → value override
                 if f.pdf_field_name in field_data:
                     val = field_data[f.pdf_field_name]
                     if val:
                         canonical_field_data[f.canonical_field] = val
+            doc.close()
 
             filler = OverlayFiller()
             result = filler.fill(
