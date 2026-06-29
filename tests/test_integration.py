@@ -81,6 +81,56 @@ class TestEndToEndPipeline:
         stage = pipeline.sf_client.get_deal_stage(deal_id)
         assert stage == "Dokumentáció kész"
 
+    def test_run_for_deal_resolves_mapping_automatically(self, pipeline, acroform_pdf):
+        """Verify run_for_deal resolves mapping automatically when mapping_config is None."""
+        if not acroform_pdf.exists():
+            pytest.skip("AcroForm minta PDF nem elérhető")
+
+        deals = pipeline.sf_client.list_deals()
+        assert len(deals) > 0
+        deal_id = deals[0]["deal_id"]
+
+        # First verify we can run _resolve_mapping directly
+        resolved = pipeline._resolve_mapping(acroform_pdf)
+        assert resolved is not None
+        assert resolved.bank_name == "OTP Bank"
+
+        # Now run the full pipeline without passing mapping_config
+        result = pipeline.run_for_deal(deal_id, acroform_pdf, mapping_config=None)
+        assert result["success"] is True
+        assert result["output_path"] is not None
+        assert Path(result["output_path"]).exists()
+
+    def test_resolve_mapping_generates_if_missing(self, pipeline, tmp_path):
+        """Verify _resolve_mapping automatically generates a mapping file if it does not exist."""
+        # Create a new dummy pdf file under samples/
+        dummy_pdf = PROJECT_ROOT / "samples" / "temporary_test_form.pdf"
+        # Copy acroform_pdf to dummy_pdf
+        import shutil
+        acroform_path = PROJECT_ROOT / "samples" / "acroform_sample.pdf"
+        if not acroform_path.exists():
+            pytest.skip("acroform_sample.pdf is missing")
+            
+        shutil.copy(acroform_path, dummy_pdf)
+        
+        # Expected mapping path: src/mapping/temporary_test_form_mapping.json
+        expected_mapping_path = PROJECT_ROOT / "src" / "mapping" / "temporary_test_form_mapping.json"
+        if expected_mapping_path.exists():
+            expected_mapping_path.unlink()
+
+        try:
+            # Resolve mapping config – should automatically recognize and save it
+            mapping = pipeline._resolve_mapping(dummy_pdf)
+            assert mapping is not None
+            assert expected_mapping_path.exists()
+            assert len(mapping.fields) > 0
+        finally:
+            # Clean up files
+            if dummy_pdf.exists():
+                dummy_pdf.unlink()
+            if expected_mapping_path.exists():
+                expected_mapping_path.unlink()
+
 
 class TestFieldRecognizer:
     """AI mezőfelismerő tesztek (heurisztikus mód, API nélkül)."""
@@ -145,3 +195,74 @@ class TestMappingConfig:
         high = otp_mapping.high_confidence_fields
         assert len(high) > 0
         assert all(f.confidence.value == "high" for f in high)
+
+
+class TestAcroFormFillerKidsAndFallback:
+    """Tesztek a /Kids bejárásra és a field_data feloldási fallback-re."""
+
+    def test_resolve_field_value_with_pdf_field_name_fallback(self):
+        from src.engine.pdf_filler import AcroFormFiller
+        filler = AcroFormFiller()
+        mapping = {"pdf_field": "canonical_field"}
+        
+        # 1. Ha a field_data kanonikus kulccsal van kitöltve (hagyományos eset)
+        fd_canonical = {"canonical_field": "value1"}
+        canon, val = filler._resolve_field_value("pdf_field", mapping, fd_canonical)
+        assert canon == "canonical_field"
+        assert val == "value1"
+
+        # 2. Ha a field_data közvetlenül PDF mezőnévvel van kitöltve (pipeline eset)
+        fd_pdf = {"pdf_field": "value2"}
+        canon, val = filler._resolve_field_value("pdf_field", mapping, fd_pdf)
+        assert canon == "canonical_field"
+        assert val == "value2"
+
+    def test_fill_fields_recursive_handles_kids_without_t(self, tmp_path):
+        import pikepdf
+        from src.engine.pdf_filler import AcroFormFiller, FillingResult
+        
+        # Létrehozunk egy egyszerű PDF-et AcroForm mezővel, aminek vannak /Kids widgetjei
+        pdf = pikepdf.Pdf.new()
+        page = pdf.add_blank_page()
+        
+        # Létrehozunk egy szülő mezőt névvel (/T) és típussal (/FT)
+        parent_field = pikepdf.Dictionary(
+            T=pikepdf.String("TestField"),
+            FT=pikepdf.Name("/Tx")
+        )
+        
+        # Létrehozunk egy widgetet név nélkül
+        widget = pikepdf.Dictionary(
+            Subtype=pikepdf.Name("/Widget"),
+            Rect=pikepdf.Array([10, 10, 100, 100]),
+            Parent=parent_field
+        )
+        
+        parent_field.Kids = pikepdf.Array([widget])
+        
+        # Hozzáadjuk a widgetet az oldalhoz, és a szülőt az AcroForm-hoz
+        page.Annots = pdf.make_indirect(pikepdf.Array([widget]))
+        
+        acroform = pikepdf.Dictionary(
+            Fields=pikepdf.Array([pdf.make_indirect(parent_field)])
+        )
+        pdf.Root.AcroForm = pdf.make_indirect(acroform)
+        
+        pdf_path = tmp_path / "kids_test.pdf"
+        out_path = tmp_path / "kids_test_filled.pdf"
+        pdf.save(pdf_path)
+        pdf.close()
+        
+        # Futtatjuk a kitöltést
+        filler = AcroFormFiller()
+        mapping = {"TestField": "canonical.field"}
+        field_data = {"TestField": "SuccessValue"}
+        
+        result = filler.fill(pdf_path, out_path, field_data, mapping)
+        assert result.success is True
+        assert "TestField" in result.filled_fields
+        
+        # Ellenőrizzük, hogy a beírt érték helyes-e
+        with pikepdf.open(out_path) as pdf_filled:
+            f = pdf_filled.Root.AcroForm.Fields[0]
+            assert str(f.V) == "SuccessValue"

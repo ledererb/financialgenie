@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/store.ts","./src/api/client.ts","./src/components/fieldeditorpanel.tsx","./src/components/fieldlistpanel.tsx","./src/components/pdfselector.tsx","./src/components/pdfviewerpanel.tsx","./src/lib/utils.ts","./src/types/index.ts"],"errors":true,"version":"5.9.3"}

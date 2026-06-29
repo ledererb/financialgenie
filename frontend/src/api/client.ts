@@ -68,6 +68,15 @@ export async function listPdfs(): Promise<PdfSummary[]> {
   return data.pdfs;
 }
 
+export async function deletePdf(
+  pdfId: string,
+): Promise<{ deleted: boolean; pdf_id: string; mapping_deleted: boolean }> {
+  return http("/api/pdf", {
+    method: "DELETE",
+    query: { pdf_id: pdfId },
+  });
+}
+
 export async function getPdfInfo(pdfId: string): Promise<PdfInfo> {
   return http<PdfInfo>("/api/pdf/info", { query: { pdf_id: pdfId } });
 }
@@ -107,8 +116,8 @@ export async function updateField(
   pdfId: string,
   field: string,
   patch: Partial<MappingField>,
-): Promise<MappingField> {
-  return http<MappingField>("/api/mapping/field", {
+): Promise<any> {
+  return http("/api/mapping/field", {
     method: "PUT",
     query: { pdf_id: pdfId, field },
     body: JSON.stringify(patch),
@@ -118,8 +127,8 @@ export async function updateField(
 export async function addField(
   pdfId: string,
   payload: Partial<MappingField> & { pdf_field_name: string },
-): Promise<MappingField> {
-  return http<MappingField>("/api/mapping/field", {
+): Promise<any> {
+  return http("/api/mapping/field", {
     method: "POST",
     query: { pdf_id: pdfId },
     body: JSON.stringify(payload),
@@ -129,7 +138,7 @@ export async function addField(
 export async function deleteField(
   pdfId: string,
   field: string,
-): Promise<{ deleted: boolean }> {
+): Promise<any> {
   return http("/api/mapping/field", {
     method: "DELETE",
     query: { pdf_id: pdfId, field },
@@ -232,5 +241,21 @@ export async function recognizeResult(
   taskId: string,
 ): Promise<{ task_id: string; mapping: MappingConfig }> {
   return http(`/api/recognize/${enc(taskId)}/result`);
+}
+
+export async function uploadPdf(
+  file: File,
+): Promise<{ success: boolean; pdf_id: string; filename: string; filled_pdf_url: string; message: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_BASE}/api/pdf/upload`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+  }
+  return res.json();
 }
 

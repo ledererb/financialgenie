@@ -293,31 +293,51 @@ class PdfService:
 
             patched_page = 0
             patched_rect = 0
-            name_counts: dict[str, int] = {}
+            matched_indices: dict[str, set[int]] = {}
             for f in fields:
                 name = f.get("pdf_field_name", "")
                 geos = name_to_geos.get(name)
                 if not geos:
                     continue
 
-                # Match by occurrence index
-                idx = name_counts.get(name, 0)
-                if idx < len(geos):
-                    geo = geos[idx]
-                    name_counts[name] = idx + 1
+                rect = f.get("rect")
+                if not rect:
+                    continue
+
+                # Match by coordinate proximity (x and width)
+                best_geo_idx = -1
+                best_diff = float("inf")
+                already_matched = matched_indices.setdefault(name, set())
+
+                for idx, geo in enumerate(geos):
+                    if idx in already_matched:
+                        continue
+                    diff_x = abs(rect["x"] - geo["x"])
+                    diff_w = abs(rect["width"] - geo["width"])
+                    if diff_x < 5.0 and diff_w < 5.0:
+                        total_diff = diff_x + diff_w
+                        if total_diff < best_diff:
+                            best_diff = total_diff
+                            best_geo_idx = idx
+
+                if best_geo_idx != -1:
+                    geo = geos[best_geo_idx]
+                    already_matched.add(best_geo_idx)
                 else:
-                    geo = geos[-1]
+                    # Fallback to first unmatched or last geo
+                    fallback_idx = next((i for i in range(len(geos)) if i not in already_matched), len(geos) - 1)
+                    geo = geos[fallback_idx]
+                    already_matched.add(fallback_idx)
 
                 f["page_number"] = geo["page"]
                 patched_page += 1
-                if f.get("rect"):
-                    f["rect"] = {
-                        "x": geo["x"],
-                        "y": geo["y"],
-                        "width": geo["width"],
-                        "height": geo["height"],
-                    }
-                    patched_rect += 1
+                f["rect"] = {
+                    "x": geo["x"],
+                    "y": geo["y"],
+                    "width": geo["width"],
+                    "height": geo["height"],
+                }
+                patched_rect += 1
             if patched_page:
                 log.info(
                     "PyMuPDF patched %d fields (page numbers) / %d (rects)",

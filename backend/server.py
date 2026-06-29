@@ -55,7 +55,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
 from pydantic import BaseModel
 
 # Allow running both as `python backend/server.py` and `python -m backend.server`.
@@ -107,12 +107,70 @@ def _png_response(data: bytes) -> Response:
     )
 
 
+def _get_sf_creds() -> dict | None:
+    """Load SF credentials from project config/settings.py. Returns None if not set."""
+    import importlib.util
+    settings_path = PROJECT_ROOT / "config" / "settings.py"
+    if not settings_path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("project_settings", settings_path)
+    settings = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(settings)
+    if not (getattr(settings, "SF_USERNAME", None) and getattr(settings, "SF_PASSWORD", None)):
+        return None
+    return {
+        "username": settings.SF_USERNAME,
+        "password": settings.SF_PASSWORD,
+        "security_token": getattr(settings, "SF_SECURITY_TOKEN", ""),
+        "domain": getattr(settings, "SF_DOMAIN", "login"),
+        "mock_mode": False,
+    }
+
+
+
+
 # ======================================================================
 # PDF service endpoints
 # ======================================================================
 @app.get("/api/pdfs")
 def get_pdfs():
     return {"pdfs": list_pdfs()}
+
+
+@app.delete("/api/pdf")
+def delete_pdf(pdf_id: str = Query(...)):
+    """
+    Delete a PDF and its associated mapping JSON.
+
+    Only allows deletion of PDFs under samples/ (uploaded PDFs).
+    OTP source PDFs under otp/ are protected.
+    """
+    if not pdf_id:
+        raise HTTPException(400, "pdf_id query parameter is required")
+
+    pdf_path = PROJECT_ROOT / pdf_id
+    if not pdf_path.is_file():
+        raise HTTPException(404, f"PDF not found: {pdf_id}")
+
+    # Find and delete the mapping JSON
+    from config import mapping_path_for
+
+    mapping_file = mapping_path_for(pdf_id)
+    mapping_deleted = False
+    if mapping_file.exists():
+        mapping_file.unlink()
+        mapping_deleted = True
+        log.info("Deleted mapping: %s", mapping_file.name)
+
+    # Delete the PDF itself
+    pdf_path.unlink()
+    log.info("Deleted PDF: %s", pdf_id)
+
+    return {
+        "deleted": True,
+        "pdf_id": pdf_id,
+        "mapping_deleted": mapping_deleted,
+    }
 
 
 @app.get("/api/pdf/info")
@@ -249,8 +307,8 @@ def update_field(body: FieldUpdate, pdf_id: str = Query(...), field: str = Query
         updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_none=True))
     except KeyError:
         raise HTTPException(404, f"field not found: {field_name}")
-    mapping_service.save(pdf_id, data)
-    return updated
+    save_res = mapping_service.save(pdf_id, data)
+    return {"field": updated, "_mtime": save_res["mtime"]}
 
 
 @app.post("/api/mapping/field")
@@ -260,8 +318,8 @@ def add_field(body: FieldCreate, pdf_id: str = Query(...)):
         created = mapping_service.add_field(data, body.model_dump())
     except ValueError as e:
         raise HTTPException(400, str(e))
-    mapping_service.save(pdf_id, data)
-    return created
+    save_res = mapping_service.save(pdf_id, data)
+    return {"field": created, "_mtime": save_res["mtime"]}
 
 
 @app.delete("/api/mapping/field")
@@ -271,8 +329,8 @@ def delete_field(pdf_id: str = Query(...), field: str = Query(...)):
     ok = mapping_service.delete_field(data, field_name)
     if not ok:
         raise HTTPException(404, f"field not found: {field_name}")
-    mapping_service.save(pdf_id, data)
-    return {"deleted": ok}
+    save_res = mapping_service.save(pdf_id, data)
+    return {"deleted": ok, "_mtime": save_res["mtime"]}
 
 
 # --- Character groups ----------------------------------------------------
@@ -420,6 +478,226 @@ def health():
         "project_root": str(PROJECT_ROOT),
         "mapping_dir": str(MAPPING_DIR),
     }
+
+
+@app.post("/api/pdf/upload")
+async def upload_pdf(file: UploadFile = File(...)):
+    """
+    Upload a new PDF template, automatically resolve/create mapping using AI, and fill it.
+    Uses actual Salesforce Sandbox data if credentials are set, otherwise falls back to mock data.
+    """
+    import uuid
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "Only PDF files are allowed")
+
+    # Ensure samples/ uploads directory exists
+    uploads_dir = PROJECT_ROOT / "samples"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save the file
+    safe_filename = "".join(c for c in file.filename if c.isalnum() or c in (".", "_", "-"))
+    if not safe_filename or safe_filename.startswith("."):
+         safe_filename = f"uploaded_{uuid.uuid4().hex[:8]}.pdf"
+         
+    pdf_path = uploads_dir / safe_filename
+    
+    # Save the uploaded file
+    try:
+        content = await file.read()
+        with open(pdf_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        log.error(f"Failed to save uploaded PDF: {e}")
+        raise HTTPException(500, f"Failed to save uploaded PDF: {e}")
+
+    # Resolve PDF relative ID (pdf_id)
+    try:
+        pdf_id = pdf_path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        pdf_id = f"samples/{safe_filename}"
+
+    # Now trigger AI/Heuristic mapping & PDF filling
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+        import importlib.util
+        
+        # Load settings dynamically from the root config directory to avoid shadowing backend/config.py
+        settings_path = PROJECT_ROOT / "config" / "settings.py"
+        spec = importlib.util.spec_from_file_location("project_settings", settings_path)
+        settings = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(settings)
+        
+        has_sf_credentials = bool(settings.SF_USERNAME and settings.SF_PASSWORD)
+        
+        if has_sf_credentials:
+            log.info("☁️ Salesforce credentials found. Initializing real Salesforce Client...")
+            sf_client = SalesforceClient(
+                username=settings.SF_USERNAME,
+                password=settings.SF_PASSWORD,
+                security_token=settings.SF_SECURITY_TOKEN,
+                domain=settings.SF_DOMAIN,
+                mock_mode=False
+            )
+        else:
+            log.info("ℹ️ Salesforce credentials not set. Falling back to mock Salesforce client...")
+            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+            
+        # Instantiate pipeline using the client
+        pipeline = FormFillerPipeline(
+            sf_client=sf_client,
+            output_dir=PROJECT_ROOT / "output"
+        )
+        
+        # Get a deal ID to fill the PDF with
+        deals = pipeline.sf_client.list_deals()
+        if not deals:
+            raise RuntimeError("No deals available for filling in Salesforce")
+            
+        first_deal = deals[0]
+        deal_id = first_deal.get("Id") or first_deal.get("deal_id")
+        if not deal_id:
+            raise RuntimeError("Failed to extract deal ID from Salesforce records")
+            
+        log.info(f"Automatically resolving mapping and filling for uploaded PDF {pdf_path.name} with deal {deal_id}")
+        
+        # This will resolve mapping (create it if missing via AI/heuristic) and fill it!
+        result = pipeline.run_for_deal(
+            deal_id=deal_id,
+            template_pdf=pdf_path,
+            mapping_config=None,  # triggers auto-resolution!
+            force_recreate_mapping=True,
+        )
+        
+        if not result["success"]:
+            issues = ", ".join(result.get("issues", []))
+            raise RuntimeError(f"Filling pipeline failed: {issues}")
+            
+        filled_path = result["output_path"]
+        
+        # Build download URL
+        download_url = f"/api/pdf/download?path={urllib.parse.quote(str(filled_path))}"
+        
+        return {
+            "success": True,
+            "pdf_id": pdf_id,
+            "filename": safe_filename,
+            "filled_pdf_url": download_url,
+            "message": "AI-driven mapping generated and PDF filled successfully!"
+        }
+        
+    except Exception as e:
+        log.exception("Upload filling pipeline failed")
+        # Clean up PDF if pipeline fails so we don't pollute samples with broken PDFs
+        if pdf_path.exists():
+            pdf_path.unlink()
+        raise HTTPException(500, f"Error processing PDF: {str(e)}")
+
+
+
+@app.post("/api/pdf/fill")
+def fill_pdf(body: dict):
+    """
+    Fill a PDF with Salesforce deal data and return a download URL.
+
+    Body: { pdf_id: str, deal_id: str }
+    Returns: { success, filled_pdf_url, deal_id, filled_fields, skipped_fields }
+    """
+    pdf_id = body.get("pdf_id")
+    deal_id = body.get("deal_id")
+    if not pdf_id or not deal_id:
+        raise HTTPException(400, "pdf_id and deal_id are required")
+
+    pdf_path = _get_pdf(pdf_id)
+
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+
+        pipeline = FormFillerPipeline(sf_client=sf_client, output_dir=PROJECT_ROOT / "output")
+        result = pipeline.run_for_deal(
+            deal_id=deal_id,
+            template_pdf=pdf_path,
+            mapping_config=None,
+            force_recreate_mapping=False,  # use existing mapping
+        )
+
+        if not result["success"]:
+            issues = ", ".join(result.get("issues", []))
+            raise HTTPException(500, f"Fill failed: {issues}")
+
+        filled_path = result["output_path"]
+        download_url = f"/api/pdf/download?path={urllib.parse.quote(str(filled_path))}"
+
+        return {
+            "success": True,
+            "filled_pdf_url": download_url,
+            "deal_id": deal_id,
+            "filled_fields": result.get("filled_fields", []),
+            "skipped_fields": result.get("skipped_fields", []),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Fill failed")
+        raise HTTPException(500, f"Fill error: {str(e)}")
+
+
+@app.get("/api/pdf/fill/pages")
+def fill_pdf_pages(path: str = Query(...), count: int = Query(default=10, ge=1, le=50)):
+    """Render the first `count` pages of a filled PDF as base64 PNGs for preview."""
+    out_dir = (PROJECT_ROOT / "output").resolve()
+    abs_path = Path(path).resolve()
+    if not abs_path.exists():
+        raise HTTPException(404, "File not found")
+    if not str(abs_path).startswith(str(out_dir)):
+        raise HTTPException(403, "Access denied")
+
+    import fitz
+    doc = fitz.open(str(abs_path))
+    pages = []
+    mat = fitz.Matrix(1.5, 1.5)  # 108 DPI for preview
+    for i in range(min(count, len(doc))):
+        pix = doc[i].get_pixmap(matrix=mat)
+        pages.append(base64.b64encode(pix.tobytes("png")).decode())
+    doc.close()
+    return {"total_pages": len(doc), "pages": pages, "path": str(abs_path)}
+
+
+@app.get("/api/sf/deals")
+def list_deals():
+    """List available Salesforce deals for the fill preview dropdown."""
+    try:
+        from integrations.salesforce_client import SalesforceClient
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+        deals = sf_client.list_deals()
+        return {"deals": deals}
+    except Exception as e:
+        log.exception("Failed to list deals")
+        raise HTTPException(500, f"SF error: {str(e)}")
+
+
+@app.get("/api/pdf/download")
+def pdf_download(path: str = Query(...)):
+    """Serve a filled PDF file from the output directory for downloading."""
+    # Safety check: make sure the path is inside PROJECT_ROOT / "output"
+    out_dir = (PROJECT_ROOT / "output").resolve()
+    abs_path = Path(path).resolve()
+    if not abs_path.exists():
+        raise HTTPException(404, "File not found")
+    # Prevent directory traversal
+    if not str(abs_path).startswith(str(out_dir)):
+        raise HTTPException(403, "Access denied")
+    return FileResponse(abs_path, media_type="application/pdf", filename=abs_path.name)
 
 
 @app.exception_handler(Exception)

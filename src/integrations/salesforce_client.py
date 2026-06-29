@@ -208,11 +208,12 @@ class SalesforceClient:
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
                         "Current_employment_started__c, ZIP__c"
                     )
+                    id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
                         f"SELECT {contact_fields} FROM Contact "
-                        f"WHERE Id IN :contact_ids"
+                        f"WHERE Id IN ({id_list_str})"
                     )
-                    contact_results = self._sf.query(query_str, contact_ids=contact_ids)
+                    contact_results = self._sf.query(query_str)
                     for c_rec in contact_results.get("records", []):
                         contacts[c_rec["Id"]] = c_rec
 
@@ -247,13 +248,13 @@ class SalesforceClient:
 
                 # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
                 properties_records = []
-                # Paraméterezett SOQL a deal_id-re (SOQL injection elleni védelem).
+                # SOQL query construction for deal_id
                 prop_role_query = (
                     "SELECT Property__c, Ingatlan_szerepe__c "
                     "FROM Opportunity_Property_Role__c "
-                    "WHERE Opportunity__c = :deal_id"
+                    f"WHERE Opportunity__c = '{deal_id}'"
                 )
-                prop_role_results = self._sf.query(prop_role_query, deal_id=deal_id)
+                prop_role_results = self._sf.query(prop_role_query)
                 prop_roles = prop_role_results.get("records", [])
                 
                 if prop_roles:
@@ -265,12 +266,12 @@ class SalesforceClient:
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
                             "Ingatlan_emelet__c"
                         )
-                        # Paraméterezett SOQL a property ID listára.
+                        prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
-                            f"WHERE Id IN :prop_ids"
+                            f"WHERE Id IN ({prop_id_list_str})"
                         )
-                        prop_results = self._sf.query(prop_query, prop_ids=prop_ids)
+                        prop_results = self._sf.query(prop_query)
                         props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
                         
                         for pr in prop_roles:

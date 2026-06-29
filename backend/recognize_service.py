@@ -73,6 +73,16 @@ class RecognitionService:
             state.progress = 0.1
             state.message = f"Recognizing ({mode})..."
 
+            # Progress callback: called by FieldRecognizer after each batch.
+            # progress_val is 0.0–1.0 (fraction of batches done).
+            def on_batch_progress(batch_num: int, total_batches: int, page_label: str):
+                if total_batches > 0:
+                    # Reserve 0.1–0.9 range for actual recognition
+                    state.progress = 0.1 + 0.8 * (batch_num / total_batches)
+                state.message = f"Batch {batch_num}/{total_batches} ({page_label})"
+
+            recognizer.progress_callback = on_batch_progress
+
             # Map editor's mode names to the recognizer's mode names.
             rec_mode = "overlay" if mode == "flat" else mode
             mapping_cfg = recognizer.recognize(pdf_path, mode=rec_mode)
@@ -82,6 +92,15 @@ class RecognitionService:
 
             data = mapping_cfg.to_dict() if isinstance(mapping_cfg, MappingConfig) else mapping_cfg
             state.result = data
+
+            # Save mapping to disk automatically
+            try:
+                from mapping_service import mapping_service
+                mapping_service.save(state.pdf_id, data)
+                log.info("Automatically saved recognized mapping for %s to disk", state.pdf_id)
+            except Exception as save_err:
+                log.error("Failed to auto-save recognized mapping: %s", save_err)
+
             state.status = "done"
             state.progress = 1.0
             state.finished_at = datetime.now().isoformat(timespec="seconds")

@@ -118,9 +118,16 @@ class BaseFiller(ABC):
             vagy nincs adat.
         """
         canonical_name = mapping.get(pdf_field_name)
-        if canonical_name is None:
-            return None, None
-        value = field_data.get(canonical_name)
+        value = None
+        if canonical_name is not None:
+            value = field_data.get(canonical_name)
+        
+        # Fallback: ha kanonikus névvel nem találtuk meg, megpróbáljuk közvetlenül
+        # a PDF mezőnévvel kikeresni (mert a pipeline _prepare_field_data
+        # PDF-mezőnév kulcsokkal adja vissza az adatokat).
+        if value is None:
+            value = field_data.get(pdf_field_name)
+
         return canonical_name, value
 
 
@@ -238,6 +245,7 @@ class AcroFormFiller(BaseFiller):
         mapping: dict[str, str],
         field_data: dict[str, str],
         result: FillingResult,
+        parent_name: str = "",
     ) -> None:
         """
         Rekurzívan bejárja az AcroForm mező-fát és kitölti az értékeket.
@@ -254,66 +262,93 @@ class AcroFormFiller(BaseFiller):
         for field_ref in fields:
             try:
                 field_obj = field_ref
-                # Ha van /Kids, rekurzívan feldolgozzuk
+
+                # Különválasztjuk a widget annotációkat és a beágyazott al-mezőket a /Kids alatt.
+                # Ha egy gyereknek van /T tulajdonsága, akkor az beágyazott al-mező.
+                widgets = []
+                nested = []
                 if "/Kids" in field_obj:
-                    self._fill_fields_recursive(
-                        field_obj["/Kids"], mapping, field_data, result
-                    )
-                    continue
+                    for kid in field_obj["/Kids"]:
+                        try:
+                            sub = str(kid.get("/Subtype", ""))
+                        except Exception:
+                            sub = ""
+                        if sub == "/Widget" or "/T" not in kid:
+                            widgets.append(kid)
+                        else:
+                            nested.append(kid)
 
                 # Mező neve
-                pdf_field_name = str(field_obj.get("/T", ""))
+                name = str(field_obj.get("/T", ""))
+                pdf_field_name = f"{parent_name}.{name}" if parent_name and name else (name or parent_name)
+
                 if not pdf_field_name:
                     continue
 
-                # Érték feloldása
-                canonical_name, value = self._resolve_field_value(
-                    pdf_field_name, mapping, field_data
-                )
+                # Ha vannak beágyazott mezők, rekurzívan bejárjuk őket
+                if nested:
+                    self._fill_fields_recursive(
+                        nested, mapping, field_data, result, pdf_field_name
+                    )
 
-                if canonical_name is None:
-                    result.skipped_fields.append(pdf_field_name)
-                    logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
-                    continue
+                # Ha nincsenek al-mezők, akkor ez egy kitölthető mező (akár van /Kids widgetje, akár nincs)
+                if not nested:
+                    # Érték feloldása
+                    canonical_name, value = self._resolve_field_value(
+                        pdf_field_name, mapping, field_data
+                    )
 
-                if value is None or value == "":
-                    result.skipped_fields.append(pdf_field_name)
+                    if canonical_name is None:
+                        result.skipped_fields.append(pdf_field_name)
+                        logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
+                        continue
+
+                    if value is None or value == "":
+                        result.skipped_fields.append(pdf_field_name)
+                        logger.debug(
+                            "Nincs adat ehhez a mezőhöz: %s → %s",
+                            pdf_field_name,
+                            canonical_name,
+                        )
+                        continue
+
+                    # Típus-specifikus értékbeírás
+                    field_type = str(field_obj.get("/FT", ""))
+                    # Ha nincs /FT a szülőn, megpróbáljuk kinyerni a widgetekből (öröklődés fallback)
+                    if not field_type and widgets:
+                        for w in widgets:
+                            if "/FT" in w:
+                                field_type = str(w.get("/FT", ""))
+                                break
+
+                    if field_type == "/Btn":
+                        # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
+                        # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
+                        is_checked = self._is_truthy(value)
+                        if is_checked:
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
+                        else:
+                            # Kikapcsolt checkbox: /Off név
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
+                    else:
+                        # Szöveg / dropdown / lista: String érték
+                        field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
+
+                    # Megjelenítés frissítése – töröljük az /AP-t a szülőből és az összes widgetből,
+                    # hogy a PDF-olvasó újra renderelje a mezőket
+                    if "/AP" in field_obj:
+                        del field_obj["/AP"]
+                    for w in widgets:
+                        if "/AP" in w:
+                            del w["/AP"]
+
+                    result.filled_fields.append(pdf_field_name)
                     logger.debug(
-                        "Nincs adat ehhez a mezőhöz: %s → %s",
+                        "Mező kitöltve: %s = %s (← %s)",
                         pdf_field_name,
+                        value[:50] if len(str(value)) > 50 else value,
                         canonical_name,
                     )
-                    continue
-
-                # Típus-specifikus értékbeírás
-                field_type = str(field_obj.get("/FT", ""))
-                flags = int(field_obj.get("/Ff", 0))
-
-                if field_type == "/Btn":
-                    # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
-                    # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
-                    is_checked = self._is_truthy(value)
-                    if is_checked:
-                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
-                    else:
-                        # Kikapcsolt checkbox: /Off név
-                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
-                else:
-                    # Szöveg / dropdown / lista: String érték
-                    field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
-
-                # Megjelenítés frissítése – töröljük az /AP-t, hogy a
-                # PDF-olvasó újra renderelj a mezőt
-                if "/AP" in field_obj:
-                    del field_obj["/AP"]
-
-                result.filled_fields.append(pdf_field_name)
-                logger.debug(
-                    "Mező kitöltve: %s = %s (← %s)",
-                    pdf_field_name,
-                    value[:50] if len(str(value)) > 50 else value,
-                    canonical_name,
-                )
 
             except Exception as exc:
                 pdf_name = str(field_ref.get("/T", "ismeretlen"))
@@ -387,19 +422,41 @@ class AcroFormFiller(BaseFiller):
             if "/Fields" not in acroform:
                 return result
 
-            def _collect(fields: Any) -> None:
+            def _collect(fields: Any, parent_name: str = "") -> None:
                 for f in fields:
+                    # Különválasztjuk a widgeteket és a beágyazott al-mezőket a /Kids alatt
+                    widgets = []
+                    nested = []
                     if "/Kids" in f:
-                        _collect(f["/Kids"])
-                        continue
+                        for kid in f["/Kids"]:
+                            try:
+                                sub = str(kid.get("/Subtype", ""))
+                            except Exception:
+                                sub = ""
+                            if sub == "/Widget" or "/T" not in kid:
+                                widgets.append(kid)
+                            else:
+                                nested.append(kid)
+
                     name = str(f.get("/T", ""))
-                    field_type = str(f.get("/FT", ""))
-                    value = str(f.get("/V", ""))
-                    result.append({
-                        "name": name,
-                        "type": field_type,
-                        "value": value,
-                    })
+                    full_name = f"{parent_name}.{name}" if parent_name and name else (name or parent_name)
+
+                    if nested:
+                        _collect(nested, full_name)
+
+                    if not nested and full_name:
+                        field_type = str(f.get("/FT", ""))
+                        if not field_type and widgets:
+                            for w in widgets:
+                                if "/FT" in w:
+                                    field_type = str(w.get("/FT", ""))
+                                    break
+                        value = str(f.get("/V", ""))
+                        result.append({
+                            "name": full_name,
+                            "type": field_type,
+                            "value": value,
+                        })
 
             _collect(acroform["/Fields"])
 

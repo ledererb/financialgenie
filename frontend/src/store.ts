@@ -13,6 +13,9 @@ import {
   updateField as apiUpdateField,
   getPdfFields,
   getCanonicalFields,
+  uploadPdf,
+  startRecognition,
+  recognizeStatus,
 } from "@/api/client";
 
 interface EditorState {
@@ -40,6 +43,15 @@ interface EditorState {
   selectedField: string | null;
   multiSelected: string[];
 
+  // Upload
+  uploading: boolean;
+  uploadError: string | null;
+  uploadedResult: { pdfId: string; filledPdfUrl: string } | null;
+
+  // Recognition
+  recognizing: boolean;
+  recognitionError: string | null;
+
   // Canonical fields
   canonicalFields: CanonicalField[];
 
@@ -65,6 +77,10 @@ interface EditorState {
   saveMapping: () => Promise<void>;
   setPlaceFieldMode: (v: boolean) => void;
   toggleDarkMode: () => void;
+  uploadPdfFile: (file: File) => Promise<void>;
+  clearUploadedResult: () => void;
+  runAiRecognition: () => Promise<void>;
+  clearRecognitionError: () => void;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -82,6 +98,11 @@ export const useStore = create<EditorState>((set, get) => ({
   mappingError: null,
   selectedField: null,
   multiSelected: [],
+  uploading: false,
+  uploadError: null,
+  uploadedResult: null,
+  recognizing: false,
+  recognitionError: null,
   canonicalFields: [],
   currentPage: 0,
   zoom: 1,
@@ -168,7 +189,18 @@ export const useStore = create<EditorState>((set, get) => ({
     set({ mapping: updatedMapping, mappingDirty: true });
 
     try {
-      await apiUpdateField(activePdfId, field, patch);
+      const res = await apiUpdateField(activePdfId, field, patch);
+      if (res && res._mtime) {
+        set((state) => {
+          if (!state.mapping) return {};
+          return {
+            mapping: {
+              ...state.mapping,
+              _mtime: res._mtime,
+            },
+          };
+        });
+      }
     } catch {
       // keep optimistic update
     }
@@ -179,8 +211,18 @@ export const useStore = create<EditorState>((set, get) => ({
     if (!activePdfId || !mapping) return;
     set({ mappingSaving: true });
     try {
-      await apiSaveMapping(activePdfId, mapping, mapping._mtime);
-      set({ mappingSaving: false, mappingDirty: false });
+      const res = await apiSaveMapping(activePdfId, mapping, mapping._mtime);
+      set((state) => {
+        if (!state.mapping) return { mappingSaving: false, mappingDirty: false };
+        return {
+          mapping: {
+            ...state.mapping,
+            _mtime: res._mtime,
+          },
+          mappingSaving: false,
+          mappingDirty: false,
+        };
+      });
     } catch (e) {
       set({ mappingSaving: false, mappingError: (e as Error).message });
     }
@@ -188,4 +230,59 @@ export const useStore = create<EditorState>((set, get) => ({
 
   setPlaceFieldMode: (v) => set({ placeFieldMode: v }),
   toggleDarkMode: () => set((s) => ({ darkMode: !s.darkMode })),
+
+  uploadPdfFile: async (file: File) => {
+    set({ uploading: true, uploadError: null, uploadedResult: null });
+    try {
+      const res = await uploadPdf(file);
+      // Reload the PDFs list so the uploaded file appears
+      await get().loadPdfs();
+      set({
+        uploading: false,
+        uploadedResult: {
+          pdfId: res.pdf_id,
+          filledPdfUrl: res.filled_pdf_url,
+        },
+      });
+    } catch (e) {
+      set({ uploading: false, uploadError: (e as Error).message });
+    }
+  },
+
+  clearUploadedResult: () => set({ uploadedResult: null, uploadError: null }),
+  runAiRecognition: async () => {
+    const { activePdfId } = get();
+    if (!activePdfId) return;
+    set({ recognizing: true, recognitionError: null });
+    try {
+      const { task_id } = await startRecognition(activePdfId, "auto");
+      
+      let attempts = 0;
+      const maxAttempts = 120; // 4 minutes max
+      
+      while (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        attempts++;
+        
+        const statusRes = await recognizeStatus(task_id);
+        if (statusRes.status === "done") {
+          break;
+        }
+        if (statusRes.status === "error") {
+          throw new Error(statusRes.error || "AI recognition failed.");
+        }
+      }
+      
+      if (attempts >= maxAttempts) {
+        throw new Error("AI recognition timed out.");
+      }
+      
+      // Reload PDF mapping and fields
+      await get().selectPdf(activePdfId);
+      set({ recognizing: false });
+    } catch (e) {
+      set({ recognizing: false, recognitionError: (e as Error).message });
+    }
+  },
+  clearRecognitionError: () => set({ recognitionError: null }),
 }));

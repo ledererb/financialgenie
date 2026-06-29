@@ -57,6 +57,7 @@ export interface MappingField {
   coordinates: Rect | null;
   notes?: string | null;
   options?: string[] | null;
+  checkbox_group?: { group_id: string; match_value: string } | null;
 }
 
 export interface CharacterGroup {

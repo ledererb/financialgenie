@@ -63,11 +63,44 @@ class FormFillerPipeline:
         self.output_dir = output_dir or PROJECT_ROOT / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    def _resolve_mapping(self, template_pdf: Path, force_recreate: bool = False) -> MappingConfig:
+        """
+        Mapping konfiguráció feloldása a sablon PDF-hez.
+        Ha létezik a mapping és force_recreate=False, betölti. Ha nem, automatikusan legenerálja.
+        """
+        try:
+            from backend.config import mapping_path_for
+        except ImportError:
+            def mapping_path_for(pdf_id: str) -> Path:
+                stem = Path(pdf_id).stem
+                return PROJECT_ROOT / "src" / "mapping" / f"{stem}_mapping.json"
+
+        try:
+            pdf_id = str(template_pdf.relative_to(PROJECT_ROOT))
+        except ValueError:
+            pdf_id = template_pdf.name
+
+        mapping_path = mapping_path_for(pdf_id)
+        if mapping_path.exists() and not force_recreate:
+            logger.info(f"📋 Meglévő mapping betöltése: {mapping_path.name}")
+            return MappingConfig.load(mapping_path)
+
+        if force_recreate:
+            logger.info(f"🤖 Mapping kényszerített újragenerálása ({mapping_path.name}) – Automatikus mezőfelismerés indítása...")
+        else:
+            logger.info(f"🤖 Mapping nem található ({mapping_path.name}) – Automatikus mezőfelismerés indítása...")
+        recognizer = FieldRecognizer()
+        mapping = recognizer.recognize(template_pdf, mode="auto")
+        mapping.save(mapping_path)
+        logger.info(f"✅ Automatikus mezőfelismerés sikeres, elmentve: {mapping_path.name}")
+        return mapping
+
     def run_for_deal(
         self,
         deal_id: str,
         template_pdf: Path,
-        mapping_config: MappingConfig,
+        mapping_config: MappingConfig = None,
+        force_recreate_mapping: bool = False,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
@@ -75,7 +108,8 @@ class FormFillerPipeline:
         Args:
             deal_id: Salesforce ügylet azonosító
             template_pdf: A kitöltendő PDF sablon
-            mapping_config: Mező-leképezés konfiguráció
+            mapping_config: Mező-leképezés konfiguráció (opcionális, automatikusan feloldódik)
+            force_recreate_mapping: Mapping kényszerített újragenerálása (AI automatikus futtatása)
             
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
@@ -87,6 +121,15 @@ class FormFillerPipeline:
             "issues": [],
             "timestamp": datetime.now().isoformat(),
         }
+
+        # Resolve mapping_config if not provided
+        if mapping_config is None:
+            try:
+                mapping_config = self._resolve_mapping(template_pdf, force_recreate=force_recreate_mapping)
+            except Exception as e:
+                result["issues"].append(f"Mapping feloldási hiba: {e}")
+                logger.error(f"   ✗ Mapping feloldási hiba: {e}")
+                return result
 
         # 1. Adatlekérés
         logger.info(f"📥 1. Adatlekérés: {deal_id}")
@@ -184,16 +227,15 @@ class FormFillerPipeline:
         kiegészítve a strukturális ellenőrzésekkel (van adós, van ingatlan stb.).
         """
         required_fields = [
-            "loan.loan_amount",
-            "loan.loan_term_months",
-            "participant.*.name",
-            "participant.*.birth_name",
-            "participant.*.mother_name",
-            "participant.*.birth_date",
-            "participant.*.birth_place",
-            "participant.*.tax_id",
-            "participant.*.phone",
-            "property.*.parcel_number",
+            "Contact.Loan_amount__c",
+            "Contact.Loan_period__c",
+            "Contact.Name",
+            "Contact.Szuletesi_nev__c",
+            "Contact.Mother_s_Name__c",
+            "Contact.Birthdate",
+            "Contact.Place_of_Birth__c",
+            "Contact.Tax_ID__c",
+            "Contact.MobilePhone",
         ]
         checker = CompletenessChecker(run_suspicious_checks=True)
         report = checker.check(deal, required_fields)
@@ -250,47 +292,45 @@ class FormFillerPipeline:
 
         # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
         loan = deal.loan
+        loan_amount_fmt = f"{loan.loan_amount:,}".replace(",", " ") if loan.loan_amount else ""
+        loan_purpose = loan.loan_purpose or ""
+
+        # Contact-level loan fields (merged into borrower_data below)
+        contact_loan_data = {
+            "Contact.Loan_amount__c": loan_amount_fmt,
+            "Contact.Loan_period__c": str(loan.loan_term_months) if loan.loan_term_months else "",
+            "Contact.Interest_Period__c": loan.interest_period or "",
+            "Contact.Loan_Purpose__c": loan_purpose,
+        }
+        # Merge Contact-level loan fields into borrower (and co-borrower) dicts
+        borrower_data.update(contact_loan_data)
+        if co_borrower_data:
+            co_borrower_data.update(contact_loan_data)
+
+        # Opportunity-level loan fields
         loan_data = {
-            "loan.loan_amount": f"{loan.loan_amount:,}".replace(",", " ") if loan.loan_amount else "",
-            "loan.loan_term_months": str(loan.loan_term_months) if loan.loan_term_months else "",
-            "loan.interest_period": loan.interest_period or "",
-            "loan.loan_purpose": loan.loan_purpose or "",
-            "loan.product_name": loan.product_name or "",
-            "loan.product_type": loan.product_type or "",
-            "loan.down_payment": f"{loan.down_payment:,}".replace(",", " ") if loan.down_payment else "",
-            "loan.monthly_payment": f"{loan.monthly_payment:,}".replace(",", " ") if loan.monthly_payment else "",
-            "loan.purchase_price": f"{loan.purchase_price:,}".replace(",", " ") if loan.purchase_price else "",
-            "loan.csok_amount": f"{loan.csok_amount:,}".replace(",", " ") if loan.csok_amount else "",
-            "loan.afa_support": f"{loan.afa_support:,}".replace(",", " ") if loan.afa_support else "",
-            "loan.housing_savings": f"{loan.housing_savings:,}".replace(",", " ") if loan.housing_savings else "",
-            "loan.refinance_account": loan.refinance_account or "",
+            "Opportunity.Hitel_sszeg__c": loan_amount_fmt,
+            "Opportunity.Hitelc_l__c": loan_purpose,
+            "Opportunity.Term_k__c": loan.product_name or "",
         }
 
-        # Ingatlan adatok
+        # Ingatlan adatok → Lead fields
         prop_data = {}
         for i, prop in enumerate(deal.properties):
             pd = {
-                "property.address.full_address": prop.address.full_address,
-                "property.address.zip_code": prop.address.zip_code,
-                "property.address.city": prop.address.city,
-                "property.address.street": f"{prop.address.street} {prop.address.house_number}",
-                "property.address.house_number": prop.address.house_number,
-                "property.parcel_number": prop.parcel_number,
-                "property.area_sqm": str(prop.area_sqm) if prop.area_sqm else "",
-                "property.property_type": prop.property_type.value,
-                "property.estimated_value": f"{prop.estimated_value:,}".replace(",", " ") if prop.estimated_value else "",
-                "property.year_built": str(prop.year_built) if prop.year_built else "",
-                "property.number_of_rooms": str(prop.number_of_rooms) if prop.number_of_rooms else "",
-                "property.usage_type": "",
-                "property.rental_fee": "",
-                "property.rental_fee_eur": "",
-                "property.contact_name": "",
-                "property.contact_phone": "",
+                "Lead.Ingatlan_irsz__c": prop.address.zip_code,
+                "Lead.Ingatlan_telepules__c": prop.address.city,
+                "Lead.Ingatlan_kozterulet_neve__c": f"{prop.address.street} {prop.address.house_number}",
+                "Lead.Ingtalan_hazszam__c": prop.address.house_number,
+                "Lead.Ingatlan_megjegyzes__c": prop.parcel_number,
+                "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
+                "Lead.Ingatlan_jellege__c": prop.property_type.value,
+                "Lead.Estimated__c": f"{prop.estimated_value:,}".replace(",", " ") if prop.estimated_value else "",
             }
             if i == 0:
                 prop_data = pd
 
-        # === Mapping alkalmazása – OTP-specifikus routing ===
+        # === Mapping alkalmazása – SF-kulcs alapú routing ===
         for f in mapping.fields:
             if not f.canonical_field:
                 continue
@@ -298,12 +338,11 @@ class FormFillerPipeline:
             pdf_name = f.pdf_field_name
             canonical = f.canonical_field
 
-            # participant.role → checkbox, szöveggel nem töltjük
-            if canonical == "participant.role":
+            # Contact.Relation__c → checkbox, szöveggel nem töltjük
+            if canonical == "Contact.Relation__c":
                 continue
 
-            # Melyik participant-hoz tartozik a mező?
-            if canonical.startswith("participant."):
+            if canonical.startswith("Contact."):
                 # OTP convention: -társ suffix = társigénylő
                 is_co_borrower = (
                     "-társ" in pdf_name or
@@ -315,60 +354,104 @@ class FormFillerPipeline:
                 if canonical in source and source[canonical]:
                     field_data[pdf_name] = source[canonical]
 
-            elif canonical.startswith("loan."):
+            elif canonical.startswith("Lead."):
+                if canonical in prop_data and prop_data[canonical]:
+                    field_data[pdf_name] = prop_data[canonical]
+
+            elif canonical.startswith("Opportunity."):
                 if canonical in loan_data and loan_data[canonical]:
                     field_data[pdf_name] = loan_data[canonical]
 
-            elif canonical.startswith("property."):
-                if canonical in prop_data and prop_data[canonical]:
-                    field_data[pdf_name] = prop_data[canonical]
+        # === Checkbox group resolution ===
+        # Group checkbox fields by group_id, then tick only the one
+        # whose match_value matches the SF picklist value.
+        groups: dict[str, list] = {}
+        for f in mapping.fields:
+            cbg = getattr(f, 'checkbox_group', None) or (f.checkbox_group if hasattr(f, 'checkbox_group') else None)
+            if not cbg:
+                # Also check dict-style fields (loaded from JSON)
+                if isinstance(f, dict):
+                    cbg = f.get('checkbox_group')
+                    if not cbg:
+                        continue
+                else:
+                    continue
+            canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
+            if not canonical:
+                continue
+            gid = cbg.get('group_id', '') if isinstance(cbg, dict) else ''
+            if gid:
+                if gid not in groups:
+                    groups[gid] = []
+                groups[gid].append((f, cbg))
+
+        for gid, group_items in groups.items():
+            # All items in a group share the same canonical field
+            first_f, first_cbg = group_items[0]
+            canonical = first_f.canonical_field if hasattr(first_f, 'canonical_field') else first_f.get('canonical_field', '')
+            
+            # Resolve the SF value
+            sf_value = None
+            if canonical.startswith('Contact.'):
+                sf_value = borrower_data.get(canonical, '')
+            elif canonical.startswith('Lead.'):
+                sf_value = prop_data.get(canonical, '')
+            elif canonical.startswith('Opportunity.'):
+                sf_value = loan_data.get(canonical, '')
+            
+            if not sf_value:
+                continue
+            
+            sf_value_lower = str(sf_value).strip().lower()
+            for f_item, cbg_item in group_items:
+                pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
+                match_val = cbg_item.get('match_value', '') if isinstance(cbg_item, dict) else ''
+                if match_val.strip().lower() == sf_value_lower:
+                    field_data[pdf_name] = 'igen'
+                else:
+                    field_data[pdf_name] = 'nem'
 
         return field_data
 
     def _participant_to_dict(self, p) -> dict:
-        """Participant → kanonikus dict."""
+        """Participant → kanonikus dict. Csak SF-ből származó adatok kerülnek ide."""
         d = {
-            "participant.name": p.name,
-            "participant.birth_name": p.birth_name or "",
-            "participant.mother_name": p.mother_name or "",
-            "participant.birth_place": p.birth_place or "",
-            "participant.birth_date": p.birth_date.strftime("%Y.%m.%d") if p.birth_date else "",
-            "participant.personal_id": p.personal_id or "",
-            "participant.tax_id": p.tax_id or "",
-            "participant.id_card_number": p.id_card_number or "",
-            "participant.phone": p.phone or "",
-            "participant.email": p.email or "",
-            "participant.employer": p.employer or "",
-            "participant.monthly_income": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",
-            "participant.role": p.role.value,
-            "participant.gender": "",
-            "participant.citizenship": "magyar",
-            "participant.marital_status": "",
-            "participant.id_document_type": "",
-            "participant.education": "",
-            "participant.employment_type": "",
-            "participant.dependents": "",
-            "participant.employee_count": "",
-            "participant.nav_declaration": "",
-            "participant.mailing_address_same": "",
-            "participant.residence_since": "",
-            "participant.business_name": "",
-            "participant.business_tax_id": "",
-            "participant.employer_tax_id": "",
-            "participant.kata_status": "",
+            "Contact.Name": p.name,
+            "Contact.Szuletesi_nev__c": p.birth_name or "",
+            "Contact.Mother_s_Name__c": p.mother_name or "",
+            "Contact.Place_of_Birth__c": p.birth_place or "",
+            "Contact.Birthdate": p.birth_date.strftime("%Y.%m.%d") if p.birth_date else "",
+            "Contact.ID_Card_Number__c": p.personal_id or "",
+            "Contact.Tax_ID__c": p.tax_id or "",
+            "Contact.MobilePhone": p.phone or "",
+            "Contact.Email": p.email or "",
+            "Contact.Name_of_employer__c": p.employer or "",
+            "Contact.Average_monthly_net_income__c": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",
+            "Contact.Relation__c": p.role.value,
+            # SF-ből töltjük — ha nincs adat, üresen hagyjuk
+            "Contact.Citizenship__c": getattr(p, "citizenship", "") or "",
+            "Contact.Marital_Status__c": getattr(p, "marital_status", "") or "",
+            "Contact.Highest_Educational_Qualification__c": getattr(p, "education", "") or "",
+            "Contact.Income_type__c": getattr(p, "income_type", "") or "",
+            "Contact.Dependents_count__c": str(p.dependents_count) if getattr(p, "dependents_count", None) is not None else "",
         }
         return d
 
+
     def _address_to_dict(self, addr, prefix: str = "address") -> dict:
         """Address → kanonikus dict."""
-        return {
-            f"participant.{prefix}.full_address": addr.full_address,
-            f"participant.{prefix}.zip_code": addr.zip_code,
-            f"participant.{prefix}.city": addr.city,
-            f"participant.{prefix}.street": f"{addr.street} {addr.house_number}",
-            f"participant.{prefix}.house_number": addr.house_number,
-            f"participant.{prefix}.country": "Magyarország",
-        }
+        if prefix == "mailing_address":
+            return {
+                "Contact.MailingStreet": f"{addr.street} {addr.house_number}",
+                "Contact.MailingCity": addr.city,
+                "Contact.ZIP__c": addr.zip_code,
+            }
+        else:
+            return {
+                "Contact.OtherStreet": f"{addr.street} {addr.house_number}",
+                "Contact.OtherCity": addr.city,
+                "Contact.ZIP__c": addr.zip_code,
+            }
 
     def _fill_pdf(
         self,
@@ -603,35 +686,7 @@ def main():
         output_dir=args.output_dir or PROJECT_ROOT / "output",
     )
 
-    # 1. AI mezőfelismerés (ha kérték)
-    mapping = None
-    if args.recognize:
-        print(f"\n🤖 AI mezőfelismerés: {args.recognize}")
-        mapping = pipeline.run_ai_recognition(args.recognize)
-        print_mapping_summary(mapping)
-
-    # 2. Mapping betöltése
-    if mapping is None:
-        if args.mapping:
-            mapping = MappingConfig.load(args.mapping)
-        else:
-            # Keressük az elérhető mapping-eket
-            mapping_dir = PROJECT_ROOT / "src" / "mapping"
-            mappings = list(mapping_dir.glob("*_mapping.json"))
-            if mappings:
-                mapping = MappingConfig.load(mappings[0])
-                print(f"\n📋 Mapping betöltve: {mappings[0].name}")
-            else:
-                # Üres mapping (közvetlen kanonikus nevek használata)
-                mapping = MappingConfig(
-                    bank_name="OTP Bank",
-                    form_name="demo",
-                    form_type="acroform",
-                    notes="Nincs mapping – kanonikus mezőnevek használata",
-                )
-                print("\n📋 Nincs mapping konfiguráció – demo mód")
-
-    # 3. Template PDF
+    # 1. Template PDF feloldása először
     template_pdf = args.template
     if template_pdf is None:
         samples_dir = PROJECT_ROOT / "samples"
@@ -661,6 +716,32 @@ def main():
                 for prop in deal.properties:
                     print(f"     - {prop.address.full_address} ({prop.property_type.value})")
             return
+
+    # 2. AI mezőfelismerés (ha kifejezetten kérték a --recognize argumentummal)
+    mapping = None
+    if args.recognize:
+        print(f"\n🤖 AI mezőfelismerés futtatása: {args.recognize}")
+        mapping = pipeline.run_ai_recognition(args.recognize)
+        print_mapping_summary(mapping)
+
+    # 3. Mapping betöltése vagy automatikus feloldása
+    if mapping is None:
+        if args.mapping:
+            mapping = MappingConfig.load(args.mapping)
+            print(f"\n📋 Kifejezett mapping betöltve: {args.mapping.name}")
+        else:
+            try:
+                mapping = pipeline._resolve_mapping(template_pdf)
+            except Exception as e:
+                # Végső fallback ha valamiért teljesen meghiúsul az auto-felismerés
+                print(f"\n⚠️ Nem sikerült feloldani a mappinget: {e}")
+                mapping = MappingConfig(
+                    bank_name="OTP Bank",
+                    form_name="demo",
+                    form_type="acroform",
+                    notes="Nincs mapping – kanonikus mezőnevek használata",
+                )
+                print("\n📋 Nincs mapping konfiguráció – demo mód")
 
     # 4. Pipeline futtatása
     print(f"\n🚀 Pipeline indítása...")

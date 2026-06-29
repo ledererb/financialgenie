@@ -90,6 +90,59 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
     stem_slug = slug(stem)
     stem_words = set(w for w in stem_slug.split("_") if len(w) >= 3)
 
+    # 0. Signature-based matching for uploaded files (skip for test/temporary files)
+    if "test" not in stem.lower() and "temporary" not in stem.lower():
+        try:
+            pdf_path = resolve_pdf(pdf_id)
+            if pdf_path.is_file():
+                import pikepdf
+                import json
+                uploaded_fields = []
+                try:
+                    pdf = pikepdf.open(str(pdf_path))
+                    if "/AcroForm" in pdf.Root and "/Fields" in pdf.Root["/AcroForm"]:
+                        for f in pdf.Root["/AcroForm"]["/Fields"]:
+                            t = f.get("/T")
+                            if t:
+                                uploaded_fields.append(str(t))
+                    pdf.close()
+                except Exception:
+                    pass
+
+                if uploaded_fields:
+                    uploaded_set = set(uploaded_fields)
+                    best_match = None
+                    best_overlap_ratio = 0.0
+
+                    for existing_mapping in sorted(MAPPING_DIR.glob("*_mapping.json")):
+                        try:
+                            with open(existing_mapping, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                            existing_fields = [field.get("pdf_field_name") for field in data.get("fields", [])]
+                            existing_set = set(f for f in existing_fields if f)
+                            if not existing_set:
+                                continue
+                            
+                            overlap = len(uploaded_set & existing_set)
+                            ratio = overlap / len(uploaded_set)
+                            
+                            if ratio > 0.90 and ratio > best_overlap_ratio:
+                                best_overlap_ratio = ratio
+                                best_match = existing_mapping
+                        except Exception:
+                            continue
+
+                    if best_match:
+                        log.info(
+                            "Signature match found! Mapping %s matches uploaded PDF %s with %.1f%% field overlap",
+                            best_match.name,
+                            pdf_path.name,
+                            best_overlap_ratio * 100
+                        )
+                        return best_match
+        except Exception as e:
+            log.warning("Signature-based mapping matching failed: %s", e)
+
     # 1. Exact stem match
     candidate = MAPPING_DIR / f"{stem}_mapping.json"
     if candidate.exists():
