@@ -17,10 +17,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 310,
-        "y": 132,
-        "width": 230,
-        "height": 18
+        "x": 223.2,
+        "y": 95.0,
+        "width": 165.6,
+        "height": 13.0
       },
       "notes": "Az 'Alulírott munkavállaló (Születési név:' után következő mező"
     },
@@ -32,10 +32,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 630,
-        "y": 132,
-        "width": 230,
-        "height": 18
+        "x": 453.6,
+        "y": 95.0,
+        "width": 165.6,
+        "height": 13.0
       },
       "notes": "Az 'Anyja neve:' után következő mező az első sorban"
     },
@@ -47,10 +47,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 205,
-        "y": 155,
-        "width": 270,
-        "height": 18
+        "x": 147.6,
+        "y": 111.6,
+        "width": 194.4,
+        "height": 13.0
       },
       "notes": "A 'Születési hely:' után következő mező"
     },
@@ -62,10 +62,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 570,
-        "y": 155,
-        "width": 260,
-        "height": 18
+        "x": 410.4,
+        "y": 111.6,
+        "width": 187.2,
+        "height": 13.0
       },
       "notes": "A 'Születési dátum:' után következő mező"
     },
@@ -77,10 +77,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 198,
-        "width": 580,
-        "height": 18
+        "x": 111.6,
+        "y": 142.6,
+        "width": 417.6,
+        "height": 13.0
       },
       "notes": "A munkáltató neve, '(Neve:' után következő mező"
     },
@@ -92,10 +92,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 220,
-        "width": 380,
-        "height": 18
+        "x": 111.6,
+        "y": 158.4,
+        "width": 273.6,
+        "height": 13.0
       },
       "notes": "Munkáltató cégjegyzékszáma – nincs kanonikus megfelelő"
     },
@@ -107,10 +107,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 570,
-        "y": 220,
-        "width": 290,
-        "height": 18
+        "x": 410.4,
+        "y": 158.4,
+        "width": 208.8,
+        "height": 13.0
       },
       "notes": "Munkáltató adószáma – nincs kanonikus megfelelő a participant szinten"
     },
@@ -122,10 +122,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 298,
-        "width": 280,
-        "height": 18
+        "x": 111.6,
+        "y": 214.6,
+        "width": 201.6,
+        "height": 13.0
       },
       "notes": "Első sor az igényelt termék típusa táblázatban"
     },
@@ -137,10 +137,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 298,
-        "width": 370,
-        "height": 18
+        "x": 345.6,
+        "y": 214.6,
+        "width": 266.4,
+        "height": 13.0
       },
       "notes": "Hitelkérelem azonosítószáma – nincs kanonikus megfelelő"
     },
@@ -152,10 +152,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 318,
-        "width": 280,
-        "height": 18
+        "x": 111.6,
+        "y": 229.0,
+        "width": 201.6,
+        "height": 13.0
       },
       "notes": "Második sor az igényelt termék típusa táblázatban"
     },
@@ -167,10 +167,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 318,
-        "width": 370,
-        "height": 18
+        "x": 345.6,
+        "y": 229.0,
+        "width": 266.4,
+        "height": 13.0
       },
       "notes": "Második hitelkérelem azonosítószáma"
     },
@@ -182,10 +182,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 338,
-        "width": 280,
-        "height": 18
+        "x": 111.6,
+        "y": 243.4,
+        "width": 201.6,
+        "height": 13.0
       },
       "notes": "Harmadik sor az igényelt termék típusa táblázatban"
     },
@@ -197,10 +197,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 338,
-        "width": 370,
-        "height": 18
+        "x": 345.6,
+        "y": 243.4,
+        "width": 266.4,
+        "height": 13.0
       },
       "notes": "Harmadik hitelkérelem azonosítószáma"
     },
@@ -212,10 +212,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 100,
-        "y": 700,
-        "width": 290,
-        "height": 18
+        "x": 72.0,
+        "y": 504.0,
+        "width": 208.8,
+        "height": 13.0
       },
       "notes": "Aláírás dátumának helyszíne"
     },
@@ -227,10 +227,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 415,
-        "y": 700,
-        "width": 60,
-        "height": 18
+        "x": 298.8,
+        "y": 504.0,
+        "width": 43.2,
+        "height": 13.0
       },
       "notes": "Aláírás évének mezője"
     },
@@ -242,10 +242,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 510,
-        "y": 700,
-        "width": 120,
-        "height": 18
+        "x": 367.2,
+        "y": 504.0,
+        "width": 86.4,
+        "height": 13.0
       },
       "notes": "Aláírás hónapjának mezője"
     },
@@ -257,10 +257,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 660,
-        "y": 700,
-        "width": 60,
-        "height": 18
+        "x": 475.2,
+        "y": 504.0,
+        "width": 43.2,
+        "height": 13.0
       },
       "notes": "Aláírás napjának mezője"
     },
@@ -272,10 +272,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 100,
-        "y": 790,
-        "width": 300,
-        "height": 18
+        "x": 72.0,
+        "y": 568.8,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Első tanú neve – nincs kanonikus megfelelő"
     },
@@ -287,10 +287,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 100,
-        "y": 812,
-        "width": 300,
-        "height": 18
+        "x": 72.0,
+        "y": 584.6,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Első tanú lakcíme"
     },
@@ -302,10 +302,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 790,
-        "width": 300,
-        "height": 18
+        "x": 345.6,
+        "y": 568.8,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Második tanú neve – nincs kanonikus megfelelő"
     },
@@ -317,10 +317,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 812,
-        "width": 300,
-        "height": 18
+        "x": 345.6,
+        "y": 584.6,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Második tanú lakcíme"
     },
@@ -332,10 +332,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 100,
-        "y": 835,
-        "width": 300,
-        "height": 18
+        "x": 72.0,
+        "y": 601.2,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Első tanú aláírásának helye"
     },
@@ -347,10 +347,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 480,
-        "y": 835,
-        "width": 300,
-        "height": 18
+        "x": 345.6,
+        "y": 601.2,
+        "width": 216.0,
+        "height": 13.0
       },
       "notes": "Második tanú aláírásának helye"
     }

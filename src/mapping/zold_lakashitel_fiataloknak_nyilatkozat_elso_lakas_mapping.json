@@ -18,10 +18,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 120,
-        "y": 248,
-        "width": 580,
-        "height": 20
+        "x": 86.4,
+        "y": 178.6,
+        "width": 417.6,
+        "height": 14.4
       },
       "notes": "Az igénylő teljes neve"
     },
@@ -33,10 +33,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 155,
-        "y": 272,
-        "width": 545,
-        "height": 20
+        "x": 111.6,
+        "y": 195.8,
+        "width": 392.4,
+        "height": 14.4
       },
       "notes": ""
     },
@@ -48,10 +48,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 145,
-        "y": 296,
-        "width": 545,
-        "height": 20
+        "x": 104.4,
+        "y": 213.1,
+        "width": 392.4,
+        "height": 14.4
       },
       "notes": ""
     },
@@ -63,10 +63,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": {
-        "x": 195,
-        "y": 320,
-        "width": 505,
-        "height": 20
+        "x": 140.4,
+        "y": 230.4,
+        "width": 363.6,
+        "height": 14.4
       },
       "notes": "Születési hely és dátum együtt egy mezőben; dátum részhez: participant.birth_date"
     },
@@ -78,10 +78,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 153,
-        "y": 432,
-        "width": 12,
-        "height": 12
+        "x": 110.2,
+        "y": 311.0,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Igen checkbox: x≈153, y≈435; Nem checkbox: x≈350, y≈435 – nincs közvetlen kanonikus megfelelő"
     },
@@ -93,10 +93,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 210,
-        "y": 676,
-        "width": 490,
-        "height": 20
+        "x": 151.2,
+        "y": 486.7,
+        "width": 352.8,
+        "height": 14.4
       },
       "notes": "Első ingatlan teljes címe"
     },
@@ -108,10 +108,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 245,
-        "y": 700,
-        "width": 430,
-        "height": 20
+        "x": 176.4,
+        "y": 504.0,
+        "width": 309.6,
+        "height": 14.4
       },
       "notes": "Első ingatlan helyrajzi száma"
     },
@@ -123,10 +123,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 370,
-        "y": 724,
-        "width": 320,
-        "height": 20
+        "x": 266.4,
+        "y": 521.3,
+        "width": 230.4,
+        "height": 14.4
       },
       "notes": "Tulajdoni hányad – nincs direkt kanonikus megfelelő"
     },
@@ -138,10 +138,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 342,
-        "y": 748,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 538.6,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Terhelt checkbox: x≈342, y≈748; Nem terhelt: x≈440, y≈748"
     },
@@ -153,10 +153,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 342,
-        "y": 768,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 553.0,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Igen checkbox: x≈342, y≈768; Nem: x≈440, y≈768"
     },
@@ -168,10 +168,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 440,
-        "y": 788,
-        "width": 12,
-        "height": 12
+        "x": 316.8,
+        "y": 567.4,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Igen: x≈440, y≈788; Nem: x≈540, y≈788"
     },
@@ -183,10 +183,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
-        "x": 210,
-        "y": 148,
-        "width": 490,
-        "height": 20
+        "x": 151.2,
+        "y": 106.6,
+        "width": 352.8,
+        "height": 14.4
       },
       "notes": "Második ingatlan teljes címe"
     },
@@ -198,10 +198,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
-        "x": 245,
-        "y": 172,
-        "width": 430,
-        "height": 20
+        "x": 176.4,
+        "y": 123.8,
+        "width": 309.6,
+        "height": 14.4
       },
       "notes": "Második ingatlan helyrajzi száma"
     },
@@ -213,10 +213,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 370,
-        "y": 196,
-        "width": 320,
-        "height": 20
+        "x": 266.4,
+        "y": 141.1,
+        "width": 230.4,
+        "height": 14.4
       },
       "notes": "Nincs direkt kanonikus megfelelő"
     },
@@ -228,10 +228,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 342,
-        "y": 220,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 158.4,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Terhelt: x≈342, y≈220; Nem terhelt: x≈440, y≈220"
     },
@@ -243,10 +243,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 342,
-        "y": 240,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 172.8,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": ""
     },
@@ -258,10 +258,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 440,
-        "y": 260,
-        "width": 12,
-        "height": 12
+        "x": 316.8,
+        "y": 187.2,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": ""
     },
@@ -273,10 +273,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
-        "x": 210,
-        "y": 340,
-        "width": 490,
-        "height": 20
+        "x": 151.2,
+        "y": 244.8,
+        "width": 352.8,
+        "height": 14.4
       },
       "notes": "Harmadik ingatlan teljes címe"
     },
@@ -288,10 +288,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
-        "x": 245,
-        "y": 364,
-        "width": 430,
-        "height": 20
+        "x": 176.4,
+        "y": 262.1,
+        "width": 309.6,
+        "height": 14.4
       },
       "notes": "Harmadik ingatlan helyrajzi száma"
     },
@@ -303,10 +303,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 370,
-        "y": 388,
-        "width": 320,
-        "height": 20
+        "x": 266.4,
+        "y": 279.4,
+        "width": 230.4,
+        "height": 14.4
       },
       "notes": ""
     },
@@ -318,10 +318,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 342,
-        "y": 412,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 296.6,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": ""
     },
@@ -333,10 +333,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 342,
-        "y": 432,
-        "width": 12,
-        "height": 12
+        "x": 246.2,
+        "y": 311.0,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": ""
     },
@@ -348,10 +348,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 440,
-        "y": 452,
-        "width": 12,
-        "height": 12
+        "x": 316.8,
+        "y": 325.4,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": ""
     },
@@ -363,10 +363,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": {
-        "x": 390,
-        "y": 524,
-        "width": 240,
-        "height": 20
+        "x": 280.8,
+        "y": 377.3,
+        "width": 172.8,
+        "height": 14.4
       },
       "notes": "A hitelcéllal érintett lakás eladójának teleülése"
     },
@@ -378,10 +378,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": {
-        "x": 108,
-        "y": 548,
-        "width": 280,
-        "height": 20
+        "x": 77.8,
+        "y": 394.6,
+        "width": 201.6,
+        "height": 14.4
       },
       "notes": "Hitelcéllal érintett lakás helyrajzi száma"
     },
@@ -393,10 +393,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 153,
-        "y": 572,
-        "width": 12,
-        "height": 12
+        "x": 110.2,
+        "y": 411.8,
+        "width": 8.6,
+        "height": 8.6
       },
       "notes": "Közeli hozzátartozó: x≈153, y≈572; Nem közeli: x≈380, y≈572"
     },
@@ -408,10 +408,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": {
-        "x": 108,
-        "y": 650,
-        "width": 280,
-        "height": 20
+        "x": 77.8,
+        "y": 468.0,
+        "width": 201.6,
+        "height": 14.4
       },
       "notes": "Aláírás dátuma; nincs közvetlen kanonikus mező"
     },
@@ -423,10 +423,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 430,
-        "y": 700,
-        "width": 260,
-        "height": 30
+        "x": 309.6,
+        "y": 504.0,
+        "width": 187.2,
+        "height": 21.6
       },
       "notes": "Aláírás mező – névként kapcsolódik az igénylőhöz"
     },
@@ -438,10 +438,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 108,
-        "y": 748,
-        "width": 260,
-        "height": 20
+        "x": 77.8,
+        "y": 538.6,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": "Tanú – nem az igénylő; nincs dedikált kanonikus mező tanúhoz"
     },
@@ -453,10 +453,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 108,
-        "y": 772,
-        "width": 260,
-        "height": 20
+        "x": 77.8,
+        "y": 555.8,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": "Tanú lakcíme"
     },
@@ -468,10 +468,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 108,
-        "y": 796,
-        "width": 260,
-        "height": 20
+        "x": 77.8,
+        "y": 573.1,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": "Aláírás – nincs kanonikus megfelelő"
     },
@@ -483,10 +483,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 430,
-        "y": 748,
-        "width": 260,
-        "height": 20
+        "x": 309.6,
+        "y": 538.6,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": "Második tanú neve"
     },
@@ -498,10 +498,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 430,
-        "y": 772,
-        "width": 260,
-        "height": 20
+        "x": 309.6,
+        "y": 555.8,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": ""
     },
@@ -513,10 +513,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": {
-        "x": 430,
-        "y": 796,
-        "width": 260,
-        "height": 20
+        "x": 309.6,
+        "y": 573.1,
+        "width": 187.2,
+        "height": 14.4
       },
       "notes": ""
     }

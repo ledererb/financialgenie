@@ -630,80 +630,91 @@ Ez a(z) '{section_name}' szekció."""
 
             for i, span in enumerate(all_spans):
                 text = span["text"]
-                if "…" not in text:
+                if "…" not in text and "." not in text:
                     continue
 
                 bbox = span["bbox"]  # [x0, y0, x1, y1]
                 font_size = span["size"]
+                char_w = font_size * 0.48
 
-                # Pontsor pozíció
-                dot_match = re.search(r'[…]{2,}', text)
-                if not dot_match:
+                # Find all dot matches in the span text (at least 4 characters long)
+                matches = list(re.finditer(r'[….]{4,}', text))
+                if not matches:
                     continue
 
-                pre_text = text[:dot_match.start()].strip()
-                post_text = text[dot_match.end():].strip("() ,;. ")
+                prev_end = 0
+                for match_idx, dot_match in enumerate(matches):
+                    # pre_text is the text preceding the current dot match since the previous match end
+                    pre_text = text[prev_end:dot_match.start()].strip("() ,;:.")
+                    # post_text is the text after the current dot match until the next match start or end of text
+                    next_start = matches[match_idx + 1].start() if match_idx + 1 < len(matches) else len(text)
+                    post_text = text[dot_match.end():next_start].strip("() ,;. ")
 
-                # Pontsor x pozíciójának precíz meghatározása
-                # Ha van pre_text, a pontsor annak VÉGÉTŐL indul
-                if pre_text:
-                    # Számítsuk ki a pre_text szélességét a font méretéből
-                    char_w = font_size * 0.48
-                    fill_x = bbox[0] + len(pre_text) * char_w + char_w
-                else:
-                    fill_x = bbox[0]
+                    # Calculate the precise x position of the dotted line
+                    # text_before is all text from the start of the span to the beginning of this match
+                    text_before = text[:dot_match.start()]
+                    fill_x = bbox[0] + len(text_before) * char_w
 
-                fill_y = bbox[1]
-                fill_w = bbox[2] - fill_x
+                    fill_y = bbox[1]
+                    
+                    # Width of this specific dotted segment
+                    dot_len = dot_match.end() - dot_match.start()
+                    fill_w = min(dot_len * char_w, bbox[2] - fill_x)
 
-                # Kontextus: előtte + utána lévő szöveg (5 span)
-                context_parts = []
-                for j in range(max(0, i-2), min(len(all_spans), i+3)):
-                    s = all_spans[j]
-                    t = s["text"].strip()
-                    if t and "…" not in t:
-                        context_parts.append(t)
-                context = " ".join(context_parts)[:200]
+                    # Kontextus: előtte + utána lévő szöveg (5 span)
+                    context_parts = []
+                    for j in range(max(0, i-2), min(len(all_spans), i+3)):
+                        s = all_spans[j]
+                        t = s["text"].strip()
+                        if t and "…" not in t and "." not in t:
+                            context_parts.append(t)
+                    context = " ".join(context_parts)[:200]
 
-                # Label keresése – sorrendben:
-                label = ""
+                    # Label keresése – sorrendben:
+                    label = ""
 
-                # 1. Közvetlenül utána dőlt span (zárójelben, pl. "(Hiteligénylő neve)")
-                for j in range(i+1, min(i+3, len(all_spans))):
-                    s = all_spans[j]
-                    if abs(s["bbox"][1] - bbox[1]) > 5:
-                        break  # Más soron van
-                    if "Ital" in s.get("font", ""):
-                        candidate = s["text"].strip("() ,;.")
-                        if len(candidate) > 2 and "…" not in candidate:
-                            label = candidate
-                            break
+                    # 1. Közvetlenül utána dőlt span (zárójelben, pl. "(Hiteligénylő neve)")
+                    for j in range(i+1, min(i+3, len(all_spans))):
+                        s = all_spans[j]
+                        if abs(s["bbox"][1] - bbox[1]) > 5:
+                            break  # Más soron van
+                        if "Ital" in s.get("font", ""):
+                            candidate = s["text"].strip("() ,;.")
+                            if len(candidate) > 2 and "…" not in candidate and "." not in candidate:
+                                label = candidate
+                                break
 
-                # 2. Pre-text (pl. "Kelt:", "Név:", "Születési hely")
-                if not label and pre_text:
-                    clean = pre_text.rstrip(":").strip()
-                    if len(clean) > 1 and "…" not in clean:
-                        label = clean
+                    # 2. Pre-text (pl. "Kelt:", "Név:", "Születési hely")
+                    if not label and pre_text:
+                        clean = pre_text
+                        if "(" in clean:
+                            clean = clean.split("(")[-1]
+                        clean = clean.rstrip(":").strip("() ,;:.")
+                        if len(clean) > 1 and "…" not in clean and "." not in clean:
+                            label = clean
 
-                # 3. Post-text ha nem pontsor
-                if not label and post_text and len(post_text) > 2 and "…" not in post_text:
-                    label = post_text
+                    # 3. Post-text ha nem pontsor
+                    if not label and post_text and len(post_text) > 2 and "…" not in post_text and "." not in post_text:
+                        label = post_text
 
-                # 4. Kontextus alapú fallback
-                if not label:
-                    label = f"mező_{field_id + 1}"
+                    # 4. Kontextus alapú fallback
+                    if not label:
+                        label = f"mező_{field_id + 1}"
 
-                field_id += 1
-                fields.append({
-                    "id": f"flat_{page_idx+1}_{field_id}",
-                    "label": label,
-                    "x": round(fill_x, 1),
-                    "y": round(fill_y, 1),
-                    "width": round(max(fill_w, 20), 1),
-                    "font_size": round(font_size, 1),
-                    "page": page_idx + 1,
-                    "context": context,
-                })
+                    field_id += 1
+                    fields.append({
+                        "id": f"flat_{page_idx+1}_{field_id}",
+                        "label": label,
+                        "x": round(fill_x, 1),
+                        "y": round(fill_y, 1),
+                        "width": round(max(fill_w, 20), 1),
+                        "font_size": round(font_size, 1),
+                        "page": page_idx + 1,
+                        "context": context,
+                    })
+
+                    # Update prev_end for the next match on the same line
+                    prev_end = dot_match.end()
 
         doc.close()
         return fields
