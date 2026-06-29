@@ -180,7 +180,7 @@ class TestMappingConfig:
     def test_mapping_dict(self, otp_mapping):
         md = otp_mapping.mapping_dict
         assert "borrower_name" in md
-        assert md["borrower_name"] == "participant.name"
+        assert md["borrower_name"] == "Contact.Name"
         assert "loan_amount" in md
 
     def test_save_and_load_roundtrip(self, otp_mapping, tmp_path):

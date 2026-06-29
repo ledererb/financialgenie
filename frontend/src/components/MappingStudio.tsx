@@ -8,12 +8,12 @@ import FillPreviewStep from "./FillPreviewStep";
 
 type WizardStep = "upload" | "analysis" | "review" | "lock" | "fill";
 
-const STEPS: { key: WizardStep; label: string; icon: string }[] = [
-  { key: "upload", label: "Upload", icon: "📄" },
-  { key: "analysis", label: "AI Analysis", icon: "🤖" },
-  { key: "review", label: "Review", icon: "📊" },
-  { key: "lock", label: "Approve", icon: "🔒" },
-  { key: "fill", label: "Fill & Preview", icon: "✨" },
+const STEPS: { key: WizardStep; label: string }[] = [
+  { key: "upload", label: "Feltöltés" },
+  { key: "analysis", label: "AI elemzés" },
+  { key: "review", label: "Áttekintés" },
+  { key: "lock", label: "Jóváhagyás" },
+  { key: "fill", label: "Kitöltés" },
 ];
 
 export default function MappingStudio() {
@@ -89,19 +89,18 @@ export default function MappingStudio() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "12px 24px",
+        padding: "16px 28px",
         borderBottom: "1px solid var(--border-subtle)",
         background: "var(--bg-secondary)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "1.4rem" }}>🧬</span>
           <h1 style={{
-            fontSize: "1rem",
+            fontSize: "1.15rem",
             fontWeight: 600,
             color: "var(--text-primary)",
             letterSpacing: "-0.01em",
           }}>
-            Mapping Studio
+            Mapping Stúdió
           </h1>
         </div>
 
@@ -120,18 +119,18 @@ export default function MappingStudio() {
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {STEPS.map((s, i) => (
             <span
               key={s.key}
               style={{
-                fontSize: "0.7rem",
+                fontSize: "0.75rem",
                 color: i === stepIndex ? "var(--accent-blue)" : "var(--text-tertiary)",
                 fontWeight: i === stepIndex ? 600 : 400,
                 transition: "color var(--transition-default)",
               }}
             >
-              {s.icon} {s.label}
+              {s.label}
             </span>
           ))}
         </div>

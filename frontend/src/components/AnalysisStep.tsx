@@ -45,16 +45,16 @@ export default function AnalysisStep({ pdfId, onComplete }: AnalysisStepProps) {
             setTimeout(() => onComplete(), 600);
           } else if (res.status === "error") {
             stopPolling();
-            setError(res.error || "Recognition failed.");
+            setError(res.error || "A felismerés sikertelen.");
           }
         } catch (e) {
           stopPolling();
-          setError((e as Error).message || "Lost connection to server.");
+          setError((e as Error).message || "Megszakadt a kapcsolat a szerverrel.");
         }
       }, 2000);
     } catch (e) {
       setStarting(false);
-      setError((e as Error).message || "Failed to start recognition.");
+      setError((e as Error).message || "Nem sikerült elindítani a felismerést.");
     }
   }, [pdfId, onComplete, stopPolling]);
 
@@ -73,7 +73,7 @@ export default function AnalysisStep({ pdfId, onComplete }: AnalysisStepProps) {
   }, [beginRecognition, stopPolling]);
 
   const progress = status?.progress ?? 0;
-  const message = status?.message ?? (starting ? "Initializing AI recognition…" : "Processing…");
+  const message = status?.message ?? (starting ? "AI felismerés inicializálása..." : "Feldolgozás...");
   const isRunning = !error && status?.status !== "done";
 
   return (
@@ -186,10 +186,10 @@ export default function AnalysisStep({ pdfId, onComplete }: AnalysisStepProps) {
           }}
         >
           {error
-            ? "Recognition Failed"
+            ? "Felismerés sikertelen"
             : status?.status === "done"
-              ? "Analysis Complete"
-              : "Analyzing PDF…"}
+              ? "Elemzés kész"
+              : "PDF elemzése..."}
         </h2>
 
         {/* Status message */}
@@ -251,7 +251,7 @@ export default function AnalysisStep({ pdfId, onComplete }: AnalysisStepProps) {
               <polyline points="23 4 23 10 17 10" />
               <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
             </svg>
-            Retry
+            Újrapróbálás
           </button>
         )}
       </div>

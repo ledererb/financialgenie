@@ -59,7 +59,7 @@ export default function LockStep({
             marginBottom: "var(--space-xs)",
           }}
         >
-          Approve & Lock Mapping
+          Mapping jóváhagyása és lezárása
         </h2>
         <p
           style={{
@@ -69,7 +69,7 @@ export default function LockStep({
             marginBottom: "var(--space-lg)",
           }}
         >
-          Review the summary below before finalizing.
+          Véglegesítés előtt ellenőrizd az alábbi összefoglalót.
         </p>
 
         {/* Stats row */}
@@ -85,7 +85,7 @@ export default function LockStep({
             <div className="stat-value" style={{ color: "var(--accent-green)" }}>
               {mappedCount}
             </div>
-            <div className="stat-label">Mapped</div>
+            <div className="stat-label">Leképezve</div>
           </div>
           <div className="card card-stat" style={{ padding: "var(--space-md)" }}>
             <div
@@ -94,13 +94,13 @@ export default function LockStep({
             >
               {unmappedCount}
             </div>
-            <div className="stat-label">Unmapped</div>
+            <div className="stat-label">Nem leképezett</div>
           </div>
           <div className="card card-stat" style={{ padding: "var(--space-md)" }}>
             <div className="stat-value" style={{ color: "var(--accent-blue)" }}>
               {pct}%
             </div>
-            <div className="stat-label">Coverage</div>
+            <div className="stat-label">Lefedettség</div>
           </div>
         </div>
 
@@ -154,8 +154,8 @@ export default function LockStep({
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <span>
-              Locking is <strong>permanent</strong>. Once approved, the mapping configuration
-              cannot be edited. Make sure all fields are correctly mapped before proceeding.
+              A lezárás <strong>végleges</strong>. A jóváhagyást követően a mapping konfiguráció
+              nem szerkeszthető. Kérjük, győződj meg arról, hogy minden mező helyesen van leképezve.
             </span>
           </p>
         </div>
@@ -169,7 +169,7 @@ export default function LockStep({
           }}
         >
           <button className="btn btn-ghost" onClick={onBack}>
-            ← Back to Review
+            ← Vissza az áttekintéshez
           </button>
           <button className="btn btn-success btn-lg" onClick={onApprove}>
             <svg
@@ -184,7 +184,7 @@ export default function LockStep({
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Approve & Lock
+            Jóváhagyás és lezárás
           </button>
         </div>
       </div>

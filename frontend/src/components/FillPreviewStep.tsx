@@ -125,14 +125,14 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
         <button className="btn btn-ghost btn-sm" onClick={onBack}>
-          ← Back
+          ← Vissza
         </button>
         <div>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-            Fill Preview
+            Kitöltési előnézet
           </h2>
           <p style={{ fontSize: "0.78rem", color: "var(--text-tertiary)", margin: 0 }}>
-            Select a Salesforce deal, generate and preview the filled PDF
+            Válassz ki egy Salesforce ügyletet, generáld le és tekintsd meg a kitöltött PDF-et
           </p>
         </div>
       </div>
@@ -151,17 +151,17 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
               letterSpacing: "0.05em",
             }}
           >
-            Salesforce Deal
+            Salesforce ügylet
           </label>
 
           {dealsLoading ? (
             <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-              Loading deals from Salesforce...
+              Ügyletek betöltése a Salesforce-ból...
             </div>
           ) : dealsError ? (
             <div style={{ color: "var(--accent-red)", fontSize: "0.85rem" }}>{dealsError}</div>
           ) : deals.length === 0 ? (
-            <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No deals found</div>
+            <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Nem találhatók ügyletek</div>
           ) : (
             <select
               value={selectedDealId}
@@ -211,7 +211,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
             }}
           >
             <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
-              ID: <strong style={{ color: "var(--text-secondary)" }}>{selectedDeal.Id}</strong>
+              Azonosító: <strong style={{ color: "var(--text-secondary)" }}>{selectedDeal.Id}</strong>
             </span>
             {selectedDeal.StageName && (
               <span className="badge badge-blue" style={{ fontSize: "0.7rem" }}>
@@ -220,7 +220,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
             )}
             {selectedDeal.CloseDate && (
               <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
-                Close: <strong style={{ color: "var(--text-secondary)" }}>{selectedDeal.CloseDate}</strong>
+                Lezárás: <strong style={{ color: "var(--text-secondary)" }}>{selectedDeal.CloseDate}</strong>
               </span>
             )}
           </div>
@@ -246,7 +246,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                   marginRight: 8,
                 }}
               />
-              Filling PDF...
+              PDF kitöltése...
             </>
           ) : (
             <>
@@ -257,7 +257,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                 <line x1="16" y1="17" x2="8" y2="17" />
                 <polyline points="10 9 9 9 8 9" />
               </svg>
-              Generate Filled PDF
+              Kitöltött PDF generálása
             </>
           )}
         </button>
@@ -300,7 +300,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                   {fillResult.filled_fields?.length ?? "?"}
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Filled
+                  Kitöltve
                 </div>
               </div>
               <div style={{ textAlign: "center" }}>
@@ -308,7 +308,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                   {fillResult.skipped_fields?.length ?? "?"}
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Skipped
+                  Kihagyva
                 </div>
               </div>
               {fillResult.total_pages && (
@@ -317,7 +317,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                     {fillResult.total_pages}
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                    Pages
+                    Oldalak
                   </div>
                 </div>
               )}
@@ -329,14 +329,14 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Download PDF
+              PDF letöltése
             </button>
           </div>
 
           {/* Page preview */}
           {previewLoading && (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "var(--space-xl)" }}>
-              Loading preview...
+              Előnézet betöltése...
             </div>
           )}
 
@@ -360,7 +360,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                   ←
                 </button>
                 <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  Page {currentPage + 1} / {fillResult.total_pages ?? fillResult.pages.length}
+                  {currentPage + 1}. oldal / {fillResult.total_pages ?? fillResult.pages.length}
                 </span>
                 <button
                   className="btn btn-ghost btn-sm"

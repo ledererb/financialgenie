@@ -237,7 +237,7 @@ export default function PageEditor({
           color: "var(--text-secondary)",
         }}
       >
-        Loading page…
+        Oldal betöltése…
       </div>
     );
   }
@@ -254,10 +254,10 @@ export default function PageEditor({
           gap: "var(--space-md)",
         }}
       >
-        <span className="badge badge-red">Error</span>
+        <span className="badge badge-red">Hiba</span>
         <p style={{ color: "var(--text-secondary)" }}>{error}</p>
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Back to Dashboard
+          Vissza az irányítópultra
         </button>
       </div>
     );
@@ -277,7 +277,7 @@ export default function PageEditor({
       <header
         className="glass"
         style={{
-          padding: "var(--space-sm) var(--space-lg)",
+          padding: "16px 28px",
           display: "flex",
           alignItems: "center",
           gap: "var(--space-md)",
@@ -286,27 +286,27 @@ export default function PageEditor({
         }}
       >
         <button className="btn btn-ghost btn-sm" onClick={onBack}>
-          ← Back to Dashboard
+          Vissza az irányítópultra
         </button>
         <h2
           style={{
-            fontSize: "0.95rem",
+            fontSize: "1.1rem",
             fontWeight: 600,
           }}
         >
-          Page {pageNumber}
+          {pageNumber}. oldal
         </h2>
         <span
           style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}
         >
-          {pageFields.length} field{pageFields.length !== 1 ? "s" : ""}
+          {pageFields.length} mező
         </span>
         {saving && (
           <span
             className="badge badge-blue"
             style={{ marginLeft: "auto" }}
           >
-            Saving…
+            Mentés…
           </span>
         )}
       </header>
@@ -335,7 +335,7 @@ export default function PageEditor({
           <div style={{ position: "relative", display: "inline-block" }}>
             <img
               src={pageImageUrl(pdfId, pageNumber)}
-              alt={`Page ${pageNumber}`}
+              alt={`${pageNumber}. oldal`}
               onLoad={handleImageLoad}
               style={{
                 maxWidth: "100%",
@@ -402,7 +402,7 @@ export default function PageEditor({
               flexShrink: 0,
             }}
           >
-            Fields on Page {pageNumber}
+            Mezők a(z) {pageNumber}. oldalon
           </div>
 
           <div
@@ -422,7 +422,7 @@ export default function PageEditor({
                   fontSize: "0.85rem",
                 }}
               >
-                No fields on this page.
+                Nincs mező ezen az oldalon.
               </div>
             )}
 
@@ -475,7 +475,7 @@ export default function PageEditor({
                       {mf.pdf_field_name}
                     </span>
                     <span className={confidenceBadgeClass(mf.confidence)}>
-                      {mf.confidence ?? "none"}
+                      {mf.confidence ?? "nincs"}
                     </span>
                   </div>
 
@@ -518,7 +518,7 @@ export default function PageEditor({
                           outline: "none",
                         }}
                       >
-                        <option value="">— unmapped —</option>
+                        <option value="">— nem mappelt —</option>
                         {(() => {
                           // Group canonicals by SF object prefix
                           const groups = new Map<string, CanonicalField[]>();
@@ -561,9 +561,9 @@ export default function PageEditor({
                           borderRadius: "var(--radius-sm)",
                           transition: "background var(--transition-fast)",
                         }}
-                        title="Click to edit mapping"
+                        title="Kattints a mapping szerkesztéséhez"
                       >
-                        {mf.canonical_field ?? "unmapped"}
+                        {mf.canonical_field ?? "nem mappelt"}
                       </span>
                     )}
                   </div>
@@ -591,10 +591,10 @@ export default function PageEditor({
                           color: "var(--text-tertiary)",
                         }}
                       >
-                        Checkbox Group
+                        Jelölőnégyzet csoport
                       </span>
                       <input
-                        placeholder="group_id"
+                        placeholder="csoport_azonosító"
                         value={mf.checkbox_group?.group_id ?? ""}
                         onChange={(e) =>
                           handleCheckboxGroupChange(
@@ -614,7 +614,7 @@ export default function PageEditor({
                         }}
                       />
                       <input
-                        placeholder="match_value"
+                        placeholder="egyező_érték"
                         value={mf.checkbox_group?.match_value ?? ""}
                         onChange={(e) =>
                           handleCheckboxGroupChange(

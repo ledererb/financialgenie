@@ -45,7 +45,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
 
   const handleFile = useCallback((f: File) => {
     if (f.type !== "application/pdf") {
-      setError("Please select a PDF file.");
+      setError("Kérlek, válassz PDF fájlt.");
       return;
     }
     setFile(f);
@@ -89,7 +89,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
       const res = await uploadPdf(file);
       onComplete(res.pdf_id);
     } catch (e) {
-      setError((e as Error).message || "Upload failed. Please try again.");
+      setError((e as Error).message || "A feltöltés sikertelen. Próbáld újra.");
     } finally {
       setUploading(false);
     }
@@ -108,7 +108,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
       await deletePdf(deleteTarget.pdf_id);
       setPdfs((prev) => prev.filter((p) => p.pdf_id !== deleteTarget.pdf_id));
     } catch (e) {
-      setError(`Delete failed: ${(e as Error).message}`);
+      setError(`Törlés sikertelen: ${(e as Error).message}`);
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
@@ -153,10 +153,10 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
             </svg>
             <div>
               <p style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-primary)" }}>
-                Drop your PDF here
+                Húzd ide a PDF-et
               </p>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "var(--space-xs)" }}>
-                or click to browse files
+                vagy kattints a tallózáshoz
               </p>
             </div>
           </div>
@@ -243,10 +243,10 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                     animation: "spin 0.8s linear infinite",
                   }}
                 />
-                Uploading…
+                Feltöltés…
               </>
             ) : (
-              <>Upload & Analyze</>
+              <>Feltöltés és elemzés</>
             )}
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
               marginBottom: "var(--space-md)",
             }}
           >
-            Recent PDFs
+            Meglévő PDF-ek
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
             {pdfs.map((pdf) => (
@@ -296,11 +296,11 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                   <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
                     {formatBytes(pdf.size_bytes)}
                   </span>
-                  <span className="badge badge-blue">Open</span>
+                  <span className="badge badge-blue">Megnyitás</span>
                 </div>
                 <button
                   className="btn btn-ghost btn-sm"
-                  title="Delete PDF"
+                  title="PDF törlése"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteTarget(pdf);
@@ -313,7 +313,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                   onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
                 >
-                  🗑️
+                  Törlés
                 </button>
               </div>
             ))}
@@ -323,7 +323,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
 
       {pdfsLoading && (
         <p style={{ textAlign: "center", color: "var(--text-tertiary)", fontSize: "0.8rem" }}>
-          Loading existing PDFs…
+          Meglévő PDF-ek betöltése…
         </p>
       )}
 
@@ -366,14 +366,14 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                 justifyContent: "center",
                 fontSize: "1.2rem",
               }}>
-                🗑️
+                ×
               </div>
               <div>
                 <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-                  Delete PDF?
+                  PDF törlése?
                 </h3>
                 <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "4px 0 0" }}>
-                  This will also remove its mapping configuration.
+                  A mapping konfiguráció is törlésre kerül.
                 </p>
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                 disabled={deleting}
                 style={{ padding: "8px 16px", fontSize: "0.85rem" }}
               >
-                Cancel
+                Mégse
               </button>
               <button
                 onClick={handleDeleteConfirm}
@@ -418,7 +418,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                   transition: "opacity 0.15s, background 0.15s",
                 }}
               >
-                {deleting ? "Deleting…" : "Delete"}
+                {deleting ? "Törlés…" : "Törlés"}
               </button>
             </div>
           </div>

@@ -153,7 +153,7 @@ export default function ReviewDashboard({
           color: "var(--text-secondary)",
         }}
       >
-        Loading mapping data…
+        Mapping adatok betöltése…
       </div>
     );
   }
@@ -170,10 +170,10 @@ export default function ReviewDashboard({
           gap: "var(--space-md)",
         }}
       >
-        <span className="badge badge-red">Error</span>
+        <span className="badge badge-red">Hiba</span>
         <p style={{ color: "var(--text-secondary)" }}>{error}</p>
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Back
+          ← Vissza
         </button>
       </div>
     );
@@ -193,7 +193,7 @@ export default function ReviewDashboard({
       <header
         className="glass"
         style={{
-          padding: "var(--space-md) var(--space-lg)",
+          padding: "16px 28px",
           borderRadius: 0,
           borderLeft: "none",
           borderRight: "none",
@@ -204,8 +204,8 @@ export default function ReviewDashboard({
           flexShrink: 0,
         }}
       >
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 600 }}>
-          Review Mapping
+        <h2 style={{ fontSize: "1.15rem", fontWeight: 600 }}>
+          Mapping áttekintése
         </h2>
         <span
           style={{ fontSize: "0.8rem", color: "var(--text-tertiary)" }}
@@ -236,7 +236,7 @@ export default function ReviewDashboard({
           >
             <div className="card card-stat">
               <div className="stat-value">{stats.total}</div>
-              <div className="stat-label">Total Fields</div>
+              <div className="stat-label">Összes mező</div>
             </div>
 
             <div className="card card-stat">
@@ -244,7 +244,7 @@ export default function ReviewDashboard({
                 {stats.mapped}
               </div>
               <div className="stat-label">
-                Mapped <span className="badge badge-green">✓</span>
+                Leképezett <span className="badge badge-green">✓</span>
               </div>
             </div>
 
@@ -253,7 +253,7 @@ export default function ReviewDashboard({
                 {stats.unmapped}
               </div>
               <div className="stat-label">
-                Unmapped <span className="badge badge-red">✗</span>
+                Nem mappelt <span className="badge badge-red">✗</span>
               </div>
             </div>
 
@@ -270,7 +270,7 @@ export default function ReviewDashboard({
                 {confidenceBadge("medium", stats.medium)}
                 {confidenceBadge("low", stats.low)}
               </div>
-              <div className="stat-label">Confidence</div>
+              <div className="stat-label">Magabiztosság</div>
             </div>
           </div>
         )}
@@ -287,7 +287,7 @@ export default function ReviewDashboard({
               letterSpacing: "0.05em",
             }}
           >
-            Page Coverage
+            Oldal lefedettség
           </h3>
 
           <div className="heatmap-grid">
@@ -296,7 +296,7 @@ export default function ReviewDashboard({
                 key={entry.page}
                 className={heatmapClass(entry)}
                 onClick={() => onPageClick(entry.page)}
-                title={`Page ${entry.page}: ${entry.mapped}/${entry.total} mapped`}
+                title={`${entry.page}. oldal: ${entry.mapped}/${entry.total} leképezve`}
               >
                 {entry.page}
               </div>
@@ -366,7 +366,7 @@ export default function ReviewDashboard({
                   verticalAlign: "middle",
                 }}
               />
-              No fields
+              Nincs mező
             </span>
           </div>
         </section>
@@ -384,7 +384,7 @@ export default function ReviewDashboard({
                 letterSpacing: "0.05em",
               }}
             >
-              ⚠ Conflicts ({conflicts.length})
+              Ütközések ({conflicts.length})
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {conflicts.map(({ canonical, fields }) => (
@@ -428,7 +428,7 @@ export default function ReviewDashboard({
               fontSize: "0.85rem",
             }}
           >
-            No mapping conflicts detected ✓
+            Nincs mapping ütközés
           </section>
         )}
       </div>
@@ -445,10 +445,10 @@ export default function ReviewDashboard({
         }}
       >
         <button className="btn btn-ghost" onClick={onBack}>
-          ← Back
+          ← Vissza
         </button>
         <button className="btn btn-success" onClick={onApprove}>
-          Approve Mapping
+          Mapping jóváhagyása
         </button>
       </div>
     </div>
