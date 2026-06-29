@@ -1,0 +1,13 @@
+# Backend dependencies for the FinancialGenie Mapping Editor (standalone tool).
+# NOTE: This is separate from the main filling pipeline requirements.txt.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pydantic>=2.0
+# PDF processing (already used by the main pipeline)
+pikepdf>=8.0.0
+PyMuPDF>=1.23.0
+# Field recognition reuses the existing src/ai/field_recognizer.py which calls
+# the Anthropic API when ANTHROPIC_API_KEY is set. The dependency is optional:
+# the editor works without it (AI recognize button will be disabled / no-op).
+anthropic>=0.30.0
