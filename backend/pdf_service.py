@@ -275,28 +275,39 @@ class PdfService:
         """
         try:
             doc = fitz.open(str(pdf_path))
-            # Build {field_name: (page_number, rect_in_rendered_px)}
-            name_to_geo: dict = {}
+            # Build {field_name: list_of_geometries} to handle multiple widgets sharing the same field name
+            name_to_geos: dict[str, list[dict]] = {}
             for i, page in enumerate(doc):
                 for w in page.widgets():
                     if w.field_name:
                         r = w.rect
-                        name_to_geo[w.field_name] = {
+                        geo = {
                             "page": i + 1,
                             "x": round(r.x0 * RENDER_SCALE, 2),
-                            "y": round((page.rect.height - r.y1) * RENDER_SCALE, 2),
+                            "y": round(r.y0 * RENDER_SCALE, 2),
                             "width": round(r.width * RENDER_SCALE, 2),
                             "height": round(r.height * RENDER_SCALE, 2),
                         }
+                        name_to_geos.setdefault(w.field_name, []).append(geo)
             doc.close()
 
             patched_page = 0
             patched_rect = 0
+            name_counts: dict[str, int] = {}
             for f in fields:
                 name = f.get("pdf_field_name", "")
-                geo = name_to_geo.get(name)
-                if not geo:
+                geos = name_to_geos.get(name)
+                if not geos:
                     continue
+
+                # Match by occurrence index
+                idx = name_counts.get(name, 0)
+                if idx < len(geos):
+                    geo = geos[idx]
+                    name_counts[name] = idx + 1
+                else:
+                    geo = geos[-1]
+
                 f["page_number"] = geo["page"]
                 patched_page += 1
                 if f.get("rect"):
