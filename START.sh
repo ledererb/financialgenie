@@ -3,12 +3,12 @@ set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 echo "🚀 Starting FinancialGenie Mapping Editor"
 echo "   Backend:  http://localhost:8765"
-echo "   Frontend: http://localhost:5173"
+echo "   Frontend: http://localhost:5180"
 echo ""
 
 # Kill any existing processes on the ports
 fuser -k 8765/tcp 2>/dev/null || true
-fuser -k 5173/tcp 2>/dev/null || true
+fuser -k 5180/tcp 2>/dev/null || true
 sleep 1
 
 # Start backend
@@ -34,7 +34,7 @@ sleep 3
 
 echo ""
 echo "✅ Mapping Editor is running!"
-echo "   Open http://localhost:5173 in your browser"
+echo "   Open http://localhost:5180 in your browser"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 
