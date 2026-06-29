@@ -1,0 +1,420 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "flat_sample",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Mock felismerés szövegkeresés alapján. Felülvizsgálat szükséges.",
+  "page_structure": {
+    "1": "global",
+    "2": "per_participant",
+    "3": "per_property"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "flat_participant_name_1",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 75.02790832519531,
+        "y": 298.07928466796875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_birth_name_1",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 351.49237060546875,
+        "y": 298.07928466796875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_mother_name_1",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 98.79540252685547,
+        "y": 334.9296569824219,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_birth_place_1",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 107.96040344238281,
+        "y": 371.7800598144531,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_personal_id_1",
+      "label": "Személyi szám",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 439.0445556640625,
+        "y": 408.63037109375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_tax_id_1",
+      "label": "Adóazonosító",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 271.0199890136719,
+        "y": 408.63037109375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_full_address_1",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 118.15689849853516,
+        "y": 439.3140869140625,
+        "width": 200.0,
+        "height": 11.0159912109375
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_zip_code_1",
+      "label": "Irányítószám",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 104.6229019165039,
+        "y": 459.6540832519531,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_city_1",
+      "label": "Település",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 180.18968200683594,
+        "y": 459.6540832519531,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_phone_1",
+      "label": "Telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 104.6229019165039,
+        "y": 547.528076171875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_email_1",
+      "label": "E-mail",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 280.7987060546875,
+        "y": 547.528076171875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_loan_loan_amount_1",
+      "label": "Hitelösszeg",
+      "field_type": "number",
+      "canonical_field": "loan.loan_amount",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": {
+        "x": 127.55789947509766,
+        "y": 184.693359375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_name_2",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "participant.name",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 75.02790832519531,
+        "y": 193.1973876953125,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_birth_name_2",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "participant.birth_name",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 351.49237060546875,
+        "y": 193.1973876953125,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_mother_name_2",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "participant.mother_name",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 98.79540252685547,
+        "y": 230.04779052734375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_birth_place_2",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "participant.birth_place",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 107.96040344238281,
+        "y": 266.898193359375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_personal_id_2",
+      "label": "Személyi szám",
+      "field_type": "text",
+      "canonical_field": "participant.personal_id",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 439.0445556640625,
+        "y": 303.74859619140625,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_tax_id_2",
+      "label": "Adóazonosító",
+      "field_type": "text",
+      "canonical_field": "participant.tax_id",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 271.0199890136719,
+        "y": 303.74859619140625,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_full_address_2",
+      "label": "Lakcím",
+      "field_type": "text",
+      "canonical_field": "participant.address.full_address",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 118.15689849853516,
+        "y": 334.4321594238281,
+        "width": 200.0,
+        "height": 11.0159912109375
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_zip_code_2",
+      "label": "Irányítószám",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 104.6229019165039,
+        "y": 354.77215576171875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_city_2",
+      "label": "Település",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 180.18968200683594,
+        "y": 354.77215576171875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_phone_2",
+      "label": "Telefonszám",
+      "field_type": "text",
+      "canonical_field": "participant.phone",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 104.6229019165039,
+        "y": 442.64617919921875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_email_2",
+      "label": "E-mail",
+      "field_type": "text",
+      "canonical_field": "participant.email",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": {
+        "x": 280.7987060546875,
+        "y": 442.64617919921875,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_zip_code_3",
+      "label": "Irányítószám",
+      "field_type": "text",
+      "canonical_field": "participant.address.zip_code",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": {
+        "x": 104.6229019165039,
+        "y": 204.53594970703125,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_participant_address_city_3",
+      "label": "Település",
+      "field_type": "text",
+      "canonical_field": "participant.address.city",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": {
+        "x": 180.18968200683594,
+        "y": 204.53594970703125,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_property_parcel_number_3",
+      "label": "Helyrajzi szám",
+      "field_type": "text",
+      "canonical_field": "property.parcel_number",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": {
+        "x": 110.44290161132812,
+        "y": 295.24456787109375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    },
+    {
+      "pdf_field_name": "flat_property_area_sqm_3",
+      "label": "Terület",
+      "field_type": "number",
+      "canonical_field": "property.area_sqm",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": {
+        "x": 371.9991149902344,
+        "y": 295.24456787109375,
+        "width": 200.0,
+        "height": 10.30499267578125
+      },
+      "notes": null
+    }
+  ]
+}

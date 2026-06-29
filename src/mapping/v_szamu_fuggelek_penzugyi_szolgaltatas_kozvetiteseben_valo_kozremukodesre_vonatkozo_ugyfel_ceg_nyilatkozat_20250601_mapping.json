@@ -1,0 +1,911 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "V_szamu_fuggelek_Penzugyi_szolgaltatas_kozvetiteseben_valo_kozremukodesre_vonatkozo_ugyfel_ceg_nyilatkozat_20250601",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Heurisztikus leképezés (AI API nem elérhető). Felülvizsgálat szükséges.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "Szövegmező 1",
+      "label": "Szövegmező 1",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 2",
+      "label": "Szövegmező 2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 3",
+      "label": "Szövegmező 3",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 4",
+      "label": "Szövegmező 4",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 5",
+      "label": "Szövegmező 5",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 6",
+      "label": "Szövegmező 6",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 7",
+      "label": "Szövegmező 7",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 8",
+      "label": "Szövegmező 8",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 9",
+      "label": "Szövegmező 9",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 10",
+      "label": "Szövegmező 10",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 11",
+      "label": "Szövegmező 11",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 12",
+      "label": "Szövegmező 12",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 13",
+      "label": "Szövegmező 13",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 14",
+      "label": "Szövegmező 14",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 1",
+      "label": "Jelölőnégyzet 1",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 6",
+      "label": "Jelölőnégyzet 6",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 15",
+      "label": "Szövegmező 15",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 2",
+      "label": "Jelölőnégyzet 2",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 7",
+      "label": "Jelölőnégyzet 7",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 16",
+      "label": "Szövegmező 16",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3",
+      "label": "Jelölőnégyzet 3",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 8",
+      "label": "Jelölőnégyzet 8",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 17",
+      "label": "Szövegmező 17",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 4",
+      "label": "Jelölőnégyzet 4",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 9",
+      "label": "Jelölőnégyzet 9",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 18",
+      "label": "Szövegmező 18",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 10",
+      "label": "Jelölőnégyzet 10",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 19",
+      "label": "Szövegmező 19",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 11",
+      "label": "Jelölőnégyzet 11",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 20",
+      "label": "Szövegmező 20",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 12",
+      "label": "Jelölőnégyzet 12",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 21",
+      "label": "Szövegmező 21",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 14",
+      "label": "Jelölőnégyzet 14",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 15",
+      "label": "Jelölőnégyzet 15",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 16",
+      "label": "Jelölőnégyzet 16",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 17",
+      "label": "Jelölőnégyzet 17",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 18",
+      "label": "Jelölőnégyzet 18",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 19",
+      "label": "Jelölőnégyzet 19",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 190",
+      "label": "Jelölőnégyzet 190",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 22",
+      "label": "Szövegmező 22",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 23",
+      "label": "Szövegmező 23",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 24",
+      "label": "Szövegmező 24",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 25",
+      "label": "Szövegmező 25",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 26",
+      "label": "Szövegmező 26",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 27",
+      "label": "Szövegmező 27",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 29",
+      "label": "Szövegmező 29",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 30",
+      "label": "Szövegmező 30",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "SZA_IG_hely",
+      "label": "Sza Ig Hely",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "SZA_IG_dátum",
+      "label": "Sza Ig Dátum",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 31",
+      "label": "Szövegmező 31",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 32",
+      "label": "Szövegmező 32",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 33",
+      "label": "Szövegmező 33",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 34",
+      "label": "Szövegmező 34",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 35",
+      "label": "Szövegmező 35",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 36",
+      "label": "Szövegmező 36",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 37",
+      "label": "Szövegmező 37",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 38",
+      "label": "Szövegmező 38",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 39",
+      "label": "Szövegmező 39",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 40",
+      "label": "Szövegmező 40",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 41",
+      "label": "Szövegmező 41",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 42",
+      "label": "Szövegmező 42",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 43",
+      "label": "Szövegmező 43",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 307",
+      "label": "Jelölőnégyzet 307",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 308",
+      "label": "Jelölőnégyzet 308",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3010",
+      "label": "Jelölőnégyzet 3010",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 3011",
+      "label": "Jelölőnégyzet 3011",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 44",
+      "label": "Szövegmező 44",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 45",
+      "label": "Szövegmező 45",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 46",
+      "label": "Szövegmező 46",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 47",
+      "label": "Szövegmező 47",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 48",
+      "label": "Szövegmező 48",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 49",
+      "label": "Szövegmező 49",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 50",
+      "label": "Szövegmező 50",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 51",
+      "label": "Szövegmező 51",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 52",
+      "label": "Szövegmező 52",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 53",
+      "label": "Szövegmező 53",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 54",
+      "label": "Szövegmező 54",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 55",
+      "label": "Szövegmező 55",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Sec_SZA_IG_hely",
+      "label": "Sec Sza Ig Hely",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Sec_SZA_IG_dátum",
+      "label": "Sec Sza Ig Dátum",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 56",
+      "label": "Szövegmező 56",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 57",
+      "label": "Szövegmező 57",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 58",
+      "label": "Szövegmező 58",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 59",
+      "label": "Szövegmező 59",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 60",
+      "label": "Szövegmező 60",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 61",
+      "label": "Szövegmező 61",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 62",
+      "label": "Szövegmező 62",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 63",
+      "label": "Szövegmező 63",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 64",
+      "label": "Szövegmező 64",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 65",
+      "label": "Szövegmező 65",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null
+    }
+  ]
+}

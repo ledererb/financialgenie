@@ -111,8 +111,8 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
         if best is not None:
             return best[1]
 
-    # 3. Parent directory slug match (e.g. "Piaci hitel" -> otp_piaci_hitel_mapping)
-    if parent_dir:
+    # 3. Parent directory slug match (only for master files, e.g. "Igenylesi_dokumentumok")
+    if parent_dir and "igenylesi_dokumentumok" in stem_slug:
         parent_slug = slug(parent_dir)
         parent_words = set(parent_slug.split("_"))
         best2: "tuple[int, Path] | None" = None
