@@ -496,13 +496,39 @@ class FormFillerPipeline:
             if canonical in ("participant.role", "participant[1].role"):
                 continue
             if canonical.startswith("participant.") or canonical.startswith("participant["):
-                # OTP convention: -társ suffix = társigénylő
-                is_co_borrower = (
-                    "-társ" in pdf_name or
-                    "társigénylő" in pdf_name.lower() or
-                    "tarsigenylő" in pdf_name.lower() or
-                    "SZA_IG_" in pdf_name and "-társ" in pdf_name
-                )
+                # OTP convention: -társ suffix = társigénylő.
+                # A PDF mezőnevek ("Text Field 345" stb.) nem tartalmaznak
+                # "-társ" szuffixumot, így a társigénylő oldalakon lévő
+                # participant.* mezőket oldalszám alapján is a társigénylőhöz
+                # irányítjuk. A 12+ oldalak (jogi/nyilatkozatok) nem számítanak
+                # társigénylőnek.
+                co_borrower_pages = mapping.page_structure.get("co_borrower_pages", [])
+                if co_borrower_pages:
+                    is_co_borrower = (
+                        "-társ" in pdf_name or
+                        "társigénylő" in pdf_name.lower() or
+                        "tarsigenylő" in pdf_name.lower() or
+                        ("SZA_IG_" in pdf_name and "-társ" in pdf_name) or
+                        (f.page_number in co_borrower_pages)
+                    )
+                else:
+                    co_borrower_start = mapping.page_structure.get("co_borrower_page_start")
+                    if co_borrower_start and f.page_number is not None:
+                        # Csak a 6-11 oldalak társigénylők; a 12+ jogi.
+                        is_co_borrower = (
+                            "-társ" in pdf_name or
+                            "társigénylő" in pdf_name.lower() or
+                            "tarsigenylő" in pdf_name.lower() or
+                            ("SZA_IG_" in pdf_name and "-társ" in pdf_name) or
+                            (co_borrower_start <= f.page_number <= 11)
+                        )
+                    else:
+                        is_co_borrower = (
+                            "-társ" in pdf_name or
+                            "társigénylő" in pdf_name.lower() or
+                            "tarsigenylő" in pdf_name.lower() or
+                            "SZA_IG_" in pdf_name and "-társ" in pdf_name
+                        )
                 source = co_borrower_data if is_co_borrower else borrower_data
                 # A mapping participant[0]/participant[1] indexelt canonical
                 # neveket használ, de a borrower_data/co_borrower_data dict

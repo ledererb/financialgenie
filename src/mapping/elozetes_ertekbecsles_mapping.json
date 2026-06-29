@@ -5,7 +5,16 @@
   "approved": false,
   "approved_by": null,
   "notes": "Salesforce-based label matching + AI fallback (1029 mező, 248 leképezve, 24 label-match, 128 AI fallback).",
-  "page_structure": {},
+  "page_structure": {
+    "co_borrower_page_start": 6,
+    "borrower_pages": [2, 3, 4, 5],
+    "co_borrower_pages": [6, 7, 8, 9, 10, 11],
+    "template_sections": {
+      "borrower": {"pages": [2, 3, 4, 5]},
+      "co_borrower": {"pages": [6, 7, 8, 9, 10, 11]},
+      "legal": {"pages": [12, 13, 14, 15, 16, 17, 18]}
+    }
+  },
   "fields": [
     {
       "pdf_field_name": "Check Box 15",
