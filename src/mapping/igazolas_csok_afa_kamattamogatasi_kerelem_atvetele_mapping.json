@@ -17,10 +17,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 165.6,
-        "y": 128.2,
-        "width": 158.4,
-        "height": 15.8
+        "x": 177.0,
+        "y": 113.9,
+        "width": 120.0,
+        "height": 11.1
       },
       "notes": "Az 'Igazolom, hogy' szöveg utáni első pontozott vonal – első igénylő neve"
     },
@@ -32,10 +32,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 338.4,
-        "y": 128.2,
-        "width": 165.6,
-        "height": 15.8
+        "x": 320.4,
+        "y": 113.9,
+        "width": 139.8,
+        "height": 11.1
       },
       "notes": "Az 'Igazolom, hogy' sorában a második pontozott vonal – második igénylő neve (adóstárs)"
     },
@@ -47,10 +47,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 144.0,
-        "width": 424.8,
-        "height": 15.8
+        "x": 70.8,
+        "y": 131.2,
+        "width": 249.9,
+        "height": 11.1
       },
       "notes": "A '… sz. alatti ingatlannal kapcsolatos' szöveg előtti pontozott vonal – az ingatlan címe/helyrajzi száma"
     },
@@ -62,10 +62,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 159.8,
-        "width": 172.8,
-        "height": 15.8
+        "x": 70.8,
+        "y": 165.6,
+        "width": 112.7,
+        "height": 11.1
       },
       "notes": "Az OTP Bank Nyrt. után szereplő '…régió' pontozott mező – banki adminisztrációs adat, nem képezhető le kanonikus modellre"
     },
@@ -77,10 +77,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 255.6,
-        "y": 159.8,
-        "width": 187.2,
-        "height": 15.8
+        "x": 212.7,
+        "y": 165.6,
+        "width": 120.0,
+        "height": 11.1
       },
       "notes": "A régió után szereplő '…fiókja' pontozott mező – banki adminisztrációs adat"
     },
@@ -92,10 +92,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 214.6,
-        "width": 13.0,
-        "height": 13.0
+        "x": 83.7,
+        "y": 252.6,
+        "width": 8.7,
+        "height": 11.1
       },
       "notes": "Termékválasztó checkbox – CSOK Plusz Lakáshitel"
     },
@@ -107,10 +107,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 239.8,
-        "width": 13.0,
-        "height": 13.0
+        "x": 83.7,
+        "y": 270.0,
+        "width": 8.7,
+        "height": 11.1
       },
       "notes": "Termékválasztó checkbox – Otthon Start Lakáshitel"
     },
@@ -122,10 +122,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 267.8,
-        "width": 13.0,
-        "height": 13.0
+        "x": 85.3,
+        "y": 293.4,
+        "width": 8.7,
+        "height": 11.1
       },
       "notes": "Termékválasztó checkbox – Új Falusi CSOK támogatás"
     },
@@ -137,10 +137,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 293.8,
-        "width": 13.0,
-        "height": 13.0
+        "x": 83.7,
+        "y": 314.2,
+        "width": 8.7,
+        "height": 11.1
       },
       "notes": "Termékválasztó checkbox – Otthonteremtési Lakáshitel / Új Falusi CSOK hitel"
     },
@@ -152,10 +152,10 @@
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 319.7,
-        "width": 13.0,
-        "height": 13.0
+        "x": 83.7,
+        "y": 338.0,
+        "width": 8.7,
+        "height": 11.1
       },
       "notes": "Termékválasztó checkbox – Adóvisszatérítési támogatás / Új Falusi ÁFA"
     },
@@ -167,10 +167,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 403.2,
-        "width": 165.6,
-        "height": 15.8
+        "x": 93.5,
+        "y": 469.1,
+        "width": 125.7,
+        "height": 11.1
       },
       "notes": "Az igazolás keltezésének dátuma – banki adminisztrációs adat, nem szerepel a kanonikus modellben"
     },
@@ -182,10 +182,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 309.6,
-        "y": 445.0,
-        "width": 194.4,
-        "height": 15.8
+        "x": 318.7,
+        "y": 503.6,
+        "width": 165.6,
+        "height": 11.1
       },
       "notes": "Közvetítő/értékesítő aláírásának helye – nem képezhető le kanonikus adatmodellre"
     },
@@ -197,10 +197,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 69.8,
-        "y": 511.2,
-        "width": 194.4,
-        "height": 15.8
+        "x": 70.8,
+        "y": 595.6,
+        "width": 145.4,
+        "height": 11.1
       },
       "notes": "Az igénylő aláírásának helye az átvétel igazolásához – nem képezhető le kanonikus adatmodellre"
     }

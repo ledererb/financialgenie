@@ -4,7 +4,7 @@
   "form_type": "flat",
   "approved": false,
   "approved_by": null,
-  "notes": "Text-anchor felismerés: 13 mező, 0 leképezve.",
+  "notes": "Text-anchor felismerés: 24 mező, 0 leképezve.",
   "page_structure": {},
   "fields": [
     {
@@ -15,10 +15,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 257.4,
+        "x": 237.7,
         "y": 115.8,
-        "width": 71.7,
-        "height": 10.0
+        "width": 113.8,
+        "height": 11.1
       },
       "notes": "MUNKAVISZONY ÉS JÖVEDELEMADATOK MUNKÁLTATÓ ÁLTALI VISSZAELLENŐRZÉSÉHEZ nyilatkozattal"
     },
@@ -30,10 +30,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 396.0,
+        "x": 412.6,
         "y": 115.8,
-        "width": 62.2,
-        "height": 10.0
+        "width": 108.3,
+        "height": 11.1
       },
       "notes": "MUNKAVISZONY ÉS JÖVEDELEMADATOK MUNKÁLTATÓ ÁLTALI VISSZAELLENŐRZÉSÉHEZ nyilatkozattal"
     },
@@ -45,10 +45,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 147.4,
+        "x": 138.9,
         "y": 133.1,
-        "width": 90.8,
-        "height": 10.0
+        "width": 168.2,
+        "height": 11.1
       },
       "notes": "nyilatkozattal hozzájárulok"
     },
@@ -60,10 +60,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 329.1,
+        "x": 390.7,
         "y": 133.1,
-        "width": 57.4,
-        "height": 10.0
+        "width": 105.2,
+        "height": 11.1
       },
       "notes": "nyilatkozattal hozzájárulok"
     },
@@ -75,10 +75,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 99.6,
+        "x": 100.3,
         "y": 167.5,
-        "width": 105.2,
-        "height": 10.0
+        "width": 198.3,
+        "height": 11.1
       },
       "notes": "a munkáltatóm Cégjegyzék"
     },
@@ -90,10 +90,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 99.6,
+        "x": 103.2,
         "y": 184.8,
-        "width": 81.3,
-        "height": 10.0
+        "width": 155.3,
+        "height": 11.1
       },
       "notes": "Cégjegyzék részére (a továbbiakban: Hitelező) telefonon/telefaxon/e-mailen keresztül átadja az alábbi"
     },
@@ -105,10 +105,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 238.3,
+        "x": 317.1,
         "y": 184.8,
-        "width": 76.5,
-        "height": 10.0
+        "width": 145.4,
+        "height": 11.1
       },
       "notes": "Cégjegyzék részére (a továbbiakban: Hitelező) telefonon/telefaxon/e-mailen keresztül átadja az alábbi"
     },
@@ -120,10 +120,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 103.3,
+        "x": 106.9,
         "y": 262.6,
-        "width": 90.8,
-        "height": 10.0
+        "width": 161.0,
+        "height": 11.1
       },
       "notes": "Igényelt termék típusa                              Hitelkérelem száma"
     },
@@ -135,10 +135,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 232.4,
+        "x": 290.2,
         "y": 262.6,
-        "width": 95.6,
-        "height": 10.0
+        "width": 192.7,
+        "height": 11.1
       },
       "notes": "Igényelt termék típusa                              Hitelkérelem száma"
     },
@@ -150,10 +150,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 103.3,
+        "x": 106.9,
         "y": 274.6,
-        "width": 76.5,
-        "height": 10.0
+        "width": 159.8,
+        "height": 11.1
       },
       "notes": "Igényelt termék típusa                              Hitelkérelem száma"
     },
@@ -165,10 +165,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 222.8,
+        "x": 291.8,
         "y": 274.6,
-        "width": 95.6,
-        "height": 10.0
+        "width": 192.6,
+        "height": 11.1
       },
       "notes": "Igényelt termék típusa                              Hitelkérelem száma"
     },
@@ -180,10 +180,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 103.3,
+        "x": 106.9,
         "y": 286.6,
-        "width": 76.5,
-        "height": 10.0
+        "width": 159.8,
+        "height": 11.1
       },
       "notes": ""
     },
@@ -195,12 +195,177 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 222.8,
+        "x": 291.8,
         "y": 286.6,
-        "width": 95.6,
-        "height": 10.0
+        "width": 192.6,
+        "height": 11.1
       },
       "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_14",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 93.6,
+        "y": 610.1,
+        "width": 155.6,
+        "height": 11.1
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_15",
+      "label": "mező_15",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 254.8,
+        "y": 610.1,
+        "width": 44.4,
+        "height": 11.1
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_16",
+      "label": "év",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 315.3,
+        "y": 610.1,
+        "width": 77.8,
+        "height": 11.1
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_17",
+      "label": "hónap",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 426.5,
+        "y": 610.1,
+        "width": 38.8,
+        "height": 11.1
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_18",
+      "label": "mező_18",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 319.0,
+        "y": 650.6,
+        "width": 188.9,
+        "height": 11.1
+      },
+      "notes": "Ügyfél aláírása Tanúk:"
+    },
+    {
+      "pdf_field_name": "flat_1_19",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 99.6,
+        "y": 696.7,
+        "width": 188.9,
+        "height": 11.1
+      },
+      "notes": "Tanúk:"
+    },
+    {
+      "pdf_field_name": "flat_1_20",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 324.5,
+        "y": 696.7,
+        "width": 188.9,
+        "height": 11.1
+      },
+      "notes": ""
+    },
+    {
+      "pdf_field_name": "flat_1_21",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 100.3,
+        "y": 713.8,
+        "width": 188.7,
+        "height": 11.1
+      },
+      "notes": "Aláírás:"
+    },
+    {
+      "pdf_field_name": "flat_1_22",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 325.3,
+        "y": 713.8,
+        "width": 188.7,
+        "height": 11.1
+      },
+      "notes": "Aláírás:"
+    },
+    {
+      "pdf_field_name": "flat_1_23",
+      "label": "mező_23",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 76.3,
+        "y": 748.4,
+        "width": 177.7,
+        "height": 11.1
+      },
+      "notes": "Aláírás:"
+    },
+    {
+      "pdf_field_name": "flat_1_24",
+      "label": "Aláírás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 335.1,
+        "y": 731.1,
+        "width": 183.3,
+        "height": 11.1
+      },
+      "notes": "Aláírás:"
     }
   ]
 }

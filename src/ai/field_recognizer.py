@@ -588,7 +588,7 @@ Ez a(z) '{section_name}' szekció."""
                     "x": af["x"],
                     "y": af["y"],
                     "width": af["width"],
-                    "height": af["font_size"],
+                    "height": af["height"],
                 },
                 notes=af.get("context", ""),
             ))
@@ -618,7 +618,7 @@ Ez a(z) '{section_name}' szekció."""
         field_id = 0
 
         for page_idx, page in enumerate(doc):
-            text_dict = page.get_text("dict")
+            text_dict = page.get_text("rawdict")
             all_spans = []
 
             for block in text_dict["blocks"]:
@@ -629,45 +629,58 @@ Ez a(z) '{section_name}' szekció."""
                         all_spans.append(span)
 
             for i, span in enumerate(all_spans):
-                text = span["text"]
-                if "…" not in text and "." not in text:
+                if "chars" not in span or not span["chars"]:
+                    continue
+                text = "".join([c["c"] for c in span["chars"]])
+                if not any(char in text for char in ("…", ".", "_", "□", "☐", "☒")):
                     continue
 
                 bbox = span["bbox"]  # [x0, y0, x1, y1]
                 font_size = span["size"]
-                char_w = font_size * 0.48
 
-                # Find all dot matches in the span text (at least 4 characters long)
-                matches = list(re.finditer(r'[….]{4,}', text))
+                # Find all dot/underscore matches in the span text (at least 4 characters long)
+                dot_matches = list(re.finditer(r'[…._]{4,}', text))
+                # Find all checkboxes
+                cb_matches = list(re.finditer(r'[□☐☒]', text))
+
+                # Combine and sort matches
+                matches = []
+                for m in dot_matches:
+                    matches.append((m, "text"))
+                for m in cb_matches:
+                    matches.append((m, "checkbox"))
+                matches.sort(key=lambda x: x[0].start())
+
                 if not matches:
                     continue
 
                 prev_end = 0
-                for match_idx, dot_match in enumerate(matches):
-                    # pre_text is the text preceding the current dot match since the previous match end
-                    pre_text = text[prev_end:dot_match.start()].strip("() ,;:.")
-                    # post_text is the text after the current dot match until the next match start or end of text
-                    next_start = matches[match_idx + 1].start() if match_idx + 1 < len(matches) else len(text)
-                    post_text = text[dot_match.end():next_start].strip("() ,;. ")
+                for match_idx, (match_obj, match_type) in enumerate(matches):
+                    start, end = match_obj.start(), match_obj.end()
 
-                    # Calculate the precise x position of the dotted line
-                    # text_before is all text from the start of the span to the beginning of this match
-                    text_before = text[:dot_match.start()]
-                    fill_x = bbox[0] + len(text_before) * char_w
+                    # pre_text is the text preceding the current match since the previous match end
+                    pre_text = text[prev_end:start].strip("() ,;:._")
+                    # post_text is the text after the current match until the next match start or end of text
+                    next_start = matches[match_idx + 1][0].start() if match_idx + 1 < len(matches) else len(text)
+                    post_text = text[end:next_start].strip("() ,;._ ")
 
-                    fill_y = bbox[1]
-                    
-                    # Width of this specific dotted segment
-                    dot_len = dot_match.end() - dot_match.start()
-                    fill_w = min(dot_len * char_w, bbox[2] - fill_x)
+                    # Precise coordinates using character bboxes
+                    char_start = span["chars"][start]
+                    char_end = span["chars"][end - 1]
+
+                    fill_x = char_start["bbox"][0]
+                    fill_y = char_start["bbox"][1]
+                    fill_w = char_end["bbox"][2] - fill_x
+                    fill_h = char_start["bbox"][3] - char_start["bbox"][1]
 
                     # Kontextus: előtte + utána lévő szöveg (5 span)
                     context_parts = []
                     for j in range(max(0, i-2), min(len(all_spans), i+3)):
                         s = all_spans[j]
-                        t = s["text"].strip()
-                        if t and "…" not in t and "." not in t:
-                            context_parts.append(t)
+                        if "chars" in s and s["chars"]:
+                            t = "".join([c["c"] for c in s["chars"]]).strip()
+                            if t and not any(char in t for char in ("…", ".", "_", "□", "☐", "☒")):
+                                context_parts.append(t)
                     context = " ".join(context_parts)[:200]
 
                     # Label keresése – sorrendben:
@@ -679,8 +692,9 @@ Ez a(z) '{section_name}' szekció."""
                         if abs(s["bbox"][1] - bbox[1]) > 5:
                             break  # Más soron van
                         if "Ital" in s.get("font", ""):
-                            candidate = s["text"].strip("() ,;.")
-                            if len(candidate) > 2 and "…" not in candidate and "." not in candidate:
+                            s_text = "".join([c["c"] for c in s["chars"]]) if "chars" in s else ""
+                            candidate = s_text.strip("() ,;._")
+                            if len(candidate) > 2 and not any(char in candidate for char in ("…", ".", "_", "□", "☐", "☒")):
                                 label = candidate
                                 break
 
@@ -689,12 +703,12 @@ Ez a(z) '{section_name}' szekció."""
                         clean = pre_text
                         if "(" in clean:
                             clean = clean.split("(")[-1]
-                        clean = clean.rstrip(":").strip("() ,;:.")
-                        if len(clean) > 1 and "…" not in clean and "." not in clean:
+                        clean = clean.rstrip(":").strip("() ,;:._")
+                        if len(clean) > 1 and not any(char in clean for char in ("…", ".", "_", "□", "☐", "☒")):
                             label = clean
 
                     # 3. Post-text ha nem pontsor
-                    if not label and post_text and len(post_text) > 2 and "…" not in post_text and "." not in post_text:
+                    if not label and post_text and len(post_text) > 2 and not any(char in post_text for char in ("…", ".", "_", "□", "☐", "☒")):
                         label = post_text
 
                     # 4. Kontextus alapú fallback
@@ -707,14 +721,14 @@ Ez a(z) '{section_name}' szekció."""
                         "label": label,
                         "x": round(fill_x, 1),
                         "y": round(fill_y, 1),
-                        "width": round(max(fill_w, 20), 1),
-                        "font_size": round(font_size, 1),
+                        "width": round(max(fill_w, 8), 1) if match_type == "checkbox" else round(max(fill_w, 20), 1),
+                        "height": round(fill_h, 1),
                         "page": page_idx + 1,
                         "context": context,
                     })
 
                     # Update prev_end for the next match on the same line
-                    prev_end = dot_match.end()
+                    prev_end = end
 
         doc.close()
         return fields
