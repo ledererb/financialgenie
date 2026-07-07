@@ -283,3 +283,81 @@ npm run build
 - [ ] Böngészőben megnyílik a Mapping Stúdió
 - [ ] PDF feltöltés működik
 - [ ] Salesforce deal kiválasztás működik a dropdown-ban
+
+---
+
+## 13. Docker telepítés (NAS / szerver)
+
+Ha Docker-rel szeretnéd futtatni (pl. Synology NAS-on), nincs szükség Python/Node telepítésre a hoston.
+
+### Előfeltételek
+
+- Docker + Docker Compose telepítve
+- Synology-n: **Container Manager** csomag telepítve a Package Center-ből
+- SSH hozzáférés a NAS-hoz (Vezérlőpult → Terminál → SSH engedélyezése)
+
+### Lépések
+
+```bash
+# 1. SSH-val csatlakozz a NAS-hoz
+ssh admin@192.168.100.10
+
+# 2. Klónozd a repot
+git clone https://github.com/ledererb/financialgenie.git
+cd financialgenie
+
+# 3. Hozd létre a .env fájlt a Salesforce credentials-ökkel
+cp config/.env.example config/.env
+nano config/.env   # töltsd ki a valódi adatokkal
+
+# 4. Építsd meg és indítsd el
+docker compose up -d --build
+
+# 5. Ellenőrizd, hogy fut
+docker compose ps
+docker compose logs -f
+```
+
+### Elérés
+
+Az alkalmazás a NAS IP-jén, a **3000-es porton** érhető el:
+
+```
+http://192.168.100.10:3000
+```
+
+### Hasznos parancsok
+
+```bash
+# Logok megtekintése
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# Újraindítás
+docker compose restart
+
+# Leállítás
+docker compose down
+
+# Frissítés (új kód pull után)
+git pull
+docker compose up -d --build
+```
+
+### Port módosítása
+
+Ha a 3000-es port foglalt, a `docker-compose.yml`-ben módosítsd:
+
+```yaml
+ports:
+  - "8080:80"   # 3000 helyett 8080-on érhető el
+```
+
+### Fájlok helye a containerben
+
+| Host (NAS) | Container | Leírás |
+|---|---|---|
+| `./otp/` | `/app/otp/` (readonly) | OTP PDF sablonok |
+| `./src/mapping/` | `/app/src/mapping/` | Mapping JSON-ok |
+| Docker volume `fg-samples` | `/app/samples/` | Feltöltött PDF-ek |
+| Docker volume `fg-output` | `/app/output/` | Kitöltött PDF-ek |

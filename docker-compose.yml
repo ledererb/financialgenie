@@ -1,0 +1,50 @@
+# FinancialGenie – Docker Compose
+# Használat:
+#   1. Másold be a config/.env fájlt (ld. config/.env.example)
+#   2. docker compose up -d --build
+#   3. Nyisd meg: http://<NAS_IP>:3000
+
+services:
+  # ── Backend (FastAPI + PDF motor) ──
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: financialgenie-backend
+    restart: unless-stopped
+    env_file:
+      - config/.env
+    volumes:
+      # PDF sablonok (OTP nyomtatványok)
+      - ./otp:/app/otp:ro
+      # Feltöltött PDF-ek (read-write, a frontend ide tölt fel)
+      - ./samples:/app/samples
+      # Kitöltött PDF-ek (generált output)
+      - ./output:/app/output
+      # Mapping JSON-ok (szerkeszthető a Mapping Stúdióból)
+      - ./src/mapping:/app/src/mapping
+    expose:
+      - "8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8765/api/pdfs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend (Nginx – statikus fájlok + API proxy) ──
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: financialgenie-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+
