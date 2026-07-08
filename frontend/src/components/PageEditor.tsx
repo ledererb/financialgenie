@@ -21,6 +21,7 @@ import {
   getMapping,
   getPdfFields,
   pageImageUrl,
+  previewPage,
   updateField,
 } from "@/api/client";
 
@@ -68,6 +69,9 @@ export default function PageEditor({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [loadedPage, setLoadedPage] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // ── draw mode (flat PDF field creation) ────────────────────────────
   const [drawMode, setDrawMode] = useState(false);
@@ -372,6 +376,20 @@ export default function PageEditor({
     }
   }, [mapping, pdfId, pageNumber, pendingRect, newFieldName, newFieldType]);
 
+  // ── preview handler ──────────────────────────────────────────────────
+
+  const handlePreviewPage = useCallback(async () => {
+    setPreviewLoading(true);
+    try {
+      const data = await previewPage(pdfId, pageNumber);
+      setPreviewImage(data.image);
+    } catch (err) {
+      alert("Hiba az előnézet generálásakor: " + (err as Error).message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [pdfId, pageNumber]);
+
   // ── render ─────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -463,10 +481,17 @@ export default function PageEditor({
             {drawMode ? "✏️ Rajzolás aktív" : "✏️ Mező rajzolása"}
           </button>
         )}
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={handlePreviewPage}
+          disabled={previewLoading}
+          style={{ marginLeft: isFlat ? undefined : "auto" }}
+        >
+          {previewLoading ? "Generálás..." : "👀 Oldal előnézete"}
+        </button>
         {saving && (
           <span
             className="badge badge-blue"
-            style={{ marginLeft: isFlat ? undefined : "auto" }}
           >
             Mentés…
           </span>
@@ -809,9 +834,9 @@ export default function PageEditor({
                       →
                     </span>
 
-                    {isEditing ? (
+                    {isEditing || isSelected ? (
                       <select
-                        autoFocus
+                        autoFocus={isEditing}
                         value={mf.canonical_field ?? ""}
                         onChange={(e) => {
                           const val = e.target.value || null;
@@ -1026,8 +1051,20 @@ export default function PageEditor({
                           <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
                             Jelölőnégyzet csoport
                           </span>
+                          <datalist id="existing-groups">
+                            {Array.from(
+                              new Set(
+                                mapping?.fields
+                                  .map((f) => f.checkbox_group?.group_id)
+                                  .filter(Boolean)
+                              )
+                            ).map((g) => (
+                              <option key={g} value={g} />
+                            ))}
+                          </datalist>
                           <input
-                            placeholder="csoport_azonosító"
+                            list="existing-groups"
+                            placeholder="csoport_azonosító (pl. csaladi_allapot)"
                             value={mf.checkbox_group?.group_id ?? ""}
                             onChange={(e) =>
                               handleFieldUpdate(mf.pdf_field_name, {
@@ -1078,6 +1115,48 @@ export default function PageEditor({
           </div>
         </aside>
       </div>
+      
+      {/* ── preview modal ──────────────────────────────────────────────── */}
+      {previewImage && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0, 0, 0, 0.8)",
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "var(--space-lg)",
+          }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div style={{ display: "flex", justifyContent: "flex-end", width: "100%", maxWidth: 1200, marginBottom: "var(--space-md)" }}>
+            <button
+              className="btn btn-ghost"
+              style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+              onClick={() => setPreviewImage(null)}
+            >
+              Bezárás (X)
+            </button>
+          </div>
+          <img
+            src={`data:image/png;base64,${previewImage}`}
+            alt="Preview"
+            style={{
+              maxWidth: "100%",
+              maxHeight: "calc(100vh - 100px)",
+              objectFit: "contain",
+              backgroundColor: "#fff",
+              borderRadius: "var(--radius-md)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

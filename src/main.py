@@ -448,9 +448,15 @@ class FormFillerPipeline:
                 pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
                 match_val = cbg_item.get('match_value', '') if isinstance(cbg_item, dict) else ''
                 if match_val.strip().lower() == sf_value_lower:
-                    field_data[pdf_name] = 'igen'
+                    if "___" in pdf_name:
+                        base_name, export_val = pdf_name.split("___", 1)
+                        field_data[base_name] = export_val
+                        field_data[pdf_name] = 'igen'  # For completeness tracking
+                    else:
+                        field_data[pdf_name] = 'igen'
                 else:
-                    field_data[pdf_name] = 'nem'
+                    if "___" not in pdf_name:
+                        field_data[pdf_name] = 'nem'
 
         # === Fill Rule engine ===
         # fill_rule is a dict/object on each mapping field that provides
@@ -540,9 +546,12 @@ class FormFillerPipeline:
             "Contact.Mother_s_Name__c": p.mother_name or "",
             "Contact.Place_of_Birth__c": p.birth_place or "",
             "Contact.Birthdate": p.birth_date.strftime("%Y.%m.%d") if p.birth_date else "",
+            "Contact.Birthdate_year": p.birth_date.strftime("%Y") if p.birth_date else "",
+            "Contact.Birthdate_month": p.birth_date.strftime("%m") if p.birth_date else "",
+            "Contact.Birthdate_day": p.birth_date.strftime("%d") if p.birth_date else "",
             "Contact.ID_Card_Number__c": p.personal_id or "",
             "Contact.Tax_ID__c": p.tax_id or "",
-            "Contact.MobilePhone": p.phone or "",
+            "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
             "Contact.Email": p.email or "",
             "Contact.Name_of_employer__c": p.employer or "",
             "Contact.Average_monthly_net_income__c": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",

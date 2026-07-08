@@ -75,7 +75,10 @@ CANONICAL_FIELDS = {
     "Contact.Banki_ugyintezo_fiok__c": "Fiók",
     "Contact.Banki_ugyintezo_pozicio__c": "Pozíció",
     "Contact.Banki_ugyintezo_terulet__c": "Terület",
-    "Contact.Birthdate": "Születési dátum",
+    "Contact.Birthdate": "Születési dátum (egyben, pl. 1980.01.01)",
+    "Contact.Birthdate_year": "Születési dátum - CSAK ÉV (pl. 1980)",
+    "Contact.Birthdate_month": "Születési dátum - CSAK HÓNAP (pl. 01)",
+    "Contact.Birthdate_day": "Születési dátum - CSAK NAP (pl. 01)",
     "Contact.Cafeteria_bonus__c": "Cafeteria, bónusz",
     "Contact.Campaign__c": "Campaign",
     "Contact.Citizenship__c": "Állampolgárság",
@@ -479,7 +482,9 @@ Válaszolj JSON formátumban az alábbi struktúrával:
       "canonical_field": "Object.FieldName (pl. Contact.Name, Lead.Ingatlan_irsz__c)",
       "confidence": "high|medium|low",
       "page_number": 1,
-      "notes": "opcionális megjegyzés"
+      "notes": "opcionális megjegyzés",
+      "checkbox_group": "ha ez egy rádiógomb csoport része (pl. Neme, Családi állapot), adj meg egy közös csoport azonosítót",
+      "fill_rule": {{"match_value": "Az a Salesforce mező érték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
     }}
   ]
 }}
@@ -488,7 +493,8 @@ Fontos szabályok:
 - Használd a Salesforce Object.FieldName formátumot (pl. Contact.FirstName, Lead.Ingatlan_telepules__c)
 - Ha ingatlan-specifikus, használd a Lead.Ingatlan_* mezőket
 - Ha nem vagy biztos a leképezésben, jelöld "low" confidence-szel
-- Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a Contact.* mezőkre képeződnek"""
+- Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a Contact.* mezőkre képeződnek
+- **Rádiógombok / Egymást kizáró Checkboxok**: Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb. Ilyenkor MÁSOLD BE a megadott bounding box (bbox) koordinátákat, Keresd meg a képen a feliratot, és az alapján töltsd ki a `checkbox_group` (pl. 'neme') és a `fill_rule.match_value` mezőket (pl. 'Férfi' vagy 'Nő')!"""
 
     def __init__(self, api_key: str = None):
         """
@@ -1187,102 +1193,40 @@ PDF: {pdf_path.name}"""
                 return self.recognize_flat(pdf_path)
 
     def _extract_acroform_fields(self, pdf_path: Path) -> list[dict]:
-        """AcroForm mezők kinyerése pikepdf-el, oldalszám fitz widget API-ból."""
-        import pikepdf
-
+        """AcroForm mezők kinyerése a backend/pdf_service.py használatával a konzisztencia érdekében."""
+        import sys
+        
+        backend_path = Path(__file__).resolve().parent.parent.parent / "backend"
+        if str(backend_path) not in sys.path:
+            sys.path.insert(0, str(backend_path))
+            
+        try:
+            from pdf_service import pdf_service
+        except ImportError as e:
+            logger.error(f"Nem sikerült importálni a pdf_service-t: {e}")
+            return []
+            
         fields = []
         try:
-            with pikepdf.open(pdf_path) as pdf:
-                if "/AcroForm" not in pdf.Root:
-                    return fields
-
-                acroform = pdf.Root["/AcroForm"]
-                if "/Fields" not in acroform:
-                    return fields
-
-                for field_ref in acroform["/Fields"]:
-                    try:
-                        f = field_ref
-                        field_info = {
-                            "name": str(f.get("/T", "")),
-                            "type": str(f.get("/FT", "")),
-                            "value": str(f.get("/V", "")),
-                        }
-                        # Extract bounding box for vision-enhanced recognition
-                        if "/Rect" in f:
-                            try:
-                                rect = f["/Rect"]
-                                field_info["rect"] = [float(rect[i]) for i in range(4)]
-                            except Exception:
-                                pass
-                        # Próbáljuk kideríteni melyik oldalon van
-                        if "/P" in f:
-                            page_ref = f["/P"]
-                            for i, page in enumerate(pdf.pages):
-                                if page.objgen == page_ref.objgen:
-                                    field_info["page"] = i + 1
-                                    break
-                        fields.append(field_info)
-                    except Exception as e:
-                        logger.debug(f"Mező olvasási hiba: {e}")
-                        continue
+            extracted = pdf_service.extract_acroform_fields(pdf_path)
+            for ext in extracted:
+                rect_dict = ext.get("rect", {})
+                fields.append({
+                    "name": ext.get("pdf_field_name"),
+                    "type": ext.get("field_type"),
+                    "value": ext.get("value", ""),
+                    "page": ext.get("page_number", 1),
+                    "rect": [
+                        rect_dict.get("x", 0),
+                        rect_dict.get("y", 0),
+                        rect_dict.get("width", 0),
+                        rect_dict.get("height", 0)
+                    ]
+                })
+            logger.info(f"pdf_service alapján {len(fields)} AcroForm mező kinyerve.")
         except Exception as e:
-            logger.error(f"PDF olvasási hiba: {e}")
-
-        # Always run fitz widget fallback for page numbers AND rects
-        # (needed for vision-enhanced recognition with annotated images)
-        missing_pages = sum(1 for f in fields if "page" not in f)
-        missing_rects = sum(1 for f in fields if "rect" not in f)
-        if (missing_pages > 0 or missing_rects > 0) and fields:
-            logger.info(f"  🔄 Fitz widget fallback: {missing_pages} oldal + {missing_rects} rect hiányzik")
-            try:
-                import fitz
-                import re as _re
-                doc = fitz.open(str(pdf_path))
-                widget_pages: dict[str, int] = {}
-                widget_rects: dict[str, tuple] = {}
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
-                    for w in page.widgets():
-                        name = w.field_name
-                        if name:
-                            if name not in widget_pages:
-                                widget_pages[name] = page_num + 1
-                            if name not in widget_rects and w.rect:
-                                widget_rects[name] = (
-                                    w.rect.x0, w.rect.y0, w.rect.x1, w.rect.y1
-                                )
-                doc.close()
-                # Patch page numbers: exact match first, then strip trailing '-N' suffix
-                _suffix_re = _re.compile(r'[-]\d+$')
-                patched = 0
-                for f in fields:
-                    if "page" not in f:
-                        name = f["name"]
-                        if name in widget_pages:
-                            f["page"] = widget_pages[name]
-                            patched += 1
-                        else:
-                            # Try stripping trailing '-1', '-2' etc. (duplicated fields)
-                            base_name = _suffix_re.sub('', name)
-                            if base_name != name and base_name in widget_pages:
-                                f["page"] = widget_pages[base_name]
-                                patched += 1
-                    # Also patch missing rects from fitz widgets
-                    if "rect" not in f:
-                        name = f["name"]
-                        if name in widget_rects:
-                            f["rect"] = list(widget_rects[name])
-                        else:
-                            base_name = _suffix_re.sub('', name)
-                            if base_name in widget_rects:
-                                f["rect"] = list(widget_rects[base_name])
-                logger.info(f"  ✅ {patched} mező oldalszáma feloldva fitz widget API-ból")
-                rects_patched = sum(1 for f in fields if "rect" in f)
-                logger.info(f"  ✅ {rects_patched}/{len(fields)} mező rendelkezik bbox-al")
-            except Exception as e:
-                logger.warning(f"  Fitz widget fallback hiba: {e}")
-
+            logger.error(f"PDF olvasási hiba pdf_service-n keresztül: {e}")
+            
         return fields
 
     def _ai_map_fields(
@@ -1295,10 +1239,9 @@ PDF: {pdf_path.name}"""
 
         system = self.SYSTEM_PROMPT.format(canonical_fields=canonical_desc)
 
-        # PDF oldalak konvertálása képekké az AI számára (csak flat PDF esetén szükséges)
+        # PDF oldalak konvertálása képekké az AI számára (Mindig elküldjük, hogy a checkboxok melletti szövegeket el tudja olvasni)
         images = []
-        if form_type == "flat":
-            images = self._pdf_to_images(pdf_path)
+        images = self._pdf_to_images(pdf_path)
 
         selected_indices = []
         if images:
@@ -1336,7 +1279,8 @@ PDF: {pdf_path.name}"""
         if pdf_fields:
             fields_text = f"Az AcroForm mezők nevei a PDF-ben (összesen {len(pdf_fields)} mező):\n"
             for f in pdf_fields:
-                fields_text += f"  - {f['name']} (típus: {f['type']}, oldal: {f.get('page', '?')})\n"
+                rect_str = f", bbox: {f['rect']}" if f.get('rect') else ""
+                fields_text += f"  - {f['name']} (típus: {f['type']}, oldal: {f.get('page', '?')}{rect_str})\n"
             content.append({"type": "text", "text": fields_text})
 
         content.append({

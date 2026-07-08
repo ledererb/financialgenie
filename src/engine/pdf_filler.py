@@ -322,17 +322,29 @@ class AcroFormFiller(BaseFiller):
                                 break
 
                     if field_type == "/Btn":
-                        # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
-                        # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
-                        is_checked = self._is_truthy(value)
-                        if is_checked:
-                            field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
+                        if isinstance(value, str) and value not in ("igen", "nem", "true", "false", "True", "False", "1", "0", ""):
+                            # Radio button specifikus érték (pl. "1,2")
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name(f"/{value}")
                         else:
-                            # Kikapcsolt checkbox: /Off név
-                            field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
+                            # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
+                            # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
+                            is_checked = self._is_truthy(value)
+                            if is_checked:
+                                field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
+                            else:
+                                # Kikapcsolt checkbox: /Off név
+                                field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
                     else:
                         # Szöveg / dropdown / lista: String érték
                         field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
+                        
+                        # Külön kezelés Comb mezők (pl. születési idő dobozos) igazításához
+                        try:
+                            ff = int(field_obj.get("/Ff", 0))
+                            if ff & (1 << 24):  # Comb flag (bit 25)
+                                field_obj[pikepdf.Name("/Q")] = 1  # Középre igazítás (Center)
+                        except Exception:
+                            pass
 
                     # Megjelenítés frissítése – töröljük az /AP-t a szülőből és az összes widgetből,
                     # hogy a PDF-olvasó újra renderelje a mezőket

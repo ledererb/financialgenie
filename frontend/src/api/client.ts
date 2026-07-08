@@ -93,6 +93,13 @@ export async function getPdfFields(pdfId: string): Promise<PdfFieldsResponse> {
   return http<PdfFieldsResponse>("/api/pdf/fields", { query: { pdf_id: pdfId } });
 }
 
+export async function previewPage(pdfId: string, pageNumber: number): Promise<{ image: string }> {
+  return http<{ image: string }>(`/api/pdf/page/${pageNumber}/preview`, {
+    method: "POST",
+    body: JSON.stringify({ pdf_id: pdfId }),
+  });
+}
+
 // --- Mapping service -------------------------------------------------------
 
 export async function getMapping(pdfId: string): Promise<MappingConfig> {

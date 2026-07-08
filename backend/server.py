@@ -470,6 +470,60 @@ def recognize_result(task_id: str):
     return {"task_id": st.task_id, "mapping": st.result}
 
 
+@app.post("/api/pdf/page/{page_number}/preview")
+def pdf_page_preview(page_number: int, body: dict):
+    pdf_id = body.get("pdf_id")
+    deal_id = body.get("deal_id")
+    if not pdf_id:
+        raise HTTPException(400, "pdf_id is required")
+
+    pdf_path = _get_pdf(pdf_id)
+
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+
+        if not deal_id:
+            deals = sf_client.list_deals()
+            if not deals:
+                raise HTTPException(500, "No deals available")
+            deal_id = deals[0].get("Id") or deals[0].get("deal_id")
+
+        pipeline = FormFillerPipeline(sf_client=sf_client, output_dir=PROJECT_ROOT / "output")
+        result = pipeline.run_for_deal(
+            deal_id=deal_id,
+            template_pdf=pdf_path,
+            mapping_config=None,
+            force_recreate_mapping=False,
+        )
+
+        if not result["success"]:
+            raise HTTPException(500, f"Fill failed: {', '.join(result.get('issues', []))}")
+
+        import fitz
+        doc = fitz.open(str(result["output_path"]))
+        if page_number < 1 or page_number > len(doc):
+            doc.close()
+            raise HTTPException(400, "Invalid page number")
+
+        mat = fitz.Matrix(150 / 72, 150 / 72)
+        pix = doc[page_number - 1].get_pixmap(matrix=mat)
+        png_data = pix.tobytes("png")
+        doc.close()
+
+        return {"image": base64.b64encode(png_data).decode("utf-8")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Page preview fill failed")
+        raise HTTPException(500, f"Page preview error: {str(e)}")
+
+
 @app.get("/api/health")
 def health():
     return {

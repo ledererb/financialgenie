@@ -175,10 +175,33 @@ class PdfService:
                         rect = self._widget_rect_px(w)
                         if rect is None:
                             continue
+                        
+                        # If this is a radio group (treated as dropdown because of multiple states)
+                        # We extract its specific export state from /AP to make it a unique checkbox
+                        actual_name = full_name
+                        actual_type = field_type
+                        
+                        if field_type == "dropdown" and len(widgets) > 1:
+                            export_val = None
+                            try:
+                                ap = w.get("/AP")
+                                if ap and "/N" in ap:
+                                    for st in ap["/N"].keys():
+                                        s = str(st)
+                                        if s not in ("/Off",):
+                                            export_val = s.lstrip("/")
+                                            break
+                            except Exception:
+                                pass
+                                
+                            if export_val:
+                                actual_name = f"{full_name}___{export_val}"
+                                actual_type = "checkbox"  # UI should treat it as a checkbox
+
                         out.append(
                             {
-                                "pdf_field_name": full_name,
-                                "field_type": field_type,
+                                "pdf_field_name": actual_name,
+                                "field_type": actual_type,
                                 "page_number": rect["page_number"],
                                 "rect": {
                                     "x": rect["x"],
@@ -296,7 +319,8 @@ class PdfService:
             matched_indices: dict[str, set[int]] = {}
             for f in fields:
                 name = f.get("pdf_field_name", "")
-                geos = name_to_geos.get(name)
+                base_name = name.split("___")[0]
+                geos = name_to_geos.get(base_name)
                 if not geos:
                     continue
 
@@ -307,7 +331,7 @@ class PdfService:
                 # Match by coordinate proximity (x and width)
                 best_geo_idx = -1
                 best_diff = float("inf")
-                already_matched = matched_indices.setdefault(name, set())
+                already_matched = matched_indices.setdefault(base_name, set())
 
                 for idx, geo in enumerate(geos):
                     if idx in already_matched:
