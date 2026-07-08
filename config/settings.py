@@ -16,7 +16,7 @@ SAMPLES_DIR = PROJECT_ROOT / "samples"
 MAPPINGS_DIR = PROJECT_ROOT / "src" / "mapping"
 
 # .env betöltése
-env_path = CONFIG_DIR / ".env"
+env_path = PROJECT_ROOT / ".env"
 if env_path.exists():
     load_dotenv(env_path)
 

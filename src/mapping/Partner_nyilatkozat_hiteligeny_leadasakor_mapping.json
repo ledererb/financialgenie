@@ -1,0 +1,129 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Partner_nyilatkozat_hiteligeny_leadasakor",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 6 mező, 1 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "Értékesítő /Mobilbankár neve",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 90.7,
+        "y": 176.4,
+        "width": 276.1,
+        "height": 13.3
+      },
+      "notes": "Értékesítő /Mobilbankár neve )",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "Értékesítő/Mobilbankár törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 48.8,
+        "y": 204.0,
+        "width": 62.4,
+        "height": 13.3
+      },
+      "notes": "Értékesítő /Mobilbankár neve ) vállalkozás neve) kötelezettséget vállalok arra, hogy",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "Értékesítő/Mobilbankár törzsszám",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 290.2,
+        "y": 204.0,
+        "width": 140.0,
+        "height": 13.3
+      },
+      "notes": "Értékesítő /Mobilbankár neve ) vállalkozás neve) kötelezettséget vállalok arra, hogy",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "Hiteligénylő neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 162.8,
+        "y": 259.2,
+        "width": 141.1,
+        "height": 13.3
+      },
+      "notes": "a hiteligénylés benyújtásáról szóló átvételi Hiteligénylő neve ) ügyfelet tájékoztatom, az",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 72.0,
+        "y": 342.0,
+        "width": 135.1,
+        "height": 13.3
+      },
+      "notes": "Értékesítő/Mobilbankár aláírása",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "flat_1_6",
+      "label": "mező_6",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 305.5,
+        "y": 369.6,
+        "width": 219.0,
+        "height": 13.3
+      },
+      "notes": "Értékesítő/Mobilbankár aláírása",
+      "checkbox_group": null,
+      "fill_rule": null
+    },
+    {
+      "pdf_field_name": "név",
+      "label": null,
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "manual",
+      "page_number": 1,
+      "coordinates": {
+        "x": 183,
+        "y": 355,
+        "width": 587,
+        "height": 43
+      },
+      "notes": null
+    }
+  ],
+  "character_groups": []
+}
