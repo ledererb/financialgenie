@@ -259,7 +259,11 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Értéke: 'adóstárs'; jelölőnégyzet-csoport részeként értelmezendő"
+      "notes": "Értéke: 'adóstárs'; jelölőnégyzet-csoport részeként értelmezendő",
+      "checkbox_group": {
+        "group_id": "tarsigenylő_szerep",
+        "match_value": "adóstárs"
+      }
     },
     {
       "pdf_field_name": "coborrower_role_guarantor",
@@ -269,7 +273,11 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Értéke: 'kezes'"
+      "notes": "Értéke: 'kezes'",
+      "checkbox_group": {
+        "group_id": "tarsigenylő_szerep",
+        "match_value": "kezes"
+      }
     },
     {
       "pdf_field_name": "coborrower_role_beneficiary",
@@ -279,7 +287,11 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Értéke: 'haszonélvező'"
+      "notes": "Értéke: 'haszonélvező'",
+      "checkbox_group": {
+        "group_id": "tarsigenylő_szerep",
+        "match_value": "haszonélvező"
+      }
     },
     {
       "pdf_field_name": "coborrower_name",
@@ -479,7 +491,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Értéke: 'lakás'; 1. fedezeti ingatlan"
+      "notes": "Értéke: 'lakás'; 1. fedezeti ingatlan",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_1",
+        "match_value": "lakás"
+      }
     },
     {
       "pdf_field_name": "property_type_house",
@@ -489,7 +505,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Értéke: 'családi ház'; 1. fedezeti ingatlan"
+      "notes": "Értéke: 'családi ház'; 1. fedezeti ingatlan",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_1",
+        "match_value": "ház"
+      }
     },
     {
       "pdf_field_name": "property_type_land",
@@ -499,7 +519,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Értéke: 'telek'; 1. fedezeti ingatlan"
+      "notes": "Értéke: 'telek'; 1. fedezeti ingatlan",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_1",
+        "match_value": "telek"
+      }
     },
     {
       "pdf_field_name": "property_type_commercial",
@@ -509,7 +533,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Értéke: 'üzlethelyiség'; 1. fedezeti ingatlan"
+      "notes": "Értéke: 'üzlethelyiség'; 1. fedezeti ingatlan",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_1",
+        "match_value": "üzlethelyiség"
+      }
     },
     {
       "pdf_field_name": "property_zip",
@@ -619,7 +647,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "2. fedezeti ingatlan (opcionális)"
+      "notes": "2. fedezeti ingatlan (opcionális)",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_2",
+        "match_value": "lakás"
+      }
     },
     {
       "pdf_field_name": "property2_type_house",
@@ -629,7 +661,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "2. fedezeti ingatlan (opcionális)"
+      "notes": "2. fedezeti ingatlan (opcionális)",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_2",
+        "match_value": "ház"
+      }
     },
     {
       "pdf_field_name": "property2_type_land",
@@ -639,7 +675,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "2. fedezeti ingatlan (opcionális)"
+      "notes": "2. fedezeti ingatlan (opcionális)",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_2",
+        "match_value": "telek"
+      }
     },
     {
       "pdf_field_name": "property2_type_commercial",
@@ -649,7 +689,11 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "2. fedezeti ingatlan (opcionális)"
+      "notes": "2. fedezeti ingatlan (opcionális)",
+      "checkbox_group": {
+        "group_id": "ingatlan_jellege_2",
+        "match_value": "üzlethelyiség"
+      }
     },
     {
       "pdf_field_name": "property2_zip",

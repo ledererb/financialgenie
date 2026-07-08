@@ -91,6 +91,37 @@ class FormFillerPipeline:
             logger.info(f"🤖 Mapping nem található ({mapping_path.name}) – Automatikus mezőfelismerés indítása...")
         recognizer = FieldRecognizer()
         mapping = recognizer.recognize(template_pdf, mode="auto")
+
+        if force_recreate and mapping_path.exists():
+            try:
+                old_mapping = MappingConfig.load(mapping_path)
+                logger.info(f"🔄 Összefésülés a meglévő {len(old_mapping.fields)} mezővel ({mapping_path.name})...")
+                
+                old_fields_by_name = {f.pdf_field_name: f for f in old_mapping.fields}
+                merged_fields = []
+                
+                for new_f in mapping.fields:
+                    old_f = old_fields_by_name.get(new_f.pdf_field_name)
+                    if old_f:
+                        # Ha a régi mező már mappelve van (canonical_field vagy fill_rule), megtartjuk az eddigi szabályokat
+                        if getattr(old_f, "canonical_field", None) or getattr(old_f, "fill_rule", None):
+                            merged_fields.append(old_f)
+                        else:
+                            merged_fields.append(new_f)
+                        del old_fields_by_name[new_f.pdf_field_name]
+                    else:
+                        merged_fields.append(new_f)
+                
+                # Megtartjuk azokat a régi mezőket, amik nincsenek a mostani kivonatolt PDF-ben
+                for old_f in old_fields_by_name.values():
+                    merged_fields.append(old_f)
+                    
+                mapping.fields = merged_fields
+                mapping.character_groups = old_mapping.character_groups
+                logger.info(f"   ✓ Eredmény: {len(mapping.fields)} mező (korábbi szabályok megtartva).")
+            except Exception as e:
+                logger.warning(f"⚠️ Hiba a meglévő mapping összefésülésekor: {e}")
+
         mapping.save(mapping_path)
         logger.info(f"✅ Automatikus mezőfelismerés sikeres, elmentve: {mapping_path.name}")
         return mapping
@@ -367,15 +398,11 @@ class FormFillerPipeline:
         # whose match_value matches the SF picklist value.
         groups: dict[str, list] = {}
         for f in mapping.fields:
-            cbg = getattr(f, 'checkbox_group', None) or (f.checkbox_group if hasattr(f, 'checkbox_group') else None)
+            cbg = getattr(f, 'checkbox_group', None)
+            if isinstance(f, dict):
+                cbg = f.get('checkbox_group')
             if not cbg:
-                # Also check dict-style fields (loaded from JSON)
-                if isinstance(f, dict):
-                    cbg = f.get('checkbox_group')
-                    if not cbg:
-                        continue
-                else:
-                    continue
+                continue
             canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
             if not canonical:
                 continue
@@ -389,19 +416,33 @@ class FormFillerPipeline:
             # All items in a group share the same canonical field
             first_f, first_cbg = group_items[0]
             canonical = first_f.canonical_field if hasattr(first_f, 'canonical_field') else first_f.get('canonical_field', '')
-            
-            # Resolve the SF value
+
+            # Resolve the SF value — for Contact.* fields, check BOTH
+            # borrower and co_borrower data, preferring the one that
+            # matches the field name pattern (coborrower_ → co_borrower_data).
             sf_value = None
             if canonical.startswith('Contact.'):
-                sf_value = borrower_data.get(canonical, '')
+                # Determine which participant's data to use based on field name pattern
+                # Check if ALL fields in this group are "coborrower" fields
+                all_co = all(
+                    'coborrower' in (fi.pdf_field_name if hasattr(fi, 'pdf_field_name') else fi.get('pdf_field_name', '')).lower()
+                    for fi, _ in group_items
+                )
+                if all_co and co_borrower_data:
+                    sf_value = co_borrower_data.get(canonical, '')
+                else:
+                    sf_value = borrower_data.get(canonical, '')
+                    # Fallback: if borrower doesn't have it, try co_borrower
+                    if not sf_value and co_borrower_data:
+                        sf_value = co_borrower_data.get(canonical, '')
             elif canonical.startswith('Lead.'):
                 sf_value = prop_data.get(canonical, '')
             elif canonical.startswith('Opportunity.'):
                 sf_value = loan_data.get(canonical, '')
-            
+
             if not sf_value:
                 continue
-            
+
             sf_value_lower = str(sf_value).strip().lower()
             for f_item, cbg_item in group_items:
                 pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
@@ -411,7 +452,85 @@ class FormFillerPipeline:
                 else:
                     field_data[pdf_name] = 'nem'
 
+        # === Fill Rule engine ===
+        # fill_rule is a dict/object on each mapping field that provides
+        # rule-based filling for fields without a canonical_field.
+        # Supported types:
+        #   {"type": "static", "value": "igen"}
+        #   {"type": "per_participant", "value": "igen"}
+        #   {"type": "conditional", "sf_field": "...", "match": "...", "value": "igen"}
+        #   {"type": "role_based", "roles": ["adós", "adóstárs"], "value": "igen"}
+        all_data = {**borrower_data, **loan_data, **prop_data}
+
+        for f in mapping.fields:
+            fill_rule = getattr(f, 'fill_rule', None)
+            if isinstance(f, dict):
+                fill_rule = f.get('fill_rule')
+            if not fill_rule:
+                continue
+
+            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
+            try:
+                value = self._eval_fill_rule(fill_rule, all_data, borrower_data, co_borrower_data, deal)
+                if value is not None:
+                    field_data[pdf_name] = value
+            except Exception as e:
+                logger.debug(f"fill_rule error on {pdf_name}: {e}")
+
         return field_data
+
+    def _eval_fill_rule(self, rule, all_data: dict, borrower: dict, co_borrower: dict, deal) -> str | None:
+        """
+        Evaluate a single fill_rule expression.
+        
+        rule can be:
+        - dict: {"type": "static", "value": "igen"} (standard format per brief)
+        - str: legacy format (backward compat) — treated as static value
+        """
+        if not rule:
+            return None
+
+        # Legacy string support (backward compat)
+        if isinstance(rule, str):
+            return rule
+
+        if not isinstance(rule, dict):
+            return None
+
+        rule_type = rule.get("type", "")
+        value = rule.get("value", "")
+
+        # static — always this value
+        if rule_type == "static":
+            return value
+
+        # per_participant — value for every active participant
+        # (the fill engine runs per-deal, so this just returns the value
+        # if there are active participants)
+        if rule_type == "per_participant":
+            if deal.active_participants:
+                return value
+            return None
+
+        # conditional — SF field value must match
+        if rule_type == "conditional":
+            sf_field = rule.get("sf_field", "")
+            match = rule.get("match", "")
+            sf_value = all_data.get(sf_field, "") or borrower.get(sf_field, "")
+            if sf_value and str(sf_value).strip().lower() == str(match).strip().lower():
+                return value
+            return None
+
+        # role_based — value if any active participant has one of the roles
+        if rule_type == "role_based":
+            roles = rule.get("roles", [])
+            roles_lower = [r.lower() for r in roles]
+            for p in deal.active_participants:
+                if p.role.value.lower() in roles_lower:
+                    return value
+            return None
+
+        return None
 
     def _participant_to_dict(self, p) -> dict:
         """Participant → kanonikus dict. Csak SF-ből származó adatok kerülnek ide."""

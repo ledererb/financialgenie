@@ -340,6 +340,7 @@ class RecognizedField:
     coordinates: Optional[dict] = None     # Overlay módhoz: {x, y, width, height}
     notes: Optional[str] = None            # AI megjegyzés
     checkbox_group: Optional[dict] = None   # {"group_id": str, "match_value": str}
+    fill_rule: Optional[dict] = None         # {"type": "static"|"per_participant"|"conditional"|"role_based", "value": str, ...}
 
 
 @dataclass
@@ -378,6 +379,7 @@ class MappingConfig:
                     "coordinates": f.coordinates,
                     "notes": f.notes,
                     "checkbox_group": f.checkbox_group,
+                    "fill_rule": f.fill_rule,
                 }
                 for f in self.fields
             ],
@@ -397,6 +399,7 @@ class MappingConfig:
                 coordinates=f.get("coordinates"),
                 notes=f.get("notes"),
                 checkbox_group=f.get("checkbox_group"),
+                fill_rule=f.get("fill_rule"),
             )
             for f in data.get("fields", [])
         ]
@@ -811,6 +814,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                             {"group_id": item["g"], "match_value": item.get("mv", "")}
                                             if item.get("g") else None
                                         ),
+                                        fill_rule=item.get("fill_rule"),
                                     ))
                                     mapped += 1
                                 

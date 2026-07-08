@@ -46,6 +46,15 @@ export interface PdfFieldsResponse {
 
 export type Confidence = "high" | "medium" | "low" | "manual" | null;
 
+/** Fill rule object per the development brief spec. */
+export interface FillRule {
+  type: "static" | "per_participant" | "conditional" | "role_based";
+  value: string;
+  sf_field?: string;   // only for "conditional"
+  match?: string;      // only for "conditional"
+  roles?: string[];    // only for "role_based"
+}
+
 /** A field entry inside the mapping JSON. */
 export interface MappingField {
   pdf_field_name: string;
@@ -58,6 +67,7 @@ export interface MappingField {
   notes?: string | null;
   options?: string[] | null;
   checkbox_group?: { group_id: string; match_value: string } | null;
+  fill_rule?: FillRule | null;
 }
 
 export interface CharacterGroup {
@@ -101,6 +111,7 @@ export interface CanonicalField {
   path: string;
   label?: string;
   description?: string;
+  sf_type?: string;
 }
 
 export type FieldColorKey =

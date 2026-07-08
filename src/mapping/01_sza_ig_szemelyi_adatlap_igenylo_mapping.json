@@ -15,13 +15,16 @@
     {
       "pdf_field_name": "SZA_IG_Elsődleges_Szerep",
       "label": "Elsődleges szerep (adós, adóstárs, zálogkötelezett, stb.)",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Relation__c",
-      "confidence": "medium",
+      "field_type": "dropdown",
+      "canonical_field": "Contact.ReportsToId",
+      "confidence": "manual",
       "page_number": 1,
       "coordinates": null,
       "notes": "Gombcsoport – a szereplő ügyleten belüli szerepe (pl. főadós, adóstárs, zálogkötelezett)",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "szerep",
+        "match_value": "adós"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_állampolgárság",
@@ -32,7 +35,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Tipikusan: magyar / egyéb – az egyéb szöveges értéket az állampolgárság_egyéb mező tartalmazza",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "allampolgarsag",
+        "match_value": "magyar"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum",
@@ -43,7 +49,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Az okmány típusát jelöli; a tényleges számot a személyazonosíó_szám mező tartalmazza",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "dokumentum_tipus",
+        "match_value": "személyazonosító igazolvány"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_neme",
@@ -54,7 +63,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált Gender mező a kanonikus modellben; legközelebb a Salutation áll hozzá",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "neme",
+        "match_value": "Mr."
+      }
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot",
@@ -65,7 +77,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "csaladi_allapot",
+        "match_value": "egyedülálló"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_lakcim_ország",
@@ -109,7 +124,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Haszonélvező / zálogkötelezett jelölő",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "szerep",
+        "match_value": "adóstárs"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás",
@@ -120,7 +138,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "Főcsoport-jelölő; a részletes opciók a foglalkoztatás-1..12 mezőkben vannak",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "határozatlan idejű munkaviszony"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_végzettség",
@@ -142,7 +163,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "Jóváírás vállalása mező a legközelebb álló kanonikus mező",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "OTP számlára"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2",
@@ -153,7 +177,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "más bankba"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3",
@@ -164,7 +191,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "készpénz"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk4",
@@ -175,7 +205,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "postai csekk"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk5",
@@ -186,7 +219,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "vállalom OTP jóváírást"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk6",
@@ -197,7 +233,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "nem vállalom"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7",
@@ -208,7 +247,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "OTP folyószámla"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk8",
@@ -219,7 +261,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "OTP megtakarítási"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk9",
@@ -230,7 +275,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "más bank folyószámla"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk10",
@@ -241,7 +289,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "más bank megtakarítási"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk11",
@@ -252,7 +303,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "pénztári kifizetés"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk12",
@@ -263,7 +317,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_erkezes",
+        "match_value": "egyéb"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_nav",
@@ -296,7 +353,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Kiegészítő szerepkör jelölő; ugyanarra a Relation__c mezőre képezhető",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "szerep",
+        "match_value": "társigénylő"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_név",
@@ -307,7 +367,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Ha a PDF külön vezet- és keresztnevet tartalmaz, akkor Contact.LastName / Contact.FirstName; itt egyetlen mező van",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_név",
@@ -318,7 +379,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_hely",
@@ -329,7 +391,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_év",
@@ -340,7 +403,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Együtt a hónap és nap mezőkkel alkotja a Contact.Birthdate / Contact.Date_of_birth__c értékét",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_hónap",
@@ -351,7 +415,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Részleges dátum – összevonandó az év és nap mezőkkel",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_nap",
@@ -362,7 +427,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Részleges dátum – összevonandó az év és hónap mezőkkel",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_állampolgárság_egyéb",
@@ -373,7 +439,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Az 'egyéb' opció kiválasztásakor kitöltendő szövegmező",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_anyja_neve",
@@ -384,7 +451,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum_egyéb",
@@ -395,7 +463,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Szöveges kiegészítés az okmány típusához",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_személyazonosíó_szám",
@@ -406,7 +475,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_személyiszám",
@@ -417,7 +487,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Magyar személyi azonosító szám; nincs dedikált kanonikus mező, legközelebb az ID_Card_Number__c áll",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_adóazonosító",
@@ -428,7 +499,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_kegészítő_adatok",
@@ -439,7 +511,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Általános kiegészítő adat jelölő; pontos tartalom a nyomtatvány vizuális megjelenése alapján azonosítható",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "kiegeszito_adatok",
+        "match_value": "igen"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_kegészítő_adatok_2",
@@ -450,7 +525,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Általános kiegészítő adat jelölő",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "kiegeszito_adatok",
+        "match_value": "nem"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_létszám",
@@ -461,7 +539,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Háztartásban élők száma; az eltartottak száma külön mező",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_eltartottak",
@@ -472,7 +551,8 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": null,
+      "fill_rule": null
     },
     {
       "pdf_field_name": "SZA_IG_állandó_lakcim_ország_egyéb",
@@ -626,7 +706,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "Jövedelem kategória jelölő; összege: jövedelem_összeg1",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "munkabér"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg1",
@@ -659,7 +742,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "vállalkozói kivét"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg2",
@@ -692,7 +778,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "osztalék"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg3",
@@ -725,7 +814,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "megbízási díj"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg4",
@@ -758,7 +850,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "nyugdíj"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg5",
@@ -791,7 +886,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "Valószínűleg nyugdíj kategória; a nyugdíj típusát a jövedelem_nyugdíj mező pontosítja",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "gyed/gyes/gyesp"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_nyugdíj",
@@ -835,7 +933,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "bérleti díj"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg7",
@@ -868,7 +969,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "tartásdíj"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg8",
@@ -901,7 +1005,10 @@
       "page_number": 3,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "jovedelem_tipus",
+        "match_value": "egyéb"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg9",
@@ -1099,7 +1206,10 @@
       "page_number": 1,
       "coordinates": null,
       "notes": "Második kiegészítő szerepkör jelölő",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "szerep",
+        "match_value": "zálogkötelezett"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-1",
@@ -1110,7 +1220,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "határozott idejű munkaviszony"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-2",
@@ -1121,7 +1234,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "közalkalmazott"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-3",
@@ -1132,7 +1248,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "köztisztviselő"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-4",
@@ -1143,7 +1262,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "hivatásos katona/rendőr"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-5",
@@ -1154,7 +1276,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "egyéni vállalkozó"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-6",
@@ -1165,7 +1290,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_kieg",
+        "match_value": "KATA"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-7",
@@ -1176,7 +1304,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "bt. tag / kkt. tag"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-8",
@@ -1187,7 +1318,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "ügyvezető"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-9",
@@ -1198,7 +1332,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "nyugdíjas"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-10",
@@ -1209,7 +1346,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "gyed/gyes"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-11",
@@ -1220,7 +1360,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "külföldi munkaviszony"
+      }
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-12",
@@ -1231,7 +1374,10 @@
       "page_number": 2,
       "coordinates": null,
       "notes": "Egyéb kategória; a szöveges értéket a foglalkoztatás_egyéb mező tárolja",
-      "checkbox_group": null
+      "checkbox_group": {
+        "group_id": "foglalkoztatas_tipus",
+        "match_value": "egyéb"
+      }
     }
   ],
   "character_groups": []

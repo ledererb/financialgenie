@@ -113,7 +113,7 @@ class MappingService:
     def update_field(self, mapping: dict, name: str, update: dict) -> dict:
         for f in mapping.get("fields", []):
             if f.get("pdf_field_name") == name:
-                for k in ("canonical_field", "field_type", "confidence", "notes", "coordinates"):
+                for k in ("canonical_field", "field_type", "confidence", "notes", "coordinates", "fill_rule", "label", "checkbox_group"):
                     if k in update:
                         f[k] = update[k]
                 return f
@@ -242,9 +242,54 @@ class MappingService:
     # ------------------------------------------------------------------
     # Canonical catalog
     # ------------------------------------------------------------------
+    # SF field types — inferred from the Salesforce sandbox schema.
+    # Used by the canonical-fields endpoint to display type info in the UI.
+    SF_FIELD_TYPES = {
+        "Contact.Name": "string", "Contact.FirstName": "string", "Contact.LastName": "string",
+        "Contact.Szuletesi_nev__c": "string", "Contact.Mother_s_Name__c": "string",
+        "Contact.Place_of_Birth__c": "string", "Contact.Date_of_birth__c": "date",
+        "Contact.Birthdate": "date", "Contact.Year_of_birthdate__c": "string",
+        "Contact.Salutation": "picklist", "Contact.ID_Card_Number__c": "string",
+        "Contact.Tax_ID__c": "string", "Contact.Personal_ID__c": "string",
+        "Contact.Permanent_address__c": "textarea", "Contact.ZIP__c": "string",
+        "Contact.OtherCity": "string", "Contact.OtherStreet": "string",
+        "Contact.OtherCountry": "string", "Contact.MailingPostalCode": "string",
+        "Contact.MailingCity": "string", "Contact.MailingStreet": "string",
+        "Contact.Legal_Title_of_permanent_residence__c": "picklist",
+        "Contact.Date_of_notification_for_residence__c": "date",
+        "Contact.MobilePhone": "phone", "Contact.Phone": "phone",
+        "Contact.HomePhone": "phone", "Contact.Email": "email",
+        "Contact.Marital_Status__c": "picklist", "Contact.Citizenship__c": "picklist",
+        "Contact.Dependents_count__c": "double", "Contact.Relation__c": "picklist",
+        "Contact.Employment_Type_c__c": "picklist", "Contact.Foglalkozas_tipusa__c": "picklist",
+        "Contact.Occupation__c": "string", "Contact.Name_of_employer__c": "string",
+        "Contact.Self_employment_details__c": "string",
+        "Contact.Current_employment_started__c": "date",
+        "Contact.Highest_Educational_Qualification__c": "picklist",
+        "Contact.Average_monthly_net_income__c": "currency",
+        "Contact.Income_type__c": "picklist", "Contact.Other_income__c": "string",
+        "Contact.Other_monthly_income__c": "currency",
+        "Contact.Jovairas_vallalasa__c": "picklist",
+        "Contact.Current_debt_Credit_limit__c": "currency",
+        "Contact.Loan_Purpose__c": "picklist", "Contact.Loan_period__c": "double",
+        "Contact.Interest_Period__c": "picklist", "Contact.Loan_amount__c": "currency",
+        "Contact.Description": "textarea", "Contact.Date_of_signature__c": "date",
+        "Contact.AccountId": "reference", "Contact.Bank__c": "picklist",
+        "Contact.Department": "string",
+        "Opportunity.Hitel_sszeg__c": "currency", "Opportunity.Hitelc_l__c": "picklist",
+        "Opportunity.Term_k__c": "picklist", "Opportunity.StageName": "picklist",
+        "Opportunity.Amount": "currency", "Opportunity.CloseDate": "date",
+        "Opportunity.Name": "string",
+        "Lead.Estimated__c": "currency", "Lead.Ingatlan_alapterulet__c": "double",
+        "Lead.Ingatlan_irsz__c": "string", "Lead.Ingatlan_telepules__c": "string",
+        "Lead.Ingatlan_kozterulet_neve__c": "string", "Lead.Ingatlan_hazszam__c": "string",
+        "Lead.Ingatlan_jellege__c": "picklist", "Lead.Ingatlan_megjegyzes__c": "string",
+        "Lead.Purchase_price__c": "currency",
+    }
+
     def canonical_fields(self) -> list[dict]:
         return [
-            {"path": path, "label": label}
+            {"path": path, "label": label, "sf_type": self.SF_FIELD_TYPES.get(path, "string")}
             for path, label in sorted(CANONICAL_FIELDS.items())
         ]
 
