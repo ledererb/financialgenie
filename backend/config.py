@@ -93,7 +93,12 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
     stem_slug = slug(stem)
     stem_words = set(w for w in stem_slug.split("_") if len(w) >= 3)
 
-    # 0. Signature-based matching for uploaded files (skip for test/temporary files)
+    # 1. Exact stem match
+    candidate = MAPPING_DIR / f"{stem}_mapping.json"
+    if candidate.exists():
+        return candidate
+
+    # 2. Signature-based matching for uploaded files (skip for test/temporary files)
     if "test" not in stem.lower() and "temporary" not in stem.lower():
         try:
             pdf_path = resolve_pdf(pdf_id)
@@ -129,9 +134,17 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
                             overlap = len(uploaded_set & existing_set)
                             ratio = overlap / len(uploaded_set)
                             
-                            if ratio > 0.90 and ratio > best_overlap_ratio:
-                                best_overlap_ratio = ratio
-                                best_match = existing_mapping
+                            # If overlap ratio is same, prefer the one with fewer fields total (closer match)
+                            if ratio > 0.90:
+                                if ratio > best_overlap_ratio:
+                                    best_overlap_ratio = ratio
+                                    best_match = existing_mapping
+                                elif ratio == best_overlap_ratio and best_match:
+                                    # Compare sizes
+                                    with open(best_match, "r", encoding="utf-8") as bf:
+                                        bdata = json.load(bf)
+                                    if len(existing_fields) < len(bdata.get("fields", [])):
+                                        best_match = existing_mapping
                         except Exception:
                             continue
 
@@ -145,11 +158,6 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
                         return best_match
         except Exception as e:
             log.warning("Signature-based mapping matching failed: %s", e)
-
-    # 1. Exact stem match
-    candidate = MAPPING_DIR / f"{stem}_mapping.json"
-    if candidate.exists():
-        return candidate
 
     # 2. Word-level overlap: best mapping = most overlapping non-trivial words.
     #    Needs >=2 overlapping words AND >=25% of stem words matched.
