@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Output (generated)
+output/
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage
+tests/
+
+# Agents
+.agents/
+
+# Scratch
+scratch/

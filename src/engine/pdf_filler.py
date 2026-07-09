@@ -29,6 +29,82 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def fmt_money(value: int | float | None) -> str:
+    """Format a number as a Hungarian money string.
+
+    Returns ``"0"`` for ``0`` / ``None`` (never an empty string, which the PDF
+    fill engine treats as "skip"). Thousands are separated by a space,
+    matching Hungarian convention (e.g. ``450 000``).
+    """
+    if value is None:
+        return "0"
+    try:
+        return f"{int(value):,}".replace(",", " ")
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def expand_character_groups(
+    source_data: dict[str, str],
+    character_groups: list[dict],
+) -> dict[str, str]:
+    """Split canonical values across digit-box member fields (FIX M5).
+
+    Some PDF forms store a single logical value (e.g. a 4-digit postal code,
+    or comb text) in several independent one-character AcroForm boxes. A
+    mapping declares such a layout as a *character group*::
+
+        {
+          "group_id": "zip",
+          "canonical_field": "Contact.ZIP__c",
+          "member_fields": ["zip1", "zip2", "zip3", "zip4"],
+          "direction": "left_to_right",   # or "top_to_bottom"
+          "separator": ""
+        }
+
+    Given the resolved ``source_data`` (canonical_field → full value) and the
+    list of groups, this returns a ``{member_field: single_char}`` mapping
+    ready to merge into the PDF-filler ``field_data``.
+
+    Rules:
+      * The full value is looked up by the group's ``canonical_field``.
+      * Characters are distributed across ``member_fields`` in order;
+        ``direction`` is honoured only when a reader needs it (the order of
+        ``member_fields`` is already authoritative for left_to_right vs.
+        top_to_bottom).
+      * Member fields beyond the value length are left empty (``""``); a
+        value longer than the boxes is truncated to the number of boxes.
+      * Unknown/missing canonical value → the group is skipped (all boxes
+        stay empty, matching the spec's "leave the rest empty").
+
+    This is a pure function so it can be unit-tested without a PDF.
+    """
+    expanded: dict[str, str] = {}
+    if not character_groups:
+        return expanded
+
+    for group in character_groups:
+        if not isinstance(group, dict):
+            continue
+        members = group.get("member_fields") or []
+        canonical = group.get("canonical_field")
+        if not members or not canonical:
+            continue
+        raw = source_data.get(canonical)
+        if raw is None or str(raw) == "":
+            continue
+        # The value may carry a separator between digits (e.g. a date); strip
+        # it so each box receives a single character.
+        separator = group.get("separator") or ""
+        value = str(raw)
+        if separator:
+            value = value.replace(separator, "")
+        # Distribute one character per member box (truncate / pad).
+        for idx, member in enumerate(members):
+            expanded[member] = value[idx] if idx < len(value) else ""
+    return expanded
+
+
 # ---------------------------------------------------------------------------
 # Result adatstruktúra
 # ---------------------------------------------------------------------------
@@ -118,9 +194,16 @@ class BaseFiller(ABC):
             vagy nincs adat.
         """
         canonical_name = mapping.get(pdf_field_name)
-        if canonical_name is None:
-            return None, None
-        value = field_data.get(canonical_name)
+        value = None
+        if canonical_name is not None:
+            value = field_data.get(canonical_name)
+        
+        # Fallback: ha kanonikus névvel nem találtuk meg, megpróbáljuk közvetlenül
+        # a PDF mezőnévvel kikeresni (mert a pipeline _prepare_field_data
+        # PDF-mezőnév kulcsokkal adja vissza az adatokat).
+        if value is None:
+            value = field_data.get(pdf_field_name)
+
         return canonical_name, value
 
 
@@ -230,6 +313,13 @@ class AcroFormFiller(BaseFiller):
         finally:
             pdf.close()
 
+        # --- PyMuPDF fallback: fill widgets not reachable from /AcroForm/Fields ---
+        # Some PDFs have deeply nested field hierarchies (e.g. c.debtor.fullName)
+        # that pikepdf's /Fields walker doesn't reach. PyMuPDF's widget iterator
+        # sees ALL widgets regardless of their position in the AcroForm tree.
+        if result.success:
+            self._mupdf_fill_missing(output_path, mapping, field_data, result)
+
         return result
 
     def _fill_fields_recursive(
@@ -238,6 +328,7 @@ class AcroFormFiller(BaseFiller):
         mapping: dict[str, str],
         field_data: dict[str, str],
         result: FillingResult,
+        parent_name: str = "",
     ) -> None:
         """
         Rekurzívan bejárja az AcroForm mező-fát és kitölti az értékeket.
@@ -254,66 +345,112 @@ class AcroFormFiller(BaseFiller):
         for field_ref in fields:
             try:
                 field_obj = field_ref
-                # Ha van /Kids, rekurzívan feldolgozzuk
+
+                # Különválasztjuk a widget annotációkat és a beágyazott al-mezőket a /Kids alatt.
+                # Ha egy gyereknek van /T tulajdonsága, akkor az beágyazott al-mező.
+                widgets = []
+                nested = []
                 if "/Kids" in field_obj:
-                    self._fill_fields_recursive(
-                        field_obj["/Kids"], mapping, field_data, result
-                    )
-                    continue
+                    for kid in field_obj["/Kids"]:
+                        try:
+                            sub = str(kid.get("/Subtype", ""))
+                        except Exception:
+                            sub = ""
+                        if sub == "/Widget" or "/T" not in kid:
+                            widgets.append(kid)
+                        else:
+                            nested.append(kid)
 
                 # Mező neve
-                pdf_field_name = str(field_obj.get("/T", ""))
+                name = str(field_obj.get("/T", ""))
+                pdf_field_name = f"{parent_name}.{name}" if parent_name and name else (name or parent_name)
+
                 if not pdf_field_name:
                     continue
 
-                # Érték feloldása
-                canonical_name, value = self._resolve_field_value(
-                    pdf_field_name, mapping, field_data
-                )
+                # Ha vannak beágyazott mezők, rekurzívan bejárjuk őket
+                if nested:
+                    self._fill_fields_recursive(
+                        nested, mapping, field_data, result, pdf_field_name
+                    )
 
-                if canonical_name is None:
-                    result.skipped_fields.append(pdf_field_name)
-                    logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
-                    continue
+                # Ha nincsenek al-mezők, akkor ez egy kitölthető mező (akár van /Kids widgetje, akár nincs)
+                if not nested:
+                    # Érték feloldása
+                    canonical_name, value = self._resolve_field_value(
+                        pdf_field_name, mapping, field_data
+                    )
 
-                if value is None or value == "":
-                    result.skipped_fields.append(pdf_field_name)
+                    # C6: a canonical_name lehet None (pl. egy ``_N`` suffix-szel
+                    # átnevezett példány-mező, ami nincs a mapping-ben), de ha a
+                    # pdf_field_name fallback értéket adott, akkor is ki kell
+                    # tölteni. Csak akkor hagyjuk ki, ha végképp nincs adat.
+                    if value is None or value == "":
+                        if canonical_name is None:
+                            logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
+                        else:
+                            logger.debug(
+                                "Nincs adat ehhez a mezőhöz: %s → %s",
+                                pdf_field_name,
+                                canonical_name,
+                            )
+                        result.skipped_fields.append(pdf_field_name)
+                        continue
+
+                    # Típus-specifikus értékbeírás
+                    field_type = str(field_obj.get("/FT", ""))
+                    # Ha nincs /FT a szülőn, megpróbáljuk kinyerni a widgetekből (öröklődés fallback)
+                    if not field_type and widgets:
+                        for w in widgets:
+                            if "/FT" in w:
+                                field_type = str(w.get("/FT", ""))
+                                break
+
+                    if field_type == "/Btn":
+                        if isinstance(value, str) and value not in ("igen", "nem", "true", "false", "True", "False", "1", "0", ""):
+                            # Radio button specifikus érték (pl. "1,2")
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name(f"/{value}")
+                        else:
+                            # Checkbox: az érték truthy-e?
+                            # FIX M4: a bepipált állapotot nem a hardcoded
+                            # "/Yes" név jelzi, hanem a widget tényleges
+                            # export-értéke (/AP/N appearance állapotokból
+                            # olvassuk ki — valós bank nyomtatványok /1,
+                            # /X, /On, /true stb. névvel dolgoznak).
+                            is_checked = self._is_truthy(value)
+                            if is_checked:
+                                on_state = self._get_checkbox_on_state(field_obj, widgets)
+                                field_obj[pikepdf.Name("/V")] = pikepdf.Name(on_state)
+                            else:
+                                # Kikapcsolt checkbox: /Off név
+                                field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
+                    else:
+                        # Szöveg / dropdown / lista: String érték
+                        field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
+                        
+                        # Külön kezelés Comb mezők (pl. születési idő dobozos) igazításához
+                        try:
+                            ff = int(field_obj.get("/Ff", 0))
+                            if ff & (1 << 24):  # Comb flag (Ff bit 25, 1-based = 1<<24)
+                                field_obj[pikepdf.Name("/Q")] = 1  # Középre igazítás (Center)
+                        except Exception:
+                            pass
+
+                    # Megjelenítés frissítése – töröljük az /AP-t a szülőből és az összes widgetből,
+                    # hogy a PDF-olvasó újra renderelje a mezőket
+                    if "/AP" in field_obj:
+                        del field_obj["/AP"]
+                    for w in widgets:
+                        if "/AP" in w:
+                            del w["/AP"]
+
+                    result.filled_fields.append(pdf_field_name)
                     logger.debug(
-                        "Nincs adat ehhez a mezőhöz: %s → %s",
+                        "Mező kitöltve: %s = %s (← %s)",
                         pdf_field_name,
+                        value[:50] if len(str(value)) > 50 else value,
                         canonical_name,
                     )
-                    continue
-
-                # Típus-specifikus értékbeírás
-                field_type = str(field_obj.get("/FT", ""))
-                flags = int(field_obj.get("/Ff", 0))
-
-                if field_type == "/Btn":
-                    # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
-                    # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
-                    is_checked = self._is_truthy(value)
-                    if is_checked:
-                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
-                    else:
-                        # Kikapcsolt checkbox: /Off név
-                        field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
-                else:
-                    # Szöveg / dropdown / lista: String érték
-                    field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
-
-                # Megjelenítés frissítése – töröljük az /AP-t, hogy a
-                # PDF-olvasó újra renderelj a mezőt
-                if "/AP" in field_obj:
-                    del field_obj["/AP"]
-
-                result.filled_fields.append(pdf_field_name)
-                logger.debug(
-                    "Mező kitöltve: %s = %s (← %s)",
-                    pdf_field_name,
-                    value[:50] if len(str(value)) > 50 else value,
-                    canonical_name,
-                )
 
             except Exception as exc:
                 pdf_name = str(field_ref.get("/T", "ismeretlen"))
@@ -323,18 +460,159 @@ class AcroFormFiller(BaseFiller):
                 })
                 logger.warning("Mező kitöltési hiba: %s – %s", pdf_name, exc)
 
+    def _mupdf_fill_missing(
+        self,
+        output_path: Path,
+        mapping: dict[str, str],
+        field_data: dict[str, str],
+        result: FillingResult,
+    ) -> None:
+        """Use PyMuPDF to fill widgets that pikepdf couldn't reach.
+
+        Opens the already-saved PDF, iterates ALL page-level widgets,
+        and fills any that are still empty but have data available.
+        """
+        import fitz  # PyMuPDF
+
+        filled_set = set(result.filled_fields)
+        extra_filled = 0
+
+        try:
+            doc = fitz.open(str(output_path))
+            needs_save = False
+
+            for page in doc:
+                for widget in page.widgets():
+                    wname = widget.field_name
+                    if not wname or wname in filled_set:
+                        continue
+
+                    # Try to resolve value via mapping
+                    canonical_name, value = self._resolve_field_value(
+                        wname, mapping, field_data
+                    )
+                    # C6: canonical_name lehet None (átnevezett _N példány-mező),
+                    # de a pdf_field_name fallback értékével akkor is töltsünk.
+                    if value is None or value == "":
+                        continue
+
+                    # Fill based on widget type
+                    if widget.field_type in (
+                        fitz.PDF_WIDGET_TYPE_TEXT,
+                        fitz.PDF_WIDGET_TYPE_COMBOBOX,
+                        fitz.PDF_WIDGET_TYPE_LISTBOX,
+                    ):
+                        widget.field_value = str(value)
+                        widget.update()
+                        needs_save = True
+                        extra_filled += 1
+                        filled_set.add(wname)
+                        result.filled_fields.append(wname)
+                        logger.debug(
+                            "PyMuPDF fallback kitöltés: %s = %s (← %s)",
+                            wname, str(value)[:50], canonical_name,
+                        )
+                    elif widget.field_type in (
+                        fitz.PDF_WIDGET_TYPE_CHECKBOX,
+                        fitz.PDF_WIDGET_TYPE_RADIOBUTTON,
+                    ):
+                        is_checked = self._is_truthy(value)
+                        if is_checked:
+                            # Try to find the "on" state from button_states
+                            try:
+                                states = widget.button_states()
+                                on_val = None
+                                if states and "normal" in states:
+                                    for st in states["normal"]:
+                                        if st != "Off":
+                                            on_val = st
+                                            break
+                                if on_val:
+                                    widget.field_value = on_val
+                                else:
+                                    widget.field_value = "Yes"
+                            except Exception:
+                                widget.field_value = "Yes"
+                        else:
+                            widget.field_value = "Off"
+                        widget.update()
+                        needs_save = True
+                        extra_filled += 1
+                        filled_set.add(wname)
+                        result.filled_fields.append(wname)
+
+            if needs_save:
+                doc.save(str(output_path), incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+                logger.info(
+                    "PyMuPDF fallback: %d extra mező kitöltve", extra_filled
+                )
+            doc.close()
+        except Exception as exc:
+            logger.warning("PyMuPDF fallback kitöltés sikertelen: %s", exc)
+
+    @staticmethod
+    def _get_checkbox_on_state(field_obj: Any, widgets: list) -> str:
+        """Return the widget's actual ON export value from the /AP appearance dict.
+
+        FIX M4 — real bank forms do not always use the textbook ``/Yes`` name
+        for the checked state; they use ``/1``, ``/X``, ``/On``, ``/true``,
+        etc. The checked export value is the single state name listed under
+        ``/AP/N`` (normal appearance) that is not ``/Off``.
+
+        Looks at the field object first, then each widget (the ``/AP`` often
+        lives on the widget annotation rather than the parent field).
+
+        Args:
+            field_obj: The AcroForm field dictionary.
+            widgets: The field's widget annotation dictionaries.
+
+        Returns:
+            The ON state name, slash-prefixed (e.g. ``"/1"``, ``"/X"``,
+            ``"/Yes"``). Falls back to ``"/Yes"`` and logs a warning when no
+            ``/AP`` appearance dictionary is present.
+        """
+        holders = [field_obj] + list(widgets)
+        for holder in holders:
+            try:
+                ap = holder.get("/AP")
+            except Exception:
+                ap = None
+            if not ap:
+                continue
+            try:
+                n_dict = ap.get("/N")
+            except Exception:
+                n_dict = None
+            if n_dict is None:
+                continue
+            # /AP/N maps appearance-state names → appearance streams.
+            try:
+                state_names = list(n_dict.keys())
+            except Exception:
+                continue
+            for key in state_names:
+                name = str(key)
+                if name.lstrip("/") != "Off":
+                    return name
+        logger.warning(
+            "Checkbox has no usable /AP appearance dictionary; falling back "
+            "to '/Yes' as the ON export value. The field may not render as "
+            "checked in strict viewers."
+        )
+        return "/Yes"
+
     @staticmethod
     def _is_truthy(value: Any) -> bool:
         """Egy mezőérték truthy értelmezése checkbox kitöltéshez."""
         if isinstance(value, bool):
             return value
         s = str(value).strip().lower()
-        if s in ("", "0", "false", "no", "nem", "off", "false", "x-", "-"):
+        if s in ("", "0", "false", "no", "nem", "off", "x-", "-"):
             return False
         if s in ("yes", "igen", "true", "1", "x", "y", "i", "on"):
             return True
-        # Bármi más nem-empty → truthy
-        return s != ""
+        # Bármi más non-empty → truthy ("" már a fenti ágon kiesett).
+        return True
 
     @staticmethod
     def _make_readonly(pdf: Any) -> None:
@@ -387,19 +665,41 @@ class AcroFormFiller(BaseFiller):
             if "/Fields" not in acroform:
                 return result
 
-            def _collect(fields: Any) -> None:
+            def _collect(fields: Any, parent_name: str = "") -> None:
                 for f in fields:
+                    # Különválasztjuk a widgeteket és a beágyazott al-mezőket a /Kids alatt
+                    widgets = []
+                    nested = []
                     if "/Kids" in f:
-                        _collect(f["/Kids"])
-                        continue
+                        for kid in f["/Kids"]:
+                            try:
+                                sub = str(kid.get("/Subtype", ""))
+                            except Exception:
+                                sub = ""
+                            if sub == "/Widget" or "/T" not in kid:
+                                widgets.append(kid)
+                            else:
+                                nested.append(kid)
+
                     name = str(f.get("/T", ""))
-                    field_type = str(f.get("/FT", ""))
-                    value = str(f.get("/V", ""))
-                    result.append({
-                        "name": name,
-                        "type": field_type,
-                        "value": value,
-                    })
+                    full_name = f"{parent_name}.{name}" if parent_name and name else (name or parent_name)
+
+                    if nested:
+                        _collect(nested, full_name)
+
+                    if not nested and full_name:
+                        field_type = str(f.get("/FT", ""))
+                        if not field_type and widgets:
+                            for w in widgets:
+                                if "/FT" in w:
+                                    field_type = str(w.get("/FT", ""))
+                                    break
+                        value = str(f.get("/V", ""))
+                        result.append({
+                            "name": full_name,
+                            "type": field_type,
+                            "value": value,
+                        })
 
             _collect(acroform["/Fields"])
 

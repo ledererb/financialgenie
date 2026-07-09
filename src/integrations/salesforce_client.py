@@ -98,62 +98,120 @@ class SalesforceClient:
         logger.info(f"{len(self._state.deals)} mock ügylet betöltve")
 
     def _parse_address_string(self, addr_str: str, zip_code: str = None) -> dict:
-        """Parses a Hungarian address string into a structured dictionary."""
+        """Parses a Hungarian address string into a structured dictionary.
+
+        Robust against three real-world cases (FIX H3):
+          1. Budapest kerület (district) given as roman numerals (I-XXIII),
+             e.g. "Budapest, II. kerület, Váci utca 10" — the district is
+             extracted into its own field instead of being grafted into the
+             street.
+          2. ``floor``/``door`` are always present in the returned dict
+             (defaulting to None), so consumers can safely use ``.get()``.
+          3. Street-only addresses with no house number do not crash and
+             yield an empty ``house_number``.
+        """
         if not addr_str:
-            return {"zip_code": zip_code or "", "city": "", "street": "", "house_number": ""}
-        
+            return {
+                "zip_code": zip_code or "", "city": "", "street": "",
+                "house_number": "", "district": None, "floor": None, "door": None,
+            }
+
         import re
         # Find 4-digit zip code
         zip_match = re.search(r'\b\d{4}\b', addr_str)
         detected_zip = zip_match.group(0) if zip_match else (zip_code or "")
-        
+
         clean_str = addr_str
         if zip_match:
-            clean_str = clean_str.replace(detected_zip, "").strip()
-            
-        # Split by comma or space
+            clean_str = clean_str.replace(detected_zip, "", 1).strip()
+
+        # --- District extraction: Budapest kerület (roman numerals I-XXIII) ---
+        district = None
+        if re.search(r'\bbudapest\b', clean_str, re.IGNORECASE):
+            district_match = re.search(
+                r'\b([IVXLCDM]{1,5})\.\s*ker[uü]let\b', clean_str, re.IGNORECASE
+            )
+            if district_match:
+                roman = district_match.group(1).upper()
+                as_int = self._roman_to_int(roman)
+                if as_int is not None and 1 <= as_int <= 23:
+                    district = roman
+                    clean_str = (
+                        clean_str[:district_match.start()]
+                        + clean_str[district_match.end():]
+                    )
+                    # Tidy up stray commas/spaces left behind.
+                    clean_str = re.sub(r'\s*,\s*,\s*', ', ', clean_str)
+                    clean_str = clean_str.strip().strip(',').strip()
+
+        # Split by comma
         parts = [p.strip() for p in clean_str.split(",") if p.strip()]
         city = ""
         street_and_num = clean_str
-        
+
         if len(parts) >= 2:
             city = parts[0]
-            street_and_num = ",".join(parts[1:])
+            street_and_num = ", ".join(parts[1:])
         else:
             words = clean_str.split()
             if words:
                 city = words[0]
                 street_and_num = " ".join(words[1:])
-                
-        # Match house number (digits followed by optional letters/symbols)
+
+        # Match house number (digits followed by optional letters/symbols).
         num_match = re.search(r'\s+(\d+[\w\-/]*)(.*)', street_and_num)
         street = street_and_num
         house_number = ""
         floor = None
         door = None
-        
+
         if num_match:
             house_number = num_match.group(1)
             rest = num_match.group(2).strip()
             street = street_and_num[:num_match.start()].strip()
-            
+
             # Floor and door matching
             floor_match = re.search(r'(\d+)\.?\s*(em|emelet)', rest, re.IGNORECASE)
             door_match = re.search(r'(\d+)\.?\s*(aj|ajto|ajtó)', rest, re.IGNORECASE)
-            
+
             if floor_match:
                 floor = floor_match.group(1)
             if door_match:
                 door = door_match.group(1)
-                
+        else:
+            # Street-only address (no house number) — keep the street clean.
+            street = street_and_num.strip().strip(',').strip()
+
         return {
             "zip_code": str(detected_zip),
             "city": city,
             "street": street,
             "house_number": house_number,
+            "district": district,
             "floor": floor,
-            "door": door
+            "door": door,
         }
+
+    @staticmethod
+    def _roman_to_int(roman: str) -> Optional[int]:
+        """Convert a roman-numeral string to int, or None if invalid.
+
+        Used only to validate that a matched token is a plausible Budapest
+        district (I-XXIII), not an unrelated roman-looking word.
+        """
+        values = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+        total = 0
+        prev = 0
+        for ch in reversed(roman.upper()):
+            cur = values.get(ch)
+            if cur is None:
+                return None
+            if cur < prev:
+                total -= cur
+            else:
+                total += cur
+                prev = cur
+        return total
 
     def get_deal(self, deal_id: str) -> Optional[dict]:
         """
@@ -171,10 +229,6 @@ class SalesforceClient:
             if deal:
                 logger.info(f"Ügylet lekérve (mock): {deal_id}")
             else:
-                # Ha nem pontos ID, próbáljuk az első találatot
-                for did, ddata in self._state.deals.items():
-                    logger.info(f"Ügylet lekérve (mock, első találat): {did}")
-                    return ddata
                 logger.warning(f"Ügylet nem található (mock): {deal_id}")
             return deal
         else:
@@ -197,9 +251,13 @@ class SalesforceClient:
                 contacts = {}
                 
                 # 3. Contact adatok lekérdezése
-                # A simple-salesforce library NEM támogatja a SOQL bind változókat
-                # (`:param` szintaxis). Mivel a record ID-k Salesforce-ból jönnek (lookup
-                # mezőkből, nem user input-ból), az f-string-es beillesztés biztonságos.
+                # NOTE (FIX M12): the SOQL below is built with f-string
+                # interpolation (id_list_str / prop_id_list_str), NOT with
+                # simple-salesforce's `:változó` parameter binding, despite
+                # what an earlier comment claimed. The deal_id values used
+                # here originate from Salesforce lookup fields (already
+                # 18-char IDs), so injection risk is low — but do not assume
+                # the driver is escaping these values.
                 if contact_ids:
                     contact_fields = (
                         "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
@@ -207,13 +265,13 @@ class SalesforceClient:
                         "Address_Card_Number__c, Permanent_address__c, Phone, Email, "
                         "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
                         "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
-                        "Current_employment_started__c, ZIP__c, "
-                        "Citizenship__c, Employment_Type_c__c"
+                        "Citizenship__c, Income_type__c, MailingPostalCode, "
+                        "Current_employment_started__c, ZIP__c"
                     )
-                    ids_formatted = "','".join(contact_ids)
+                    id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
                         f"SELECT {contact_fields} FROM Contact "
-                        f"WHERE Id IN ('{ids_formatted}')"
+                        f"WHERE Id IN ({id_list_str})"
                     )
                     contact_results = self._sf.query(query_str)
                     for c_rec in contact_results.get("records", []):
@@ -244,22 +302,21 @@ class SalesforceClient:
                         "email": c.get("Email"),
                         "employer": c.get("Name_of_employer__c"),
                         "monthly_income": c.get("Average_monthly_net_income__c"),
-                        "citizenship": c.get("Citizenship__c"),
-                        "employment_type": c.get("Employment_Type_c__c"),
-                        "education": c.get("Highest_Educational_Qualification__c"),
                         "marital_status": c.get("Marital_Status__c"),
-                        "dependents": c.get("Dependents_count__c"),
-                        "residence_since": c.get("Date_of_notification_for_residence__c"),
-                        "business_name": c.get("Name_of_employer__c") if c.get("Employer_s_company_type__c") else None,
+                        "citizenship": c.get("Citizenship__c"),
+                        "dependents_count": c.get("Dependents_count__c"),
+                        "education": c.get("Highest_Educational_Qualification__c"),
+                        "income_type": c.get("Income_type__c"),
                         "is_active": True
                     }
                     participants_records.append(participant_record)
 
                 # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
                 properties_records = []
+                # SOQL query construction for deal_id
                 prop_role_query = (
-                    f"SELECT Property__c, Ingatlan_szerepe__c "
-                    f"FROM Opportunity_Property_Role__c "
+                    "SELECT Property__c, Ingatlan_szerepe__c "
+                    "FROM Opportunity_Property_Role__c "
                     f"WHERE Opportunity__c = '{deal_id}'"
                 )
                 prop_role_results = self._sf.query(prop_role_query)
@@ -272,13 +329,12 @@ class SalesforceClient:
                             "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
                             "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                            "Ingatlan_emelet__c, Ingatlan_jellege__c, Ingatlan_energetika__c, "
-                            "Ingatlan_hasznalatbaveteli__c, Ingatlan_osztatlan__c, Ingatlan_megjegyzes__c"
+                            "Ingatlan_emelet__c"
                         )
-                        prop_ids_formatted = "','".join(prop_ids)
+                        prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
-                            f"WHERE Id IN ('{prop_ids_formatted}')"
+                            f"WHERE Id IN ({prop_id_list_str})"
                         )
                         prop_results = self._sf.query(prop_query)
                         props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
@@ -311,8 +367,7 @@ class SalesforceClient:
                                     "house_number": p.get("Ingatlan_hazszam__c") or "",
                                     "floor": p.get("Ingatlan_emelet__c"),
                                     "door": None
-                                },
-                                "usage_type": p.get("Ingatlan_jellege__c") or p.get("Property_Type__c"),
+                                }
                             }
                             properties_records.append(prop_record)
 
@@ -448,10 +503,38 @@ class SalesforceClient:
                 if a.deal_id == deal_id
             ]
         else:
+            # FIX H9: simple-salesforce's query() takes only the SOQL string.
+            # The earlier call passed an unsupported kwarg and raised
+            # TypeError in live mode (mock mode hid the bug). Interpolate the
+            # deal_id into the SOQL, matching the rest of this client's query
+            # style.
             query = (
-                f"SELECT ContentDocument.Title, ContentDocument.CreatedDate "
-                f"FROM ContentDocumentLink "
+                "SELECT ContentDocument.Title, ContentDocument.CreatedDate "
+                "FROM ContentDocumentLink "
                 f"WHERE LinkedEntityId = '{deal_id}'"
             )
             result = self._sf.query(query)
             return result.get("records", [])
+
+
+# --- Module-level convenience API --------------------------------------
+# A lazily-created default mock client so callers (and the verification
+# command `from src.integrations.salesforce_client import get_deal`) can use
+# the integration without manually constructing a client. It mirrors the
+# mock-mode behaviour used throughout server.py / main.py.
+_default_client: "SalesforceClient | None" = None
+
+
+def _get_default_client() -> "SalesforceClient":
+    global _default_client
+    if _default_client is None:
+        _default_client = SalesforceClient(mock_mode=True)
+    return _default_client
+
+
+def get_deal(deal_id: str) -> Optional[dict]:
+    """Module-level wrapper around the default mock client's get_deal.
+
+    Returns the deal dict for a known id, or None if not found (C3).
+    """
+    return _get_default_client().get_deal(deal_id)

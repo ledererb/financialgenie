@@ -133,6 +133,42 @@ class CompletenessReport:
 # Ellenőrző
 # ---------------------------------------------------------------------------
 
+# FIX H8: A pipeline két névteret használ. A _check_completeness (src/main.py)
+# a PDF-kitöltés kanonikus kulcsait (Contact.*/Lead.*/Opportunity.*) adja át
+# required_fields-ként, de a checker a DealData-modell útvonalait érti
+# (loan.*/participant.*/property.*). E fordítótábla a hívó által használt
+# SF-kulcsokat a checker által bejárt modell-útvonalakra képezi, így a
+# checker nem jelent hamis INCOMPLETE-et egy szótár-eltérés miatt.
+# Egy SF-kulcs több modell-útvonalra is kiterjedhet (lista).
+CANONICAL_ALIAS_MAP: dict[str, list[str]] = {
+    # --- Hitel-szintű mezők → loan.* ---
+    "Contact.Loan_amount__c": ["loan.loan_amount"],
+    "Contact.Loan_period__c": ["loan.loan_term_months"],
+    "Contact.Interest_Period__c": ["loan.interest_period"],
+    "Contact.Loan_Purpose__c": ["loan.loan_purpose"],
+    "Opportunity.Hitel_sszeg__c": ["loan.loan_amount"],
+    "Opportunity.Hitelc_l__c": ["loan.loan_purpose"],
+    # --- Személyes adatok → participant.*.* ---
+    "Contact.Name": ["participant.*.name"],
+    "Contact.Szuletesi_nev__c": ["participant.*.birth_name"],
+    "Contact.Mother_s_Name__c": ["participant.*.mother_name"],
+    "Contact.Place_of_Birth__c": ["participant.*.birth_place"],
+    "Contact.Birthdate": ["participant.*.birth_date"],
+    "Contact.Date_of_birth__c": ["participant.*.birth_date"],
+    "Contact.Tax_ID__c": ["participant.*.tax_id"],
+    "Contact.ID_Card_Number__c": ["participant.*.personal_id"],
+    "Contact.MobilePhone": ["participant.*.phone"],
+    "Contact.Phone": ["participant.*.phone"],
+    "Contact.Email": ["participant.*.email"],
+    "Contact.Name_of_employer__c": ["participant.*.employer"],
+    "Contact.Average_monthly_net_income__c": ["participant.*.monthly_income"],
+    # --- Ingatlan-szintű mezők → property.*.* ---
+    "Lead.Ingatlan_megjegyzes__c": ["property.*.parcel_number"],
+    "Lead.Ingatlan_alapterulet__c": ["property.*.area_sqm"],
+    "Lead.Estimated__c": ["property.*.estimated_value"],
+}
+
+
 # Gyanús érték validátorok
 _SUSPICIOUS_VALIDATORS: dict[str, dict[str, Any]] = {
     "name": {
@@ -221,8 +257,14 @@ class CompletenessChecker:
         self._check_structural(deal, report)
 
         # --- Mezőnkénti ellenőrzés ---
+        # FIX H8: a required_fields lehet SF-kulcs (Contact.*/Lead.*/Opportunity.*)
+        # vagy modell-útvonal (loan.*/participant.*/property.*). Az alias-térkép
+        # segítségével minden SF-kulcsot kiterjesztünk a hozzá tartozó
+        # modell-útvonalakra, mielőtt a meglévő bejáróra bízzuk az ellenőrzést.
         for field_path in required_fields:
-            self._check_field(deal, field_path, report)
+            expanded = CANONICAL_ALIAS_MAP.get(field_path, [field_path])
+            for resolved_path in expanded:
+                self._check_field(deal, resolved_path, report)
 
         # --- Státusz meghatározása ---
         report.status = self._determine_status(report)

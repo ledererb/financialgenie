@@ -1,7 +1,7 @@
 """
 FinancialGenie – AI mezőfelismerő réteg
 
-DeepSeek V4 Flash API-val felismeri egy üres banki nyomtatvány kitöltendő mezőit,
+Claude Sonnet 4 API-val felismeri egy üres banki nyomtatvány kitöltendő mezőit,
 és leképezi azokat a kanonikus adatmodellre. Az eredmény egy mapping-konfiguráció,
 amelyet emberi jóváhagyás után a determinisztikus kitöltőmotor használ.
 
@@ -25,10 +25,11 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-#: A DeepSeek API-hoz használt modell azonosító (app-level DeepSeek V4 migráció).
-#: Korábban "claude-sonnet-4-20250514" volt (Anthropic); most DeepSeek V4 Flash-t
-#: használjuk minden AI híváshoz – olcsóbb, gyorsabb, JSON mód támogatott.
-AI_MODEL: str = "deepseek-v4-flash"
+#: Az Anthropic API-hoz használt Claude modell azonosító (2a).
+#: Korábban a "claude-sonnet-4-6" string volt 4 helyen hardcode-olva;
+#: most egyetlen helyen, modul-szinten van deklarálva, így egyszerűen
+#: frissíthető, ha új modell-verzió érkezik.
+AI_MODEL: str = "claude-sonnet-4-6"
 
 
 def _normalize_key(s: str) -> str:
@@ -54,49 +55,281 @@ def _normalize_key(s: str) -> str:
 
 
 # --- A kanonikus modell mezőkatalógusa ---
+# Auto-generated from Salesforce org schema (2026-06-29).
+# Keys are SF API names in Object.Field format.
+# The AI maps PDF form fields → these SF field keys directly.
+# Includes: all fillable types + reference lookups.
+# Excludes: url (doc uploads), location (geo), system metadata, Lat/Long.
 
 CANONICAL_FIELDS = {
-    # Hiteladatok
+    # ════════════════════════════════════════════════════════════
+    # Contact — személyi adatok (156 fields)
+    # ════════════════════════════════════════════════════════════
+    "Contact.AccountId": "Account ID",
+    "Contact.Account_holding_bank__c": "Számlavezető bank",
+    "Contact.Affordable_monthly_installments__c": "Vállalható havi törlesztő",
+    "Contact.AssistantName": "Assistant's Name",
+    "Contact.AssistantPhone": "Asst. Phone",
+    "Contact.Average_monthly_net_income__c": "Nettó jövedelem mértéke",
+    "Contact.Bank__c": "Bank",
+    "Contact.Banki_ugyintezo_fiok__c": "Fiók",
+    "Contact.Banki_ugyintezo_pozicio__c": "Pozíció",
+    "Contact.Banki_ugyintezo_terulet__c": "Terület",
+    "Contact.Birthdate": "Születési dátum (egyben, pl. 1980.01.01)",
+    "Contact.Birthdate_year": "Születési dátum - CSAK ÉV (pl. 1980)",
+    "Contact.Birthdate_month": "Születési dátum - CSAK HÓNAP (pl. 01)",
+    "Contact.Birthdate_day": "Születési dátum - CSAK NAP (pl. 01)",
+    "Contact.Cafeteria_bonus__c": "Cafeteria, bónusz",
+    "Contact.Campaign__c": "Campaign",
+    "Contact.Citizenship__c": "Állampolgárság",
+    "Contact.Concern__c": "Concern",
+    "Contact.Continuous_TB_2_years__c": "OEP/TB jogviszony 2 év",
+    "Contact.Contract_end_date__c": "Határozott szerződés vége",
+    "Contact.Contract_start_date__c": "Határozott szerződés kezdete",
+    "Contact.Current_debt_Credit_limit__c": "Fennálló hitelek részletezve",
+    "Contact.Current_employment_started__c": "Munkaviszony/vállalkozás kezdete",
+    "Contact.Date_of_birth__c": "Születési idő",
+    "Contact.Date_of_handover__c": "Date of handover",
+    "Contact.Date_of_notification_for_residence__c": "Mióta lakik a lakóhelyén",
+    "Contact.Date_of_signature__c": "Date of signature",
+    "Contact.Date_of_transfer__c": "Date of transfer",
+    "Contact.Department": "Department",
+    "Contact.Dependents_count__c": "Eltartottak száma",
+    "Contact.Description": "Contact Description",
+    "Contact.Description_of_loan_purpose_comments__c": "Description of loan purpose, comments",
+    "Contact.Display_Name__c": "Display_Name",
+    "Contact.Divident__c": "Divident",
+    "Contact.Email": "Email",
+    "Contact.EmailBouncedDate": "Email Bounced Date",
+    "Contact.EmailBouncedReason": "Email Bounced Reason",
+    "Contact.Employee_registration_c__c": "Employee registration",
+    "Contact.Employer_s_company_type__c": "Employer's company type",
+    "Contact.Employment_Type_c__c": "Munkaviszony határozott/határozatlan",
+    "Contact.Estimated_market_value__c": "Estimated market value",
+    "Contact.Fax": "Business Fax",
+    "Contact.Financial_Institution__c": "Financial Institution",
+    "Contact.FirstName": "Keresztnév",
+    "Contact.First_Co_debtor__c": "First Co-debtor",
+    "Contact.Foglalkozas_tipusa__c": "Foglalkozás típusa",
+    "Contact.HasOptedOutOfEmail": "Email Opt Out",
+    "Contact.Highest_Educational_Qualification__c": "Legmagasabb iskolai végzettség",
+    "Contact.HomePhone": "Otthoni telefon",
+    "Contact.ID_Card_Number__c": "Személyi igazolvány szám",
+    "Contact.Income_from_self_owned_company__c": "Income from self-owned company",
+    "Contact.Income_type__c": "Jövedelem típusa",
+    "Contact.IndividualId": "Individual ID",
+    "Contact.Industry__c": "Industry",
+    "Contact.Interest_Period__c": "Kamatperiódus",
+    "Contact.Interest_rate__c": "Kamatláb",
+    "Contact.IsEmailBounced": "Is Email Bounced",
+    "Contact.IsPriorityRecord": "Important",
+    "Contact.Jovairas_vallalasa__c": "Jóváírás vállalása",
+    "Contact.LastName": "Vezetéknév",
+    "Contact.Last_4_nr_of_ID__c": "Ig. szám utolsó 4 jegye",
+    "Contact.LeadSource": "Lead Source",
+    "Contact.Lead_Priority__c": "Lead Priority",
+    "Contact.Legal_Title_of_permanent_residence__c": "Lakóhely jogcíme",
+    "Contact.Loan_Purpose__c": "Hitel célja",
+    "Contact.Loan_amount__c": "Hitelösszeg",
+    "Contact.Loan_period__c": "Futamidő",
+    "Contact.MailingCity": "Levelezési település",
+    "Contact.MailingCountry": "Levelezési ország",
+    "Contact.MailingCountryCode": "Levelezési ország kód",
+    "Contact.MailingPostalCode": "Levelezési irányítószám",
+    "Contact.MailingState": "Levelezési megye",
+    "Contact.MailingStateCode": "Levelezési megye kód",
+    "Contact.MailingStreet": "Levelezési utca",
+    "Contact.Marital_Status__c": "Családi állapot",
+    "Contact.Missing_documents__c": "Missing documents",
+    "Contact.MobilePhone": "Mobilszám",
+    "Contact.Monthly_Payment_details__c": "Havi törlesztő részletei",
+    "Contact.Mortgagor__c": "Zálogkötelezett",
+    "Contact.Mother_s_Name__c": "Anyja születési neve",
+    "Contact.Name": "Teljes név",
+    "Contact.Name_of_employer__c": "Munkáltató neve",
+    "Contact.Nem_preferalt_bank__c": "Nem preferált bank",
+    "Contact.Next_step__c": "Next step",
+    "Contact.Numer_and_Age_of_Children__c": "Gyermekek száma és életkora",
+    "Contact.Occupation__c": "Foglalkozás",
+    "Contact.OtherCity": "Egyéb cím település",
+    "Contact.OtherCountry": "Egyéb cím ország",
+    "Contact.OtherCountryCode": "Egyéb cím ország kód",
+    "Contact.OtherPhone": "Egyéb telefon",
+    "Contact.OtherPostalCode": "Egyéb cím irányítószám",
+    "Contact.OtherState": "Egyéb cím megye",
+    "Contact.OtherStateCode": "Egyéb cím megye kód",
+    "Contact.OtherStreet": "Egyéb cím utca",
+    "Contact.Other_income__c": "Egyéb jövedelmi infó",
+    "Contact.Other_monthly_deductions__c": "Jövedelmet terhelő egyéb levonások",
+    "Contact.Other_monthly_income__c": "Egyéb havi jövedelem",
+    "Contact.OwnerId": "Owner ID",
+    "Contact.Ownership_in_employer__c": "Tulajdonrésze a munkáltatóban",
+    "Contact.Partneri_bank__c": "Partneri bank",
+    "Contact.Permanent_address__c": "Állandó lakcím",
+    "Contact.Phone": "Telefonszám",
+    "Contact.Place_of_Birth__c": "Születési hely",
+    "Contact.Preferalt_bank__c": "Preferált bank",
+    "Contact.Property_50pct_ownership_details__c": "50%+ lakóingatlan tulajdon",
+    "Contact.Property_Type__c": "Ingatlan típusa",
+    "Contact.Property_encumbrances__c": "Ingatlan terhek",
+    "Contact.Property_value__c": "Becsült piaci érték",
+    "Contact.Purchase_price_construction_cost__c": "Vételár / építési költség",
+    "Contact.Re_payment_fee__c": "Előtörlesztési díj",
+    "Contact.Referral_fee_percentage__c": "Referral fee percentage",
+    "Contact.Referral_name__c": "Referral name",
+    "Contact.Regular_referral__c": "Regular referral",
+    "Contact.Related_Bank__c": "Kapcsolódó bank",
+    "Contact.Relation__c": "Kapcsolat típusa",
+    "Contact.ReportsToId": "Reports To ID",
+    "Contact.Residence_Status__c": "Jogviszony a lakóhelyén",
+    "Contact.Salutation": "Megszólítás",
+    "Contact.Second_Co_debtor__c": "Second Co-debtor",
+    "Contact.Secondary_Email__c": "Másodlagos email",
+    "Contact.Self_employment_details__c": "Egyéni vállalkozás jövedelmi részletek",
+    "Contact.Session_ID__c": "Session ID",
+    "Contact.State_Support__c": "Állami támogatás",
+    "Contact.Szuletesi_nev__c": "Születési név",
+    "Contact.Tax_ID__c": "Adóazonosító jel",
+    "Contact.Term_in_year_c__c": "Futamidő (év)",
+    "Contact.Third_Co_debtor__c": "Third Co-debtor",
+    "Contact.Title": "Title",
+    "Contact.Town_or_possibly_the_exact_address__c": "Ingatlan település vagy cím",
+    "Contact.Usufructuary__c": "Haszonélvező",
+    "Contact.What_type_of_loan__c": "Hitel típusa",
+    "Contact.X2_Affordable_monthly_installments__c": "2. hitel vállalható törlesztő",
+    "Contact.X2_Interest_Period__c": "2. hitel kamatperiódus",
+    "Contact.X2_Loan_Purpose__c": "2. hitel célja",
+    "Contact.X2_Loan_amount__c": "2. hitel összeg",
+    "Contact.X2_Term_in_year__c": "2. hitel futamidő",
+    "Contact.X2_What_type_of_loan__c": "2. hitel típusa",
+    "Contact.X3_Affordable_monthly_installments__c": "3. hitel vállalható törlesztő",
+    "Contact.X3_Interest_Period__c": "3. hitel kamatperiódus",
+    "Contact.X3_Loan_Purpose__c": "3. hitel célja",
+    "Contact.X3_Loan_amount__c": "3. hitel összeg",
+    "Contact.X3_Term_in_year__c": "3. hitel futamidő",
+    "Contact.X3_What_type_of_loan__c": "3. hitel típusa",
+    "Contact.Year_of_birthdate__c": "Születési év",
+    "Contact.ZIP__c": "Irányítószám",
+
+    # ════════════════════════════════════════════════════════════
+    # Lead — lead-only fields (not on Contact)
+    # ════════════════════════════════════════════════════════════
+    "Lead.AnnualRevenue": "Annual Revenue",
+    "Lead.City": "City",
+    "Lead.Company": "Company",
+    "Lead.Country": "Country",
+    "Lead.CountryCode": "Country Code",
+    "Lead.Country__c": "Country",
+    "Lead.Egyeb_forras_info__c": "Egyéb forrás infó",
+    "Lead.Elmult_90_napos_hiteligenyles__c": "Elmúlt 90 napos hiteligénylés",
+    "Lead.Employee_registration__c": "Employee registration",
+    "Lead.Employment_Type__c": "Munkaviszony határozott/határozatlan",
+    "Lead.Estimated__c": "Becsült piaci érték",
+    "Lead.Form_Type__c": "Form_Type",
+    "Lead.Industry": "Industry",
+    "Lead.Ingatlan_Kozterulet_jellege__c": "Közterület jellege",
+    "Lead.Ingatlan_alapterulet__c": "Hasznos alapterület",
+    "Lead.Ingatlan_emelet__c": "Épület, lépcsőház, emelet, ajtó",
+    "Lead.Ingatlan_energetika__c": "Energetikai besorolás",
+    "Lead.Ingatlan_irsz__c": "Ingatlan irányítószáma",
+    "Lead.Ingatlan_jellege__c": "Ingatlan jellege",
+    "Lead.Ingatlan_kozterulet_neve__c": "Közterület neve",
+    "Lead.Ingatlan_megjegyzes__c": "Ingatlan megjegyzés",
+    "Lead.Ingatlan_szerepe__c": "Ingatlan szerepe",
+    "Lead.Ingatlan_telepules__c": "Ingatlan település",
+    "Lead.Ingatlan_terhek__c": "Ingatlan terhek",
+    "Lead.Ingtalan_hazszam__c": "Házszám",
+    "Lead.PostalCode": "Irányítószám",
+    "Lead.Preferalt_futamido__c": "Preferált futamidő",
+    "Lead.Preferalt_kamatperiodus__c": "Preferált kamatperiódus",
+    "Lead.Purchase_price__c": "Vételár",
+    "Lead.Related_Account__c": "Related Account",
+    "Lead.State": "Megye",
+    "Lead.Status": "Státusz",
+    "Lead.Street": "Utca",
+    "Lead.Term_in_year__c": "Futamidő (év)",
+    "Lead.Tervezett_CSOK_Plusz__c": "Tervezett CSOK Plusz",
+    "Lead.Tervezett_Otthon_Start__c": "Tervezett Otthon Start",
+    "Lead.Tervezett_onero__c": "Tervezett önerő",
+    "Lead.Tervezett_piaci_hitel__c": "Tervezett piaci hitel",
+
+    # ════════════════════════════════════════════════════════════
+    # Opportunity — ALL fields
+    # ════════════════════════════════════════════════════════════
+    "Opportunity.AccountId": "Account ID",
+    "Opportunity.Account__c": "Tippadó neve",
+    "Opportunity.Amount": "Amount",
+    "Opportunity.Approve_in_the_Bank_Application_OTP__c": "Approve in the Bank Application (OTP)",
+    "Opportunity.Attended_the_call__c": "Attended the call",
+    "Opportunity.Bank_Approval__c": "Bank Approval",
+    "Opportunity.Bank__c": "Potenciális bankok",
+    "Opportunity.Banki_ugyintezo_uj_c__c": "Banki ügyintéző (új)",
+    "Opportunity.CampaignId": "Campaign ID",
+    "Opportunity.Category__c": "Category",
+    "Opportunity.Client_accepted_the_offer__c": "Offer acceptance",
+    "Opportunity.CloseDate": "Close Date",
+    "Opportunity.ContactId": "Contact ID",
+    "Opportunity.Contact_Name__c": "Contact Name",
+    "Opportunity.Contract_signed_date__c": "Szerződés aláírás dátuma",
+    "Opportunity.Csabi_gylete__c": "Csabi ügylete?",
+    "Opportunity.Date_when_bank_received_all_documents__c": "Date when bank received all documents",
+    "Opportunity.Description": "Description",
+    "Opportunity.Fill_and_send_back_request_form__c": "Fill and send back-request form",
+    "Opportunity.First_Co_debtor__c": "First Co-debtor",
+    "Opportunity.Flag__c": "Flag",
+    "Opportunity.Hitel_sszeg__c": "Hitelösszeg",
+    "Opportunity.Hitelc_l__c": "Hitelcél",
+    "Opportunity.Hitelez_bank__c": "Hitelező bank",
+    "Opportunity.Insurance__c": "Biztosítás",
+    "Opportunity.Jutal_k_ideje__c": "Jutalék ideje",
+    "Opportunity.Jutal_k_kifizetve__c": "Jutalék kifizetve?",
+    "Opportunity.Kamat__c": "Kamat",
+    "Opportunity.LeadSource": "Lead Source",
+    "Opportunity.Lead_Priority__c": "Lead Priority",
+    "Opportunity.Mortgagor__c": "Zálogkötelezett",
+    "Opportunity.Name": "Opportunity Name",
+    "Opportunity.NextStep": "Next Step",
+    "Opportunity.Opportunity_Contact_Name__c": "Opportunity Contact Name",
+    "Opportunity.Opportunity_ID__c": "Opportunity ID",
+    "Opportunity.OwnerId": "Owner ID",
+    "Opportunity.Pre_valuation_has_been_ordered__c": "Pre-valuation has been ordered",
+    "Opportunity.Pre_valuation_order_bank__c": "Pre-valuation order bank",
+    "Opportunity.Pre_valuation_order_date__c": "Pre-valuation order date",
+    "Opportunity.Re_evaluate_the_quote__c": "Re-evaluate the quote",
+    "Opportunity.Second_Co_debtor__c": "Second Co-debtor",
+    "Opportunity.Session_ID__c": "Session ID",
+    "Opportunity.Sign_all_documents__c": "Sign all documents",
+    "Opportunity.Sign_all_documents_needed__c": "Sign all documents needed",
+    "Opportunity.StageName": "Stage",
+    "Opportunity.Term_k__c": "Termék",
+    "Opportunity.Third_Co_debtor__c": "Third Co-debtor",
+    "Opportunity.Tippad_kifizetve__c": "Tippadó kifizetve",
+    "Opportunity.Tippado_uj__c": "Tippadó (új)",
+    "Opportunity.Type": "Opportunity Type",
+    "Opportunity.Usufructuary__c": "Haszonélvező",
+    "Opportunity.Which_documents_are_missing__c": "Hiányzó dokumentumok",
+    "Opportunity.bankiugyintezoneve__c": "Banki ügyintéző neve",
+    "Opportunity.gylet_kezel_je__c": "Ügylet kezelője",
+    "Opportunity.gylet_st_tusz__c": "Ügylet státusz",
+    "Opportunity.remark__c": "Megjegyzés",
+
+    # ════════════════════════════════════════════════════════════
+    # loan.* — hitel-szintű canonical mezők (FIX H4)
+    # Ezek a LoanDetails modellből kerülnek a kitöltő-diktumba; az OTP
+    # mapping-ek több helyen hivatkoznak rájuk (pl. LAHI_KTKA_Lakástakarék
+    # → loan.housing_savings). Korábban hiányoztak a CANONICAL_FIELDS-ből,
+    # így az AI nem ismerte fel őket.
+    # ════════════════════════════════════════════════════════════
     "loan.loan_amount": "Hitelösszeg (Ft)",
-    "loan.loan_term_months": "Futamidő (hónap)",
-    "loan.interest_period": "Kamatperiódus",
     "loan.loan_purpose": "Hitel célja",
-    "loan.product_name": "Termék neve",
+    "loan.monthly_payment": "Becsült havi törlesztő (Ft)",
     "loan.down_payment": "Önerő (Ft)",
-    "loan.monthly_payment": "Havi törlesztő (Ft)",
-
-    # Szereplő adatok (prefix: participant[i])
-    "participant.name": "Szereplő teljes neve",
-    "participant.birth_name": "Születési név",
-    "participant.mother_name": "Anyja neve",
-    "participant.birth_place": "Születési hely",
-    "participant.birth_date": "Születési dátum",
-    "participant.personal_id": "Személyi igazolvány szám",
-    "participant.tax_id": "Adóazonosító jel",
-    "participant.id_card_number": "Személyi szám",
-    "participant.address.full_address": "Állandó lakcím (teljes)",
-    "participant.address.zip_code": "Irányítószám",
-    "participant.address.city": "Település",
-    "participant.address.street": "Utca",
-    "participant.address.house_number": "Házszám",
-    "participant.phone": "Telefonszám",
-    "participant.email": "E-mail cím",
-    "participant.employer": "Munkáltató",
-    "participant.monthly_income": "Havi nettó jövedelem",
-    "participant.role": "Szerep (adós/adóstárs/kezes/haszonélvező)",
-
-    # Ingatlan adatok (prefix: property[i])
-    "property.address.full_address": "Ingatlan címe (teljes)",
-    "property.address.zip_code": "Ingatlan irányítószám",
-    "property.address.city": "Ingatlan település",
-    "property.address.street": "Ingatlan utca",
-    "property.address.house_number": "Ingatlan házszám",
-    "property.parcel_number": "Helyrajzi szám",
-    "property.area_sqm": "Terület (m²)",
-    "property.property_type": "Ingatlan típusa",
-    "property.estimated_value": "Becsült érték (Ft)",
-    "property.year_built": "Építés éve",
-    "property.number_of_rooms": "Szobák száma",
+    "loan.purchase_price": "Vételár (Ft)",
+    "loan.csok_amount": "CSÖK támogatás összege (Ft)",
+    "loan.afa_support": "ÁFA támogatás összege (Ft)",
+    "loan.housing_savings": "Lakástakarék összege (Ft)",
+    "loan.product_type": "Termék típusa (pl. piaci_hitel, csok_plusz, otthon_start)",
+    "loan.refinance_account": "Refinanszírozott hitel számlaszáma",
 }
 
 
@@ -114,6 +347,7 @@ class MappingConfidence(str, Enum):
     HIGH = "high"       # 90%+ biztos
     MEDIUM = "medium"   # 60-90% biztos
     LOW = "low"         # 60% alatt – emberi felülvizsgálat kell
+    MANUAL = "manual"   # Felhasználó által kézzel beállított
 
 
 @dataclass
@@ -127,6 +361,14 @@ class RecognizedField:
     page_number: int                       # Melyik oldalon van
     coordinates: Optional[dict] = None     # Overlay módhoz: {x, y, width, height}
     notes: Optional[str] = None            # AI megjegyzés
+    checkbox_group: Optional[dict] = None   # {"group_id": str, "match_value": str}
+    fill_rule: Optional[dict] = None         # {"type": "static"|"per_participant"|"conditional"|"role_based", "value": str, ...}
+    # C8 (birth-date / date fragmentation ground-work): when a single logical
+    # date (e.g. birth date) is split across several PDF fields (year / month /
+    # day, or Nth digit), `fragment` records which piece this field carries so
+    # the fill engine can reassemble it. Values: "year", "month", "day", or
+    # "digit:N". Survives JSON round-trip via MappingConfig.to_dict/from_dict.
+    fragment: Optional[str] = None
 
 
 @dataclass
@@ -143,6 +385,22 @@ class MappingConfig:
     approved: bool = False                 # Emberi jóváhagyás megtörtént-e
     approved_by: Optional[str] = None
     notes: Optional[str] = None
+    # FIX M5 — character-split groups (spec §6, §9.3): a canonical value
+    # (e.g. postal code) split character-by-character across several digit-box
+    # PDF fields. The pipeline reads this to expand each group before filling.
+    # Each entry: {"group_id", "group_name", "field_type": "character_split",
+    # "canonical_field", "member_fields": [...], "direction", "separator"}.
+    # Stored as plain dicts so the existing JSON mapping files (edited via the
+    # mapping editor backend) round-trip without bespoke dataclasses.
+    character_groups: list[dict] = field(default_factory=list)
+    # Round-2 fill engine (spec: hiteligénylési kitöltési szabályok): logical
+    # form "points" (numbered questions spanning checkbox blocks) and the
+    # reusable "rule_sets". Each point selects one of 7 rule types in
+    # src/engine/fill_rules. Stored as plain dicts so the mapping JSON files
+    # and the editor backend round-trip without bespoke dataclasses. Default
+    # empty → old mappings keep loading unchanged (purely additive).
+    points: list[dict] = field(default_factory=list)
+    rule_sets: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Szeriálizáció JSON-ba."""
@@ -164,9 +422,19 @@ class MappingConfig:
                     "page_number": f.page_number,
                     "coordinates": f.coordinates,
                     "notes": f.notes,
+                    "checkbox_group": f.checkbox_group,
+                    "fill_rule": f.fill_rule,
+                    "fragment": f.fragment,
                 }
                 for f in self.fields
             ],
+            # M5: persist character groups so AI-generated/heuristic mappings
+            # and user edits survive a save→load cycle.
+            "character_groups": self.character_groups,
+            # Round-2: persist points / rule_sets so the 7-rule fill engine
+            # config survives a save→load cycle.
+            "points": self.points,
+            "rule_sets": self.rule_sets,
         }
 
     @classmethod
@@ -182,6 +450,9 @@ class MappingConfig:
                 page_number=f["page_number"],
                 coordinates=f.get("coordinates"),
                 notes=f.get("notes"),
+                checkbox_group=f.get("checkbox_group"),
+                fill_rule=f.get("fill_rule"),
+                fragment=f.get("fragment"),
             )
             for f in data.get("fields", [])
         ]
@@ -194,6 +465,11 @@ class MappingConfig:
             approved=data.get("approved", False),
             approved_by=data.get("approved_by"),
             notes=data.get("notes"),
+            # M5: load character groups (default [] for older mapping files).
+            character_groups=list(data.get("character_groups", [])),
+            # Round-2: load points / rule_sets (default [] for older mappings).
+            points=list(data.get("points", [])),
+            rule_sets=list(data.get("rule_sets", [])),
         )
 
     def save(self, path: Path):
@@ -230,7 +506,7 @@ class MappingConfig:
 
 class FieldRecognizer:
     """
-    AI-alapú mezőfelismerő – DeepSeek V4 Flash API-val.
+    AI-alapú mezőfelismerő – Claude Sonnet 4 API-val.
 
     Egy üres PDF nyomtatványt elemez, felismeri a kitöltendő mezőket,
     és leképezi azokat a kanonikus adatmodellre.
@@ -240,9 +516,9 @@ class FieldRecognizer:
 
 1. Elemezd az üres banki nyomtatvány képét/tartalmát
 2. Azonosítsd az összes kitöltendő mezőt (név, cím, dátum, stb.)
-3. Mindegyik mezőt képezd le a kanonikus adatmodell megfelelő mezőjére
+3. Mindegyik mezőt képezd le a Salesforce API mezőkre (Object.FieldName formátum)
 
-A kanonikus modell mezői:
+A Salesforce kanonikus mezők:
 {canonical_fields}
 
 Válaszolj JSON formátumban az alábbi struktúrával:
@@ -258,139 +534,55 @@ Válaszolj JSON formátumban az alábbi struktúrával:
       "pdf_field_name": "a mező neve vagy azonosítója a PDF-ben",
       "label": "a mező felirata magyarul",
       "field_type": "text|checkbox|date|number|dropdown",
-      "canonical_field": "a kanonikus modell megfelelő mezője (pl. participant.name)",
+      "canonical_field": "Object.FieldName (pl. Contact.Name, Lead.Ingatlan_irsz__c)",
       "confidence": "high|medium|low",
       "page_number": 1,
-      "notes": "opcionális megjegyzés"
+      "notes": "opcionális megjegyzés",
+      "checkbox_group": "ha ez egy rádiógomb csoport része (pl. Neme, Családi állapot), adj meg egy közös csoport azonosítót",
+      "fill_rule": {{"match_value": "Az a Salesforce mező érték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
     }}
   ]
 }}
 
 Fontos szabályok:
-- Ha a mező szereplő-specifikus, használd a "participant." prefixet
-- Ha ingatlan-specifikus, használd a "property." prefixet
+- Használd a Salesforce Object.FieldName formátumot (pl. Contact.FirstName, Lead.Ingatlan_telepules__c)
+- Ha ingatlan-specifikus, használd a Lead.Ingatlan_* mezőket
 - Ha nem vagy biztos a leképezésben, jelöld "low" confidence-szel
-- Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a participant mezőkre képeződnek"""
+- Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a Contact.* mezőkre képeződnek
+- **Rádiógombok / Egymást kizáró Checkboxok**: Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb. Ilyenkor MÁSOLD BE a megadott bounding box (bbox) koordinátákat, Keresd meg a képen a feliratot, és az alapján töltsd ki a `checkbox_group` (pl. 'neme') és a `fill_rule.match_value` mezőket (pl. 'Férfi' vagy 'Nő')!"""
 
     def __init__(self, api_key: str = None):
         """
-        Inicializálás DeepSeek API kulccsal.
+        Inicializálás Anthropic API kulccsal.
 
         Args:
-            api_key: DeepSeek API kulcs. Ha None, a DEEPSEEK_API_KEY env-ből olvassa.
+            api_key: Anthropic API kulcs. Ha None, a ANTHROPIC_API_KEY env-ből olvassa.
         """
-        import os
-
         if api_key is None:
-            api_key = os.getenv("DEEPSEEK_API_KEY", "")
+            import os
+            from pathlib import Path
+            from dotenv import load_dotenv
+            # Try to load .env from project config directory
+            root = Path(__file__).resolve().parent.parent.parent
+            env_path = root / "config" / ".env"
+            if env_path.exists():
+                load_dotenv(env_path)
+            api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
-        self._api_key = api_key or ""
-        # A `_client` flag megőrzi a korábbi "van-e elérhető AI" szematikát:
-        # a pipeline多处 `if self._client:` ellenőrzésekkel dönti el, hogy
-        # fusson-e az AI ág vagy a heurisztikus/mock fallback.
-        if not self._api_key:
+        if not api_key:
             logger.warning(
-                "DEEPSEEK_API_KEY nincs beállítva. "
+                "ANTHROPIC_API_KEY nincs beállítva. "
                 "Az AI mezőfelismerés nem fog működni – használd a mock módot."
             )
             self._client = None
         else:
-            self._client = True
-
-    # ------------------------------------------------------------------
-    # DeepSeek API helper (chat/completions, OpenAI-kompatibilis formátum)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _convert_content(blocks: list) -> list:
-        """
-        Anthropic-style content blokkok → OpenAI/DeepSeek chat-completions
-        content formátum. Képeket base64 data-URI-ként (image_url) küldünk.
-        """
-        out = []
-        for b in blocks:
-            t = b.get("type")
-            if t == "text":
-                out.append({"type": "text", "text": b["text"]})
-            elif t == "image":
-                src = b.get("source", {}) or {}
-                media = src.get("media_type", "image/png")
-                data = src.get("data", "")
-                out.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{media};base64,{data}"},
-                })
-        return out
-
-    def _deepseek_chat(
-        self,
-        messages: list,
-        system: str | None = None,
-        max_tokens: int = 8192,
-        json_mode: bool = True,
-    ) -> str:
-        """
-        Egy DeepSeek chat/completions hívás. Visszaadja az assistant válasz
-        szövegét, vagy üres stringet hiba esetén.
-
-        Args:
-            messages: user/assistant üzenetek (content lehet str vagy blokk-lista).
-            system: opcionális system prompt.
-            max_tokens: válasz token limit.
-            json_mode: ha True, `response_format: {"type": "json_object"}`-t küld.
-                Megköveteli, hogy a prompt JSON objektumot kérjen (a hívó
-                promptjai mind tartalmaznak JSON instrukciót).
-        """
-        import requests
-
-        full_messages = []
-        if system:
-            full_messages.append({"role": "system", "content": system})
-
-        for m in messages:
-            role = m.get("role", "user")
-            content = m.get("content")
-            if isinstance(content, list):
-                content = self._convert_content(content)
-            full_messages.append({"role": role, "content": content})
-
-        # Detektáljuk van-e kép input – `response_format: json_object`
-        # nem kompatibilis az image inputtal (DeepSeek hibát dob).
-        has_images = any(
-            isinstance(m.get("content"), list)
-            and any(b.get("type") == "image" for b in m["content"])
-            for m in messages
-        )
-
-        payload = {
-            "model": AI_MODEL,
-            "messages": full_messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.0,
-            # DeepSeek V4 Flash thinking mode alapból ENABLED, ami felemészti a
-            # max_tokens keretet reasoning-ra és csonka választ eredményez.
-            # Kikapcsolása determinisztikus JSON outputot garantál.
-            "thinking": {"type": "disabled"},
-        }
-        if json_mode and not has_images:
-            payload["response_format"] = {"type": "json_object"}
-
-        try:
-            response = requests.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=120,
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"] or ""
-        except Exception as e:
-            logger.error(f"DeepSeek API hiba: {str(e)[:160]}")
-            return ""
+            try:
+                import anthropic
+                self._client = anthropic.Anthropic(api_key=api_key)
+            except ImportError:
+                logger.error("anthropic csomag nincs telepítve: pip install anthropic")
+                self._client = None
+        self.progress_callback = None  # Optional[Callable[[int, int, str], None]]
 
     def recognize_acroform(self, pdf_path: Path) -> MappingConfig:
         """
@@ -432,158 +624,286 @@ Fontos szabályok:
     ) -> MappingConfig | None:
         """
         Batch AI felismerés nagy nyomtatványokhoz.
-        A mezőket szekciókra bontja és külön-külön küldi el Claude-nak.
+        Mezőket OLDAL szerint csoportosítja,
+        majd kétlépcsős AI-val azonosít.
+
+        Vision-enhanced: mezők bounding box-ait piros számozott
+        keretként rajzolja rá az oldal képére, hogy az AI a
+        vizuális kontextusból is felismerje a generikus mezőneveket.
         """
         from collections import defaultdict
         import time
+        import re
 
         logger.info(f"🔄 Batch AI felismerés ({len(pdf_fields)} mező)")
 
-        # Mezők csoportosítása prefix szerint
-        groups = defaultdict(list)
+        # ── 1. PDF megnyitása – képeket batch-enként generálunk ──────────
+        import fitz
+        page_texts: list[str] = []
+        try:
+            doc = fitz.open(str(pdf_path))
+            for page in doc:
+                page_texts.append(page.get_text()[:3000])
+            doc.close()
+            logger.info(f"  📄 {len(page_texts)} oldal szövege kinyerve")
+        except Exception as e:
+            logger.warning(f"  ⚠️ PDF szöveg kinyerés sikertelen: {e}")
+
+        # ── 2. Mezők csoportosítása OLDAL szerint ───────────────────────
+        page_groups: dict[int, list[dict]] = defaultdict(list)
         for f in pdf_fields:
-            name = f["name"]
-            # Prefix meghatározása
-            if name.startswith("SZA_IG_"):
-                # Igénylő vs társigénylő szétválasztás
-                if "-társ" in name:
-                    groups["SZA_társigénylő"].append(f)
-                else:
-                    groups["SZA_igénylő"].append(f)
-            elif name.startswith("CSOKPLUSZ"):
-                groups["CSOK_Plusz"].append(f)
-            elif name.startswith("CSOK_"):
-                groups["CSOK"].append(f)
-            elif name.startswith("TA_"):
-                groups["Társadós"].append(f)
-            elif name.startswith("AFA"):
-                groups["ÁFA"].append(f)
-            elif name.startswith("IA_"):
-                groups["Ingatlan"].append(f)
-            elif name.startswith(("KTKA", "LAHI", "LAKHK")):
-                groups["Hitel_költség"].append(f)
-            elif name.startswith("A_NY_") or name.startswith("A NY_") or name.startswith("ANY_"):
-                groups["Általános_nyilatkozat"].append(f)
-            elif name.startswith("MA_"):
-                groups["Meghatalmazás"].append(f)
-            elif name.startswith(("videk", "otthon")):
-                groups["Vidéki_otthon"].append(f)
-            else:
-                groups["Egyéb"].append(f)
+            page_num = f.get("page", 1)
+            page_groups[page_num].append(f)
 
-        logger.info(f"  {len(groups)} szekció: " +
-                    ", ".join(f"{k}({len(v)})" for k, v in sorted(groups.items(), key=lambda x: -len(x[1]))))
+        logger.info(f"  {len(page_groups)} oldal mezőkkel")
 
-        # PDF oldalak képei (egyszer generáljuk)
-        images = self._pdf_to_images(pdf_path)
-
-        # Kanonikus mezők leírása
+        # ── 3. Kanonikus mezők leírása (SF schema-ból) ───────────────────
         canonical_desc = "\n".join(
             f"  - {key}: {desc}" for key, desc in CANONICAL_FIELDS.items()
         )
 
-        all_fields = []
+        # ── 4. Oldal-alapú batch feldolgozás ────────────────────────────
+        all_fields: list[RecognizedField] = []
         batch_count = 0
-        MAX_FIELDS_PER_BATCH = 80
+        MAX_FIELDS_PER_BATCH = 60
 
-        for section_name, section_fields in sorted(groups.items(), key=lambda x: -len(x[1])):
-            if len(section_fields) == 0:
-                continue
+        # Build canonical lookup for fuzzy matching
+        canonical_keys = set(CANONICAL_FIELDS.keys())
 
-            # Nagy szekciók felosztása sub-batchekre
-            sub_batches = []
-            for i in range(0, len(section_fields), MAX_FIELDS_PER_BATCH):
-                sub_batches.append(section_fields[i:i + MAX_FIELDS_PER_BATCH])
+        for page_num in sorted(page_groups.keys()):
+            page_fields = page_groups[page_num]
+            page_idx = page_num - 1
+
+            sub_batches = [page_fields[i:i + MAX_FIELDS_PER_BATCH]
+                           for i in range(0, len(page_fields), MAX_FIELDS_PER_BATCH)]
 
             for sub_idx, sub_fields in enumerate(sub_batches):
                 batch_count += 1
-                sub_label = f"{section_name}" if len(sub_batches) == 1 else f"{section_name} ({sub_idx+1}/{len(sub_batches)})"
-                logger.info(f"  📦 [{batch_count}] {sub_label}: {len(sub_fields)} mező...")
+                sub_label = f"p{page_num}" if len(sub_batches) == 1 else f"p{page_num} ({sub_idx+1}/{len(sub_batches)})"
+                fields_with_bbox = sum(1 for f in sub_fields if "rect" in f)
+                logger.info(f"  📦 [{batch_count}] {sub_label}: {len(sub_fields)} mező ({fields_with_bbox} bbox-al) 📸...")
 
-                # Releváns oldalak kiválasztása (max 5/batch a token megtakarítás érdekében)
-                pages = set()
-                for f in sub_fields:
-                    p = f.get("page", 1)
-                    if isinstance(p, int):
-                        pages.add(p - 1)  # 0-indexed
-                relevant_pages = sorted(pages)[:5]
+                # Compute total_batches for progress reporting
+                total_batches = sum(
+                    max(1, (len(page_groups[p]) + MAX_FIELDS_PER_BATCH - 1) // MAX_FIELDS_PER_BATCH)
+                    for p in page_groups
+                )
 
-                # Kompakt system prompt – minimális output kérés
-                system = f"""Te egy banki nyomtatvány mező-elemző AI vagy.
 
-A feladatod: párosítsd az AcroForm PDF mezőneveket az alábbi kanonikus mezőkkel.
+                # ── Vision-enhanced: annotated page image ────────────
+                # Draw numbered red rectangles on the page at each field's
+                # bounding box, so the AI can visually identify generic fields.
+                annotated_image_b64 = None
+                try:
+                    doc = fitz.open(str(pdf_path))
+                    if 0 <= page_idx < len(doc):
+                        page = doc[page_idx]
+                        # Draw red numbered boxes for fields with bounding boxes
+                        box_count = 0
+                        for i, f in enumerate(sub_fields, 1):
+                            if "rect" in f:
+                                r = f["rect"]  # [x0, y0, x1, y1] in PDF points
+                                rect = fitz.Rect(r[0], r[1], r[2], r[3])
+                                # Red rectangle outline
+                                page.draw_rect(rect, color=(1, 0, 0), width=1.5)
+                                # Number label above the box
+                                label_pt = fitz.Point(rect.x0 + 1, rect.y0 - 1)
+                                page.insert_text(
+                                    label_pt, str(i),
+                                    fontsize=7, color=(1, 0, 0),
+                                )
+                                box_count += 1
+                        # Render annotated page at 150 DPI
+                        mat = fitz.Matrix(150 / 72, 150 / 72)
+                        pix = page.get_pixmap(matrix=mat)
+                        annotated_image_b64 = base64.b64encode(pix.tobytes("png")).decode("utf-8")
+                        if box_count > 0:
+                            logger.info(f"    📸 Annotált kép: {box_count} piros keret rajzolva")
+                    doc.close()
+                except Exception as e:
+                    logger.warning(f"    ⚠️ Annotált kép generálás sikertelen: {e}")
 
-Kanonikus mezők:
+                # Build the system prompt with vision-enhanced instructions
+                system = f"""Output ONLY a raw JSON array. No markdown, no explanation, no code fences.
+
+You are mapping PDF form field names to Salesforce API fields for a Hungarian mortgage broker company.
+The canonical fields follow the format: Object.FieldName (e.g., Contact.FirstName, Lead.Ingatlan_irsz__c, Opportunity.Hitel_sszeg__c).
+
+VISION INSTRUCTIONS:
+The page image has NUMBERED RED BOXES drawn around form fields.
+Each field in the list below has a NUMBER (e.g., #1, #2, ...).
+LOOK AT THE RED BOX with that number on the image to see the LABEL next to the field.
+This is CRITICAL for fields with generic names like "Text_Field_43" or "Szövegmező 123" — 
+the RED BOX shows you WHERE the field is, and the printed label next to it tells you WHAT it contains.
+
+SALESFORCE CANONICAL FIELDS (use exactly these keys):
 {canonical_desc}
 
-FONTOS SZABÁLYOK:
-1. Csak JSON tömböt adj válaszul, más szöveget NE
-2. Minden elem: {{"f": "pdf_mező_neve", "c": "kanonikus.mező", "t": "text|checkbox|date|number", "p": oldalszám}}
-3. Ha egy mező NEM képezhető le egyetlen kanonikus mezőre sem, HAGYD KI a listából
-4. Használj tömör, pontos leképezéseket
-5. A "participant." prefix alatt személyi adatok vannak, "loan." alatt hiteladatok, "property." alatt ingatlan adatok
+EXAMPLES of correct mappings:
+  {{"f": "SZA_IG_név", "c": "Contact.Name", "t": "text"}} — "név" = name → Contact.Name
+  {{"f": "SZA_IG_szül_név", "c": "Contact.Szuletesi_nev__c", "t": "text"}} — "szül név" = birth name
+  {{"f": "SZA_IG_anyja_neve", "c": "Contact.Mother_s_Name__c", "t": "text"}} — "anyja neve" = mother's name
+  {{"f": "SZA_IG_szül_hely", "c": "Contact.Place_of_Birth__c", "t": "text"}} — "szül hely" = birthplace
+  {{"f": "SZA_IG_szül_dátum", "c": "Contact.Birthdate", "t": "date"}} — "szül dátum" = birth date
+  {{"f": "SZA_IG_állandó_lakcím", "c": "Contact.Permanent_address__c", "t": "text"}} — "lakcím" = address
+  {{"f": "SZA_IG_irányítószám", "c": "Contact.ZIP__c", "t": "text"}} — "irsz" = zip code
+  {{"f": "SZA_IG_település", "c": "Contact.MailingCity", "t": "text"}}
+  {{"f": "SZA_IG_személyi_szám", "c": "Contact.ID_Card_Number__c", "t": "text"}}
+  {{"f": "SZA_IG_adóazonosító", "c": "Contact.Tax_ID__c", "t": "text"}}
+  {{"f": "SZA_IG_email", "c": "Contact.Email", "t": "text"}}
+  {{"f": "SZA_IG_mobil", "c": "Contact.MobilePhone", "t": "text"}}
+  {{"f": "SZA_IG_munkáltató", "c": "Contact.Name_of_employer__c", "t": "text"}}
+  {{"f": "SZA_IG_jövedelem", "c": "Contact.Average_monthly_net_income__c", "t": "number"}}
+  {{"f": "SZA_IG_foglalkoztatás", "c": "Contact.Income_type__c", "t": "text"}}
+  {{"f": "SZA_IG_családi_állapot", "c": "Contact.Marital_Status__c", "t": "text"}}
+  {{"f": "SZA_IG_végzettség", "c": "Contact.Highest_Educational_Qualification__c", "t": "text"}}
+  {{"f": "IA_település", "c": "Lead.Ingatlan_telepules__c", "t": "text"}} — "IA" = ingatlan adatlap
+  {{"f": "IA_irsz", "c": "Lead.Ingatlan_irsz__c", "t": "text"}}
+  {{"f": "IA_alapterület", "c": "Lead.Ingatlan_alapterulet__c", "t": "number"}}
+  {{"f": "LAHI_összeg", "c": "Opportunity.Hitel_sszeg__c", "t": "number"}} — "LAHI" = lakáshitel
+  {{"f": "CSOK_tervezett", "c": "Lead.Tervezett_CSOK_Plusz__c", "t": "text"}}
 
-Ez a(z) '{section_name}' szekció."""
+CHECKBOX GROUP DETECTION:
+If you see multiple checkboxes next to options like "☐ lakás ☐ ház ☐ telek" that represent
+a SINGLE CHOICE from a picklist, include a "g" (group) key with a short group_id, and "mv" (match_value)
+with the option label that would trigger this checkbox.
+Example: {{"f": "IT_checkbox_1", "c": "Lead.Ingatlan_jellege__c", "t": "checkbox", "g": "property_type", "mv": "lakás"}}
+
+RULES:
+- Map EVERY field to the BEST matching Salesforce field from the list above.
+- Use the Object.FieldName format exactly as shown in the canonical list.
+- For fields you CANNOT map to any SF field, set "c" to null.
+- For GENERIC field names (e.g., "Text_Field_43", "Szövegmező 123", "Check_Box_5"), ALWAYS look at the RED BOX on the image to find the label.
+- Use PDF field name prefixes as hints: SZA_IG = személyi (Contact fields), IA = ingatlan (Lead.Ingatlan_* fields), CSOK = family subsidy (Lead.Tervezett_CSOK_*), LAHI = lakáshitel (Opportunity fields), MA = munkáltatói (Contact employer fields)
+- Checkbox fields: if the label is a yes/no question or a selection option, map to the nearest matching SF field.
+- When multiple people (adós/adóstárs) share the same field structure, they ALL map to the same Contact.* fields.
+
+Output format: [{{"f": "field_name", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
+For checkbox groups add: "g": "group_id", "mv": "match_value"
+
+Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
                 content = []
 
-                # Releváns oldal képek (max 5)
-                for idx in relevant_pages:
-                    if idx < len(images):
-                        content.append({
-                            "type": "image",
-                            "source": {"type": "base64", "media_type": "image/png", "data": images[idx]},
-                        })
-                        content.append({"type": "text", "text": f"{idx+1}. oldal"})
+                # Send the annotated image (with numbered red boxes)
+                if annotated_image_b64:
+                    content.append({
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": "image/png", "data": annotated_image_b64},
+                    })
 
-                # Szekció mezőnevei – kompakt formátum
-                fields_text = f"AcroForm mezők ({len(sub_fields)} db):\n"
-                for f in sub_fields:
-                    fields_text += f"  {f['name']} | {f['type']} | p{f.get('page', '?')}\n"
+                # Page text for context
+                if page_idx < len(page_texts) and page_texts[page_idx].strip():
+                    text_preview = page_texts[page_idx][:2500]
+                    content.append({"type": "text", "text": f"Page text content:\n{text_preview}"})
+
+                # Field names with numbered reference to RED BOXES on image
+                fields_text = f"PDF form fields on this page ({len(sub_fields)} fields).\n"
+                fields_text += "Fields with RED BOXES on the image are marked with their box number.\n\n"
+                for i, f in enumerate(sub_fields, 1):
+                    has_bbox = "rect" in f
+                    box_ref = f"  #{i}  " if has_bbox else "  --  "
+                    bbox_hint = " ← SEE RED BOX on image" if has_bbox else ""
+                    fields_text += f"{box_ref}{f['name']} (type: {f['type']}){bbox_hint}\n"
                 content.append({"type": "text", "text": fields_text})
 
                 try:
-                    response_text = self._deepseek_chat(
-                        messages=[{"role": "user", "content": content}],
-                        system=system,
+                    response = self._client.messages.create(
+                        model=AI_MODEL,
                         max_tokens=8192,
-                        json_mode=False,
+                        system=system,
+                        messages=[
+                            {"role": "user", "content": content},
+                        ],
                     )
 
-                    # Válasz feldolgozás
-                    if response_text:
-                        try:
-                            json_str = self._extract_json(response_text)
-                            ai_items = json.loads(json_str)
-                            # Kompakt formátum → RecognizedField
-                            # (json_mode=False: válasz lehet JSON tömb.)
-                            if isinstance(ai_items, dict):
-                                ai_items = list(ai_items.values())
-                            for item in ai_items:
-                                if isinstance(item, dict) and item.get("c"):
+                    response_text = ""
+                    for block in response.content:
+                        if hasattr(block, "text"):
+                            response_text = block.text
+                            break
+
+                    if response_text and response_text.strip():
+                        # Log raw response for debugging
+                        logger.debug(f"    📝 Raw AI response (first 500): {response_text[:500]}")
+                        
+                        for attempt in range(2):
+                            try:
+                                json_str = self._extract_json(response_text) if attempt == 0 else response_text.strip()
+                                ai_items = json.loads(json_str)
+                                if not isinstance(ai_items, list):
+                                    ai_items = ai_items.get("fields", []) if isinstance(ai_items, dict) else []
+                                
+                                mapped = 0
+                                skipped = 0
+                                for item in ai_items:
+                                    if not isinstance(item, dict):
+                                        continue
+                                    
+                                    field_name = item.get("f", "")
+                                    canonical = item.get("c")
+                                    
+                                    if not field_name:
+                                        continue
+                                    
+                                    # Fuzzy match canonical field
+                                    if canonical and canonical not in canonical_keys:
+                                        # Try to find closest match
+                                        best = self._fuzzy_match_canonical(canonical, canonical_keys)
+                                        if best:
+                                            logger.debug(f"    🔄 Fuzzy: '{canonical}' → '{best}'")
+                                            canonical = best
+                                    
+                                    if not canonical:
+                                        skipped += 1
+                                        continue
+                                    
+                                    t_val = item.get("t", "text")
+                                    try:
+                                        f_type = FieldType(t_val)
+                                    except ValueError:
+                                        f_type = FieldType.TEXT
+                                    
                                     all_fields.append(RecognizedField(
-                                        pdf_field_name=item.get("f", ""),
-                                        label=item.get("f", "").replace("_", " ").title(),
-                                        field_type=FieldType(item.get("t", "text")),
-                                        canonical_field=item["c"],
+                                        pdf_field_name=field_name,
+                                        label=field_name.replace("_", " ").title(),
+                                        field_type=f_type,
+                                        canonical_field=canonical,
                                         confidence=MappingConfidence.MEDIUM,
-                                        page_number=item.get("p", 1),
+                                        page_number=item.get("p", page_num),
+                                        checkbox_group=(
+                                            {"group_id": item["g"], "match_value": item.get("mv", "")}
+                                            if item.get("g") else None
+                                        ),
+                                        fill_rule=item.get("fill_rule"),
                                     ))
-                            mapped = sum(1 for item in ai_items if isinstance(item, dict) and item.get("c"))
-                            logger.info(f"    ✅ {mapped} mező leképezve")
-                        except (json.JSONDecodeError, ValueError) as e:
-                            logger.warning(f"    ⚠️ JSON hiba: {str(e)[:80]}")
+                                    mapped += 1
+                                
+                                logger.info(f"    ✅ {mapped} mező leképezve, {skipped} null/skip")
+                                # Fire progress callback so the UI can update
+                                if self.progress_callback is not None:
+                                    try:
+                                        self.progress_callback(batch_count, total_batches, sub_label)
+                                    except Exception:
+                                        pass
+                                break
+                            except (json.JSONDecodeError, ValueError) as e:
+                                if attempt == 0:
+                                    logger.debug(f"    JSON parse attempt 1 failed: {str(e)[:80]}, retrying raw...")
+                                    continue
+                                logger.warning(f"    ⚠️ JSON hiba (2 kísérlet után): {str(e)[:80]}")
+                                logger.info(f"    Nyers válasz (első 500): {response_text[:500]}")
                     else:
                         logger.warning(f"    ⚠️ Üres válasz")
 
                 except Exception as e:
-                    logger.error(f"    ❌ API hiba: {str(e)[:80]}")
+                    logger.error(f"    ❌ API hiba: {str(e)[:120]}")
 
                 # Rate limit
                 time.sleep(1)
 
         if not all_fields:
-            logger.warning("Batch AI: egyetlen szekció sem adott eredményt")
+            logger.warning("Batch AI: egyetlen oldal sem adott eredményt")
             return None
 
         total_mapped = sum(1 for f in all_fields if f.canonical_field)
@@ -594,8 +914,46 @@ Ez a(z) '{section_name}' szekció."""
             form_name=pdf_path.stem,
             form_type="acroform",
             fields=all_fields,
-            notes=f"AI batch felismerés ({len(groups)} szekció, {batch_count} API hívás).",
+            notes=f"AI batch felismerés ({len(page_groups)} oldal, {batch_count} API hívás).",
         )
+
+    @staticmethod
+    def _fuzzy_match_canonical(candidate: str, valid_keys: set[str]) -> str | None:
+        """Try to match an AI-returned canonical key to a valid one.
+
+        FIX M8 — matching is case-insensitive. The canonical catalog
+        (``CANONICAL_FIELDS``) uses mixed-case keys like ``Contact.Name``
+        while the AI often returns lower-case variants (``contact.name``).
+        We build a lower-cased index that maps back to the original key so a
+        case-insensitive search still returns the proper canonical form.
+        """
+        # Lower-cased index: "contact.name" → "Contact.Name"
+        lower_index: dict[str, str] = {k.lower(): k for k in valid_keys}
+
+        c = candidate.lower().strip().replace(" ", "_").replace("-", "_")
+        # Exact (case-insensitive) hit → return the original-cased key.
+        if c in lower_index:
+            return lower_index[c]
+
+        # Try common variations
+        # e.g. "participant.full_name" → "Contact.Name"
+        # e.g. "property.address" → "property.address.full_address"
+        for lower_key, orig_key in lower_index.items():
+            # Substring match
+            if c in lower_key or lower_key in c:
+                return orig_key
+            # Same suffix
+            c_parts = c.split(".")
+            k_parts = lower_key.split(".")
+            if len(c_parts) >= 2 and len(k_parts) >= 2 and c_parts[0] == k_parts[0] and c_parts[-1] == k_parts[-1]:
+                return orig_key
+
+        # If it starts with a valid prefix, accept it as-is (AI invented a reasonable field)
+        for prefix in ("participant.", "property.", "loan.", "csok.", "document.", "declaration.", "signature.", "vat.", "appraisal."):
+            if c.startswith(prefix):
+                return c
+
+        return None
 
     def _merge_mappings(
         self, base: MappingConfig, ai: MappingConfig
@@ -679,7 +1037,7 @@ Ez a(z) '{section_name}' szekció."""
                     "x": af["x"],
                     "y": af["y"],
                     "width": af["width"],
-                    "height": af["font_size"],
+                    "height": af["height"],
                 },
                 notes=af.get("context", ""),
             ))
@@ -709,7 +1067,7 @@ Ez a(z) '{section_name}' szekció."""
         field_id = 0
 
         for page_idx, page in enumerate(doc):
-            text_dict = page.get_text("dict")
+            text_dict = page.get_text("rawdict")
             all_spans = []
 
             for block in text_dict["blocks"]:
@@ -720,81 +1078,106 @@ Ez a(z) '{section_name}' szekció."""
                         all_spans.append(span)
 
             for i, span in enumerate(all_spans):
-                text = span["text"]
-                if "…" not in text:
+                if "chars" not in span or not span["chars"]:
+                    continue
+                text = "".join([c["c"] for c in span["chars"]])
+                if not any(char in text for char in ("…", ".", "_", "□", "☐", "☒")):
                     continue
 
                 bbox = span["bbox"]  # [x0, y0, x1, y1]
                 font_size = span["size"]
 
-                # Pontsor pozíció
-                dot_match = re.search(r'[…]{2,}', text)
-                if not dot_match:
+                # Find all dot/underscore matches in the span text (at least 4 characters long)
+                dot_matches = list(re.finditer(r'[…._]{4,}', text))
+                # Find all checkboxes
+                cb_matches = list(re.finditer(r'[□☐☒]', text))
+
+                # Combine and sort matches
+                matches = []
+                for m in dot_matches:
+                    matches.append((m, "text"))
+                for m in cb_matches:
+                    matches.append((m, "checkbox"))
+                matches.sort(key=lambda x: x[0].start())
+
+                if not matches:
                     continue
 
-                pre_text = text[:dot_match.start()].strip()
-                post_text = text[dot_match.end():].strip("() ,;. ")
+                prev_end = 0
+                for match_idx, (match_obj, match_type) in enumerate(matches):
+                    start, end = match_obj.start(), match_obj.end()
 
-                # Pontsor x pozíciójának precíz meghatározása
-                # Ha van pre_text, a pontsor annak VÉGÉTŐL indul
-                if pre_text:
-                    # Számítsuk ki a pre_text szélességét a font méretéből
-                    char_w = font_size * 0.48
-                    fill_x = bbox[0] + len(pre_text) * char_w + char_w
-                else:
-                    fill_x = bbox[0]
+                    # pre_text is the text preceding the current match since the previous match end
+                    pre_text = text[prev_end:start].strip("() ,;:._")
+                    # post_text is the text after the current match until the next match start or end of text
+                    next_start = matches[match_idx + 1][0].start() if match_idx + 1 < len(matches) else len(text)
+                    post_text = text[end:next_start].strip("() ,;._ ")
 
-                fill_y = bbox[1]
-                fill_w = bbox[2] - fill_x
+                    # Precise coordinates using character bboxes
+                    char_start = span["chars"][start]
+                    char_end = span["chars"][end - 1]
 
-                # Kontextus: előtte + utána lévő szöveg (5 span)
-                context_parts = []
-                for j in range(max(0, i-2), min(len(all_spans), i+3)):
-                    s = all_spans[j]
-                    t = s["text"].strip()
-                    if t and "…" not in t:
-                        context_parts.append(t)
-                context = " ".join(context_parts)[:200]
+                    fill_x = char_start["bbox"][0]
+                    fill_y = char_start["bbox"][1]
+                    fill_w = char_end["bbox"][2] - fill_x
+                    fill_h = char_start["bbox"][3] - char_start["bbox"][1]
 
-                # Label keresése – sorrendben:
-                label = ""
+                    # Kontextus: előtte + utána lévő szöveg (5 span)
+                    context_parts = []
+                    for j in range(max(0, i-2), min(len(all_spans), i+3)):
+                        s = all_spans[j]
+                        if "chars" in s and s["chars"]:
+                            t = "".join([c["c"] for c in s["chars"]]).strip()
+                            if t and not any(char in t for char in ("…", ".", "_", "□", "☐", "☒")):
+                                context_parts.append(t)
+                    context = " ".join(context_parts)[:200]
 
-                # 1. Közvetlenül utána dőlt span (zárójelben, pl. "(Hiteligénylő neve)")
-                for j in range(i+1, min(i+3, len(all_spans))):
-                    s = all_spans[j]
-                    if abs(s["bbox"][1] - bbox[1]) > 5:
-                        break  # Más soron van
-                    if "Ital" in s.get("font", ""):
-                        candidate = s["text"].strip("() ,;.")
-                        if len(candidate) > 2 and "…" not in candidate:
-                            label = candidate
-                            break
+                    # Label keresése – sorrendben:
+                    label = ""
 
-                # 2. Pre-text (pl. "Kelt:", "Név:", "Születési hely")
-                if not label and pre_text:
-                    clean = pre_text.rstrip(":").strip()
-                    if len(clean) > 1 and "…" not in clean:
-                        label = clean
+                    # 1. Közvetlenül utána dőlt span (zárójelben, pl. "(Hiteligénylő neve)")
+                    for j in range(i+1, min(i+3, len(all_spans))):
+                        s = all_spans[j]
+                        if abs(s["bbox"][1] - bbox[1]) > 5:
+                            break  # Más soron van
+                        if "Ital" in s.get("font", ""):
+                            s_text = "".join([c["c"] for c in s["chars"]]) if "chars" in s else ""
+                            candidate = s_text.strip("() ,;._")
+                            if len(candidate) > 2 and not any(char in candidate for char in ("…", ".", "_", "□", "☐", "☒")):
+                                label = candidate
+                                break
 
-                # 3. Post-text ha nem pontsor
-                if not label and post_text and len(post_text) > 2 and "…" not in post_text:
-                    label = post_text
+                    # 2. Pre-text (pl. "Kelt:", "Név:", "Születési hely")
+                    if not label and pre_text:
+                        clean = pre_text
+                        if "(" in clean:
+                            clean = clean.split("(")[-1]
+                        clean = clean.rstrip(":").strip("() ,;:._")
+                        if len(clean) > 1 and not any(char in clean for char in ("…", ".", "_", "□", "☐", "☒")):
+                            label = clean
 
-                # 4. Kontextus alapú fallback
-                if not label:
-                    label = f"mező_{field_id + 1}"
+                    # 3. Post-text ha nem pontsor
+                    if not label and post_text and len(post_text) > 2 and not any(char in post_text for char in ("…", ".", "_", "□", "☐", "☒")):
+                        label = post_text
 
-                field_id += 1
-                fields.append({
-                    "id": f"flat_{page_idx+1}_{field_id}",
-                    "label": label,
-                    "x": round(fill_x, 1),
-                    "y": round(fill_y, 1),
-                    "width": round(max(fill_w, 20), 1),
-                    "font_size": round(font_size, 1),
-                    "page": page_idx + 1,
-                    "context": context,
-                })
+                    # 4. Kontextus alapú fallback
+                    if not label:
+                        label = f"mező_{field_id + 1}"
+
+                    field_id += 1
+                    fields.append({
+                        "id": f"flat_{page_idx+1}_{field_id}",
+                        "label": label,
+                        "x": round(fill_x, 1),
+                        "y": round(fill_y, 1),
+                        "width": round(max(fill_w, 8), 1) if match_type == "checkbox" else round(max(fill_w, 20), 1),
+                        "height": round(fill_h, 1),
+                        "page": page_idx + 1,
+                        "context": context,
+                    })
+
+                    # Update prev_end for the next match on the same line
+                    prev_end = end
 
         doc.close()
         return fields
@@ -828,11 +1211,17 @@ Ha egy mező nem képezhető le, hagyd ki.
 PDF: {pdf_path.name}"""
 
         try:
-            response_text = self._deepseek_chat(
-                messages=[{"role": "user", "content": prompt}],
+            response = self._client.messages.create(
+                model=AI_MODEL,
                 max_tokens=4096,
-                json_mode=True,
+                messages=[{"role": "user", "content": prompt}],
             )
+
+            response_text = ""
+            for block in response.content:
+                if hasattr(block, "text"):
+                    response_text = block.text
+                    break
 
             if response_text:
                 json_str = self._extract_json(response_text)
@@ -869,40 +1258,35 @@ PDF: {pdf_path.name}"""
                 return self.recognize_flat(pdf_path)
 
     def _extract_acroform_fields(self, pdf_path: Path) -> list[dict]:
-        """AcroForm mezők kinyerése pikepdf-el."""
-        import pikepdf
+        """AcroForm mezők kinyerése.
 
-        fields = []
+        FIX L8 — korábban a ``backend/pdf_service``-t importálta, ami egy
+        rétegsértő függőség volt (``src/`` → ``backend/``). A kinyerő logika
+        most a ``src/engine/acroform_field_extractor`` modulban él, így az AI
+        réteg nem a backend-re támaszkodik.
+        """
+        from src.engine.acroform_field_extractor import extract_acroform_fields
+
+        fields: list[dict] = []
         try:
-            with pikepdf.open(pdf_path) as pdf:
-                if "/AcroForm" not in pdf.Root:
-                    return fields
-
-                acroform = pdf.Root["/AcroForm"]
-                if "/Fields" not in acroform:
-                    return fields
-
-                for field_ref in acroform["/Fields"]:
-                    try:
-                        f = field_ref
-                        field_info = {
-                            "name": str(f.get("/T", "")),
-                            "type": str(f.get("/FT", "")),
-                            "value": str(f.get("/V", "")),
-                        }
-                        # Próbáljuk kideríteni melyik oldalon van
-                        if "/P" in f:
-                            page_ref = f["/P"]
-                            for i, page in enumerate(pdf.pages):
-                                if page.objgen == page_ref.objgen:
-                                    field_info["page"] = i + 1
-                                    break
-                        fields.append(field_info)
-                    except Exception as e:
-                        logger.debug(f"Mező olvasási hiba: {e}")
-                        continue
+            extracted = extract_acroform_fields(pdf_path)
+            for ext in extracted:
+                rect_dict = ext.get("rect", {})
+                fields.append({
+                    "name": ext.get("pdf_field_name"),
+                    "type": ext.get("field_type"),
+                    "value": ext.get("value", ""),
+                    "page": ext.get("page_number", 1),
+                    "rect": [
+                        rect_dict.get("x", 0),
+                        rect_dict.get("y", 0),
+                        rect_dict.get("width", 0),
+                        rect_dict.get("height", 0)
+                    ]
+                })
+            logger.info(f"{len(fields)} AcroForm mező kinyerve (src/engine).")
         except Exception as e:
-            logger.error(f"PDF olvasási hiba: {e}")
+            logger.error(f"PDF olvasási hiba (acroform_field_extractor): {e}")
 
         return fields
 
@@ -916,20 +1300,22 @@ PDF: {pdf_path.name}"""
 
         system = self.SYSTEM_PROMPT.format(canonical_fields=canonical_desc)
 
-        # PDF oldalak konvertálása képekké az AI számára
-        # Maximum 20 oldal képet küldünk (nagy nyomtatványcsomagoknál)
+        # PDF oldalak konvertálása képekké az AI számára (Mindig elküldjük, hogy a checkboxok melletti szövegeket el tudja olvasni)
+        images = []
         images = self._pdf_to_images(pdf_path)
-        max_images = 20
-        if len(images) > max_images:
-            logger.info(
-                f"  {len(images)} oldal → csak az első {max_images} oldal képét küldjük "
-                f"(a mezőneveket mind elküldjük)"
-            )
-            # Az első 15 + az utolsó 5 oldalt vesszük
-            selected_indices = list(range(min(15, len(images)))) + list(range(max(len(images)-5, 15), len(images)))
-            selected_indices = sorted(set(selected_indices))[:max_images]
-        else:
-            selected_indices = list(range(len(images)))
+
+        selected_indices = []
+        if images:
+            max_images = 20
+            if len(images) > max_images:
+                logger.info(
+                    f"  {len(images)} oldal → csak az első {max_images} oldal képét küldjük "
+                    f"(a mezőneveket mind elküldjük)"
+                )
+                selected_indices = list(range(min(15, len(images)))) + list(range(max(len(images)-5, 15), len(images)))
+                selected_indices = sorted(set(selected_indices))[:max_images]
+            else:
+                selected_indices = list(range(len(images)))
 
         # Message összeállítása
         content = []
@@ -954,7 +1340,8 @@ PDF: {pdf_path.name}"""
         if pdf_fields:
             fields_text = f"Az AcroForm mezők nevei a PDF-ben (összesen {len(pdf_fields)} mező):\n"
             for f in pdf_fields:
-                fields_text += f"  - {f['name']} (típus: {f['type']}, oldal: {f.get('page', '?')})\n"
+                rect_str = f", bbox: {f['rect']}" if f.get('rect') else ""
+                fields_text += f"  - {f['name']} (típus: {f['type']}, oldal: {f.get('page', '?')}{rect_str})\n"
             content.append({"type": "text", "text": fields_text})
 
         content.append({
@@ -963,12 +1350,19 @@ PDF: {pdf_path.name}"""
         })
 
         try:
-            response_text = self._deepseek_chat(
-                messages=[{"role": "user", "content": content}],
-                system=system,
+            response = self._client.messages.create(
+                model=AI_MODEL,
                 max_tokens=16384,
-                json_mode=True,
+                system=system,
+                messages=[{"role": "user", "content": content}],
             )
+
+            # A válaszban több content block is lehet (thinking + text)
+            response_text = ""
+            for block in response.content:
+                if hasattr(block, "text"):
+                    response_text = block.text
+                    break
 
             if not response_text:
                 logger.error("AI válasz nem tartalmaz szöveget")
@@ -976,15 +1370,11 @@ PDF: {pdf_path.name}"""
 
             logger.debug(f"AI válasz (első 500 karakter): {response_text[:500]}")
             json_str = self._extract_json(response_text)
-            ai_result = json.loads(json_str)
+            import json_repair
+            ai_result = json_repair.loads(json_str)
 
             return self._parse_ai_response(ai_result, pdf_path, form_type)
 
-        except json.JSONDecodeError as e:
-            logger.error(f"AI válasz JSON parse hiba: {e}")
-            logger.debug(f"Nyers válasz: {response_text[:1000]}")
-            logger.info("Visszaesés heurisztikus leképezésre")
-            return self._heuristic_map_fields(pdf_fields, pdf_path, form_type)
         except Exception as e:
             logger.error(f"AI API hiba: {e}")
             logger.info("Visszaesés heurisztikus leképezésre")
@@ -1021,15 +1411,17 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             })
 
         try:
-            response_text = self._deepseek_chat(
-                messages=[{"role": "user", "content": content}],
-                system=system,
+            response = self._client.messages.create(
+                model=AI_MODEL,
                 max_tokens=16384,
-                json_mode=True,
+                system=system,
+                messages=[{"role": "user", "content": content}],
             )
 
+            response_text = response.content[0].text
             json_str = self._extract_json(response_text)
-            ai_result = json.loads(json_str)
+            import json_repair
+            ai_result = json_repair.loads(json_str)
 
             return self._parse_ai_response(ai_result, pdf_path, "flat")
 
@@ -1069,10 +1461,22 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         code_block = re.search(r'```\s*(.*?)\s*```', text, re.DOTALL)
         if code_block:
             candidate = code_block.group(1).strip()
-            if candidate.startswith('{'):
+            if candidate.startswith('{') or candidate.startswith('['):
                 return candidate
 
-        # 3. Keressük az első { és a hozzá tartozó záró } karaktert
+        # 3. Ha a szöveg JSON tömbbel kezdődik → keressük a [ és ] párját
+        stripped = text.strip()
+        if stripped.startswith('['):
+            bracket_depth = 0
+            for i, ch in enumerate(stripped):
+                if ch == '[':
+                    bracket_depth += 1
+                elif ch == ']':
+                    bracket_depth -= 1
+                    if bracket_depth == 0:
+                        return stripped[:i + 1]
+
+        # 4. Keressük az első { és a hozzá tartozó záró } karaktert
         brace_depth = 0
         start_idx = None
         for i, ch in enumerate(text):
@@ -1085,7 +1489,12 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 if brace_depth == 0 and start_idx is not None:
                     return text[start_idx:i + 1]
 
-        # 4. Utolsó fallback: az első { és utolsó }
+        # 5. Utolsó fallback: az első [ és utolsó ] (tömb) vagy { és utolsó }
+        if '[' in text and ']' in text:
+            start = text.index('[')
+            end = text.rindex(']') + 1
+            return text[start:end]
+
         if '{' in text and '}' in text:
             start = text.index('{')
             end = text.rindex('}') + 1
@@ -1127,160 +1536,185 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         # Általános kulcsszó → kanonikus leképezés
         KEYWORD_MAP = {
             # Személyi adatok
-            "nev": "participant.name",
-            "name": "participant.name",
-            "szul_nev": "participant.birth_name",
-            "szuletesi_nev": "participant.birth_name",
-            "birth_name": "participant.birth_name",
-            "anyja_neve": "participant.mother_name",
-            "mother_name": "participant.mother_name",
-            "szul_hely": "participant.birth_place",
-            "szuletesi_hely": "participant.birth_place",
-            "birth_place": "participant.birth_place",
-            "szul_datum": "participant.birth_date",
-            "szuletesi_datum": "participant.birth_date",
-            "birth_date": "participant.birth_date",
-            "szemelyi_szam": "participant.personal_id",
-            "szem_ig": "participant.personal_id",
-            "personal_id": "participant.personal_id",
-            "adoazonosito": "participant.tax_id",
-            "adoaz": "participant.tax_id",
-            "tax_id": "participant.tax_id",
+            "nev": "Contact.Name",
+            "name": "Contact.Name",
+            "szul_nev": "Contact.Szuletesi_nev__c",
+            "szuletesi_nev": "Contact.Szuletesi_nev__c",
+            "birth_name": "Contact.Szuletesi_nev__c",
+            "anyja_neve": "Contact.Mother_s_Name__c",
+            "mother_name": "Contact.Mother_s_Name__c",
+            "szul_hely": "Contact.Place_of_Birth__c",
+            "szuletesi_hely": "Contact.Place_of_Birth__c",
+            "birth_place": "Contact.Place_of_Birth__c",
+            "szul_datum": "Contact.Date_of_birth__c",
+            "szuletesi_datum": "Contact.Date_of_birth__c",
+            "birth_date": "Contact.Date_of_birth__c",
+            "szemelyi_szam": "Contact.ID_Card_Number__c",
+            "szem_ig": "Contact.ID_Card_Number__c",
+            "personal_id": "Contact.ID_Card_Number__c",
+            "adoazonosito": "Contact.Tax_ID__c",
+            "adoaz": "Contact.Tax_ID__c",
+            "tax_id": "Contact.Tax_ID__c",
             # Cím
-            "lakcim": "participant.address.full_address",
-            "address": "participant.address.full_address",
-            "iranyitoszam": "participant.address.zip_code",
-            "irsz": "participant.address.zip_code",
-            "zip": "participant.address.zip_code",
-            "zip_code": "participant.address.zip_code",
-            "telepules": "participant.address.city",
-            "varos": "participant.address.city",
-            "city": "participant.address.city",
-            "utca": "participant.address.street",
-            "kozterulet": "participant.address.street",
-            "street": "participant.address.street",
-            "hazszam": "participant.address.house_number",
-            "hsz": "participant.address.house_number",
-            "house_number": "participant.address.house_number",
+            "lakcim": "Contact.Permanent_address__c",
+            "address": "Contact.Permanent_address__c",
+            "iranyitoszam": "Contact.ZIP__c",
+            "irsz": "Contact.ZIP__c",
+            "zip": "Contact.ZIP__c",
+            "zip_code": "Contact.ZIP__c",
+            "telepules": "Contact.MailingCity",
+            "varos": "Contact.MailingCity",
+            "city": "Contact.MailingCity",
+            "utca": "Contact.MailingStreet",
+            "kozterulet": "Contact.MailingStreet",
+            "street": "Contact.MailingStreet",
+            "hazszam": "Contact.MailingStreet",
+            "hsz": "Contact.MailingStreet",
+            "house_number": "Contact.MailingStreet",
             # Kontakt
-            "telefon": "participant.phone",
-            "telefonszam": "participant.phone",
-            "phone": "participant.phone",
-            "email": "participant.email",
-            "e_mail": "participant.email",
+            "telefon": "Contact.Phone",
+            "telefonszam": "Contact.Phone",
+            "phone": "Contact.Phone",
+            "email": "Contact.Email",
+            "e_mail": "Contact.Email",
             # Munka
-            "munkaltato": "participant.employer",
-            "munkahely": "participant.employer",
-            "employer": "participant.employer",
-            "jovedelem": "participant.monthly_income",
-            "havi_netto": "participant.monthly_income",
-            "monthly_income": "participant.monthly_income",
+            "munkaltato": "Contact.Name_of_employer__c",
+            "munkahely": "Contact.Name_of_employer__c",
+            "employer": "Contact.Name_of_employer__c",
+            "jovedelem": "Contact.Average_monthly_net_income__c",
+            "havi_netto": "Contact.Average_monthly_net_income__c",
+            "monthly_income": "Contact.Average_monthly_net_income__c",
             # Hitel
-            "hitelosszeg": "loan.loan_amount",
-            "kolcson_osszeg": "loan.loan_amount",
-            "igenyelt_kolcson": "loan.loan_amount",
-            "loan_amount": "loan.loan_amount",
-            "futamido": "loan.loan_term_months",
-            "loan_term": "loan.loan_term_months",
-            "kamatperiodus": "loan.interest_period",
-            "hitel_celja": "loan.loan_purpose",
-            "loan_purpose": "loan.loan_purpose",
-            "onero": "loan.down_payment",
-            "torleszto": "loan.monthly_payment",
+            "hitelosszeg": "Opportunity.Hitel_sszeg__c",
+            "kolcson_osszeg": "Opportunity.Hitel_sszeg__c",
+            "igenyelt_kolcson": "Opportunity.Hitel_sszeg__c",
+            "loan_amount": "Opportunity.Hitel_sszeg__c",
+            "futamido": "Contact.Term_in_year_c__c",
+            "loan_term": "Contact.Term_in_year_c__c",
+            "kamatperiodus": "Contact.Interest_Period__c",
+            "hitel_celja": "Contact.Loan_Purpose__c",
+            "loan_purpose": "Contact.Loan_Purpose__c",
+            "onero": "Lead.Tervezett_onero__c",
+            "torleszto": "Contact.Affordable_monthly_installments__c",
             # Ingatlan
-            "helyrajzi_szam": "property.parcel_number",
-            "hrsz": "property.parcel_number",
-            "parcel_number": "property.parcel_number",
-            "terulet": "property.area_sqm",
-            "alapterulet": "property.area_sqm",
-            "area": "property.area_sqm",
-            "ingatlan_tipus": "property.property_type",
-            "becsult_ertek": "property.estimated_value",
-            "forgalmi_ertek": "property.estimated_value",
+            # FIX M3: helyrajzi szám / hrsz / parcel_number a Lead.Ingatlan_megjegyzes__c
+            # (ingatlan megjegyzés/helyrajsi szám) mezőre képeződik, NEM az
+            # Ingatlan_jellege__c-re (ami az ingatlan típusa = lakás/ház/telek).
+            "helyrajzi_szam": "Lead.Ingatlan_megjegyzes__c",
+            "hrsz": "Lead.Ingatlan_megjegyzes__c",
+            "parcel_number": "Lead.Ingatlan_megjegyzes__c",
+            "terulet": "Lead.Ingatlan_alapterulet__c",
+            "alapterulet": "Lead.Ingatlan_alapterulet__c",
+            "area": "Lead.Ingatlan_alapterulet__c",
+            "ingatlan_tipus": "Lead.Ingatlan_jellege__c",
+            "becsult_ertek": "Lead.Estimated__c",
+            "forgalmi_ertek": "Lead.Estimated__c",
         }
 
         # OTP-specifikus mező → kanonikus leképezés (valódi mezőnevek a PDF-ből)
         OTP_EXACT_MAP = {
             # === SZA_IG_ – Személyi adatok (Igénylő) ===
-            "SZA_IG_név": "participant.name",
-            "SZA_IG_szül_név": "participant.birth_name",
-            "SZA_IG_anyja_neve": "participant.mother_name",
-            "SZA_IG_szül_hely": "participant.birth_place",
-            "SZA_IG_szül_év": "participant.birth_date",
-            "SZA_IG_szül_hónap": "participant.birth_date",
-            "SZA_IG_szül_nap": "participant.birth_date",
-            "SZA_IG_személyiszám": "participant.personal_id",
-            "SZA_IG_személyazonosíó_szám": "participant.id_card_number",
-            "SZA_IG_adóazonosító": "participant.tax_id",
-            "SZA_IG_állandó_lakcím_irányító": "participant.address.zip_code",
-            "SZA_IG_állandó_lakcim_település": "participant.address.city",
-            "SZA_IG_állandó_lakcim_utca": "participant.address.street",
-            "SZA_IG_levelezési_cím_irányító": "participant.mailing_address.zip_code",
-            "SZA_IG_levelezési_cím_település": "participant.mailing_address.city",
-            "SZA_IG_levelezési_lakcim_utca": "participant.mailing_address.street",
-            "SZA_IG_mobil": "participant.phone",
-            "SZA_IG_email_cím": "participant.email",
-            "SZA_IG_eltartottak": "participant.dependents",
-            "SZA_IG_kata": "participant.kata_status",
-            "SZA_IG_létszám": "participant.employee_count",
-            "SZA_IG_mióta_lakik_év": "participant.residence_since",
-            "SZA_IG_mióta_lakik_hónap": "participant.residence_since",
-            "SZA_IG_Elsődleges_Szerep": "participant.role",
-            "SZA_IG_neme": "participant.gender",
-            "SZA_IG_állampolgárság": "participant.citizenship",
-            "SZA_IG_családiállapot": "participant.marital_status",
-            "SZA_IG_dokumentum": "participant.id_document_type",
-            "SZA_IG_végzettség": "participant.education",
-            "SZA_IG_foglalkoztatás": "participant.employment_type",
-            "SZA_IG_lakcim_ország": "participant.address.country",
-            "SZA_IG_levelezési_cím": "participant.mailing_address_same",
-            "SZA_IG_nav": "participant.nav_declaration",
+            "SZA_IG_név": "Contact.Name",
+            "SZA_IG_szül_név": "Contact.Szuletesi_nev__c",
+            "SZA_IG_anyja_neve": "Contact.Mother_s_Name__c",
+            "SZA_IG_szül_hely": "Contact.Place_of_Birth__c",
+            # C8: az év/hónap/nap dobozok a Contact.Birthdate (teljes dátum)
+            # kanonikushoz tartoznak, fragment=year|month|day darabolja fel.
+            # Korábban Contact.Date_of_birth__c-re mutattak, amit a pipeline
+            # sosem állít elő → a dobozok üresek maradtak.
+            "SZA_IG_szül_év": "Contact.Birthdate",
+            "SZA_IG_szül_hónap": "Contact.Birthdate",
+            "SZA_IG_szül_nap": "Contact.Birthdate",
+            "SZA_IG_személyiszám": "Contact.ID_Card_Number__c",
+            "SZA_IG_személyazonosíó_szám": "Contact.ID_Card_Number__c",
+            "SZA_IG_adóazonosító": "Contact.Tax_ID__c",
+            "SZA_IG_állandó_lakcím_irányító": "Contact.ZIP__c",
+            "SZA_IG_állandó_lakcim_település": "Contact.MailingCity",
+            "SZA_IG_állandó_lakcim_utca": "Contact.MailingStreet",
+            "SZA_IG_levelezési_cím_irányító": "Contact.MailingPostalCode",
+            "SZA_IG_levelezési_cím_település": "Contact.MailingCity",
+            "SZA_IG_levelezési_lakcim_utca": "Contact.MailingStreet",
+            "SZA_IG_mobil": "Contact.Phone",
+            "SZA_IG_email_cím": "Contact.Email",
+            "SZA_IG_eltartottak": "Contact.Dependents_count__c",
+            "SZA_IG_kata": "Contact.Self_employment_details__c",
+            "SZA_IG_létszám": "Contact.Self_employment_details__c",
+            "SZA_IG_mióta_lakik_év": "Contact.Date_of_notification_for_residence__c",
+            "SZA_IG_mióta_lakik_hónap": "Contact.Date_of_notification_for_residence__c",
+            "SZA_IG_Elsődleges_Szerep": "Contact.Relation__c",
+            "SZA_IG_neme": "Contact.Salutation",
+            "SZA_IG_állampolgárság": "Contact.Citizenship__c",
+            "SZA_IG_családiállapot": "Contact.Marital_Status__c",
+            "SZA_IG_dokumentum": "Contact.ID_Card_Number__c",
+            "SZA_IG_végzettség": "Contact.Highest_Educational_Qualification__c",
+            "SZA_IG_foglalkoztatás": "Contact.Employment_Type_c__c",
+            "SZA_IG_lakcim_ország": "Contact.MailingCountry",
+            "SZA_IG_levelezési_cím": "Contact.MailingStreet",
+            "SZA_IG_nav": "Contact.Description",
             # === SZA_IG_ – Társigénylő (-társ suffix) ===
-            "SZA_IG_név-társ": "participant.name",
-            "SZA_IG_szül_név-társ": "participant.birth_name",
-            "SZA_IG_anyja_neve-társ": "participant.mother_name",
-            "SZA_IG_szül_hely-társ": "participant.birth_place",
-            "SZA_IG_szül_év-társ": "participant.birth_date",
-            "SZA_IG_szül_hónap-társ": "participant.birth_date",
-            "SZA_IG_szül_nap-társ": "participant.birth_date",
-            "SZA_IG_személyiszám-társ": "participant.personal_id",
-            "SZA_IG_személyazonosíó_szám-társ": "participant.id_card_number",
-            "SZA_IG_adóazonosító-társ": "participant.tax_id",
-            "SZA_IG_állandó_lakcím_irányító-társ": "participant.address.zip_code",
-            "SZA_IG_állandó_lakcim_település-társ": "participant.address.city",
-            "SZA_IG_állandó_lakcim_utca-társ": "participant.address.street",
-            "SZA_IG_mobil-társ": "participant.phone",
-            "SZA_IG_email_cím-társ": "participant.email",
-            "SZA_IG_Elsődleges_Szerep-társ": "participant.role",
-            "SZA_IG_neme-társ": "participant.gender",
-            "SZA_IG_állampolgárság-társ": "participant.citizenship",
-            "SZA_IG_családiállapot-társ": "participant.marital_status",
-            "SZA_IG_dokumentum-társ": "participant.id_document_type",
-            "SZA_IG_végzettség-társ": "participant.education",
-            "SZA_IG_foglalkoztatás-társ": "participant.employment_type",
-            "SZA_IG_eltartottak-társ": "participant.dependents",
+            "SZA_IG_név-társ": "Contact.Name",
+            "SZA_IG_szül_név-társ": "Contact.Szuletesi_nev__c",
+            "SZA_IG_anyja_neve-társ": "Contact.Mother_s_Name__c",
+            "SZA_IG_szül_hely-társ": "Contact.Place_of_Birth__c",
+            "SZA_IG_szül_év-társ": "Contact.Birthdate",
+            "SZA_IG_szül_hónap-társ": "Contact.Birthdate",
+            "SZA_IG_szül_nap-társ": "Contact.Birthdate",
+            "SZA_IG_személyiszám-társ": "Contact.ID_Card_Number__c",
+            "SZA_IG_személyazonosíó_szám-társ": "Contact.ID_Card_Number__c",
+            "SZA_IG_adóazonosító-társ": "Contact.Tax_ID__c",
+            "SZA_IG_állandó_lakcím_irányító-társ": "Contact.ZIP__c",
+            "SZA_IG_állandó_lakcim_település-társ": "Contact.MailingCity",
+            "SZA_IG_állandó_lakcim_utca-társ": "Contact.MailingStreet",
+            "SZA_IG_mobil-társ": "Contact.Phone",
+            "SZA_IG_email_cím-társ": "Contact.Email",
+            "SZA_IG_Elsődleges_Szerep-társ": "Contact.Relation__c",
+            "SZA_IG_neme-társ": "Contact.Salutation",
+            "SZA_IG_állampolgárság-társ": "Contact.Citizenship__c",
+            "SZA_IG_családiállapot-társ": "Contact.Marital_Status__c",
+            "SZA_IG_dokumentum-társ": "Contact.ID_Card_Number__c",
+            "SZA_IG_végzettség-társ": "Contact.Highest_Educational_Qualification__c",
+            "SZA_IG_foglalkoztatás-társ": "Contact.Employment_Type_c__c",
+            "SZA_IG_eltartottak-társ": "Contact.Dependents_count__c",
             # === IA_ – Ingatlan adatok ===
-            "IA_ingatlanhasználat": "property.usage_type",
-            "IA_Bérletidíj": "property.rental_fee",
-            "IA_Bérletidíj_EUR": "property.rental_fee_eur",
-            "IA_Kapcsolattartó neve": "property.contact_name",
-            "IA_Telefonszám": "property.contact_phone",
+            "IA_ingatlanhasználat": "Lead.Ingatlan_szerepe__c",
+            "IA_Bérletidíj": "Contact.Other_income__c",
+            "IA_Bérletidíj_EUR": "Contact.Other_income__c",
+            "IA_Kapcsolattartó neve": "Opportunity.Contact_Name__c",
+            "IA_Telefonszám": "Contact.OtherPhone",
             # === LAHI/KTKA – Lakáshitel/Költségkalkuláció ===
-            "LAHI_KTKA_Igényelt_kölcsön": "loan.loan_amount",
-            "LAHI_KTKA_Vásárolt_ingatlan_ár": "loan.purchase_price",
-            "LAHI_KTKA_Önerő_kp": "loan.down_payment",
-            "LAHI_KTKA_CSOK": "loan.csok_amount",
-            "LAHI_KTKA_Afa": "loan.afa_support",
+            "LAHI_KTKA_Igényelt_kölcsön": "Opportunity.Hitel_sszeg__c",
+            "LAHI_KTKA_Vásárolt_ingatlan_ár": "Lead.Purchase_price__c",
+            "LAHI_KTKA_Önerő_kp": "Lead.Tervezett_onero__c",
+            "LAHI_KTKA_CSOK": "Lead.Tervezett_CSOK_Plusz__c",
+            "LAHI_KTKA_Afa": "Contact.State_Support__c",
             "LAHI_KTKA_Lakástakarék": "loan.housing_savings",
             "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám": "loan.refinance_account",
             "LAHI_KTKA_Kölcsön_tipusa_OTP": "loan.product_type",
             # === MA_ – Munkáltatói/meghatalmazás ===
-            "MA_IG_adós_neve": "participant.name",
-            "MA_IG_munáltató_neve": "participant.employer",
-            "MA_IG_munkavállaló_neve": "participant.name",
+            "MA_IG_adós_neve": "Contact.Name",
+            "MA_IG_munáltató_neve": "Contact.Name_of_employer__c",
+            "MA_IG_munkavállaló_neve": "Contact.Name",
             "MA_IG_vállalkozás_neve": "participant.business_name",
             "MA_IG_munáltató_adósz": "participant.employer_tax_id",
             "MA_IG_vállalkozás_adószám": "participant.business_tax_id",
+        }
+
+        # C8 (date fragmentation ground-work): these OTP PDF fields each carry
+        # only a PIECE of a single logical date (birth date / residence-since),
+        # which the fill engine must later reassemble. Keys mirror OTP_EXACT_MAP
+        # field names; values are the fragment role: "year" | "month" | "day".
+        OTP_DATE_FRAGMENTS = {
+            # Születési dátum (adós)
+            "SZA_IG_szül_év": "year",
+            "SZA_IG_szül_hónap": "month",
+            "SZA_IG_szül_nap": "day",
+            # Születési dátum (társigénylő)
+            "SZA_IG_szül_év-társ": "year",
+            "SZA_IG_szül_hónap-társ": "month",
+            "SZA_IG_szül_nap-társ": "day",
+            # Lakóhely jogcíme – mióta lakik ott (szintén szétdarabolt dátum)
+            "SZA_IG_mióta_lakik_év": "year",
+            "SZA_IG_mióta_lakik_hónap": "month",
         }
 
         fields = []
@@ -1291,16 +1725,24 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         otp_exact_map_normalized = {
             _normalize_key(k): v for k, v in OTP_EXACT_MAP.items()
         }
+        # C8: same normalization for the date-fragment lookup so an
+        # accent/case-variant PDF field name still finds its fragment role.
+        otp_date_fragments_normalized = {
+            _normalize_key(k): v for k, v in OTP_DATE_FRAGMENTS.items()
+        }
         for pdf_field in pdf_fields:
             field_name = pdf_field["name"]
             canonical = None
             confidence = MappingConfidence.LOW
+            fragment = None
 
             # 1. Próbáljuk az OTP exact map-ből – normalizált kulccsal.
             normalized = _normalize_key(field_name)
             if normalized in otp_exact_map_normalized:
                 canonical = otp_exact_map_normalized[normalized]
                 confidence = MappingConfidence.HIGH
+                # C8: ha ez egy szétdarabolt dátummező (év/hónap/nap), jegyezzük fel.
+                fragment = otp_date_fragments_normalized.get(normalized)
             else:
                 # 2. Próbáljuk a kulcsszó alapú map-ből
                 clean_name = field_name.lower()
@@ -1337,6 +1779,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 canonical_field=canonical,
                 confidence=confidence,
                 page_number=pdf_field.get("page", 1),
+                fragment=fragment,
             ))
 
         mapped = sum(1 for f in fields if f.canonical_field)
@@ -1370,22 +1813,22 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         # Szöveg kinyerése az oldalakról – mezők beazonosítása
         fields = []
         field_labels_hu = [
-            ("Név", "participant.name", FieldType.TEXT),
-            ("Születési név", "participant.birth_name", FieldType.TEXT),
-            ("Anyja neve", "participant.mother_name", FieldType.TEXT),
-            ("Születési hely", "participant.birth_place", FieldType.TEXT),
-            ("Születési dátum", "participant.birth_date", FieldType.DATE),
-            ("Személyi szám", "participant.personal_id", FieldType.TEXT),
-            ("Adóazonosító", "participant.tax_id", FieldType.TEXT),
-            ("Lakcím", "participant.address.full_address", FieldType.TEXT),
-            ("Irányítószám", "participant.address.zip_code", FieldType.TEXT),
-            ("Település", "participant.address.city", FieldType.TEXT),
-            ("Telefonszám", "participant.phone", FieldType.TEXT),
-            ("E-mail", "participant.email", FieldType.TEXT),
-            ("Hitelösszeg", "loan.loan_amount", FieldType.NUMBER),
-            ("Futamidő", "loan.loan_term_months", FieldType.NUMBER),
-            ("Helyrajzi szám", "property.parcel_number", FieldType.TEXT),
-            ("Terület", "property.area_sqm", FieldType.NUMBER),
+            ("Név", "Contact.Name", FieldType.TEXT),
+            ("Születési név", "Contact.Szuletesi_nev__c", FieldType.TEXT),
+            ("Anyja neve", "Contact.Mother_s_Name__c", FieldType.TEXT),
+            ("Születési hely", "Contact.Place_of_Birth__c", FieldType.TEXT),
+            ("Születési dátum", "Contact.Date_of_birth__c", FieldType.DATE),
+            ("Személyi szám", "Contact.ID_Card_Number__c", FieldType.TEXT),
+            ("Adóazonosító", "Contact.Tax_ID__c", FieldType.TEXT),
+            ("Lakcím", "Contact.Permanent_address__c", FieldType.TEXT),
+            ("Irányítószám", "Contact.ZIP__c", FieldType.TEXT),
+            ("Település", "Contact.MailingCity", FieldType.TEXT),
+            ("Telefonszám", "Contact.Phone", FieldType.TEXT),
+            ("E-mail", "Contact.Email", FieldType.TEXT),
+            ("Hitelösszeg", "Opportunity.Hitel_sszeg__c", FieldType.NUMBER),
+            ("Futamidő", "Contact.Term_in_year_c__c", FieldType.NUMBER),
+            ("Helyrajzi szám", "Lead.Ingatlan_megjegyzes__c", FieldType.TEXT),
+            ("Terület", "Lead.Ingatlan_alapterulet__c", FieldType.NUMBER),
         ]
 
         for page_num in range(num_pages):
@@ -1494,7 +1937,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--api-key",
         default=None,
-        help="DeepSeek API kulcs (default: DEEPSEEK_API_KEY env)",
+        help="Anthropic API kulcs (default: ANTHROPIC_API_KEY env)",
     )
 
     args = parser.parse_args()

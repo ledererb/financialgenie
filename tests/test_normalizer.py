@@ -131,3 +131,66 @@ class TestSafeConversions:
         assert DataNormalizer._safe_float("3.14") == 3.14
         assert DataNormalizer._safe_float(None) is None
         assert DataNormalizer._safe_float("abc") is None
+
+
+class TestAddressParsing:
+    """FIX H3: a cím-parser (salesforce_client._parse_address_string) robusztussága."""
+
+    @pytest.fixture
+    def parser(self):
+        # Csak a statikus metódusra van szükségünk – nem hívunk fel SF-et.
+        from src.integrations.salesforce_client import SalesforceClient
+        sc = SalesforceClient.__new__(SalesforceClient)
+        return sc._parse_address_string
+
+    def test_budapest_district_extracted(self, parser):
+        """A kerület (római szám) kerüljön a district mezőbe, ne az utcába."""
+        result = parser("1052 Budapest, II. kerület, Váci utca 10")
+        assert result["district"] == "II"
+        assert "kerület" not in result["street"]
+        assert result["street"] == "Váci utca"
+        assert result["house_number"] == "10"
+        assert result["city"] == "Budapest"
+
+    def test_district_no_house_number(self, parser):
+        result = parser("1011 Budapest, I. kerület, Fortuna utca")
+        assert result["district"] == "I"
+        assert result["street"] == "Fortuna utca"
+        assert result["house_number"] == ""
+
+    def test_high_district_number(self, parser):
+        result = parser("1132 Budapest, XIII. kerület, Szent István körút 1")
+        assert result["district"] == "XIII"
+        assert result["house_number"] == "1"
+
+    def test_street_only_no_crash(self, parser):
+        """Cím házszám nélkül ne omoljon össze."""
+        result = parser("1052 Budapest, Váci utca")
+        assert result["street"] == "Váci utca"
+        assert result["house_number"] == ""
+        assert result["floor"] is None
+
+    def test_floor_missing_key(self, parser):
+        """A visszaadott dict mindig tartalmazza a floor kulcsot (None default)."""
+        result = parser("2000 Szentendre, Kossuth tér 5")
+        assert "floor" in result
+        assert result["floor"] is None
+        assert "door" in result
+        assert result["door"] is None
+
+    def test_floor_and_door_parsed(self, parser):
+        result = parser("1052 Budapest, Váci utca 10, 3. em. 12. ajtó")
+        assert result["floor"] == "3"
+        assert result["door"] == "12"
+
+    def test_empty_address(self, parser):
+        result = parser("")
+        assert result["zip_code"] == ""
+        assert result["district"] is None
+        assert result["floor"] is None
+
+    def test_non_budapest_no_false_district(self, parser):
+        """Budapesten kívül ne próbáljon kerületet keresni."""
+        result = parser("5000 Szolnok, Tószegi út 5")
+        assert result["district"] is None
+        assert result["city"] == "Szolnok"

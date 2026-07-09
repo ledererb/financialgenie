@@ -18,6 +18,7 @@ from src.models.canonical_model import (
 )
 from src.ai.field_recognizer import MappingConfig
 from src.main import FormFillerPipeline
+from src.engine.pdf_filler import fmt_money
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -130,15 +131,15 @@ def prepare_extended_field_data(deal: DealData, mapping: MappingConfig) -> dict:
     # --- Hitel adatok ---
     loan = deal.loan
     canonical_to_value.update({
-        "loan.loan_amount": f"{loan.loan_amount:,}".replace(",", " "),
+        "loan.loan_amount": fmt_money(loan.loan_amount),
         "loan.loan_term_months": str(loan.loan_term_months),
         "loan.interest_period": loan.interest_period or "",
         "loan.loan_purpose": loan.loan_purpose or "",
         "loan.product_name": loan.product_name or "",
         "loan.product_type": loan.product_name or "",
-        "loan.down_payment": f"{loan.down_payment:,}".replace(",", " ") if loan.down_payment else "",
-        "loan.monthly_payment": f"{loan.monthly_payment:,}".replace(",", " ") if loan.monthly_payment else "",
-        "loan.purchase_price": f"{50_000_000:,}".replace(",", " "),  # = ingatlan becsült érték
+        "loan.down_payment": fmt_money(loan.down_payment),
+        "loan.monthly_payment": fmt_money(loan.monthly_payment),
+        "loan.purchase_price": fmt_money(50_000_000),  # = ingatlan becsült érték
         "loan.csok_amount": "",
         "loan.afa_support": "",
         "loan.housing_savings": "",
@@ -164,7 +165,7 @@ def prepare_extended_field_data(deal: DealData, mapping: MappingConfig) -> dict:
             "participant.phone": p.phone or "",
             "participant.email": p.email or "",
             "participant.employer": p.employer or "",
-            "participant.monthly_income": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",
+            "participant.monthly_income": fmt_money(p.monthly_income),
             "participant.role": p.role.value,
             # Kibővített mezők
             "participant.gender": "",
@@ -225,7 +226,7 @@ def prepare_extended_field_data(deal: DealData, mapping: MappingConfig) -> dict:
             "property.parcel_number": prop.parcel_number,
             "property.area_sqm": f"{prop.area_sqm}" if prop.area_sqm else "",
             "property.property_type": prop.property_type.value,
-            "property.estimated_value": f"{prop.estimated_value:,}".replace(",", " ") if prop.estimated_value else "",
+            "property.estimated_value": fmt_money(prop.estimated_value),
             "property.year_built": str(prop.year_built) if prop.year_built else "",
             "property.number_of_rooms": str(prop.number_of_rooms) if prop.number_of_rooms else "",
             "property.usage_type": "",
@@ -272,7 +273,7 @@ def main():
     deal = create_sample_deal()
     print(f"\n👤 Ügyfél: {deal.participants[0].name}")
     print(f"   Társigénylő: {deal.participants[1].name}")
-    print(f"   Hitel: {deal.loan.loan_amount:,} Ft, {deal.loan.loan_term_months} hó")
+    print(f"   Hitel: {fmt_money(deal.loan.loan_amount)} Ft, {deal.loan.loan_term_months} hó")
     print(f"   Ingatlan: {deal.properties[0].address.full_address}")
 
     # 3. Mezőadatok összeállítása

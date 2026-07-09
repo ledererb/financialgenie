@@ -1,0 +1,396 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Hozzajarulo_nyilatkozat_munkunkaviszony_es_jovedelemadatok_ellenorzesehez",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 24 mező, 5 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "Contact.Szuletesi_nev__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 237.7,
+        "y": 115.8,
+        "width": 113.8,
+        "height": 11.1
+      },
+      "notes": "MUNKAVISZONY ÉS JÖVEDELEMADATOK MUNKÁLTATÓ ÁLTALI VISSZAELLENŐRZÉSÉHEZ nyilatkozattal",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Mother_s_Name__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 412.6,
+        "y": 115.8,
+        "width": 108.3,
+        "height": 11.1
+      },
+      "notes": "MUNKAVISZONY ÉS JÖVEDELEMADATOK MUNKÁLTATÓ ÁLTALI VISSZAELLENŐRZÉSÉHEZ nyilatkozattal",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "Contact.Place_of_Birth__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 138.9,
+        "y": 133.1,
+        "width": 168.2,
+        "height": 11.1
+      },
+      "notes": "nyilatkozattal hozzájárulok",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "Születési dátum",
+      "field_type": "text",
+      "canonical_field": "Contact.Birthdate",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 390.7,
+        "y": 133.1,
+        "width": 105.2,
+        "height": 11.1
+      },
+      "notes": "nyilatkozattal hozzájárulok",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "Neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name_of_employer__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 100.3,
+        "y": 167.5,
+        "width": 198.3,
+        "height": 11.1
+      },
+      "notes": "a munkáltatóm Cégjegyzék",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_6",
+      "label": "száma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 103.2,
+        "y": 184.8,
+        "width": 155.3,
+        "height": 11.1
+      },
+      "notes": "Cégjegyzék részére (a továbbiakban: Hitelező) telefonon/telefaxon/e-mailen keresztül átadja az alábbi",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_7",
+      "label": "Adószáma",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 317.1,
+        "y": 184.8,
+        "width": 145.4,
+        "height": 11.1
+      },
+      "notes": "Cégjegyzék részére (a továbbiakban: Hitelező) telefonon/telefaxon/e-mailen keresztül átadja az alábbi",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_8",
+      "label": "mező_8",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 106.9,
+        "y": 262.6,
+        "width": 161.0,
+        "height": 11.1
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_9",
+      "label": "mező_9",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 290.2,
+        "y": 262.6,
+        "width": 192.7,
+        "height": 11.1
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_10",
+      "label": "mező_10",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 106.9,
+        "y": 274.6,
+        "width": 159.8,
+        "height": 11.1
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_11",
+      "label": "mező_11",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 291.8,
+        "y": 274.6,
+        "width": 192.6,
+        "height": 11.1
+      },
+      "notes": "Igényelt termék típusa                              Hitelkérelem száma",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_12",
+      "label": "mező_12",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 106.9,
+        "y": 286.6,
+        "width": 159.8,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_13",
+      "label": "mező_13",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 291.8,
+        "y": 286.6,
+        "width": 192.6,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_14",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 93.6,
+        "y": 610.1,
+        "width": 155.6,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_15",
+      "label": "mező_15",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 254.8,
+        "y": 610.1,
+        "width": 44.4,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_16",
+      "label": "év",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 315.3,
+        "y": 610.1,
+        "width": 77.8,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_17",
+      "label": "hónap",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 426.5,
+        "y": 610.1,
+        "width": 38.8,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_18",
+      "label": "mező_18",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 319.0,
+        "y": 648.9,
+        "width": 188.9,
+        "height": 13.7
+      },
+      "notes": "Ügyfél aláírása Tanúk:",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_19",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 99.6,
+        "y": 695.0,
+        "width": 188.9,
+        "height": 13.7
+      },
+      "notes": "Tanúk:",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_20",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 324.5,
+        "y": 695.0,
+        "width": 188.9,
+        "height": 13.7
+      },
+      "notes": "",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_21",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 100.3,
+        "y": 712.2,
+        "width": 188.7,
+        "height": 13.7
+      },
+      "notes": "Aláírás:",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_22",
+      "label": "Cím",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 325.3,
+        "y": 712.2,
+        "width": 188.7,
+        "height": 13.7
+      },
+      "notes": "Aláírás:",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_23",
+      "label": "mező_23",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 76.3,
+        "y": 746.7,
+        "width": 177.7,
+        "height": 13.7
+      },
+      "notes": "Aláírás:",
+      "checkbox_group": null
+    },
+    {
+      "pdf_field_name": "flat_1_24",
+      "label": "Aláírás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 335.1,
+        "y": 729.4,
+        "width": 183.3,
+        "height": 13.7
+      },
+      "notes": "Aláírás:",
+      "checkbox_group": null
+    }
+  ],
+  "character_groups": []
+}
