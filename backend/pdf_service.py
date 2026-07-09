@@ -109,6 +109,11 @@ class PdfService:
         so the AI layer (``src/``) no longer has to import from ``backend/``.
         This method is a thin delegate that keeps the editor's API and page
         priming behaviour intact.
+
+        FIX 2026-07-10 — page-number patching is now name-based (PyMuPDF
+        name→page map) instead of fragile coordinate matching. This prevents
+        silent failures where all fields get page_number=1 on certain
+        PyMuPDF versions / DPI configurations.
         """
         # Prime the page-height cache first (some downstream code still reads
         # it for ad-hoc rect flipping); the engine extractor primes its own

@@ -65,7 +65,10 @@ def extract_acroform_fields(
         pdf.close()
 
     # Patch page numbers from PyMuPDF — pikepdf /P references are unreliable.
-    _patch_page_numbers_from_mupdf(pdf_path, fields, render_scale)
+    # Pre-build a name→page map from PyMuPDF for reliable lookup, then
+    # fall back to coordinate-based matching for any remaining fields.
+    mupdf_page_map = _build_mupdf_name_page_map(pdf_path, render_scale)
+    _patch_page_numbers_from_mupdf(pdf_path, fields, render_scale, mupdf_page_map)
 
     # Fallback: pick up widgets PyMuPDF sees but pikepdf missed (deeply
     # nested AcroForm hierarchies, radio widgets stored outside /Fields).
@@ -224,90 +227,179 @@ def _widget_rect_px(
     }
 
 
-def _patch_page_numbers_from_mupdf(
-    pdf_path: Path,
-    fields: list[dict],
-    render_scale: float,
-):
-    """Use PyMuPDF widgets() to fix page numbers AND rect coordinates.
+def _build_mupdf_name_page_map(pdf_path: Path, render_scale: float = 150.0/72.0) -> dict[str, tuple[int, float, float, float, float]]:
+    """Build a {field_name: (page, x, y, w, h)} map from PyMuPDF.
 
-    pikepdf /Rect values are sometimes pre-flipped; PyMuPDF's widget.rect is
-    always standard PDF user space (bottom-left), so we convert consistently.
+    For radio groups (multiple widgets sharing one field name), we store the
+    FIRST widget's geometry — the suffix-based fields (___Yes, ___No) will
+    match via _add_missing_mupdf_widgets or coordinate fallback.
+
+    Returns an empty dict if PyMuPDF cannot open the PDF.
     """
+    result: dict[str, tuple[int, float, float, float, float]] = {}
     try:
         doc = fitz.open(str(pdf_path))
-        name_to_geos: dict[str, list[dict]] = {}
         for i, page in enumerate(doc):
             for w in page.widgets():
                 if w.field_name:
                     r = w.rect
-                    geo = {
-                        "page": i + 1,
-                        "x": round(r.x0 * render_scale, 2),
-                        "y": round(r.y0 * render_scale, 2),
-                        "width": round(r.width * render_scale, 2),
-                        "height": round(r.height * render_scale, 2),
-                    }
-                    name_to_geos.setdefault(w.field_name, []).append(geo)
+                    key = w.field_name
+                    if key not in result:
+                        result[key] = (
+                            i + 1,
+                            round(r.x0 * render_scale, 2),
+                            round(r.y0 * render_scale, 2),
+                            round(r.width * render_scale, 2),
+                            round(r.height * render_scale, 2),
+                        )
         doc.close()
-
-        patched_page = 0
-        patched_rect = 0
-        matched_indices: dict[str, set[int]] = {}
-        for f in fields:
-            name = f.get("pdf_field_name", "")
-            base_name = name.split("___")[0]
-            geos = name_to_geos.get(base_name)
-            if not geos:
-                continue
-
-            rect = f.get("rect")
-            if not rect:
-                continue
-
-            best_geo_idx = -1
-            best_diff = float("inf")
-            already_matched = matched_indices.setdefault(base_name, set())
-
-            for idx, geo in enumerate(geos):
-                if idx in already_matched:
-                    continue
-                diff_x = abs(rect["x"] - geo["x"])
-                diff_w = abs(rect["width"] - geo["width"])
-                if diff_x < 5.0 and diff_w < 5.0:
-                    total_diff = diff_x + diff_w
-                    if total_diff < best_diff:
-                        best_diff = total_diff
-                        best_geo_idx = idx
-
-            if best_geo_idx != -1:
-                geo = geos[best_geo_idx]
-                already_matched.add(best_geo_idx)
-            else:
-                fallback_idx = next(
-                    (i for i in range(len(geos)) if i not in already_matched),
-                    len(geos) - 1,
-                )
-                geo = geos[fallback_idx]
-                already_matched.add(fallback_idx)
-
-            f["page_number"] = geo["page"]
-            patched_page += 1
-            f["rect"] = {
-                "x": geo["x"],
-                "y": geo["y"],
-                "width": geo["width"],
-                "height": geo["height"],
-            }
-            patched_rect += 1
-        if patched_page:
-            log.info(
-                "PyMuPDF patched %d fields (page numbers) / %d (rects)",
-                patched_page,
-                patched_rect,
-            )
+        log.info("PyMuPDF name→page map built: %d entries", len(result))
     except Exception as e:
-        log.warning("PyMuPDF coordinate patch failed: %s", e)
+        log.warning("PyMuPDF name→page map build failed: %s", e)
+    return result
+
+
+def _patch_page_numbers_from_mupdf(
+    pdf_path: Path,
+    fields: list[dict],
+    render_scale: float,
+    name_page_map: dict | None = None,
+):
+    """Fix page numbers on pikepdf fields.
+
+    Strategy (in priority order):
+    1. **Name-based lookup** — use the pre-built PyMuPDF name→(page,rect)
+       map. This is fast, reliable, and doesn't depend on coordinate
+       precision. Handles radio suffixes (base name lookup).
+    2. **Coordinate-based fallback** — for fields whose name isn't in the
+       map (deeply nested AcroForm hierarchies, renamed fields), fall back
+       to the old x/width proximity match.
+    3. **Leave unchanged** — fields we can't resolve keep their page_number
+       (typically 1, from _widget_rect_px). _add_missing_mupdf_widgets will
+       separately add any widgets PyMuPDF sees that pikepdf entirely missed.
+
+    The ENTIRE function must NOT raise — if the map is empty or PyMuPDF
+    fails, we leave fields as-is rather than corrupting page numbers.
+    """
+    if name_page_map is None:
+        name_page_map = _build_mupdf_name_page_map(pdf_path, render_scale)
+
+    if not name_page_map:
+        log.warning("PyMuPDF name→page map is empty — page numbers NOT patched")
+        return
+
+    # ── Pass 1: name-based lookup (fast path) ────────────────────────
+    name_patched = 0
+    for f in fields:
+        name = f.get("pdf_field_name", "")
+        if not name:
+            continue
+
+        # Try exact match first, then base name (strip ___ suffix for radio widgets)
+        entry = name_page_map.get(name)
+        if entry is None:
+            base = name.split("___")[0]
+            if base != name:
+                entry = name_page_map.get(base)
+
+        if entry is not None:
+            page, x, y, w, h = entry
+            f["page_number"] = page
+            f["rect"] = {"x": x, "y": y, "width": w, "height": h}
+            name_patched += 1
+
+    if name_patched:
+        log.info("Name-based patch: %d/%d fields", name_patched, len(fields))
+
+    # ── Pass 2: coordinate-based fallback for unmatched fields ───────
+    unmatched = [f for f in fields if f.get("page_number", 1) == 1
+                 and f.get("pdf_field_name", "")
+                 and not name_page_map.get(f["pdf_field_name"])
+                 and not name_page_map.get(f["pdf_field_name"].split("___")[0])]
+
+    if unmatched:
+        try:
+            coord_patched = _patch_by_coordinates(pdf_path, unmatched, render_scale)
+            if coord_patched:
+                log.info("Coordinate-based patch: %d additional fields", coord_patched)
+        except Exception as e:
+            log.warning("Coordinate-based fallback patch failed: %s", e)
+
+
+def _patch_by_coordinates(
+    pdf_path: Path,
+    fields: list[dict],
+    render_scale: float,
+) -> int:
+    """Coordinate-based page number patching (legacy fallback).
+
+    Used only for fields not resolvable by name — deeply nested hierarchies
+    where the field's /T name differs from what PyMuPDF reports.
+    """
+    doc = fitz.open(str(pdf_path))
+    name_to_geos: dict[str, list[dict]] = {}
+    for i, page in enumerate(doc):
+        for w in page.widgets():
+            if w.field_name:
+                r = w.rect
+                geo = {
+                    "page": i + 1,
+                    "x": round(r.x0 * render_scale, 2),
+                    "y": round(r.y0 * render_scale, 2),
+                    "width": round(r.width * render_scale, 2),
+                    "height": round(r.height * render_scale, 2),
+                }
+                name_to_geos.setdefault(w.field_name, []).append(geo)
+    doc.close()
+
+    patched = 0
+    matched_indices: dict[str, set[int]] = {}
+    for f in fields:
+        name = f.get("pdf_field_name", "")
+        base_name = name.split("___")[0]
+        geos = name_to_geos.get(base_name)
+        if not geos:
+            continue
+
+        rect = f.get("rect")
+        if not rect:
+            continue
+
+        best_geo_idx = -1
+        best_diff = float("inf")
+        already_matched = matched_indices.setdefault(base_name, set())
+
+        for idx, geo in enumerate(geos):
+            if idx in already_matched:
+                continue
+            diff_x = abs(rect["x"] - geo["x"])
+            diff_w = abs(rect["width"] - geo["width"])
+            if diff_x < 10.0 and diff_w < 10.0:  # relaxed threshold for fallback
+                total_diff = diff_x + diff_w
+                if total_diff < best_diff:
+                    best_diff = total_diff
+                    best_geo_idx = idx
+
+        if best_geo_idx != -1:
+            geo = geos[best_geo_idx]
+            already_matched.add(best_geo_idx)
+        else:
+            fallback_idx = next(
+                (i for i in range(len(geos)) if i not in already_matched),
+                len(geos) - 1,
+            )
+            geo = geos[fallback_idx]
+            already_matched.add(fallback_idx)
+
+        f["page_number"] = geo["page"]
+        f["rect"] = {
+            "x": geo["x"],
+            "y": geo["y"],
+            "width": geo["width"],
+            "height": geo["height"],
+        }
+        patched += 1
+    return patched
 
 
 def _add_missing_mupdf_widgets(
