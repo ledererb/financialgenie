@@ -95,30 +95,26 @@ export default function PageEditor({
 
   // ── data fetching ──────────────────────────────────────────────────────
 
-  useEffect(() => {
-    let cancelled = false;
+  const refetchData = useCallback(() => {
     setLoading(true);
     setError(null);
-    setLoadedPage(null);
-
     Promise.all([getMapping(pdfId), getPdfFields(pdfId), getCanonicalFields()])
       .then(([m, f, c]) => {
-        if (cancelled) return;
         setMapping(m);
         setFieldsRes(f);
         setCanonicals(c);
       })
       .catch((e) => {
-        if (!cancelled) setError((e as Error).message);
+        setError((e as Error).message);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [pdfId]);
+
+  useEffect(() => {
+    refetchData();
+  }, [refetchData]);
 
   // Reset selection when page changes
   useEffect(() => {
@@ -713,15 +709,15 @@ export default function PageEditor({
           </div>
 
           {/* ─── Add field dropdown (Task 3.4) ─────────────────────── */}
-          {unmappedPdfFields.length > 0 && (
-            <div style={{ padding: "var(--space-sm) var(--space-md)", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ padding: "var(--space-sm) var(--space-md)", borderBottom: "1px solid var(--border-subtle)", display: "flex", gap: 4, alignItems: "center" }}>
+            {unmappedPdfFields.length > 0 ? (
               <select
                 value=""
                 onChange={(e) => {
                   if (e.target.value) handleAddField(e.target.value);
                 }}
                 style={{
-                  width: "100%",
+                  flex: 1,
                   background: "var(--bg-tertiary)",
                   color: "var(--text-primary)",
                   border: "1px solid var(--accent-green)",
@@ -730,13 +726,33 @@ export default function PageEditor({
                   fontSize: "0.72rem",
                 }}
               >
-                <option value="">+ Mező hozzáadása ({unmappedPdfFields.length} elérhető)</option>
+                <option value="">+ Mezo hozzaadasa ({unmappedPdfFields.length} elerheto)</option>
                 {unmappedPdfFields.map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
-            </div>
-          )}
+            ) : (
+              <span style={{ flex: 1, fontSize: "0.72rem", color: "var(--text-tertiary)" }}>
+                Minden mezo mappelve
+              </span>
+            )}
+            <button
+              onClick={refetchData}
+              title="Mapping ujratoltes"
+              style={{
+                background: "none",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                padding: "4px 8px",
+                fontSize: "0.72rem",
+                flexShrink: 0,
+              }}
+            >
+              ↻
+            </button>
+          </div>
 
           <div
             ref={sidebarRef}
