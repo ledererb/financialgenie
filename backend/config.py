@@ -98,6 +98,12 @@ def mapping_path_for(pdf_id: str, _depth: int = 0) -> Path:
     if candidate.exists():
         return candidate
 
+    # Case-insensitive fallback
+    stem_lower = stem.lower()
+    for existing in MAPPING_DIR.glob("*_mapping.json"):
+        if existing.name.lower() == f"{stem_lower}_mapping.json":
+            return existing
+
     # 2. Signature-based matching for uploaded files (skip for test/temporary files)
     if "test" not in stem.lower() and "temporary" not in stem.lower():
         try:
