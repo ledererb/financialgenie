@@ -129,6 +129,11 @@ class PdfService:
         # across PDF producers and often resolve to object ids that don't match.
         self._patch_page_numbers_from_mupdf(pdf_path, fields)
 
+        # Fallback: pick up any widgets that PyMuPDF sees but pikepdf missed.
+        # This happens with deeply nested AcroForm hierarchies (e.g. c.debtor.fullName)
+        # where the pikepdf /Fields walker doesn't reach all levels.
+        self._add_missing_mupdf_widgets(pdf_path, fields)
+
         return fields
 
     def _walk_fields(
@@ -370,6 +375,102 @@ class PdfService:
                 )
         except Exception as e:
             log.warning("PyMuPDF coordinate patch failed: %s", e)
+
+    def _add_missing_mupdf_widgets(self, pdf_path: Path, fields: list[dict]):
+        """Add widgets that PyMuPDF finds but pikepdf missed.
+
+        This typically happens when the AcroForm /Fields tree uses deeply nested
+        hierarchies (e.g. ``c`` → ``debtor`` → ``fullName``) that the pikepdf
+        walker doesn't fully traverse, or when radio-button widgets are stored
+        outside the /Fields array as page-level annotations.
+        """
+        existing_names = {f["pdf_field_name"] for f in fields}
+        # Also track base names (without ___suffix) to avoid re-adding radio widgets
+        existing_bases = {n.split("___")[0] for n in existing_names}
+
+        try:
+            doc = fitz.open(str(pdf_path))
+            # Collect all widgets grouped by field_name to detect radio groups
+            widgets_by_name: dict[str, list] = {}
+            for page in doc:
+                for w in page.widgets():
+                    if w.field_name:
+                        widgets_by_name.setdefault(w.field_name, []).append(
+                            (page.number, w)
+                        )
+
+            added = 0
+            for name, widget_list in widgets_by_name.items():
+                if name in existing_bases:
+                    continue  # Already extracted by pikepdf
+
+                if len(widget_list) == 1:
+                    # Single widget — text field, single checkbox, etc.
+                    page_num, w = widget_list[0]
+                    r = w.rect
+                    ft = {1: "checkbox", 2: "text", 5: "checkbox", 7: "text"}.get(
+                        w.field_type, "text"
+                    )
+                    fields.append({
+                        "pdf_field_name": name,
+                        "field_type": ft,
+                        "page_number": page_num + 1,
+                        "rect": {
+                            "x": round(r.x0 * RENDER_SCALE, 2),
+                            "y": round(r.y0 * RENDER_SCALE, 2),
+                            "width": round(r.width * RENDER_SCALE, 2),
+                            "height": round(r.height * RENDER_SCALE, 2),
+                        },
+                        "flags": "",
+                        "options": [],
+                        "value": w.field_value or "",
+                        "source": "acroform",
+                    })
+                    added += 1
+                else:
+                    # Multiple widgets with the same name — radio button group.
+                    # Give each widget a unique name via its export state.
+                    for idx, (page_num, w) in enumerate(widget_list):
+                        r = w.rect
+                        # Try to get the unique export/on state for this radio option
+                        export_val = None
+                        try:
+                            states = w.button_states()
+                            if states and "normal" in states:
+                                for st in states["normal"]:
+                                    if st != "Off":
+                                        export_val = st
+                                        break
+                        except Exception:
+                            pass
+
+                        suffix = export_val or str(idx)
+                        unique_name = f"{name}___{suffix}"
+                        if unique_name in existing_names:
+                            continue
+
+                        fields.append({
+                            "pdf_field_name": unique_name,
+                            "field_type": "checkbox",
+                            "page_number": page_num + 1,
+                            "rect": {
+                                "x": round(r.x0 * RENDER_SCALE, 2),
+                                "y": round(r.y0 * RENDER_SCALE, 2),
+                                "width": round(r.width * RENDER_SCALE, 2),
+                                "height": round(r.height * RENDER_SCALE, 2),
+                            },
+                            "flags": "",
+                            "options": [],
+                            "value": w.field_value or "",
+                            "source": "acroform",
+                        })
+                        added += 1
+
+            doc.close()
+            if added:
+                log.info("PyMuPDF fallback added %d missing widgets", added)
+        except Exception as e:
+            log.warning("PyMuPDF fallback widget extraction failed: %s", e)
 
     def prime_page_heights(self, pdf_path: Path):
         """Populate the page-height cache from PyMuPDF."""
