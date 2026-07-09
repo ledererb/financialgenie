@@ -438,6 +438,34 @@ export default function ReviewDashboard({
                       <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
                         {canonical}
                       </span>
+                      {pages.length > 0 && (
+                        <span
+                          style={{
+                            marginLeft: "auto",
+                            display: "flex",
+                            gap: 4,
+                            alignItems: "center",
+                          }}
+                        >
+                          {pages.map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => onPageClick(p as number)}
+                              style={{
+                                fontSize: "0.7rem",
+                                padding: "2px 8px",
+                                borderRadius: 4,
+                                border: "1px solid rgba(255,255,255,0.15)",
+                                background: "rgba(255,255,255,0.06)",
+                                color: "var(--accent-blue, #5b9aff)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {p}. oldal →
+                            </button>
+                          ))}
+                        </span>
+                      )}
                     </div>
                     <div
                       style={{
@@ -459,6 +487,7 @@ export default function ReviewDashboard({
                           }}
                         >
                           {f.pdf_field_name}
+                          {f.page_number ? ` (${f.page_number}. old.)` : ""}
                         </span>
                       ))}
                     </div>
