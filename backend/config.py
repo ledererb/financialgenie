@@ -22,7 +22,10 @@ log = logging.getLogger("mapping_editor")
 #: Absolute path to the project root (parent of backend/).
 PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
-#: Add src/ to sys.path so we can reuse MappingConfig / FieldRecognizer.
+#: Add PROJECT_ROOT and src/ to sys.path so both direct and src-prefixed imports work.
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 _SRC = PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
