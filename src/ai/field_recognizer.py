@@ -329,6 +329,7 @@ class MappingConfidence(str, Enum):
     HIGH = "high"       # 90%+ biztos
     MEDIUM = "medium"   # 60-90% biztos
     LOW = "low"         # 60% alatt – emberi felülvizsgálat kell
+    MANUAL = "manual"   # Felhasználó által kézzel beállított
 
 
 @dataclass
