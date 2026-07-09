@@ -1,0 +1,45 @@
+{
+  "form_name": "SZA_IG_TEST",
+  "form_type": "acroform",
+  "bank_name": "OTP",
+  "fields": [],
+  "points": [
+    {
+      "point_id": "TEST_1",
+      "framework": "*",
+      "label": "Teszt pont 1 - feltétel nélküli",
+      "page_number": 1,
+      "blocks": [
+        {
+          "block_id": "TEST_1.main",
+          "members": [
+            "nyilatkozat1",
+            "nyilatkozat2"
+          ]
+        }
+      ],
+      "rule_type": 1,
+      "params": {}
+    },
+    {
+      "point_id": "TEST_2",
+      "framework": "ALAP",
+      "label": "Teszt pont 2 - termékfüggő",
+      "page_number": 2,
+      "blocks": [
+        {
+          "block_id": "TEST_2.main",
+          "members": [
+            "termek_igen"
+          ]
+        }
+      ],
+      "rule_type": 5,
+      "params": {
+        "condition_value": "CSOK Plusz Babaváró"
+      }
+    }
+  ],
+  "character_groups": [],
+  "approved": false
+}

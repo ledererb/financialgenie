@@ -33,7 +33,7 @@
       "page_number": 1,
       "coordinates": {
         "x": 48.8,
-        "y": 204.0,
+        "y": 204,
         "width": 62.4,
         "height": 13.3
       },
@@ -50,8 +50,8 @@
       "page_number": 1,
       "coordinates": {
         "x": 290.2,
-        "y": 204.0,
-        "width": 140.0,
+        "y": 204,
+        "width": 140,
         "height": 13.3
       },
       "notes": "Értékesítő /Mobilbankár neve ) vállalkozás neve) kötelezettséget vállalok arra, hogy",
@@ -83,8 +83,8 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": {
-        "x": 72.0,
-        "y": 342.0,
+        "x": 72,
+        "y": 342,
         "width": 135.1,
         "height": 13.3
       },
@@ -102,7 +102,7 @@
       "coordinates": {
         "x": 305.5,
         "y": 369.6,
-        "width": 219.0,
+        "width": 219,
         "height": 13.3
       },
       "notes": "Értékesítő/Mobilbankár aláírása",
@@ -125,5 +125,6 @@
       "notes": null
     }
   ],
-  "character_groups": []
+  "character_groups": [],
+  "points": []
 }

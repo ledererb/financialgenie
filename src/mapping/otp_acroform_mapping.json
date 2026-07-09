@@ -55,7 +55,7 @@
       "pdf_field_name": "loan_down_payment",
       "label": "Önerő",
       "field_type": "number",
-      "canonical_field": "Contact.Own_resources__c",
+      "canonical_field": null,
       "confidence": "high",
       "page_number": 1
     },
@@ -63,7 +63,7 @@
       "pdf_field_name": "loan_monthly_payment",
       "label": "Havi törlesztő",
       "field_type": "number",
-      "canonical_field": "Contact.Monthly_installment_payment__c",
+      "canonical_field": null,
       "confidence": "high",
       "page_number": 1
     },
@@ -343,7 +343,7 @@
       "pdf_field_name": "property_rooms",
       "label": "Szobák száma",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "high",
       "page_number": 3
     },
@@ -351,7 +351,7 @@
       "pdf_field_name": "property_year_built",
       "label": "Építés éve",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "high",
       "page_number": 3
     },

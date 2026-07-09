@@ -92,6 +92,27 @@ export type CharacterGroupCreate = {
   separator?: string;
 };
 
+/** A block of checkboxes inside a numbered point on a bank form. */
+export interface PointBlock {
+  block_id: string;
+  members: string[];
+}
+
+/**
+ * A numbered question on a bank form containing one or more blocks of
+ * checkboxes. rule_type (1-7) selects which checkbox engine rule applies;
+ * params are rule-specific (see src/engine/fill_rules.py).
+ */
+export interface PointData {
+  point_id: string;
+  framework: string; // ALAP | CSOK_Plusz | Otthon_Start | "*" (universal)
+  label: string;
+  page_number: number;
+  blocks: PointBlock[];
+  rule_type: number; // 1..7
+  params: Record<string, any>;
+}
+
 export interface MappingConfig {
   bank_name?: string;
   form_name?: string;
@@ -102,6 +123,7 @@ export interface MappingConfig {
   page_structure?: unknown;
   fields: MappingField[];
   character_groups: CharacterGroup[];
+  points?: PointData[];
   // Internal metadata echoed by backend
   _mapping_file?: string;
   _mtime?: number;

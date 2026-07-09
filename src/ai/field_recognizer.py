@@ -312,6 +312,24 @@ CANONICAL_FIELDS = {
     "Opportunity.gylet_kezel_je__c": "Ügylet kezelője",
     "Opportunity.gylet_st_tusz__c": "Ügylet státusz",
     "Opportunity.remark__c": "Megjegyzés",
+
+    # ════════════════════════════════════════════════════════════
+    # loan.* — hitel-szintű canonical mezők (FIX H4)
+    # Ezek a LoanDetails modellből kerülnek a kitöltő-diktumba; az OTP
+    # mapping-ek több helyen hivatkoznak rájuk (pl. LAHI_KTKA_Lakástakarék
+    # → loan.housing_savings). Korábban hiányoztak a CANONICAL_FIELDS-ből,
+    # így az AI nem ismerte fel őket.
+    # ════════════════════════════════════════════════════════════
+    "loan.loan_amount": "Hitelösszeg (Ft)",
+    "loan.loan_purpose": "Hitel célja",
+    "loan.monthly_payment": "Becsült havi törlesztő (Ft)",
+    "loan.down_payment": "Önerő (Ft)",
+    "loan.purchase_price": "Vételár (Ft)",
+    "loan.csok_amount": "CSÖK támogatás összege (Ft)",
+    "loan.afa_support": "ÁFA támogatás összege (Ft)",
+    "loan.housing_savings": "Lakástakarék összege (Ft)",
+    "loan.product_type": "Termék típusa (pl. piaci_hitel, csok_plusz, otthon_start)",
+    "loan.refinance_account": "Refinanszírozott hitel számlaszáma",
 }
 
 
@@ -345,6 +363,12 @@ class RecognizedField:
     notes: Optional[str] = None            # AI megjegyzés
     checkbox_group: Optional[dict] = None   # {"group_id": str, "match_value": str}
     fill_rule: Optional[dict] = None         # {"type": "static"|"per_participant"|"conditional"|"role_based", "value": str, ...}
+    # C8 (birth-date / date fragmentation ground-work): when a single logical
+    # date (e.g. birth date) is split across several PDF fields (year / month /
+    # day, or Nth digit), `fragment` records which piece this field carries so
+    # the fill engine can reassemble it. Values: "year", "month", "day", or
+    # "digit:N". Survives JSON round-trip via MappingConfig.to_dict/from_dict.
+    fragment: Optional[str] = None
 
 
 @dataclass
@@ -361,6 +385,22 @@ class MappingConfig:
     approved: bool = False                 # Emberi jóváhagyás megtörtént-e
     approved_by: Optional[str] = None
     notes: Optional[str] = None
+    # FIX M5 — character-split groups (spec §6, §9.3): a canonical value
+    # (e.g. postal code) split character-by-character across several digit-box
+    # PDF fields. The pipeline reads this to expand each group before filling.
+    # Each entry: {"group_id", "group_name", "field_type": "character_split",
+    # "canonical_field", "member_fields": [...], "direction", "separator"}.
+    # Stored as plain dicts so the existing JSON mapping files (edited via the
+    # mapping editor backend) round-trip without bespoke dataclasses.
+    character_groups: list[dict] = field(default_factory=list)
+    # Round-2 fill engine (spec: hiteligénylési kitöltési szabályok): logical
+    # form "points" (numbered questions spanning checkbox blocks) and the
+    # reusable "rule_sets". Each point selects one of 7 rule types in
+    # src/engine/fill_rules. Stored as plain dicts so the mapping JSON files
+    # and the editor backend round-trip without bespoke dataclasses. Default
+    # empty → old mappings keep loading unchanged (purely additive).
+    points: list[dict] = field(default_factory=list)
+    rule_sets: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Szeriálizáció JSON-ba."""
@@ -384,9 +424,17 @@ class MappingConfig:
                     "notes": f.notes,
                     "checkbox_group": f.checkbox_group,
                     "fill_rule": f.fill_rule,
+                    "fragment": f.fragment,
                 }
                 for f in self.fields
             ],
+            # M5: persist character groups so AI-generated/heuristic mappings
+            # and user edits survive a save→load cycle.
+            "character_groups": self.character_groups,
+            # Round-2: persist points / rule_sets so the 7-rule fill engine
+            # config survives a save→load cycle.
+            "points": self.points,
+            "rule_sets": self.rule_sets,
         }
 
     @classmethod
@@ -404,6 +452,7 @@ class MappingConfig:
                 notes=f.get("notes"),
                 checkbox_group=f.get("checkbox_group"),
                 fill_rule=f.get("fill_rule"),
+                fragment=f.get("fragment"),
             )
             for f in data.get("fields", [])
         ]
@@ -416,6 +465,11 @@ class MappingConfig:
             approved=data.get("approved", False),
             approved_by=data.get("approved_by"),
             notes=data.get("notes"),
+            # M5: load character groups (default [] for older mapping files).
+            character_groups=list(data.get("character_groups", [])),
+            # Round-2: load points / rule_sets (default [] for older mappings).
+            points=list(data.get("points", [])),
+            rule_sets=list(data.get("rule_sets", [])),
         )
 
     def save(self, path: Path):
@@ -865,30 +919,40 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
     @staticmethod
     def _fuzzy_match_canonical(candidate: str, valid_keys: set[str]) -> str | None:
-        """Try to match an AI-returned canonical key to a valid one."""
-        # Normalize
+        """Try to match an AI-returned canonical key to a valid one.
+
+        FIX M8 — matching is case-insensitive. The canonical catalog
+        (``CANONICAL_FIELDS``) uses mixed-case keys like ``Contact.Name``
+        while the AI often returns lower-case variants (``contact.name``).
+        We build a lower-cased index that maps back to the original key so a
+        case-insensitive search still returns the proper canonical form.
+        """
+        # Lower-cased index: "contact.name" → "Contact.Name"
+        lower_index: dict[str, str] = {k.lower(): k for k in valid_keys}
+
         c = candidate.lower().strip().replace(" ", "_").replace("-", "_")
-        if c in valid_keys:
-            return c
-        
+        # Exact (case-insensitive) hit → return the original-cased key.
+        if c in lower_index:
+            return lower_index[c]
+
         # Try common variations
         # e.g. "participant.full_name" → "Contact.Name"
         # e.g. "property.address" → "property.address.full_address"
-        for key in valid_keys:
+        for lower_key, orig_key in lower_index.items():
             # Substring match
-            if c in key or key in c:
-                return key
+            if c in lower_key or lower_key in c:
+                return orig_key
             # Same suffix
             c_parts = c.split(".")
-            k_parts = key.split(".")
+            k_parts = lower_key.split(".")
             if len(c_parts) >= 2 and len(k_parts) >= 2 and c_parts[0] == k_parts[0] and c_parts[-1] == k_parts[-1]:
-                return key
-        
+                return orig_key
+
         # If it starts with a valid prefix, accept it as-is (AI invented a reasonable field)
         for prefix in ("participant.", "property.", "loan.", "csok.", "document.", "declaration.", "signature.", "vat.", "appraisal."):
             if c.startswith(prefix):
                 return c
-        
+
         return None
 
     def _merge_mappings(
@@ -1194,22 +1258,18 @@ PDF: {pdf_path.name}"""
                 return self.recognize_flat(pdf_path)
 
     def _extract_acroform_fields(self, pdf_path: Path) -> list[dict]:
-        """AcroForm mezők kinyerése a backend/pdf_service.py használatával a konzisztencia érdekében."""
-        import sys
-        
-        backend_path = Path(__file__).resolve().parent.parent.parent / "backend"
-        if str(backend_path) not in sys.path:
-            sys.path.insert(0, str(backend_path))
-            
+        """AcroForm mezők kinyerése.
+
+        FIX L8 — korábban a ``backend/pdf_service``-t importálta, ami egy
+        rétegsértő függőség volt (``src/`` → ``backend/``). A kinyerő logika
+        most a ``src/engine/acroform_field_extractor`` modulban él, így az AI
+        réteg nem a backend-re támaszkodik.
+        """
+        from src.engine.acroform_field_extractor import extract_acroform_fields
+
+        fields: list[dict] = []
         try:
-            from pdf_service import pdf_service
-        except ImportError as e:
-            logger.error(f"Nem sikerült importálni a pdf_service-t: {e}")
-            return []
-            
-        fields = []
-        try:
-            extracted = pdf_service.extract_acroform_fields(pdf_path)
+            extracted = extract_acroform_fields(pdf_path)
             for ext in extracted:
                 rect_dict = ext.get("rect", {})
                 fields.append({
@@ -1224,10 +1284,10 @@ PDF: {pdf_path.name}"""
                         rect_dict.get("height", 0)
                     ]
                 })
-            logger.info(f"pdf_service alapján {len(fields)} AcroForm mező kinyerve.")
+            logger.info(f"{len(fields)} AcroForm mező kinyerve (src/engine).")
         except Exception as e:
-            logger.error(f"PDF olvasási hiba pdf_service-n keresztül: {e}")
-            
+            logger.error(f"PDF olvasási hiba (acroform_field_extractor): {e}")
+
         return fields
 
     def _ai_map_fields(
@@ -1537,9 +1597,12 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             "onero": "Lead.Tervezett_onero__c",
             "torleszto": "Contact.Affordable_monthly_installments__c",
             # Ingatlan
-            "helyrajzi_szam": "Lead.Ingatlan_jellege__c",
-            "hrsz": "Lead.Ingatlan_jellege__c",
-            "parcel_number": "Lead.Ingatlan_jellege__c",
+            # FIX M3: helyrajzi szám / hrsz / parcel_number a Lead.Ingatlan_megjegyzes__c
+            # (ingatlan megjegyzés/helyrajsi szám) mezőre képeződik, NEM az
+            # Ingatlan_jellege__c-re (ami az ingatlan típusa = lakás/ház/telek).
+            "helyrajzi_szam": "Lead.Ingatlan_megjegyzes__c",
+            "hrsz": "Lead.Ingatlan_megjegyzes__c",
+            "parcel_number": "Lead.Ingatlan_megjegyzes__c",
             "terulet": "Lead.Ingatlan_alapterulet__c",
             "alapterulet": "Lead.Ingatlan_alapterulet__c",
             "area": "Lead.Ingatlan_alapterulet__c",
@@ -1555,9 +1618,13 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             "SZA_IG_szül_név": "Contact.Szuletesi_nev__c",
             "SZA_IG_anyja_neve": "Contact.Mother_s_Name__c",
             "SZA_IG_szül_hely": "Contact.Place_of_Birth__c",
-            "SZA_IG_szül_év": "Contact.Date_of_birth__c",
-            "SZA_IG_szül_hónap": "Contact.Date_of_birth__c",
-            "SZA_IG_szül_nap": "Contact.Date_of_birth__c",
+            # C8: az év/hónap/nap dobozok a Contact.Birthdate (teljes dátum)
+            # kanonikushoz tartoznak, fragment=year|month|day darabolja fel.
+            # Korábban Contact.Date_of_birth__c-re mutattak, amit a pipeline
+            # sosem állít elő → a dobozok üresek maradtak.
+            "SZA_IG_szül_év": "Contact.Birthdate",
+            "SZA_IG_szül_hónap": "Contact.Birthdate",
+            "SZA_IG_szül_nap": "Contact.Birthdate",
             "SZA_IG_személyiszám": "Contact.ID_Card_Number__c",
             "SZA_IG_személyazonosíó_szám": "Contact.ID_Card_Number__c",
             "SZA_IG_adóazonosító": "Contact.Tax_ID__c",
@@ -1589,9 +1656,9 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             "SZA_IG_szül_név-társ": "Contact.Szuletesi_nev__c",
             "SZA_IG_anyja_neve-társ": "Contact.Mother_s_Name__c",
             "SZA_IG_szül_hely-társ": "Contact.Place_of_Birth__c",
-            "SZA_IG_szül_év-társ": "Contact.Date_of_birth__c",
-            "SZA_IG_szül_hónap-társ": "Contact.Date_of_birth__c",
-            "SZA_IG_szül_nap-társ": "Contact.Date_of_birth__c",
+            "SZA_IG_szül_év-társ": "Contact.Birthdate",
+            "SZA_IG_szül_hónap-társ": "Contact.Birthdate",
+            "SZA_IG_szül_nap-társ": "Contact.Birthdate",
             "SZA_IG_személyiszám-társ": "Contact.ID_Card_Number__c",
             "SZA_IG_személyazonosíó_szám-társ": "Contact.ID_Card_Number__c",
             "SZA_IG_adóazonosító-társ": "Contact.Tax_ID__c",
@@ -1632,6 +1699,24 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             "MA_IG_vállalkozás_adószám": "participant.business_tax_id",
         }
 
+        # C8 (date fragmentation ground-work): these OTP PDF fields each carry
+        # only a PIECE of a single logical date (birth date / residence-since),
+        # which the fill engine must later reassemble. Keys mirror OTP_EXACT_MAP
+        # field names; values are the fragment role: "year" | "month" | "day".
+        OTP_DATE_FRAGMENTS = {
+            # Születési dátum (adós)
+            "SZA_IG_szül_év": "year",
+            "SZA_IG_szül_hónap": "month",
+            "SZA_IG_szül_nap": "day",
+            # Születési dátum (társigénylő)
+            "SZA_IG_szül_év-társ": "year",
+            "SZA_IG_szül_hónap-társ": "month",
+            "SZA_IG_szül_nap-társ": "day",
+            # Lakóhely jogcíme – mióta lakik ott (szintén szétdarabolt dátum)
+            "SZA_IG_mióta_lakik_év": "year",
+            "SZA_IG_mióta_lakik_hónap": "month",
+        }
+
         fields = []
         # OTP exact map előzetesen normalizálva (2b): az ékezetes/regiszter-
         # érzékeny kulcsokat (`név`, `állandó_lakcím`) az `_normalize_key`
@@ -1640,16 +1725,24 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         otp_exact_map_normalized = {
             _normalize_key(k): v for k, v in OTP_EXACT_MAP.items()
         }
+        # C8: same normalization for the date-fragment lookup so an
+        # accent/case-variant PDF field name still finds its fragment role.
+        otp_date_fragments_normalized = {
+            _normalize_key(k): v for k, v in OTP_DATE_FRAGMENTS.items()
+        }
         for pdf_field in pdf_fields:
             field_name = pdf_field["name"]
             canonical = None
             confidence = MappingConfidence.LOW
+            fragment = None
 
             # 1. Próbáljuk az OTP exact map-ből – normalizált kulccsal.
             normalized = _normalize_key(field_name)
             if normalized in otp_exact_map_normalized:
                 canonical = otp_exact_map_normalized[normalized]
                 confidence = MappingConfidence.HIGH
+                # C8: ha ez egy szétdarabolt dátummező (év/hónap/nap), jegyezzük fel.
+                fragment = otp_date_fragments_normalized.get(normalized)
             else:
                 # 2. Próbáljuk a kulcsszó alapú map-ből
                 clean_name = field_name.lower()
@@ -1686,6 +1779,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 canonical_field=canonical,
                 confidence=confidence,
                 page_number=pdf_field.get("page", 1),
+                fragment=fragment,
             ))
 
         mapped = sum(1 for f in fields if f.canonical_field)
@@ -1733,7 +1827,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             ("E-mail", "Contact.Email", FieldType.TEXT),
             ("Hitelösszeg", "Opportunity.Hitel_sszeg__c", FieldType.NUMBER),
             ("Futamidő", "Contact.Term_in_year_c__c", FieldType.NUMBER),
-            ("Helyrajzi szám", "Lead.Ingatlan_jellege__c", FieldType.TEXT),
+            ("Helyrajzi szám", "Lead.Ingatlan_megjegyzes__c", FieldType.TEXT),
             ("Terület", "Lead.Ingatlan_alapterulet__c", FieldType.NUMBER),
         ]
 

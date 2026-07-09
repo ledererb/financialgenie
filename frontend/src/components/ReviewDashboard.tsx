@@ -10,6 +10,7 @@ import { getMapping, getPdfFields } from "@/api/client";
 interface ReviewDashboardProps {
   pdfId: string;
   onPageClick: (page: number) => void;
+  onOpenPoints: () => void;
   onBack: () => void;
   onApprove: () => void;
   onStatsReady?: (mapped: number, total: number) => void;
@@ -36,6 +37,7 @@ function confidenceBadge(level: "high" | "medium" | "low", count: number) {
 export default function ReviewDashboard({
   pdfId,
   onPageClick,
+  onOpenPoints,
   onBack,
   onApprove,
   onStatsReady,
@@ -220,6 +222,28 @@ export default function ReviewDashboard({
         >
           {mapping?.bank_name ?? ""} — {mapping?.form_name ?? pdfId}
         </span>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={onOpenPoints}
+          style={{ marginLeft: "auto" }}
+          title="Sorszámozott nyomtatványpontok és checkbox blokkok szerkesztése"
+        >
+          ☑ Pontok &amp; Blokkok
+          {mapping && (mapping.points?.length ?? 0) > 0 && (
+            <span
+              style={{
+                marginLeft: 6,
+                background: "var(--accent-blue-glow)",
+                color: "var(--accent-blue)",
+                borderRadius: 999,
+                padding: "0 6px",
+                fontSize: "0.6rem",
+              }}
+            >
+              {mapping.points!.length}
+            </span>
+          )}
+        </button>
       </header>
 
       {/* ── scrollable body ──────────────────────────────────────────── */}

@@ -2403,5 +2403,16 @@
       "fill_rule": null
     }
   ],
-  "character_groups": []
+  "character_groups": [],
+  "points": [
+    {
+      "point_id": "POINT_MRE1RETQ",
+      "framework": "*",
+      "label": "",
+      "page_number": 1,
+      "blocks": [],
+      "rule_type": 1,
+      "params": {}
+    }
+  ]
 }

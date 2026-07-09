@@ -29,6 +29,82 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def fmt_money(value: int | float | None) -> str:
+    """Format a number as a Hungarian money string.
+
+    Returns ``"0"`` for ``0`` / ``None`` (never an empty string, which the PDF
+    fill engine treats as "skip"). Thousands are separated by a space,
+    matching Hungarian convention (e.g. ``450 000``).
+    """
+    if value is None:
+        return "0"
+    try:
+        return f"{int(value):,}".replace(",", " ")
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def expand_character_groups(
+    source_data: dict[str, str],
+    character_groups: list[dict],
+) -> dict[str, str]:
+    """Split canonical values across digit-box member fields (FIX M5).
+
+    Some PDF forms store a single logical value (e.g. a 4-digit postal code,
+    or comb text) in several independent one-character AcroForm boxes. A
+    mapping declares such a layout as a *character group*::
+
+        {
+          "group_id": "zip",
+          "canonical_field": "Contact.ZIP__c",
+          "member_fields": ["zip1", "zip2", "zip3", "zip4"],
+          "direction": "left_to_right",   # or "top_to_bottom"
+          "separator": ""
+        }
+
+    Given the resolved ``source_data`` (canonical_field → full value) and the
+    list of groups, this returns a ``{member_field: single_char}`` mapping
+    ready to merge into the PDF-filler ``field_data``.
+
+    Rules:
+      * The full value is looked up by the group's ``canonical_field``.
+      * Characters are distributed across ``member_fields`` in order;
+        ``direction`` is honoured only when a reader needs it (the order of
+        ``member_fields`` is already authoritative for left_to_right vs.
+        top_to_bottom).
+      * Member fields beyond the value length are left empty (``""``); a
+        value longer than the boxes is truncated to the number of boxes.
+      * Unknown/missing canonical value → the group is skipped (all boxes
+        stay empty, matching the spec's "leave the rest empty").
+
+    This is a pure function so it can be unit-tested without a PDF.
+    """
+    expanded: dict[str, str] = {}
+    if not character_groups:
+        return expanded
+
+    for group in character_groups:
+        if not isinstance(group, dict):
+            continue
+        members = group.get("member_fields") or []
+        canonical = group.get("canonical_field")
+        if not members or not canonical:
+            continue
+        raw = source_data.get(canonical)
+        if raw is None or str(raw) == "":
+            continue
+        # The value may carry a separator between digits (e.g. a date); strip
+        # it so each box receives a single character.
+        separator = group.get("separator") or ""
+        value = str(raw)
+        if separator:
+            value = value.replace(separator, "")
+        # Distribute one character per member box (truncate / pad).
+        for idx, member in enumerate(members):
+            expanded[member] = value[idx] if idx < len(value) else ""
+    return expanded
+
+
 # ---------------------------------------------------------------------------
 # Result adatstruktúra
 # ---------------------------------------------------------------------------
@@ -305,18 +381,20 @@ class AcroFormFiller(BaseFiller):
                         pdf_field_name, mapping, field_data
                     )
 
-                    if canonical_name is None:
-                        result.skipped_fields.append(pdf_field_name)
-                        logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
-                        continue
-
+                    # C6: a canonical_name lehet None (pl. egy ``_N`` suffix-szel
+                    # átnevezett példány-mező, ami nincs a mapping-ben), de ha a
+                    # pdf_field_name fallback értéket adott, akkor is ki kell
+                    # tölteni. Csak akkor hagyjuk ki, ha végképp nincs adat.
                     if value is None or value == "":
+                        if canonical_name is None:
+                            logger.debug("Nincs mapping ehhez a mezőhöz: %s", pdf_field_name)
+                        else:
+                            logger.debug(
+                                "Nincs adat ehhez a mezőhöz: %s → %s",
+                                pdf_field_name,
+                                canonical_name,
+                            )
                         result.skipped_fields.append(pdf_field_name)
-                        logger.debug(
-                            "Nincs adat ehhez a mezőhöz: %s → %s",
-                            pdf_field_name,
-                            canonical_name,
-                        )
                         continue
 
                     # Típus-specifikus értékbeírás
@@ -333,11 +411,16 @@ class AcroFormFiller(BaseFiller):
                             # Radio button specifikus érték (pl. "1,2")
                             field_obj[pikepdf.Name("/V")] = pikepdf.Name(f"/{value}")
                         else:
-                            # Checkbox: az érték truthy-e? A PDF /Yes névvel jelzi
-                            # a bepipált állapotot (NoToggleToOff = /Ff 1-es bit).
+                            # Checkbox: az érték truthy-e?
+                            # FIX M4: a bepipált állapotot nem a hardcoded
+                            # "/Yes" név jelzi, hanem a widget tényleges
+                            # export-értéke (/AP/N appearance állapotokból
+                            # olvassuk ki — valós bank nyomtatványok /1,
+                            # /X, /On, /true stb. névvel dolgoznak).
                             is_checked = self._is_truthy(value)
                             if is_checked:
-                                field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Yes")
+                                on_state = self._get_checkbox_on_state(field_obj, widgets)
+                                field_obj[pikepdf.Name("/V")] = pikepdf.Name(on_state)
                             else:
                                 # Kikapcsolt checkbox: /Off név
                                 field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
@@ -348,7 +431,7 @@ class AcroFormFiller(BaseFiller):
                         # Külön kezelés Comb mezők (pl. születési idő dobozos) igazításához
                         try:
                             ff = int(field_obj.get("/Ff", 0))
-                            if ff & (1 << 24):  # Comb flag (bit 25)
+                            if ff & (1 << 24):  # Comb flag (Ff bit 25, 1-based = 1<<24)
                                 field_obj[pikepdf.Name("/Q")] = 1  # Középre igazítás (Center)
                         except Exception:
                             pass
@@ -408,7 +491,9 @@ class AcroFormFiller(BaseFiller):
                     canonical_name, value = self._resolve_field_value(
                         wname, mapping, field_data
                     )
-                    if canonical_name is None or value is None or value == "":
+                    # C6: canonical_name lehet None (átnevezett _N példány-mező),
+                    # de a pdf_field_name fallback értékével akkor is töltsünk.
+                    if value is None or value == "":
                         continue
 
                     # Fill based on widget type
@@ -466,17 +551,68 @@ class AcroFormFiller(BaseFiller):
             logger.warning("PyMuPDF fallback kitöltés sikertelen: %s", exc)
 
     @staticmethod
+    def _get_checkbox_on_state(field_obj: Any, widgets: list) -> str:
+        """Return the widget's actual ON export value from the /AP appearance dict.
+
+        FIX M4 — real bank forms do not always use the textbook ``/Yes`` name
+        for the checked state; they use ``/1``, ``/X``, ``/On``, ``/true``,
+        etc. The checked export value is the single state name listed under
+        ``/AP/N`` (normal appearance) that is not ``/Off``.
+
+        Looks at the field object first, then each widget (the ``/AP`` often
+        lives on the widget annotation rather than the parent field).
+
+        Args:
+            field_obj: The AcroForm field dictionary.
+            widgets: The field's widget annotation dictionaries.
+
+        Returns:
+            The ON state name, slash-prefixed (e.g. ``"/1"``, ``"/X"``,
+            ``"/Yes"``). Falls back to ``"/Yes"`` and logs a warning when no
+            ``/AP`` appearance dictionary is present.
+        """
+        holders = [field_obj] + list(widgets)
+        for holder in holders:
+            try:
+                ap = holder.get("/AP")
+            except Exception:
+                ap = None
+            if not ap:
+                continue
+            try:
+                n_dict = ap.get("/N")
+            except Exception:
+                n_dict = None
+            if n_dict is None:
+                continue
+            # /AP/N maps appearance-state names → appearance streams.
+            try:
+                state_names = list(n_dict.keys())
+            except Exception:
+                continue
+            for key in state_names:
+                name = str(key)
+                if name.lstrip("/") != "Off":
+                    return name
+        logger.warning(
+            "Checkbox has no usable /AP appearance dictionary; falling back "
+            "to '/Yes' as the ON export value. The field may not render as "
+            "checked in strict viewers."
+        )
+        return "/Yes"
+
+    @staticmethod
     def _is_truthy(value: Any) -> bool:
         """Egy mezőérték truthy értelmezése checkbox kitöltéshez."""
         if isinstance(value, bool):
             return value
         s = str(value).strip().lower()
-        if s in ("", "0", "false", "no", "nem", "off", "false", "x-", "-"):
+        if s in ("", "0", "false", "no", "nem", "off", "x-", "-"):
             return False
         if s in ("yes", "igen", "true", "1", "x", "y", "i", "on"):
             return True
-        # Bármi más nem-empty → truthy
-        return s != ""
+        # Bármi más non-empty → truthy ("" már a fenti ágon kiesett).
+        return True
 
     @staticmethod
     def _make_readonly(pdf: Any) -> None:

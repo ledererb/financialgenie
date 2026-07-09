@@ -24,6 +24,7 @@ Használat:
 
 import json
 import logging
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,13 +36,84 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.models.canonical_model import DealData, ParticipantRole
 from src.normalizer.data_normalizer import DataNormalizer
 from src.integrations.salesforce_client import SalesforceClient
-from src.engine.document_assembler import DocumentAssembler, ProductType
-from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement
+from src.engine.document_assembler import (
+    DocumentAssembler, ProductType,
+    INSTANCE_ROLE_CO_BORROWER, INSTANCE_ROLE_GUARANTOR, INSTANCE_ROLE_BENEFICIARY,
+    INSTANCE_ROLE_PROPERTY,
+)
+from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement, fmt_money, expand_character_groups
 from src.engine.completeness_checker import CompletenessChecker, CompletenessStatus
 from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
 from src.ai.field_recognizer import FieldRecognizer, MappingConfig, print_mapping_summary
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_fragment(value, fragment):
+    """Extract a single fragment (year/month/day/digit:N) from a value.
+
+    FIX C8 — date / digit box fragmentation.
+
+    Some PDF form fields carry only a PIECE of a larger logical value:
+      - ``fragment="year"|"month"|"day"``  → one box of a split date
+        (canonical value e.g. ``"1985.05.12"`` → ``"1985"`` / ``"05"`` / ``"12"``)
+      - ``fragment="digit:N"``             → the Nth character (1-based) of a
+        split numeric value (e.g. postal code ``"1123"`` → ``digit:1`` = ``"1"``)
+
+    The canonical value may arrive in several formats: ``"1985.05.12"`` (HU),
+    ``"1985-05-12"`` (ISO), ``1985`` (year only). All are normalized.
+
+    This function never raises: on any parse problem it returns ``""`` so the
+    box is simply left empty (matching the spec's "leave the rest empty").
+
+    Args:
+        value: The full logical value (string or scalar).
+        fragment: The fragment role: ``None`` | ``"year"`` | ``"month"`` |
+            ``"day"`` | ``"digit:N"`` (N is 1-based).
+
+    Returns:
+        The extracted fragment as a string, or the original value when no
+        fragment is requested, or ``""`` when the fragment cannot be extracted.
+    """
+    if not fragment:
+        return value
+    if value is None:
+        return ""
+    s = str(value).strip()
+    if s == "":
+        return ""
+    frag = str(fragment).strip().lower()
+
+    if frag in ("year", "month", "day"):
+        parts = re.split(r"[.\-/]", s)
+        # Year-only value (e.g. "1985" / 1985): fills the year box, leaves
+        # month/day empty. A single all-numeric token is treated as a year.
+        if len(parts) == 1 and parts[0].isdigit():
+            return parts[0] if frag == "year" else ""
+        if len(parts) >= 3:
+            y, m, d = parts[0], parts[1], parts[2]
+            if frag == "year":
+                return y if (y and y.isdigit()) else ""
+            if frag == "month":
+                return m if (m and m.isdigit()) else ""
+            return d if (d and d.isdigit()) else ""
+        # Wrong arity (e.g. "1985.03"): cannot reliably split → leave empty.
+        return ""
+
+    if frag.startswith("digit:"):
+        n_str = frag[len("digit:"):]
+        try:
+            n = int(n_str)  # 1-based character position per spec
+        except ValueError:
+            return ""
+        idx = n - 1
+        if 0 <= idx < len(s):
+            return s[idx]
+        # Index out of range (e.g. postal code shorter than expected).
+        return ""
+
+    # Unknown fragment kind: return value unchanged (forward-compatible).
+    return value
 
 
 class FormFillerPipeline:
@@ -201,6 +273,7 @@ class FormFillerPipeline:
         try:
             assembler = DocumentAssembler()
             actual_template = template_pdf
+            instance_fields = None
             # Master PDF detektálás: a DocumentAssembler.is_master_pdf dönti el,
             # nem egy `page_count == 97` magic number (dokumentum-agnosztikus).
             if assembler.is_master_pdf(template_pdf):
@@ -219,17 +292,28 @@ class FormFillerPipeline:
                 if not products_enum:
                     products_enum = [ProductType.PIACI_HITEL]
                 
-                assembler.assemble(
+                assembly = assembler.assemble(
                     master_pdf=template_pdf,
                     products=products_enum,
                     num_participants=len(deal.active_participants),
                     num_properties=len(deal.properties),
                     output_path=temp_assembled_path
                 )
-                actual_template = temp_assembled_path
-                
-            output_path = self._fill_pdf(actual_template, deal, field_data, mapping_config)
+                actual_template = assembly.output_path
+                # C6: a darabolás során a duplikált oldalakon átnevezett _N
+                # mezők leírása — a kitöltésnek ezekhez a megfelelő (N-edik)
+                # példány adatait kell rendelnie.
+                instance_fields = assembly.instance_fields
+
+            output_path, filled_fields, skipped_fields = self._fill_pdf(
+                actual_template, deal, field_data, mapping_config,
+                instance_fields=instance_fields,
+            )
             result["output_path"] = str(output_path)
+            # FIX M6 — surface the real filled/skipped field names so the API
+            # response is no longer a ghost-empty list.
+            result["filled_fields"] = filled_fields
+            result["skipped_fields"] = skipped_fields
             logger.info(f"   ✓ Kitöltött PDF: {output_path}")
         except Exception as e:
             result["issues"].append(f"PDF kitöltési hiba: {e}")
@@ -323,8 +407,21 @@ class FormFillerPipeline:
 
         # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
         loan = deal.loan
-        loan_amount_fmt = f"{loan.loan_amount:,}".replace(",", " ") if loan.loan_amount else ""
+        loan_amount_fmt = fmt_money(loan.loan_amount)
         loan_purpose = loan.loan_purpose or ""
+
+        # FIX H4: a LoanDetails-ben normalizált mezők (monthly_payment,
+        # down_payment, product_type, housing_savings, refinance_account,
+        # purchase_price, csok_amount, afa_support) korábban SOHA nem
+        # jutottak el a kitöltő-diktumba. Most három névtérben is
+        # felszínre hozzuk őket, hogy a mapping-ek (akár a loan.*
+        # kanonikus kulcsokat, akár a megfelelő Contact.*/Lead.* mezőket
+        # használják) elérjék az értékeket.
+        def _money_or_blank(v) -> str:
+            # Az opcionális hitelmezőknél None → "" (a kitöltő a ""-t
+            # "skip"-ként kezeli, ellentétben a fmt_money "0"-jával, ami
+            # hamis pozitív kitöltést eredményezne).
+            return fmt_money(v) if v else ""
 
         # Contact-level loan fields (merged into borrower_data below)
         contact_loan_data = {
@@ -332,17 +429,32 @@ class FormFillerPipeline:
             "Contact.Loan_period__c": str(loan.loan_term_months) if loan.loan_term_months else "",
             "Contact.Interest_Period__c": loan.interest_period or "",
             "Contact.Loan_Purpose__c": loan_purpose,
+            # H4: Contact.* mezők, amik a hitelből származnak.
+            "Contact.Monthly_Payment_details__c": _money_or_blank(loan.monthly_payment),
+            "Contact.State_Support__c": _money_or_blank(loan.afa_support),
         }
         # Merge Contact-level loan fields into borrower (and co-borrower) dicts
         borrower_data.update(contact_loan_data)
         if co_borrower_data:
             co_borrower_data.update(contact_loan_data)
 
-        # Opportunity-level loan fields
+        # Opportunity-level loan fields + loan.* canonical namespace (H4)
         loan_data = {
             "Opportunity.Hitel_sszeg__c": loan_amount_fmt,
             "Opportunity.Hitelc_l__c": loan_purpose,
             "Opportunity.Term_k__c": loan.product_name or "",
+            # H4: loan.* kanonikus kulcsok (az OTP mapping ezeket használja,
+            # pl. LAHI_KTKA_Lakástakarék → loan.housing_savings).
+            "loan.loan_amount": loan_amount_fmt,
+            "loan.loan_purpose": loan_purpose,
+            "loan.monthly_payment": _money_or_blank(loan.monthly_payment),
+            "loan.down_payment": _money_or_blank(loan.down_payment),
+            "loan.purchase_price": _money_or_blank(loan.purchase_price),
+            "loan.csok_amount": _money_or_blank(loan.csok_amount),
+            "loan.afa_support": _money_or_blank(loan.afa_support),
+            "loan.housing_savings": _money_or_blank(loan.housing_savings),
+            "loan.product_type": loan.product_type or "",
+            "loan.refinance_account": loan.refinance_account or "",
         }
 
         # Ingatlan adatok → Lead fields
@@ -356,10 +468,18 @@ class FormFillerPipeline:
                 "Lead.Ingatlan_megjegyzes__c": prop.parcel_number,
                 "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
                 "Lead.Ingatlan_jellege__c": prop.property_type.value,
-                "Lead.Estimated__c": f"{prop.estimated_value:,}".replace(",", " ") if prop.estimated_value else "",
+                "Lead.Estimated__c": fmt_money(prop.estimated_value),
             }
             if i == 0:
                 prop_data = pd
+
+        # H4: a hitelből származó Lead.* mezők (önerő, vételár, CSÖK) a
+        # prop_data-ba kerülnek, mert a Lead.* routing onnan olvas.
+        # Ezek ügylet-szintű, nem ingatlan-szintű mezők, de a mapping-ek
+        # Lead.* kulcsokként hivatkoznak rájuk.
+        prop_data.setdefault("Lead.Tervezett_onero__c", _money_or_blank(loan.down_payment))
+        prop_data.setdefault("Lead.Purchase_price__c", _money_or_blank(loan.purchase_price))
+        prop_data.setdefault("Lead.Tervezett_CSOK_Plusz__c", _money_or_blank(loan.csok_amount))
 
         # === Mapping alkalmazása – SF-kulcs alapú routing ===
         for f in mapping.fields:
@@ -390,6 +510,11 @@ class FormFillerPipeline:
                     field_data[pdf_name] = prop_data[canonical]
 
             elif canonical.startswith("Opportunity."):
+                if canonical in loan_data and loan_data[canonical]:
+                    field_data[pdf_name] = loan_data[canonical]
+
+            elif canonical.startswith("loan."):
+                # H4: loan.* canonical namespace (e.g. loan.housing_savings).
                 if canonical in loan_data and loan_data[canonical]:
                     field_data[pdf_name] = loan_data[canonical]
 
@@ -439,6 +564,8 @@ class FormFillerPipeline:
                 sf_value = prop_data.get(canonical, '')
             elif canonical.startswith('Opportunity.'):
                 sf_value = loan_data.get(canonical, '')
+            elif canonical.startswith('loan.'):
+                sf_value = loan_data.get(canonical, '')
 
             if not sf_value:
                 continue
@@ -482,6 +609,111 @@ class FormFillerPipeline:
                     field_data[pdf_name] = value
             except Exception as e:
                 logger.debug(f"fill_rule error on {pdf_name}: {e}")
+
+        # === Round-2 point-level fill engine ===
+        # A mapping deklarálhat "points"-okat (sorszámozott kérdések /
+        # checkbox-blokkok) a mező-szintű szabályok fölött. Minden pont a
+        # src/engine/fill_rules 7 szabálytípusának egyikét használja. A motor
+        # keretfüggetlen: csak rule_type alapján ágazik el. A keretspecifikus
+        # döntés (melyik pont melyik szabályt használja) konfiguráció, nem kód.
+        # Ha egy pont tick-je felülír egy korábbi kanonikus értéket, azt
+        # naplózzuk, hogy a mapping-konfliktusok napvilágra kerüljenek.
+        if isinstance(mapping, dict):
+            points = mapping.get("points") or []
+        else:
+            points = getattr(mapping, "points", None)
+            if points is None:
+                _to_dict = getattr(mapping, "to_dict", None)
+                points = (_to_dict().get("points") if callable(_to_dict) else None) or []
+        if points:
+            from src.engine.fill_rules import RuleContext, RULE_REGISTRY, Point
+            ctx = RuleContext(
+                active_participants=deal.active_participants,
+                products=getattr(deal, "products", []) or [],
+                loan_purpose=loan.loan_purpose,
+                product_name=loan.product_name,
+                canonical_values={**borrower_data, **co_borrower_data, **loan_data, **prop_data},
+            )
+            for p_def in points:
+                rt = p_def.get("rule_type")
+                if rt is None:
+                    continue
+                fn = RULE_REGISTRY.get(rt)
+                if fn is None:
+                    logger.warning(
+                        "ismeretlen rule_type %s a %s ponton",
+                        rt, p_def.get("point_id"),
+                    )
+                    continue
+                point = Point(
+                    point_id=p_def["point_id"],
+                    framework=p_def.get("framework", "*"),
+                    blocks=p_def.get("blocks", []),
+                    rule_type=rt,
+                    params=p_def.get("params", {}),
+                )
+                result = fn(point, ctx)
+                for pdf_field, tick_value in result.ticks.items():
+                    if pdf_field in field_data and field_data[pdf_field] != tick_value:
+                        logger.debug(
+                            "point %s felülírja a %s mezőt: %r -> %r",
+                            point.point_id, pdf_field,
+                            field_data[pdf_field], tick_value,
+                        )
+                    field_data[pdf_field] = tick_value
+
+        # === C8: Apply per-field fragment transforms (date / digit splitting) ===
+        # Some PDF fields carry only a PIECE of a larger logical value
+        # (fragment = "year"|"month"|"day"|"digit:N"). The routing above stored
+        # the FULL value under the pdf_field_name (the field's canonical points
+        # at the parent value, e.g. Contact.Birthdate = "1985.05.12"); here we
+        # extract just the requested fragment so each box receives only its
+        # piece (year="1985", month="05", day="12") instead of the whole date.
+        for f in mapping.fields:
+            fragment = getattr(f, 'fragment', None)
+            if isinstance(f, dict):
+                fragment = f.get('fragment')
+            if not fragment:
+                continue
+            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
+            if pdf_name in field_data and field_data[pdf_name]:
+                field_data[pdf_name] = _apply_fragment(field_data[pdf_name], fragment)
+
+        # === M5: Character-split groups (digit boxes / comb text) ===
+        # A single canonical value (e.g. postal code "1123") is split
+        # character-by-character across several one-char AcroForm boxes.
+        # The mapping declares each group with its member field names; here we
+        # resolve the group's canonical value from the right data namespace
+        # (borrower vs co_borrower vs Lead vs loan) and expand it so each box
+        # receives its single character. Mirrors the Contact.* routing above
+        # (-társ suffix ⇒ co-borrower data).
+        char_groups = getattr(mapping, 'character_groups', None)
+        if char_groups:
+            for grp in char_groups:
+                if isinstance(grp, dict):
+                    canonical = grp.get('canonical_field') or ''
+                    members = grp.get('member_fields') or []
+                else:
+                    canonical = getattr(grp, 'canonical_field', '') or ''
+                    members = getattr(grp, 'member_fields', []) or []
+                if not members or not canonical:
+                    continue
+                if canonical.startswith('Contact.'):
+                    all_co = all(
+                        ('társ' in str(m).lower()) or ('coborrower' in str(m).lower())
+                        for m in members
+                    )
+                    if all_co and co_borrower_data:
+                        src = co_borrower_data
+                    else:
+                        src = borrower_data if borrower_data else (co_borrower_data or {})
+                elif canonical.startswith('Lead.'):
+                    src = prop_data
+                elif canonical.startswith(('Opportunity.', 'loan.')):
+                    src = loan_data
+                else:
+                    src = all_data
+                field_data.update(expand_character_groups(src, [grp]))
 
         return field_data
 
@@ -554,7 +786,7 @@ class FormFillerPipeline:
             "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
             "Contact.Email": p.email or "",
             "Contact.Name_of_employer__c": p.employer or "",
-            "Contact.Average_monthly_net_income__c": f"{p.monthly_income:,}".replace(",", " ") if p.monthly_income else "",
+            "Contact.Average_monthly_net_income__c": fmt_money(p.monthly_income),
             "Contact.Relation__c": p.role.value,
             # SF-ből töltjük — ha nincs adat, üresen hagyjuk
             "Contact.Citizenship__c": getattr(p, "citizenship", "") or "",
@@ -567,18 +799,33 @@ class FormFillerPipeline:
 
 
     def _address_to_dict(self, addr, prefix: str = "address") -> dict:
-        """Address → kanonikus dict."""
+        """Address → kanonikus dict.
+
+        A tartós (állandó) lakcím a ``Contact.ZIP__c`` mezőre képeződik,
+        a levelezési cím viszont a ``Contact.MailingPostalCode`` mezőre.
+        Korábban mindkettő ``Contact.ZIP__c``-t használt, ami akkor
+        néma felülíráshoz vezetett, ha a két cím irányítószáma eltért.
+
+        FIX M10 — a ``Contact.Permanent_address__c`` composite mező a teljes
+        címet (köztük emelet/ajtó/település/irányítószám) várja. Korábban ez
+        a mező sosem került kitöltésre, így az állandó lakcím emelet- és
+        ajtó-adatai elvesztek. Most a ``Address.full_address``-ből (ami már
+        tartalmazza ezeket) töltjük.
+        """
         if prefix == "mailing_address":
             return {
                 "Contact.MailingStreet": f"{addr.street} {addr.house_number}",
                 "Contact.MailingCity": addr.city,
-                "Contact.ZIP__c": addr.zip_code,
+                "Contact.MailingPostalCode": addr.zip_code,
             }
         else:
             return {
                 "Contact.OtherStreet": f"{addr.street} {addr.house_number}",
                 "Contact.OtherCity": addr.city,
                 "Contact.ZIP__c": addr.zip_code,
+                # M10: a composite SF textarea mező a teljes címet kapja,
+                # így az emelet/ajtó/kerület nem vész el.
+                "Contact.Permanent_address__c": addr.full_address,
             }
 
     def _fill_pdf(
@@ -587,13 +834,34 @@ class FormFillerPipeline:
         deal: DealData,
         field_data: dict,
         mapping: MappingConfig,
-    ) -> Path:
+        instance_fields: list | None = None,
+    ) -> tuple[Path, list[str], list[str]]:
         """
         PDF kitöltés a professional engine osztályokkal (AcroFormFiller / OverlayFiller).
 
         A korábbi inline pikepdf/PyMuPDF logika kiváltva – a konzolidált
         implementáció a src/engine/pdf_filler.py-ban él.
+
+        Args:
+            instance_fields: C6 — a DocumentAssembler által visszaadott
+                ``InstanceFieldMap`` lista (duplikált oldalakon átnevezett
+                ``_N`` mezők). Ha meg van adva, a kitöltés előtt a field_data
+                kiegészül a megfelelő N-edik példány adataival (több adóstárs /
+                ingatlan / kezes).
+
+        Returns:
+            ``(output_path, filled_fields, skipped_fields)`` — FIX M6: a korábban
+            elvesző ``FillingResult.filled_fields`` / ``skipped_fields`` most
+            visszajut a hívóhoz (``run_for_deal`` és az API), így a
+            ``/api/pdf/fill`` válasza valódi listákat ad vissza az üres
+            ``[]`` helyett.
         """
+        # C6: ha darabolás történt, bővítsük ki a field_data-t az N-edik
+        # példányok (adóstárs #2, ingatlan #2, …) adataival, amelyek az
+        # átnevezett ``_N`` mezőkhöz tartoznak.
+        if instance_fields:
+            field_data = self._apply_instance_data(field_data, deal, mapping, instance_fields)
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"filled_{deal.deal_id}_{timestamp}.pdf"
         output_path = self.output_dir / output_filename
@@ -672,7 +940,123 @@ class FormFillerPipeline:
                     "Overlay kitöltés figyelmeztetések: %s", result.summary
                 )
 
-        return output_path
+        # FIX M6 — surface the actual filled/skipped field names so the API
+        # does not return ghost-empty lists on a successful fill.
+        return output_path, list(result.filled_fields), list(result.skipped_fields)
+
+    # =========================================================================
+    # C6 — Példány-alapú mező-feloldás (multi-instance participants/properties)
+    # =========================================================================
+
+    def _apply_instance_data(
+        self,
+        field_data: dict,
+        deal: DealData,
+        mapping: MappingConfig,
+        instance_fields: list,
+    ) -> dict:
+        """C6: kiegészíti a field_data-t a duplikált példányok ``_N`` mezőivel.
+
+        A ``DocumentAssembler.assemble`` a többpéldányos szekciók
+        (több adóstárs / ingatlan / kezes) duplikált oldalain átnevezte az
+        AcroForm mezőket ``<base>_<instance>`` alakra, hogy függetlenek
+        legyenek. Ez a metódus a mapping alapján feloldja, hogy melyik
+        átnevezett mezőhöz melyik (N-edik) szereplő/ingatlan adata tartozik,
+        és beírja a ``field_data``-ba.
+
+        Példa: 3 adóstárs esetén az ``sza_ig_tarsigenylő_2``/``_3`` szekciókon
+        a ``borrower_name_2`` → ``co_borrowers[1].Contact.Name``,
+        ``borrower_name_3`` → ``co_borrowers[2].Contact.Name``.
+        """
+        pdf_to_canonical = mapping.mapping_dict
+        # base pdf name -> fragment (C8: a többedik példány mezői is öröklik)
+        frag_by_base: dict[str, str] = {}
+        for f in mapping.fields:
+            base = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
+            frag = getattr(f, 'fragment', None) if not isinstance(f, dict) else f.get('fragment')
+            if base and frag:
+                frag_by_base[base] = frag
+
+        result = dict(field_data)  # ne mutáljuk a hívó szótárát
+
+        for im in instance_fields:
+            instance_idx = im.instance - 1  # 0-based: 2. példány → idx 1
+            data_dict = self._instance_data_dict(deal, im.role, instance_idx)
+            if not data_dict:
+                continue
+
+            for base in im.base_fields:
+                canonical = pdf_to_canonical.get(base)
+                if not canonical:
+                    continue
+                raw = data_dict.get(canonical)
+                if raw is None or raw == "":
+                    continue
+                # C8: fragment öröklése a base mezőről (pl. dátum-dobozok).
+                frag = frag_by_base.get(base)
+                if frag:
+                    raw = _apply_fragment(raw, frag)
+                    if raw is None or raw == "":
+                        continue
+                result[f"{base}_{im.instance}"] = raw
+
+        if len(result) != len(field_data):
+            logger.info(
+                "   C6: %d átnevezett _N mezőhöz példányadat rendelve",
+                len(result) - len(field_data),
+            )
+        return result
+
+    def _instance_data_dict(self, deal: DealData, role: str, instance_idx: int) -> dict:
+        """Visszaadja a megadott szerep + sorszámú példány kanonikus adatait."""
+        if role == INSTANCE_ROLE_PROPERTY:
+            return self._property_to_dict_indexed(deal, instance_idx)
+        participant = self._instance_participant(deal, role, instance_idx)
+        if participant is None:
+            return {}
+        data = self._participant_to_dict(participant)
+        if participant.address:
+            data.update(self._address_to_dict(participant.address, "address"))
+            if not participant.mailing_address:
+                data.update(self._address_to_dict(participant.address, "mailing_address"))
+        return data
+
+    @staticmethod
+    def _instance_participant(deal: DealData, role: str, idx: int):
+        """Kiválasztja az idx-edik (0-based) aktív szereplőt a megadott szerepben."""
+        if role == INSTANCE_ROLE_GUARANTOR:
+            lst = deal.guarantors
+        elif role == INSTANCE_ROLE_BENEFICIARY:
+            lst = deal.get_participants_by_role(ParticipantRole.BENEFICIARY)
+        else:  # INSTANCE_ROLE_CO_BORROWER (és ismeretlen → alapértelmezett)
+            lst = deal.co_borrowers
+        return lst[idx] if 0 <= idx < len(lst) else None
+
+    def _property_to_dict_indexed(self, deal: DealData, idx: int) -> dict:
+        """Az idx-edik (0-based) ingatlan adatai kanonikus dict-ként (Lead.*)."""
+        if not (0 <= idx < len(deal.properties)):
+            return {}
+        prop = deal.properties[idx]
+        return self._property_to_dict(prop)
+
+    @staticmethod
+    def _property_to_dict(prop) -> dict:
+        """Egy ingatlan adatai kanonikus dict-ként (Lead.* namespace).
+
+        Megegyezik a ``_prepare_field_data``-ban használt ingatlan-diktával,
+        kivonva az ügylet-szintű hitel-mezőket (önerő/vételár/CSÖK), amelyek
+        nem ingatlan-specifikusak.
+        """
+        return {
+            "Lead.Ingatlan_irsz__c": prop.address.zip_code,
+            "Lead.Ingatlan_telepules__c": prop.address.city,
+            "Lead.Ingatlan_kozterulet_neve__c": f"{prop.address.street} {prop.address.house_number}",
+            "Lead.Ingtalan_hazszam__c": prop.address.house_number,
+            "Lead.Ingatlan_megjegyzes__c": prop.parcel_number,
+            "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
+            "Lead.Ingatlan_jellege__c": prop.property_type.value,
+            "Lead.Estimated__c": fmt_money(prop.estimated_value),
+        }
 
     # =========================================================================
     # ELAVULT metódusok – korábban inline pikepdf/PyMuPDF logikát tartalmaztak.
@@ -782,15 +1166,21 @@ def main():
 
     args = parser.parse_args()
 
-    print("=" * 60)
-    print("🧞 FinancialGenie – Banki nyomtatványkitöltő PoC")
-    print("=" * 60)
+    # FIX L7 — the CLI used raw print() for all user-facing output, bypassing
+    # the logging configuration and making it impossible to capture/redirect.
+    # Use a dedicated "cli" logger so output respects the configured handlers
+    # and log level (basicConfig is set above).
+    cli = logging.getLogger("cli")
+
+    cli.info("=" * 60)
+    cli.info("🧞 FinancialGenie – Banki nyomtatványkitöltő PoC")
+    cli.info("=" * 60)
 
     # Pipeline inicializálása
     # Dummy adatok generálása ha nincs
     dummy_dir = PROJECT_ROOT / "samples" / "dummy_data"
     if not dummy_dir.exists() or not list(dummy_dir.glob("*.json")):
-        print("\n📦 Dummy adatok generálása...")
+        cli.info("📦 Dummy adatok generálása...")
         sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
         from generate_dummy_data import generate_all_scenarios
         generate_all_scenarios(dummy_dir)
@@ -798,7 +1188,7 @@ def main():
     # Salesforce kliens inicializálása
     if args.salesforce:
         from config import settings
-        print("\n☁️  Kapcsolódás a Salesforce Sandbox-hoz...")
+        cli.info("☁️  Kapcsolódás a Salesforce Sandbox-hoz...")
         sf_client = SalesforceClient(
             username=settings.SF_USERNAME,
             password=settings.SF_PASSWORD,
@@ -825,30 +1215,30 @@ def main():
         elif flat.exists():
             template_pdf = flat
         else:
-            print("\n⚠️  Nincs elérhető PDF sablon. Futtasd előbb:")
-            print("   python scripts/generate_sample_pdfs.py")
-            print("\n   A pipeline a dummy adatok generálásáig fut.")
+            cli.warning("Nincs elérhető PDF sablon. Futtasd előbb:")
+            cli.warning("   python scripts/generate_sample_pdfs.py")
+            cli.warning("   A pipeline a dummy adatok generálásáig fut.")
             # Csak dummy adatok és normalizálás demo
             deals = pipeline.sf_client.list_deals()
             if deals:
                 deal_id = deals[0]["deal_id"]
                 raw = pipeline.sf_client.get_deal(deal_id)
                 deal = pipeline.normalizer.normalize_deal(raw)
-                print(f"\n📊 Demo ügylet normalizálva:")
-                print(f"   ID: {deal.deal_id}")
-                print(f"   Hitel: {deal.loan.loan_amount:,} Ft, {deal.loan.loan_term_months} hónap")
-                print(f"   Szereplők: {len(deal.active_participants)}")
+                cli.info("📊 Demo ügylet normalizálva:")
+                cli.info("   ID: %s", deal.deal_id)
+                cli.info("   Hitel: %s Ft, %s hónap", fmt_money(deal.loan.loan_amount), deal.loan.loan_term_months)
+                cli.info("   Szereplők: %d", len(deal.active_participants))
                 for p in deal.active_participants:
-                    print(f"     - {p.name} ({p.role.value})")
-                print(f"   Ingatlanok: {len(deal.properties)}")
+                    cli.info("     - %s (%s)", p.name, p.role.value)
+                cli.info("   Ingatlanok: %d", len(deal.properties))
                 for prop in deal.properties:
-                    print(f"     - {prop.address.full_address} ({prop.property_type.value})")
+                    cli.info("     - %s (%s)", prop.address.full_address, prop.property_type.value)
             return
 
     # 2. AI mezőfelismerés (ha kifejezetten kérték a --recognize argumentummal)
     mapping = None
     if args.recognize:
-        print(f"\n🤖 AI mezőfelismerés futtatása: {args.recognize}")
+        cli.info("🤖 AI mezőfelismerés futtatása: %s", args.recognize)
         mapping = pipeline.run_ai_recognition(args.recognize)
         print_mapping_summary(mapping)
 
@@ -856,25 +1246,25 @@ def main():
     if mapping is None:
         if args.mapping:
             mapping = MappingConfig.load(args.mapping)
-            print(f"\n📋 Kifejezett mapping betöltve: {args.mapping.name}")
+            cli.info("📋 Kifejezett mapping betöltve: %s", args.mapping.name)
         else:
             try:
                 mapping = pipeline._resolve_mapping(template_pdf)
             except Exception as e:
                 # Végső fallback ha valamiért teljesen meghiúsul az auto-felismerés
-                print(f"\n⚠️ Nem sikerült feloldani a mappinget: {e}")
+                cli.warning("Nem sikerült feloldani a mappinget: %s", e)
                 mapping = MappingConfig(
                     bank_name="OTP Bank",
                     form_name="demo",
                     form_type="acroform",
                     notes="Nincs mapping – kanonikus mezőnevek használata",
                 )
-                print("\n📋 Nincs mapping konfiguráció – demo mód")
+                cli.info("📋 Nincs mapping konfiguráció – demo mód")
 
     # 4. Pipeline futtatása
-    print(f"\n🚀 Pipeline indítása...")
-    print(f"   Sablon: {template_pdf}")
-    print(f"   Forgatókönyv: {args.scenario}")
+    cli.info("🚀 Pipeline indítása...")
+    cli.info("   Sablon: %s", template_pdf)
+    cli.info("   Forgatókönyv: %s", args.scenario)
 
     # Ügylet kiválasztása
     if args.deal:
@@ -882,26 +1272,26 @@ def main():
     else:
         deals = pipeline.sf_client.list_deals()
         if not deals:
-            print("⚠️  Nincs elérhető ügylet")
+            cli.warning("Nincs elérhető ügylet")
             return
         deal_id = deals[0]["deal_id"]
     result = pipeline.run_for_deal(deal_id, template_pdf, mapping)
 
     # Eredmény
-    print(f"\n{'='*60}")
+    cli.info("=" * 60)
     if result["success"]:
-        print(f"✅ Sikeres kitöltés!")
-        print(f"   Output: {result['output_path']}")
+        cli.info("✅ Sikeres kitöltés!")
+        cli.info("   Output: %s", result["output_path"])
     else:
-        print(f"❌ Kitöltés sikertelen")
+        cli.error("❌ Kitöltés sikertelen")
 
     if result["issues"]:
-        print(f"\n⚠️  Problémák ({len(result['issues'])}):")
+        cli.warning("Problémák (%d):", len(result["issues"]))
         for issue in result["issues"]:
-            print(f"   - {issue}")
+            cli.warning("   - %s", issue)
 
-    print(f"\n⏱️  Timestamp: {result['timestamp']}")
-    print("=" * 60)
+    cli.info("⏱️  Timestamp: %s", result["timestamp"])
+    cli.info("=" * 60)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import UploadStep from "./UploadStep";
 import AnalysisStep from "./AnalysisStep";
 import ReviewDashboard from "./ReviewDashboard";
 import PageEditor from "./PageEditor";
+import PointsEditor from "./PointsEditor";
 import LockStep from "./LockStep";
 import FillPreviewStep from "./FillPreviewStep";
 
@@ -20,6 +21,7 @@ export default function MappingStudio() {
   const [step, setStep] = useState<WizardStep>("upload");
   const [activePdfId, setActivePdfId] = useState<string | null>(null);
   const [editingPage, setEditingPage] = useState<number | null>(null);
+  const [editingPoints, setEditingPoints] = useState(false);
   const [mappedCount, setMappedCount] = useState(0);
   const [totalFields, setTotalFields] = useState(0);
 
@@ -38,6 +40,14 @@ export default function MappingStudio() {
 
   const handleBackFromEditor = useCallback(() => {
     setEditingPage(null);
+  }, []);
+
+  const handleOpenPoints = useCallback(() => {
+    setEditingPoints(true);
+  }, []);
+
+  const handleBackFromPoints = useCallback(() => {
+    setEditingPoints(false);
   }, []);
 
   const handleApprove = useCallback(() => {
@@ -71,6 +81,16 @@ export default function MappingStudio() {
         pdfId={activePdfId}
         pageNumber={editingPage}
         onBack={handleBackFromEditor}
+      />
+    );
+  }
+
+  // Points/Blocks editor full-screen
+  if (editingPoints && activePdfId) {
+    return (
+      <PointsEditor
+        pdfId={activePdfId}
+        onBack={handleBackFromPoints}
       />
     );
   }
@@ -154,6 +174,7 @@ export default function MappingStudio() {
           <ReviewDashboard
             pdfId={activePdfId}
             onPageClick={handlePageClick}
+            onOpenPoints={handleOpenPoints}
             onBack={() => setStep("upload")}
             onApprove={handleApprove}
             onStatsReady={(mapped, total) => {

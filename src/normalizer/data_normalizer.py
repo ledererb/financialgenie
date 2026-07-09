@@ -181,6 +181,7 @@ class DataNormalizer:
                     house_number=str(addr_data.get("house_number", "")),
                     floor=addr_data.get("floor"),
                     door=addr_data.get("door"),
+                    district=addr_data.get("district"),
                 )
 
         return Participant(
@@ -202,7 +203,15 @@ class DataNormalizer:
             monthly_income=self._safe_int(
                 p_data.get("Monthly_Income__c") or p_data.get("monthly_income")
             ),
-            is_active=p_data.get("Is_Active__c", True) if "Is_Active__c" in p_data 
+            marital_status=p_data.get("Marital_Status__c") or p_data.get("marital_status"),
+            citizenship=p_data.get("Citizenship__c") or p_data.get("citizenship"),
+            dependents_count=self._safe_int(
+                p_data.get("Dependents_count__c") or p_data.get("dependents_count")
+            ),
+            education=p_data.get("Highest_Educational_Qualification__c")
+            or p_data.get("education"),
+            income_type=p_data.get("Income_type__c") or p_data.get("income_type"),
+            is_active=p_data.get("Is_Active__c", True) if "Is_Active__c" in p_data
                        else p_data.get("is_active", True),
         )
 
@@ -221,6 +230,7 @@ class DataNormalizer:
                 house_number=str(addr_data.get("house_number", "")),
                 floor=addr_data.get("floor"),
                 door=addr_data.get("door"),
+                district=addr_data.get("district"),
             )
         else:
             logger.warning("Ingatlan cím hiányzik")

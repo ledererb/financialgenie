@@ -35,11 +35,15 @@ class Address(BaseModel):
     house_number: str = Field(..., description="Házszám")
     floor: Optional[str] = Field(None, description="Emelet")
     door: Optional[str] = Field(None, description="Ajtó")
+    district: Optional[str] = Field(None, description="Kerület (Budapest, római szám I-XXIII)")
 
     @property
     def full_address(self) -> str:
         """Teljes cím egyetlen stringként."""
-        parts = [self.zip_code, self.city, f"{self.street} {self.house_number}"]
+        parts = [self.zip_code, self.city]
+        if self.district:
+            parts.append(f"{self.district}. kerület")
+        parts.append(f"{self.street} {self.house_number}".strip())
         if self.floor:
             parts.append(f"{self.floor}. em.")
         if self.door:
@@ -69,6 +73,11 @@ class Participant(BaseModel):
     email: Optional[str] = Field(None, description="E-mail cím")
     employer: Optional[str] = Field(None, description="Munkáltató neve")
     monthly_income: Optional[int] = Field(None, description="Havi nettó jövedelem (Ft)")
+    marital_status: Optional[str] = Field(None, description="Családi állapot (Contact.Marital_Status__c)")
+    citizenship: Optional[str] = Field(None, description="Állampolgárság (Contact.Citizenship__c)")
+    dependents_count: Optional[int] = Field(None, description="Eltartottak száma (Contact.Dependents_count__c)")
+    education: Optional[str] = Field(None, description="Legmagasabb végzettség (Contact.Highest_Educational_Qualification__c)")
+    income_type: Optional[str] = Field(None, description="Jövedelem típusa (Contact.Income_type__c)")
     is_active: bool = Field(True, description="Aktív szereplő-e (nem kuka)")
 
     @property

@@ -8,6 +8,7 @@ Az OTP belső rendszere ezt automatikusan végzi – mi replikáljuk.
 """
 
 import logging
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Optional
@@ -73,6 +74,69 @@ PRODUCT_SECTIONS = {
 TARSADOS_SECTION = ("tarsados_adatlap", 31, 36)
 
 
+# ============================================================
+# C6 — AcroForm field renaming for duplicated pages
+# ============================================================
+# When a page template (e.g. the társigénylő or ingatlan-adatlap pages) is
+# duplicated for multiple instances (several co-borrowers / properties), the
+# copied AcroForm widget annotations would otherwise all share ONE field
+# object — so every instance would display the SAME value. FIX C6 renames the
+# fields on each DUPLICATE page with an ``_N`` suffix (instance 2 → ``_2``,
+# instance 3 → ``_3`` …) so they become independent, fillable fields.
+#
+# Role classification of an instanced page group, used by the pipeline to map
+# an instance number to the right data (co-borrowers[1], properties[1], …).
+INSTANCE_ROLE_CO_BORROWER = "co_borrower"
+INSTANCE_ROLE_PROPERTY = "property"
+INSTANCE_ROLE_GUARANTOR = "guarantor"
+INSTANCE_ROLE_BENEFICIARY = "beneficiary"
+
+
+def _classify_instance_role(section: str) -> str:
+    """Best-effort role for a duplicated section based on its section name."""
+    s = section.lower()
+    if "ingatlan" in s:
+        return INSTANCE_ROLE_PROPERTY
+    if "kezes" in s or "guarantor" in s:
+        return INSTANCE_ROLE_GUARANTOR
+    if "haszonelvez" in s or "beneficiary" in s:
+        return INSTANCE_ROLE_BENEFICIARY
+    # társigénylő / társadós / anything participant-like → co-borrower
+    return INSTANCE_ROLE_CO_BORROWER
+
+
+@dataclass
+class InstanceFieldMap:
+    """Describes the AcroForm fields created for ONE duplicated page instance.
+
+    Attributes:
+        section: The page-plan section label (e.g. ``sza_ig_tarsigenylő_2``).
+        instance: Instance number (≥2; instance 1 keeps the original names).
+        role: Data role used to resolve instance data
+            (``co_borrower`` | ``property`` | ``guarantor`` | ``beneficiary``).
+        base_fields: Original (unsuffixed) PDF field names defined on this
+            template page; the renamed copies are ``f"{name}_{instance}"``.
+    """
+    section: str
+    instance: int
+    role: str
+    base_fields: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AssemblyResult:
+    """Result of ``DocumentAssembler.assemble``.
+
+    Attributes:
+        output_path: Path to the assembled PDF.
+        instance_fields: One entry per DUPLICATED instance (instance ≥ 2),
+            describing the renamed ``_N`` fields so the pipeline can route the
+            Nth participant's / property's data to them.
+    """
+    output_path: Path
+    instance_fields: list[InstanceFieldMap] = field(default_factory=list)
+
+
 class DocumentAssembler:
     """
     OTP master dokumentum automatikus darbolása.
@@ -110,7 +174,7 @@ class DocumentAssembler:
         num_participants: int = 2,
         num_properties: int = 1,
         output_path: Optional[Path] = None,
-    ) -> Path:
+    ) -> AssemblyResult:
         """
         Összeállítja a végleges PDF-et a master dokumentumból.
 
@@ -122,7 +186,10 @@ class DocumentAssembler:
             output_path: Kimeneti PDF elérési útja (opcionális)
 
         Returns:
-            A kész PDF elérési útja
+            ``AssemblyResult`` — a kész PDF útvonala, plusz a C6
+            ``instance_fields`` leírás, amely a duplikált oldalakon
+            átnevezett ``_N`` AcroForm mezőket sorolja fel, hogy a pipeline a
+            megfelelő (N-edik) példány adatait tudja hozzájuk rendelni.
         """
         master_pdf = Path(master_pdf)
         if not master_pdf.exists():
@@ -131,26 +198,100 @@ class DocumentAssembler:
         # 1. Összeállítandó oldalak meghatározása
         page_plan = self._build_page_plan(products, num_participants, num_properties)
 
-        logger.info(f"📋 Document Assembly:")
-        logger.info(f"   Master: {master_pdf.name} (97 oldal)")
-        logger.info(f"   Termékek: {[p.value for p in products]}")
-        logger.info(f"   Szereplők: {num_participants}, Ingatlanok: {num_properties}")
-        logger.info(f"   Tervezett oldalak: {len(page_plan)}")
+        logger.info("📋 Document Assembly:")
+        logger.info("   Master: %s (%d oldal)", master_pdf.name, self.MASTER_PDF_PAGE_COUNT)
+        logger.info("   Termékek: %s", [p.value for p in products])
+        logger.info("   Szereplők: %d, Ingatlanok: %d", num_participants, num_properties)
+        logger.info("   Tervezett oldalak: %d", len(page_plan))
 
         # 2. PDF összeállítás
         with pikepdf.open(master_pdf) as src_pdf:
+            # FIX M9 — abort early (instead of silently truncating) when the
+            # page plan references master pages that do not exist. A truncated
+            # assembly would otherwise drop whole sections (e.g. a product's
+            # declaration pages) while the caller believes the output is
+            # complete. Validate against the real source page count.
+            src_page_count = len(src_pdf.pages)
+            out_of_range = [
+                e for e in page_plan if not (1 <= e["page"] <= src_page_count)
+            ]
+            if out_of_range:
+                offenders = ", ".join(
+                    f"{e['section']}={e['page']}" for e in out_of_range
+                )
+                raise ValueError(
+                    f"DocumentAssembly oldal tartomány hiba: a(z) '{master_pdf.name}' "
+                    f"csak {src_page_count} oldalt tartalmaz, de a terv "
+                    f"{len(out_of_range)} oldalt ezen kívül hivatkoz "
+                    f"({offenders}). A master PDF nem kompatibilis a kért "
+                    f"termék/szereplő kombinációval."
+                )
+
             dst_pdf = pikepdf.Pdf.new()
+            has_acroform = "/AcroForm" in src_pdf.Root
+
+            # C6: hányadik alkalommal használunk egy adott forrás-oldalt.
+            # Az 1. használat = eredeti mezőnevek, a 2+, 3+ … használatok =
+            # átnevezett ``_N`` mezők (független AcroForm mező-objektumok).
+            page_instance_count: dict[int, int] = {}
+            # Duplikált példányokon létrehozott, átnevezett mező-objektumok,
+            # amelyeket a végén az AcroForm /Fields tömbhöz kell adni.
+            renamed_field_objs: list = []
+            # A pipeline számára: példányonként a szerep + az eredeti mezőnevek.
+            instance_fields: list[InstanceFieldMap] = []
 
             for entry in page_plan:
                 page_idx = entry["page"] - 1  # 0-indexed
-                if 0 <= page_idx < len(src_pdf.pages):
+                # FIX M9 — never silently skip an out-of-range page. The
+                # whole plan was validated up front, so this is a defensive
+                # guard; if we ever reach it we abort loudly instead of
+                # producing a truncated PDF the caller would mistake for
+                # complete.
+                if not (0 <= page_idx < len(src_pdf.pages)):
+                    raise ValueError(
+                        f"{entry['section']}: oldal {entry['page']} nincs a "
+                        f"master-ben ({len(src_pdf.pages)} oldal). "
+                        f"A DocumentAssembly nem folytatható."
+                    )
+
+                page_instance_count[page_idx] = page_instance_count.get(page_idx, 0) + 1
+                instance = page_instance_count[page_idx]
+
+                if instance == 1:
+                    # Első használat — eredeti mezőnevek maradnak.
                     dst_pdf.pages.append(src_pdf.pages[page_idx])
                 else:
-                    logger.warning(f"   ⚠️ {entry['section']}: oldal {entry['page']} nincs a master-ben")
+                    # C6: duplikált oldal — másoljuk az oldalt (független
+                    # widget+mező objektumokkal), és nevezzük át a mezőket.
+                    new_page = dst_pdf.copy_foreign(src_pdf.pages[page_idx].obj)
+                    dst_pdf.pages.append(pikepdf.Page(new_page))
+                    if has_acroform:
+                        base_names = self._rename_page_fields(
+                            dst_pdf,
+                            new_page,
+                            instance,
+                            src_pdf,
+                            page_idx,
+                            renamed_field_objs,
+                        )
+                        if base_names:
+                            instance_fields.append(InstanceFieldMap(
+                                section=entry["section"],
+                                instance=instance,
+                                role=_classify_instance_role(entry["section"]),
+                                base_fields=base_names,
+                            ))
 
-            # AcroForm másolása ha van
-            if "/AcroForm" in src_pdf.Root:
+            # AcroForm másolása ha van (globális beállítások: NeedAppearances,
+            # DR/DA betűtípusok stb.), majd a duplikált példányok mezőinek
+            # hozzáadása a /Fields tömbhöz.
+            if has_acroform:
                 dst_pdf.Root["/AcroForm"] = dst_pdf.copy_foreign(src_pdf.Root["/AcroForm"])
+                acroform = dst_pdf.Root["/AcroForm"]
+                if "/Fields" not in acroform:
+                    acroform[pikepdf.Name("/Fields")] = pikepdf.Array()
+                for nf in renamed_field_objs:
+                    acroform["/Fields"].append(nf)
 
             # Kimenet
             if output_path is None:
@@ -161,9 +302,109 @@ class DocumentAssembler:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             dst_pdf.save(output_path)
 
-        logger.info(f"   ✅ Kész: {output_path.name} ({len(page_plan)} oldal, {output_path.stat().st_size / 1024:.0f} KB)")
+        renamed_total = sum(len(im.base_fields) for im in instance_fields)
+        logger.info(
+            f"   ✅ Kész: {output_path.name} ({len(page_plan)} oldal, "
+            f"{output_path.stat().st_size / 1024:.0f} KB)"
+            + (f", {renamed_total} átnevezett _N mező ({len(instance_fields)} példány)" if instance_fields else "")
+        )
 
-        return output_path
+        return AssemblyResult(output_path=output_path, instance_fields=instance_fields)
+
+    @staticmethod
+    def _source_page_field_names(src_pdf, page_idx: int) -> list[str]:
+        """A forrás-oldal widget annotációinak mezőnevei, pozíció-sorrendben.
+
+        A ``src_pdf`` sosem módosul a másolás során, így ezeket az eredeti
+        neveket biztonságosan használhatjuk a ``_N`` suffix építéséhez —
+        ellentétben a már másolt (és eseten átnevezett) cél-objektumokkal,
+        amelyeket a pikepdf ``copy_foreign`` deduplikálhat.
+        """
+        names: list[str] = []
+        page = src_pdf.pages[page_idx].obj
+        annots = page.get("/Annots")
+        if not annots:
+            return names
+        for w in annots:
+            try:
+                if str(w.get("/Subtype", "")) != "/Widget":
+                    names.append("")
+                    continue
+                parent = w.get("/Parent")
+                field_obj = parent if parent is not None else w
+                names.append(str(field_obj.get("/T", "")))
+            except Exception:
+                names.append("")
+        return names
+
+    @staticmethod
+    def _rename_page_fields(
+        dst_pdf,
+        page,
+        instance: int,
+        src_pdf,
+        src_page_idx: int,
+        renamed_field_objs: list,
+    ) -> list[str]:
+        """Átnevezi egy duplikált cél-oldal AcroForm mezőit ``_N`` suffix-szel.
+
+        Minden widget-hez egy FRISSS, független mező-objektumot hoz létre
+        (nem a pikepdf ``copy_foreign`` által deduplikáltat használjuk, mert az
+        ugyanazon forrás-oldal többszöri másolásakor alias-olná a már
+        átnevezett mezőket). A mező lényeges attribútumait (``/FT``, ``/Ff``,
+        ``/DA``, ``/MaxLen``, ``/Q`` …) az eredetiből másolja, a ``/V``
+        értéket törli, a ``/T`` nevet ``<eredeti>_<instance>``-re állítja,
+        majd a widget ``/Parent``-jét az új mezőre irányítja.
+
+        Args:
+            dst_pdf: Cél PDF (már tartalmazza a másolt ``page``-et).
+            page: A duplikált cél-oldal objektum (már ``dst_pdf``-ben).
+            instance: Példányszám (≥2).
+            src_pdf: Nyitott forrás-PDF (eredeti nevek olvasásához).
+            src_page_idx: Forrás-oldal 0-indexelt sorszáma.
+            renamed_field_objs: Gyűjtő lista az új mező-objektumoknak.
+
+        Returns:
+            A sikeresen átnevezett EREDETI mezőnevek listája.
+        """
+        # Eredeti nevek a módosítatlan forrásból, pozíció szerint.
+        orig_names = DocumentAssembler._source_page_field_names(src_pdf, src_page_idx)
+
+        annots = page.get("/Annots")
+        if not annots:
+            return []
+        renamed: list[str] = []
+        widgets = list(annots)
+        for pos, w in enumerate(widgets):
+            try:
+                if str(w.get("/Subtype", "")) != "/Widget":
+                    continue
+                base = orig_names[pos] if pos < len(orig_names) else ""
+                if not base:
+                    continue
+                parent = w.get("/Parent")
+                orig_field = parent if parent is not None else w
+                new_name = f"{base}_{instance}"
+
+                # Új, független mező-objektum a lényeges attribútumokkal.
+                field_attrs = {"/T": pikepdf.String(new_name)}
+                for key in ("/FT", "/Ff", "/DA", "/DV", "/DS", "/MaxLen", "/Q", "/Tu"):
+                    if key in orig_field:
+                        field_attrs[key] = orig_field[key]
+                field_attrs["/Kids"] = pikepdf.Array([w])
+                new_field = dst_pdf.make_indirect(pikepdf.Dictionary(field_attrs))
+
+                # Widget az új mezőre mutasson; /AP törlése, hogy a viewer
+                # újra renderelje.
+                w[pikepdf.Name("/Parent")] = new_field
+                if "/AP" in w:
+                    del w["/AP"]
+
+                renamed_field_objs.append(new_field)
+                renamed.append(base)
+            except Exception as exc:
+                logger.warning("   ⚠️ mező-átnevezés sikertelen (instance %d): %s", instance, exc)
+        return renamed
 
     def _build_page_plan(
         self,

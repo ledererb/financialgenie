@@ -11,6 +11,7 @@ from server import app
 
 client = TestClient(app)
 
+@pytest.mark.live_api
 def test_upload_and_download_endpoints(tmp_path):
     # 1. Prepare a dummy PDF to upload
     acroform_src = PROJECT_ROOT / "samples" / "acroform_sample.pdf"

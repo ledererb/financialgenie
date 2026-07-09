@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CanonicalField,
+  CharacterGroup,
   Confidence,
   FillRule,
   MappingConfig,
@@ -16,13 +17,16 @@ import type {
 } from "@/types";
 import {
   addField,
+  createGroup,
   deleteField,
+  deleteGroup,
   getCanonicalFields,
   getMapping,
   getPdfFields,
   pageImageUrl,
   previewPage,
   updateField,
+  updateGroup,
 } from "@/api/client";
 
 interface PageEditorProps {
@@ -80,6 +84,11 @@ export default function PageEditor({
   const [pendingRect, setPendingRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState("text");
+
+  // M5 Step 3 — character-split groups UI state.
+  const [showCharGroups, setShowCharGroups] = useState(false);
+  const [newCharGroupMembers, setNewCharGroupMembers] = useState("");
+  const [newCharGroupCanonical, setNewCharGroupCanonical] = useState("");
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -289,6 +298,83 @@ export default function PageEditor({
       }
     },
     [mapping, pdfId, selectedField],
+  );
+
+  // ── character-group handlers (M5 Step 3) ──────────────────────────────
+  // A character group splits one canonical value (e.g. a postal code) across
+  // several one-character PDF boxes. Users define the member field names as a
+  // comma-separated list. We persist via the dedicated /api/mapping/group
+  // endpoints and refetch the whole mapping afterwards (same pattern as the
+  // add-field handler above).
+
+  const refetchMapping = useCallback(async () => {
+    const m = await getMapping(pdfId);
+    setMapping(m);
+  }, [pdfId]);
+
+  const handleCreateCharGroup = useCallback(
+    async (memberFieldsCsv: string, canonicalField: string) => {
+      const members = memberFieldsCsv
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (members.length === 0) return;
+      setSaving(true);
+      try {
+        await createGroup(pdfId, {
+          field_type: "character_split",
+          direction: "left_to_right",
+          separator: "",
+          canonical_field: canonicalField || null,
+          member_fields: members,
+        });
+        await refetchMapping();
+      } catch {
+        // keep previous state
+      } finally {
+        setSaving(false);
+      }
+    },
+    [pdfId, refetchMapping],
+  );
+
+  const handleUpdateCharGroup = useCallback(
+    async (groupId: string, patch: Partial<CharacterGroup>) => {
+      setSaving(true);
+      try {
+        await updateGroup(pdfId, groupId, patch);
+        await refetchMapping();
+      } catch {
+        // keep previous state
+      } finally {
+        setSaving(false);
+      }
+    },
+    [pdfId, refetchMapping],
+  );
+
+  const handleDeleteCharGroup = useCallback(
+    async (groupId: string) => {
+      if (!confirm(`Biztosan törlöd a karaktercsoportot: ${groupId}?`)) return;
+      setSaving(true);
+      try {
+        await deleteGroup(pdfId, groupId);
+        setMapping((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            character_groups: prev.character_groups.filter(
+              (g) => g.group_id !== groupId,
+            ),
+          };
+        });
+      } catch {
+        // keep previous state
+      } finally {
+        setSaving(false);
+      }
+    },
+    [pdfId],
   );
 
   // ── draw mode handlers (flat PDF area selection) ─────────────────────
@@ -1128,6 +1214,197 @@ export default function PageEditor({
                 </div>
               );
             })}
+          </div>
+
+          {/* ─── Character-split groups (M5 Step 3) ─────────────────────── */}
+          {/* Lets the user declare digit-box / comb-text groups: one canonical
+              value split character-by-character across several PDF fields. */}
+          <div
+            style={{
+              borderTop: "1px solid var(--border-subtle)",
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setShowCharGroups((v) => !v)}
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                color: "var(--text-secondary)",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                padding: "var(--space-sm) var(--space-md)",
+                cursor: "pointer",
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                Karaktercsoportok
+                {mapping && mapping.character_groups.length > 0 && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      background: "var(--accent-blue-glow)",
+                      color: "var(--accent-blue)",
+                      borderRadius: 999,
+                      padding: "0 6px",
+                      fontSize: "0.6rem",
+                    }}
+                  >
+                    {mapping.character_groups.length}
+                  </span>
+                )}
+              </span>
+              <span>{showCharGroups ? "▾" : "▸"}</span>
+            </button>
+
+            {showCharGroups && (
+              <div
+                style={{
+                  padding: "var(--space-xs) var(--space-md) var(--space-sm)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
+                {mapping && mapping.character_groups.length === 0 && (
+                  <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                    Egy karaktercsoport sem. Egy értéket (pl. irányítószám)
+                    darabol fel dobozonkénti egy-karakteres mezőkre.
+                  </span>
+                )}
+
+                {mapping?.character_groups.map((g) => (
+                  <div
+                    key={g.group_id}
+                    style={{
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "var(--space-xs) var(--space-sm)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                      background: "var(--bg-tertiary)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ fontSize: "0.68rem", fontWeight: 700 }}>
+                        {g.group_name || g.group_id}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCharGroup(g.group_id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--accent-red)",
+                          cursor: "pointer",
+                          fontSize: "0.68rem",
+                        }}
+                        title="Csoport törlése"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <input
+                      placeholder="mezőnevek vesszővel (pl. zip1,zip2,zip3,zip4)"
+                      value={(g.member_fields ?? []).join(",")}
+                      onChange={(e) =>
+                        handleUpdateCharGroup(g.group_id, {
+                          member_fields: e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        })
+                      }
+                      style={{ ...inputStyle, fontFamily: "monospace" }}
+                    />
+                    <select
+                      value={g.canonical_field ?? ""}
+                      onChange={(e) =>
+                        handleUpdateCharGroup(g.group_id, {
+                          canonical_field: e.target.value || null,
+                        })
+                      }
+                      style={inputStyle}
+                    >
+                      <option value="">— kanonikus mező —</option>
+                      {canonicals.map((c) => (
+                        <option key={c.path} value={c.path}>
+                          {c.path}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+
+                {/* new group row */}
+                <div
+                  style={{
+                    borderTop: "1px dashed var(--border-subtle)",
+                    paddingTop: "var(--space-xs)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  <input
+                    placeholder="új csoport mezői (vesszővel elválasztva)"
+                    value={newCharGroupMembers}
+                    onChange={(e) => setNewCharGroupMembers(e.target.value)}
+                    style={{ ...inputStyle, fontFamily: "monospace" }}
+                  />
+                  <select
+                    value={newCharGroupCanonical}
+                    onChange={(e) => setNewCharGroupCanonical(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">— kanonikus mező —</option>
+                    {canonicals.map((c) => (
+                      <option key={c.path} value={c.path}>
+                        {c.path}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      handleCreateCharGroup(newCharGroupMembers, newCharGroupCanonical);
+                      setNewCharGroupMembers("");
+                      setNewCharGroupCanonical("");
+                    }}
+                    disabled={
+                      !newCharGroupMembers.trim() || saving
+                    }
+                    style={{
+                      background: "var(--accent-green)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "4px 8px",
+                      fontSize: "0.72rem",
+                      cursor:
+                        !newCharGroupMembers.trim() || saving
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity: !newCharGroupMembers.trim() || saving ? 0.5 : 1,
+                    }}
+                  >
+                    + Csoport hozzáadása
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
       </div>

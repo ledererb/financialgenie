@@ -101,6 +101,7 @@ class TestEndToEndPipeline:
         assert result["output_path"] is not None
         assert Path(result["output_path"]).exists()
 
+    @pytest.mark.live_api
     def test_resolve_mapping_generates_if_missing(self, pipeline, tmp_path):
         """Verify _resolve_mapping automatically generates a mapping file if it does not exist."""
         # Create a new dummy pdf file under samples/
@@ -135,6 +136,7 @@ class TestEndToEndPipeline:
 class TestFieldRecognizer:
     """AI mezőfelismerő tesztek (heurisztikus mód, API nélkül)."""
 
+    @pytest.mark.live_api
     def test_acroform_recognition(self, acroform_pdf):
         """AcroForm mezők felismerése."""
         if not acroform_pdf.exists():
@@ -147,6 +149,7 @@ class TestFieldRecognizer:
         assert len(mapping.fields) > 0
         assert mapping.bank_name == "OTP Bank"
 
+    @pytest.mark.live_api
     def test_auto_mode_detects_acroform(self, acroform_pdf):
         """Auto mód felismeri az AcroForm PDF-et."""
         if not acroform_pdf.exists():
@@ -156,6 +159,7 @@ class TestFieldRecognizer:
         mapping = recognizer.recognize(acroform_pdf, mode="auto")
         assert mapping.form_type == "acroform"
 
+    @pytest.mark.live_api
     def test_flat_recognition(self, flat_pdf):
         """Lapos PDF felismerése (mock mód)."""
         if not flat_pdf.exists():

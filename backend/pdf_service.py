@@ -104,37 +104,20 @@ class PdfService:
         Extract every AcroForm field with its widget rectangle, page, type,
         options and flags. Coordinates are converted to rendered-image pixels
         with a TOP-LEFT origin (so they line up directly with the PNG render).
+
+        FIX L8 — the actual walker lives in ``src/engine/acroform_field_extractor``
+        so the AI layer (``src/``) no longer has to import from ``backend/``.
+        This method is a thin delegate that keeps the editor's API and page
+        priming behaviour intact.
         """
-        fields: list[dict] = []
-        try:
-            pdf = pikepdf.open(str(pdf_path))
-        except Exception as e:
-            log.error("pikepdf open failed for %s: %s", pdf_path, e)
-            return fields
+        # Prime the page-height cache first (some downstream code still reads
+        # it for ad-hoc rect flipping); the engine extractor primes its own
+        # copy as well, so this is purely for backward compatibility.
+        self.prime_page_heights(pdf_path)
 
-        try:
-            if "/AcroForm" not in pdf.Root:
-                return fields
-            acroform = pdf.Root["/AcroForm"]
-            if "/Fields" not in acroform:
-                return fields
+        from engine.acroform_field_extractor import extract_acroform_fields as _extract
 
-            # Walk the AcroForm field tree. Kids can be fields themselves
-            # (radio groups) whose widget annotations live deeper.
-            self._walk_fields(pdf, acroform["/Fields"], fields)
-        finally:
-            pdf.close()
-
-        # Patch page numbers from PyMuPDF — pikepdf /P references are unreliable
-        # across PDF producers and often resolve to object ids that don't match.
-        self._patch_page_numbers_from_mupdf(pdf_path, fields)
-
-        # Fallback: pick up any widgets that PyMuPDF sees but pikepdf missed.
-        # This happens with deeply nested AcroForm hierarchies (e.g. c.debtor.fullName)
-        # where the pikepdf /Fields walker doesn't reach all levels.
-        self._add_missing_mupdf_widgets(pdf_path, fields)
-
-        return fields
+        return _extract(pdf_path, render_scale=RENDER_SCALE)
 
     def _walk_fields(
         self,

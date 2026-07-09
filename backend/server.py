@@ -42,7 +42,11 @@ import base64
 import json
 import logging
 import sys
+import threading
+import unicodedata
 import urllib.parse
+import uuid
+import weakref
 from pathlib import Path
 from typing import Any
 
@@ -56,7 +60,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # Allow running both as `python backend/server.py` and `python -m backend.server`.
 _HERE = Path(__file__).resolve().parent
@@ -125,6 +129,115 @@ def _get_sf_creds() -> dict | None:
         "domain": getattr(settings, "SF_DOMAIN", "login"),
         "mock_mode": False,
     }
+
+
+# FIX H6 — per-mapping reentrant lock so concurrent browser tabs editing the
+# same PDF mapping can't clobber each other (load → mutate → save is atomic).
+# A WeakValueDictionary keeps memory bounded: when no endpoint holds the lock
+# it is garbage-collected, so the dict doesn't grow forever across PDFs.
+_MAPPING_LOCKS: "weakref.WeakValueDictionary[str, threading.RLock]" = (
+    weakref.WeakValueDictionary()
+)
+_MAPPING_LOCKS_GUARD = threading.Lock()
+
+
+def _get_mapping_lock(pdf_id: str) -> threading.RLock:
+    """Return the (shared) RLock for one mapping, keyed by pdf_id.
+
+    Two concurrent requests for the same pdf_id receive the *same* lock
+    instance (serializing their load→mutate→save). A request for a different
+    pdf_id gets a different lock (no cross-PDF contention). Idle locks are
+    freed automatically by the WeakValueDictionary.
+    """
+    with _MAPPING_LOCKS_GUARD:
+        lock = _MAPPING_LOCKS.get(pdf_id)
+        if lock is None:
+            lock = threading.RLock()
+            _MAPPING_LOCKS[pdf_id] = lock
+        return lock
+
+
+def _valid_canonical_paths() -> list[str]:
+    """Sorted list of known canonical_field paths (FIX M1)."""
+    return sorted(f["path"] for f in mapping_service.canonical_fields())
+
+
+def _validate_canonical_field(canonical_field: str | None) -> None:
+    """Reject unknown canonical_field values with 422 (FIX M1).
+
+    ``None`` / empty means "unmapped" and is always allowed. Any other value
+    must exist in the canonical-field catalog (the same data the
+    ``/api/mapping/canonical-fields`` endpoint serves). The error body includes
+    the full list of valid values so the frontend can drive its autocomplete.
+    """
+    if not canonical_field:
+        return
+    valid = _valid_canonical_paths()
+    if canonical_field in valid:
+        return
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "error": "invalid_canonical_field",
+            "message": (
+                f"Unknown canonical_field: '{canonical_field}'. "
+                f"Use one of the known canonical paths (see valid_values)."
+            ),
+            "field": "canonical_field",
+            "valid_values": valid,
+        },
+    )
+
+
+def sanitize_filename(filename: str, existing: "set[str] | None" = None) -> str:
+    """Sanitize an uploaded filename for safe on-disk storage.
+
+    FIX M7 — Hungarian accented characters (é, á, ő, ű …) used to be
+    stripped entirely, turning ``"Pénzügyi átadás.pdf"`` into the unreadable
+    ``"Pnzughtyi_tads.pdf"``. Now we NFKD-decompose the name and keep the
+    ASCII base characters (é→e, ő→o, ű→u), replacing every remaining
+    non-alphanumeric character with an underscore. A collision-safe numeric
+    suffix is appended when the result already appears in ``existing`` (the
+    set of names already present in the target directory).
+
+    Returns a non-empty filename ending in ``.pdf``.
+    """
+    if not filename:
+        return f"uploaded_{uuid.uuid4().hex[:8]}.pdf"
+
+    stem = Path(filename).stem
+    suffix = Path(filename).suffix.lower() or ".pdf"
+
+    # NFKD splits accented characters into a base letter + combining mark;
+    # dropping the combining marks yields the closest ASCII transliteration.
+    nfd = unicodedata.normalize("NFKD", stem)
+    ascii_stem = "".join(ch for ch in nfd if not unicodedata.combining(ch))
+
+    # Replace remaining non-alphanumeric characters with a single underscore.
+    safe_chars: list[str] = []
+    prev_under = False
+    for ch in ascii_stem:
+        if ch.isalnum():
+            safe_chars.append(ch)
+            prev_under = False
+        elif not prev_under:
+            safe_chars.append("_")
+            prev_under = True
+    safe_stem = "".join(safe_chars).strip("_")
+
+    if not safe_stem or safe_stem.startswith("."):
+        safe_stem = f"uploaded_{uuid.uuid4().hex[:8]}"
+
+    name = f"{safe_stem}{suffix}"
+    # Collision-safe suffix: "foo.pdf" → "foo_2.pdf" → "foo_3.pdf" …
+    if existing:
+        i = 2
+        candidate = name
+        while candidate in existing:
+            candidate = f"{safe_stem}_{i}{suffix}"
+            i += 1
+        name = candidate
+    return name
 
 
 
@@ -286,6 +399,15 @@ class FieldUpdate(BaseModel):
     confidence: str | None = None
     notes: str | None = None
     coordinates: dict | None = None
+    fill_rule: dict | None = None
+    checkbox_group: dict | None = None
+    label: str | None = None
+
+    # extra="allow" prevents silent data loss: any additional field the
+    # frontend sends in the future is kept instead of being dropped by
+    # Pydantic. (C2 — frontend sent fill_rule/checkbox_group/label which
+    # were silently discarded before this fix.)
+    model_config = ConfigDict(extra="allow")
 
 
 class FieldCreate(BaseModel):
@@ -297,39 +419,51 @@ class FieldCreate(BaseModel):
     page_number: int = 1
     coordinates: dict | None = None
     notes: str | None = None
+    fill_rule: dict | None = None
+    checkbox_group: dict | None = None
+
+    model_config = ConfigDict(extra="allow")
 
 
 @app.put("/api/mapping/field")
 def update_field(body: FieldUpdate, pdf_id: str = Query(...), field: str = Query(...)):
     field_name = urllib.parse.unquote(field)
-    data = mapping_service.load(pdf_id)
-    try:
-        updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_none=True))
-    except KeyError:
-        raise HTTPException(404, f"field not found: {field_name}")
-    save_res = mapping_service.save(pdf_id, data)
+    _validate_canonical_field(body.canonical_field)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        try:
+            updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_none=True))
+        except KeyError:
+            raise HTTPException(404, f"field not found: {field_name}")
+        save_res = mapping_service.save(pdf_id, data)
     return {"field": updated, "_mtime": save_res["mtime"]}
 
 
 @app.post("/api/mapping/field")
 def add_field(body: FieldCreate, pdf_id: str = Query(...)):
-    data = mapping_service.load(pdf_id)
-    try:
-        created = mapping_service.add_field(data, body.model_dump())
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    save_res = mapping_service.save(pdf_id, data)
+    _validate_canonical_field(body.canonical_field)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        try:
+            created = mapping_service.add_field(data, body.model_dump())
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        save_res = mapping_service.save(pdf_id, data)
     return {"field": created, "_mtime": save_res["mtime"]}
 
 
 @app.delete("/api/mapping/field")
 def delete_field(pdf_id: str = Query(...), field: str = Query(...)):
     field_name = urllib.parse.unquote(field)
-    data = mapping_service.load(pdf_id)
-    ok = mapping_service.delete_field(data, field_name)
-    if not ok:
-        raise HTTPException(404, f"field not found: {field_name}")
-    save_res = mapping_service.save(pdf_id, data)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        ok = mapping_service.delete_field(data, field_name)
+        if not ok:
+            raise HTTPException(404, f"field not found: {field_name}")
+        save_res = mapping_service.save(pdf_id, data)
     return {"deleted": ok, "_mtime": save_res["mtime"]}
 
 
@@ -355,35 +489,41 @@ class GroupUpdate(BaseModel):
 
 @app.post("/api/mapping/group")
 def create_group(body: GroupCreate, pdf_id: str = Query(...)):
-    data = mapping_service.load(pdf_id)
-    try:
-        g = mapping_service.create_group(data, body.model_dump())
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    mapping_service.save(pdf_id, data)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        try:
+            g = mapping_service.create_group(data, body.model_dump())
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        mapping_service.save(pdf_id, data)
     return g
 
 
 @app.put("/api/mapping/group")
 def update_group(body: GroupUpdate, pdf_id: str = Query(...), group_id: str = Query(...)):
-    data = mapping_service.load(pdf_id)
-    try:
-        g = mapping_service.update_group(data, group_id, body.model_dump(exclude_none=True))
-    except KeyError:
-        raise HTTPException(404, f"group not found: {group_id}")
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    mapping_service.save(pdf_id, data)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        try:
+            g = mapping_service.update_group(data, group_id, body.model_dump(exclude_none=True))
+        except KeyError:
+            raise HTTPException(404, f"group not found: {group_id}")
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        mapping_service.save(pdf_id, data)
     return g
 
 
 @app.delete("/api/mapping/group")
 def delete_group(pdf_id: str = Query(...), group_id: str = Query(...)):
-    data = mapping_service.load(pdf_id)
-    ok = mapping_service.delete_group(data, group_id)
-    if not ok:
-        raise HTTPException(404, f"group not found: {group_id}")
-    mapping_service.save(pdf_id, data)
+    lock = _get_mapping_lock(pdf_id)
+    with lock:
+        data = mapping_service.load(pdf_id)
+        ok = mapping_service.delete_group(data, group_id)
+        if not ok:
+            raise HTTPException(404, f"group not found: {group_id}")
+        mapping_service.save(pdf_id, data)
     return {"deleted": ok}
 
 
@@ -547,12 +687,14 @@ async def upload_pdf(file: UploadFile = File(...)):
     # Ensure samples/ uploads directory exists
     uploads_dir = PROJECT_ROOT / "samples"
     uploads_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save the file
-    safe_filename = "".join(c for c in file.filename if c.isalnum() or c in (".", "_", "-"))
-    if not safe_filename or safe_filename.startswith("."):
-         safe_filename = f"uploaded_{uuid.uuid4().hex[:8]}.pdf"
-         
+
+    # FIX M7 — NFKD-based transliteration of accented filenames instead of
+    # dropping the characters outright, plus a collision-safe suffix.
+    existing_names = (
+        {p.name for p in uploads_dir.iterdir()} if uploads_dir.exists() else set()
+    )
+    safe_filename = sanitize_filename(file.filename, existing=existing_names)
+
     pdf_path = uploads_dir / safe_filename
     
     # Save the uploaded file
@@ -616,11 +758,16 @@ async def upload_pdf(file: UploadFile = File(...)):
         log.info(f"Automatically resolving mapping and filling for uploaded PDF {pdf_path.name} with deal {deal_id}")
         
         # This will resolve mapping (create it if missing via AI/heuristic) and fill it!
+        # FIX L9 — do NOT force-recreate the mapping on every upload: that
+        # discards any user-edited mapping a signature match already resolved
+        # (see config.mapping_path_for). Auto-resolution still generates a
+        # mapping when none exists; callers who want to force a fresh AI run
+        # can request the /api/mapping/recognize endpoint explicitly.
         result = pipeline.run_for_deal(
             deal_id=deal_id,
             template_pdf=pdf_path,
             mapping_config=None,  # triggers auto-resolution!
-            force_recreate_mapping=True,
+            force_recreate_mapping=False,
         )
         
         if not result["success"]:

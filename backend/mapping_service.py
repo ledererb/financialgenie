@@ -69,6 +69,7 @@ class MappingService:
         data.setdefault("page_structure", {})
         data.setdefault("fields", [])
         data.setdefault("character_groups", [])
+        data.setdefault("points", [])
         data["_mapping_file"] = path.relative_to(MAPPING_DIR.parent.parent).as_posix()
         return data
 
@@ -124,6 +125,9 @@ class MappingService:
         name = field["pdf_field_name"]
         if any(f.get("pdf_field_name") == name for f in fields):
             raise ValueError(f"duplicate field name: {name}")
+        # FIX L2 — mirror the C2 FieldUpdate behaviour: persist fill_rule and
+        # checkbox_group so newly added fields (checkbox groups / static
+        # rules) survive the create round-trip instead of being dropped.
         record = {
             "pdf_field_name": name,
             "label": field.get("label", name),
@@ -133,6 +137,8 @@ class MappingService:
             "page_number": field.get("page_number", 1),
             "coordinates": field.get("coordinates"),
             "notes": field.get("notes"),
+            "fill_rule": field.get("fill_rule"),
+            "checkbox_group": field.get("checkbox_group"),
         }
         fields.append(record)
         return record
@@ -312,6 +318,7 @@ class MappingService:
             "page_structure": {},
             "fields": [],
             "character_groups": [],
+            "points": [],
             "_mapping_file": None,
         }
 
