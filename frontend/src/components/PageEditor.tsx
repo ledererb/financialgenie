@@ -40,11 +40,20 @@ interface PageEditorProps {
 function overlayClass(
   field: MappingField,
   isSelected: boolean,
+  validCanonicalPaths: Set<string>,
 ): string {
   if (isSelected) return "field-overlay selected";
   if (!field.canonical_field) return "field-overlay unmapped";
-  if (field.confidence === "high") return "field-overlay mapped-high";
-  if (field.confidence === "medium") return "field-overlay mapped-medium";
+
+  // Validate that the assigned canonical_field actually exists in the
+  // server's canonical fields registry. AI recognition sometimes assigns
+  // internal domain model paths (e.g. "participant.role") that don't
+  // correspond to real Salesforce fields.
+  const isValid = validCanonicalPaths.size === 0 || validCanonicalPaths.has(field.canonical_field);
+
+  if (field.confidence === "high" && isValid) return "field-overlay mapped-high";
+  if (field.confidence === "high" && !isValid) return "field-overlay mapped-low";
+  if (field.confidence === "medium" && isValid) return "field-overlay mapped-medium";
   return "field-overlay mapped-low";
 }
 
@@ -154,6 +163,12 @@ export default function PageEditor({
       .filter((f) => f.page_number === pageNumber && !mappedNames.has(f.pdf_field_name))
       .map((f) => f.pdf_field_name);
   }, [fieldsRes, mapping, pageNumber]);
+
+  // Valid canonical field paths from the server registry. Used to validate
+  // that a mapping's canonical_field actually corresponds to a real SF field.
+  const validCanonicalPaths = useMemo(() => {
+    return new Set(canonicals.map((c) => c.path));
+  }, [canonicals]);
 
   // ── image load handler ────────────────────────────────────────────────
 
@@ -745,6 +760,7 @@ export default function PageEditor({
                     className={overlayClass(
                       mf,
                       selectedField === mf.pdf_field_name,
+                      validCanonicalPaths,
                     )}
                     onClick={() => {
                       setSelectedField(mf.pdf_field_name);
