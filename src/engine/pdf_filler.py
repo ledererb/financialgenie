@@ -237,6 +237,13 @@ class AcroFormFiller(BaseFiller):
         finally:
             pdf.close()
 
+        # --- PyMuPDF fallback: fill widgets not reachable from /AcroForm/Fields ---
+        # Some PDFs have deeply nested field hierarchies (e.g. c.debtor.fullName)
+        # that pikepdf's /Fields walker doesn't reach. PyMuPDF's widget iterator
+        # sees ALL widgets regardless of their position in the AcroForm tree.
+        if result.success:
+            self._mupdf_fill_missing(output_path, mapping, field_data, result)
+
         return result
 
     def _fill_fields_recursive(
@@ -369,6 +376,94 @@ class AcroFormFiller(BaseFiller):
                     "error": f"Hiba a mező kitöltésekor: {exc}",
                 })
                 logger.warning("Mező kitöltési hiba: %s – %s", pdf_name, exc)
+
+    def _mupdf_fill_missing(
+        self,
+        output_path: Path,
+        mapping: dict[str, str],
+        field_data: dict[str, str],
+        result: FillingResult,
+    ) -> None:
+        """Use PyMuPDF to fill widgets that pikepdf couldn't reach.
+
+        Opens the already-saved PDF, iterates ALL page-level widgets,
+        and fills any that are still empty but have data available.
+        """
+        import fitz  # PyMuPDF
+
+        filled_set = set(result.filled_fields)
+        extra_filled = 0
+
+        try:
+            doc = fitz.open(str(output_path))
+            needs_save = False
+
+            for page in doc:
+                for widget in page.widgets():
+                    wname = widget.field_name
+                    if not wname or wname in filled_set:
+                        continue
+
+                    # Try to resolve value via mapping
+                    canonical_name, value = self._resolve_field_value(
+                        wname, mapping, field_data
+                    )
+                    if canonical_name is None or value is None or value == "":
+                        continue
+
+                    # Fill based on widget type
+                    if widget.field_type in (
+                        fitz.PDF_WIDGET_TYPE_TEXT,
+                        fitz.PDF_WIDGET_TYPE_COMBOBOX,
+                        fitz.PDF_WIDGET_TYPE_LISTBOX,
+                    ):
+                        widget.field_value = str(value)
+                        widget.update()
+                        needs_save = True
+                        extra_filled += 1
+                        filled_set.add(wname)
+                        result.filled_fields.append(wname)
+                        logger.debug(
+                            "PyMuPDF fallback kitöltés: %s = %s (← %s)",
+                            wname, str(value)[:50], canonical_name,
+                        )
+                    elif widget.field_type in (
+                        fitz.PDF_WIDGET_TYPE_CHECKBOX,
+                        fitz.PDF_WIDGET_TYPE_RADIOBUTTON,
+                    ):
+                        is_checked = self._is_truthy(value)
+                        if is_checked:
+                            # Try to find the "on" state from button_states
+                            try:
+                                states = widget.button_states()
+                                on_val = None
+                                if states and "normal" in states:
+                                    for st in states["normal"]:
+                                        if st != "Off":
+                                            on_val = st
+                                            break
+                                if on_val:
+                                    widget.field_value = on_val
+                                else:
+                                    widget.field_value = "Yes"
+                            except Exception:
+                                widget.field_value = "Yes"
+                        else:
+                            widget.field_value = "Off"
+                        widget.update()
+                        needs_save = True
+                        extra_filled += 1
+                        filled_set.add(wname)
+                        result.filled_fields.append(wname)
+
+            if needs_save:
+                doc.save(str(output_path), incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+                logger.info(
+                    "PyMuPDF fallback: %d extra mező kitöltve", extra_filled
+                )
+            doc.close()
+        except Exception as exc:
+            logger.warning("PyMuPDF fallback kitöltés sikertelen: %s", exc)
 
     @staticmethod
     def _is_truthy(value: Any) -> bool:
