@@ -122,8 +122,8 @@ export default function ReviewDashboard({
 
   // ── conflicts: same canonical mapped >1 times ─────────────────────────
 
-  const conflicts = useMemo(() => {
-    if (!mapping) return [];
+  const { realConflicts, checkboxGroups } = useMemo(() => {
+    if (!mapping) return { realConflicts: [], checkboxGroups: [] };
     const byCanonical = new Map<string, MappingField[]>();
 
     for (const f of mapping.fields) {
@@ -133,12 +133,20 @@ export default function ReviewDashboard({
       else byCanonical.set(f.canonical_field, [f]);
     }
 
-    const result: { canonical: string; fields: MappingField[] }[] = [];
+    const real: { canonical: string; fields: MappingField[] }[] = [];
+    const groups: { canonical: string; fields: MappingField[] }[] = [];
     byCanonical.forEach((fields, canonical) => {
-      if (fields.length > 1) result.push({ canonical, fields });
+      if (fields.length <= 1) return;
+      const allCheckbox = fields.every(
+        (f) => f.field_type === "checkbox" || f.pdf_field_name.includes("___")
+      );
+      if (allCheckbox) groups.push({ canonical, fields });
+      else real.push({ canonical, fields });
     });
-    return result;
+    return { realConflicts: real, checkboxGroups: groups };
   }, [mapping]);
+
+  const [showCheckboxGroups, setShowCheckboxGroups] = useState(false);
 
   // ── render ─────────────────────────────────────────────────────────────
 
@@ -372,7 +380,8 @@ export default function ReviewDashboard({
         </section>
 
         {/* ─── conflicts ───────────────────────────────────────────── */}
-        {conflicts.length > 0 && (
+        {/* Real conflicts: text/mixed fields mapped to same SF field */}
+        {realConflicts.length > 0 && (
           <section className="card" style={{ padding: "var(--space-lg)" }}>
             <h3
               style={{
@@ -384,7 +393,7 @@ export default function ReviewDashboard({
                 letterSpacing: "0.05em",
               }}
             >
-              Azonos SF mezohoz rendelt PDF mezok ({conflicts.length})
+              Ellenorizendo mapping-ek ({realConflicts.length})
             </h3>
             <p
               style={{
@@ -394,14 +403,13 @@ export default function ReviewDashboard({
                 lineHeight: 1.5,
               }}
             >
-              Az alabbi Salesforce mezokhoz tobb PDF mezo is hozza van rendelve.
-              Checkbox/radio csoportoknal (pl. igen/nem) ez normalis.
-              Szoveges mezonel viszont ellenorizd, hogy a helyes mapping van-e beallitva.
+              Tobb szoveges PDF mezo is ugyanarra a Salesforce mezore mutat.
+              Valoszinuleg csak az egyik helyes – kattints az oldalszamra a javitashoz.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {conflicts.map(({ canonical, fields }) => {
-                const allCheckbox = fields.every(
-                  (f) => f.field_type === "checkbox" || f.pdf_field_name.includes("___")
+              {realConflicts.map(({ canonical, fields }) => {
+                const pages = [...new Set(fields.map((f) => f.page_number).filter(Boolean))].sort(
+                  (a, b) => (a as number) - (b as number)
                 );
                 return (
                   <div
@@ -409,12 +417,8 @@ export default function ReviewDashboard({
                     style={{
                       padding: "var(--space-sm) var(--space-md)",
                       borderRadius: "var(--radius-sm)",
-                      background: allCheckbox
-                        ? "rgba(255,255,255,0.03)"
-                        : "rgba(255,170,50,0.08)",
-                      border: allCheckbox
-                        ? "1px solid rgba(255,255,255,0.06)"
-                        : "1px solid rgba(255,170,50,0.2)",
+                      background: "rgba(255,170,50,0.08)",
+                      border: "1px solid rgba(255,170,50,0.2)",
                     }}
                   >
                     <div
@@ -422,26 +426,17 @@ export default function ReviewDashboard({
                         display: "flex",
                         alignItems: "center",
                         gap: "var(--space-sm)",
-                        marginBottom: 4,
+                        marginBottom: 6,
                       }}
                     >
                       <span
-                        className={allCheckbox ? "badge" : "badge badge-amber"}
+                        className="badge badge-amber"
                         style={{ flexShrink: 0, fontSize: "0.7rem" }}
                       >
-                        {allCheckbox ? "Csoport" : "Ellenorizd"}
+                        {fields.length} mezo
                       </span>
                       <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
                         {canonical}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "0.7rem",
-                          color: "var(--text-tertiary)",
-                          marginLeft: "auto",
-                        }}
-                      >
-                        {fields.length} mezo
                       </span>
                     </div>
                     <div
@@ -474,7 +469,7 @@ export default function ReviewDashboard({
           </section>
         )}
 
-        {conflicts.length === 0 && (
+        {realConflicts.length === 0 && checkboxGroups.length === 0 && (
           <section
             className="card"
             style={{
@@ -484,7 +479,7 @@ export default function ReviewDashboard({
               fontSize: "0.85rem",
             }}
           >
-            Nincs mapping ütközés
+            Nincs mapping utkozes
           </section>
         )}
       </div>
