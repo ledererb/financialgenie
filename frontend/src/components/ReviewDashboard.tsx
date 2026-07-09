@@ -378,42 +378,98 @@ export default function ReviewDashboard({
               style={{
                 fontSize: "0.85rem",
                 fontWeight: 600,
-                marginBottom: "var(--space-md)",
+                marginBottom: "var(--space-sm)",
                 color: "var(--accent-amber)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
               }}
             >
-              Ütközések ({conflicts.length})
+              Azonos SF mezohoz rendelt PDF mezok ({conflicts.length})
             </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {conflicts.map(({ canonical, fields }) => (
-                <div className="mapping-row" key={canonical}>
-                  <span
-                    className="badge badge-amber"
-                    style={{ flexShrink: 0 }}
-                  >
-                    {fields.length}×
-                  </span>
-                  <span
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--text-tertiary)",
+                marginBottom: "var(--space-md)",
+                lineHeight: 1.5,
+              }}
+            >
+              Az alabbi Salesforce mezokhoz tobb PDF mezo is hozza van rendelve.
+              Checkbox/radio csoportoknal (pl. igen/nem) ez normalis.
+              Szoveges mezonel viszont ellenorizd, hogy a helyes mapping van-e beallitva.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {conflicts.map(({ canonical, fields }) => {
+                const allCheckbox = fields.every(
+                  (f) => f.field_type === "checkbox" || f.pdf_field_name.includes("___")
+                );
+                return (
+                  <div
+                    key={canonical}
                     style={{
-                      fontWeight: 600,
-                      fontSize: "0.85rem",
-                      minWidth: 180,
+                      padding: "var(--space-sm) var(--space-md)",
+                      borderRadius: "var(--radius-sm)",
+                      background: allCheckbox
+                        ? "rgba(255,255,255,0.03)"
+                        : "rgba(255,170,50,0.08)",
+                      border: allCheckbox
+                        ? "1px solid rgba(255,255,255,0.06)"
+                        : "1px solid rgba(255,170,50,0.2)",
                     }}
                   >
-                    {canonical}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--text-tertiary)",
-                    }}
-                  >
-                    {fields.map((f) => f.pdf_field_name).join(" · ")}
-                  </span>
-                </div>
-              ))}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--space-sm)",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        className={allCheckbox ? "badge" : "badge badge-amber"}
+                        style={{ flexShrink: 0, fontSize: "0.7rem" }}
+                      >
+                        {allCheckbox ? "Csoport" : "Ellenorizd"}
+                      </span>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                        {canonical}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "var(--text-tertiary)",
+                          marginLeft: "auto",
+                        }}
+                      >
+                        {fields.length} mezo
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "4px 8px",
+                        paddingLeft: 4,
+                      }}
+                    >
+                      {fields.map((f) => (
+                        <span
+                          key={f.pdf_field_name}
+                          style={{
+                            fontSize: "0.7rem",
+                            color: "var(--text-secondary)",
+                            background: "rgba(255,255,255,0.05)",
+                            padding: "1px 6px",
+                            borderRadius: 3,
+                          }}
+                        >
+                          {f.pdf_field_name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
