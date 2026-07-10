@@ -38,28 +38,31 @@ class ProductType(str, Enum):
 # ============================================================
 
 # Alap szekciók – minden ügylethez szükségesek
+# Oldaltartományok a v5 master PDF valós tartalma alapján ellenőrizve.
 BASE_SECTIONS = {
     "fedlap": (1, 1),
     "sza_ig_igenylő": (2, 5),        # Személyi adatlap – igénylő
     "sza_ig_tarsigenylő": (6, 9),     # Személyi adatlap – társigénylő
-    "sza_esz": (10, 10),              # Eszköz nyilatkozat
-    "meghatalmazas": (11, 12),        # Meghatalmazás
+    "sza_esz": (10, 10),              # Személyi adatlap – egyéb szereplő (fedezet tulajdonosa/haszonélvezője)
+    "munkaltato_adatlap": (11, 12),   # Munkáltatói és vállalkozói adatlap (MA IG)
     "ingatlan_adatlap": (13, 15),     # Ingatlan adatlap
-    "hitelfeltetelek": (16, 21),      # KTKA / hitelfeltételek
-    "altalanos_nyilatkozatok": (22, 30),  # Általános nyilatkozatok
+    "hitelfeltetelek": (16, 21),      # KTKA Kölcsönkérelmi adatlap (16-19) + FA Finanszírozás (20-21)
+    "altalanos_nyilatkozatok": (22, 30),  # Általános nyilatkozat
 }
 
-# Termékspecifikus szekciók
-# TODO: Page ranges below are illustrative — validate against v5 master PDF
+# Termékspecifikus szekciók.
+# A v5 master PDF-ben a 31-68. oldalak (CSOK/CSOK Plusz/ÁFA) és a 83-97.
+# oldalak (Hitelkártya/Vidéki Felújítás) más termékekhez tartoznak, amelyek
+# nincsenek a jelenlegi 4 ProductType enumban. A Piaci hitel és a
+# Szabadfelhasználású hitel a base KTKA-t használják (16-21), így nincs
+# saját oldaltartományuk. Ezeket az oldalakat a manuális section editorral
+# lehet termékekhez rendelni.
 PRODUCT_SECTIONS = {
-    ProductType.PIACI_HITEL: [("piaci_hitel", 83, 90)],
-    ProductType.SZABADFELHASZNALASU: [("szab_hitel", 31, 36)],
+    ProductType.PIACI_HITEL: [],          # base KTKA-t használ, nincs saját oldala
+    ProductType.SZABADFELHASZNALASU: [],  # base KTKA-t használ, nincs saját oldala
     ProductType.OTTHON_START: [("otthon_start", 69, 82)],
     ProductType.ERTEKBECSLES: [],  # no master pages
 }
-
-# Társadós bővített adatlap – ha ≥2 szereplő
-TARSADOS_SECTION = ("tarsados_adatlap", 31, 36)
 
 
 # ============================================================
@@ -429,11 +432,11 @@ class DocumentAssembler:
                 note=f"Extra társigénylő #{extra_idx}",
             )
 
-        # Eszköz nyilatkozat
+        # Egyéb szereplő (fedezet tulajdonosa/haszonélvezője)
         self._add_section(plan, "sza_esz", *BASE_SECTIONS["sza_esz"])
 
-        # Meghatalmazás
-        self._add_section(plan, "meghatalmazas", *BASE_SECTIONS["meghatalmazas"])
+        # Munkáltatói és vállalkozói adatlap
+        self._add_section(plan, "munkaltato_adatlap", *BASE_SECTIONS["munkaltato_adatlap"])
 
         # Ingatlan adatlap – sokszorosítva
         for prop_idx in range(num_properties):
@@ -450,11 +453,7 @@ class DocumentAssembler:
         # Általános nyilatkozatok
         self._add_section(plan, "altalanos_nyilatkozatok", *BASE_SECTIONS["altalanos_nyilatkozatok"])
 
-        # === 2. TÁRSADÓS SZEKCIÓ (ha ≥2 szereplő) ===
-        if num_participants >= 2:
-            self._add_section(plan, TARSADOS_SECTION[0], TARSADOS_SECTION[1], TARSADOS_SECTION[2])
-
-        # === 3. TERMÉKSPECIFIKUS SZEKCIÓK ===
+        # === TERMÉKSPECIFIKUS SZEKCIÓK ===
         added_sections = set()
         for product in products:
             sections = PRODUCT_SECTIONS.get(product, [])

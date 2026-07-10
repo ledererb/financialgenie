@@ -61,6 +61,50 @@ def _compute_sha256(file_path: Path) -> str:
     return sha256.hexdigest()
 
 
+def extract_page_range(
+    master_pdf_path: Path | str,
+    start_page: int,
+    end_page: int,
+    output_path: Path | str,
+) -> int:
+    """Extract a contiguous page range from *master_pdf_path* into a new PDF.
+
+    Page numbers are 1-indexed inclusive (matching ``BASE_SECTIONS`` and user
+    expectations). The new PDF is saved to *output_path*.
+
+    Uses **pikepdf** (not PyMuPDF) to preserve AcroForm widget annotations.
+    PyMuPDF's ``insert_pdf`` silently drops form fields, which breaks all
+    downstream mapping/filling. pikepdf's ``add_pages_from`` copies pages
+    together with their widget annotations and the global AcroForm dictionary.
+
+    Returns the number of pages written.
+    """
+    import pikepdf
+
+    master_pdf_path = Path(master_pdf_path)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    src = pikepdf.open(str(master_pdf_path))
+    total_pages = len(src.pages)
+
+    # Clamp to the real page count (1-indexed, inclusive).
+    start_1 = max(1, min(start_page, total_pages))
+    end_1 = max(start_1, min(end_page, total_pages))
+
+    out = pikepdf.Pdf.new()
+    # add_pages_from preserves form widget annotations correctly (unlike
+    # manual page append + copy_foreign, which can orphan widgets). It also
+    # copies the relevant AcroForm fields automatically (forms='preserve').
+    out.add_pages_from(src, pages=slice(start_1 - 1, end_1))
+
+    out.save(str(output_path))
+    out.close()
+    src.close()
+
+    return end_1 - start_1 + 1
+
+
 def _master_using_product_ids(catalog_service, bank_id: str) -> list[str]:
     """Return product IDs under *bank_id* whose ProductType has non-empty
     PRODUCT_SECTIONS (i.e. they reference master pages).
@@ -195,41 +239,34 @@ class MasterSplitService:
             output_files: list[dict] = []
 
             for section in sections:
-                start_0 = section["start_1"] - 1  # 0-based
-                end_1 = section["end_1"]          # 1-based inclusive
+                start_1 = section["start_1"]    # 1-based inclusive
+                end_1 = section["end_1"]        # 1-based inclusive
 
                 # Skip sections entirely beyond the PDF.
-                if start_0 >= total_pages:
+                if start_1 > total_pages:
                     continue
-
-                actual_end_0 = min(end_1, total_pages)  # exclusive 0-based
-
-                # Create a new PDF with just these pages.
-                out = fitz.open()
-                out.insert_pdf(
-                    doc,
-                    from_page=start_0,
-                    to_page=actual_end_0 - 1,
-                )
 
                 filename = _slugify_section(section["name"]) + ".pdf"
                 output_file = output_path / filename
-                out.save(str(output_file))
-                out.close()
+
+                # Create a new PDF with just these pages (reuses the shared
+                # extract_page_range helper, also used by the manual editor).
+                page_count = extract_page_range(
+                    master_path, start_1, end_1, output_file
+                )
+
+                actual_start_1 = max(1, start_1)
+                actual_end_1 = min(end_1, total_pages)
 
                 sha256 = _compute_sha256(output_file)
-
-                page_start_1 = start_0 + 1
-                page_end_1 = actual_end_0
-                page_count = actual_end_0 - start_0
 
                 output_files.append(
                     {
                         "filename": filename,
                         "path": str(output_file),
                         "section": section["name"],
-                        "page_start": page_start_1,
-                        "page_end": page_end_1,
+                        "page_start": actual_start_1,
+                        "page_end": actual_end_1,
                         "page_count": page_count,
                         "is_base": section["is_base"],
                         "product_ids": section["product_ids"],
@@ -247,6 +284,9 @@ class MasterSplitService:
             doc.close()
 
             # Register split documents in the catalog.
+            # Per-applicant sections are filled once per applicant (co-applicant
+            # data sheet, additional party declaration).
+            per_applicant_sections = {"sza_ig_tarsigenylő", "sza_esz"}
             for f in output_files:
                 doc_id = f"split_{bank_id}_{Path(f['filename']).stem}"
                 catalog_service.add_document(
@@ -263,6 +303,7 @@ class MasterSplitService:
                         "split_from_master": True,
                         "master_page_number": f["page_start"],
                         "master_section": "base" if f["is_base"] else f["section"],
+                        "per_applicant": f["section"] in per_applicant_sections,
                     }
                 )
 
