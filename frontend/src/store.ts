@@ -78,6 +78,9 @@ interface EditorState {
   // Phase 3 — client-side dedup tracking (session only)
   uploadedHashes: Set<string>;
 
+  // Phase 4 — master PDF split
+  activeSplitId: string | null;
+
   // Actions
   loadPdfs: () => Promise<void>;
   selectPdf: (pdfId: string) => Promise<void>;
@@ -118,6 +121,10 @@ interface EditorState {
   }) => Promise<CatalogDocument>;
   associateDocumentWithProduct: (docId: string, productIds: string[]) => Promise<void>;
   addUploadedHash: (hash: string) => void;
+
+  // Catalog actions (Phase 4 — master split)
+  setActiveSplitId: (splitId: string | null) => void;
+  startMasterSplit: (bankId: string, file: File) => Promise<string>;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -159,6 +166,9 @@ export const useStore = create<EditorState>((set, get) => ({
 
   // Phase 3 — session-only dedup tracking
   uploadedHashes: new Set<string>(),
+
+  // Phase 4 — master split
+  activeSplitId: null,
 
   loadPdfs: async () => {
     set({ pdfsLoading: true });
@@ -432,5 +442,29 @@ export const useStore = create<EditorState>((set, get) => ({
     set((state) => ({
       uploadedHashes: new Set([...state.uploadedHashes, hash]),
     }));
+  },
+
+  // --- Catalog actions (Phase 4 — master split) ---
+  setActiveSplitId: (splitId) => set({ activeSplitId: splitId }),
+
+  startMasterSplit: async (bankId, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(
+      `/api/catalog/split-master?bank_id=${encodeURIComponent(bankId)}`,
+      {
+        method: "POST",
+        body: form,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(
+        body.detail || body.error || `${res.status} ${res.statusText}`,
+      );
+    }
+    const data = await res.json();
+    set({ activeSplitId: data.split_id });
+    return data.split_id as string;
   },
 }));

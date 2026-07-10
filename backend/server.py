@@ -751,6 +751,65 @@ def set_document_products(doc_id: str, body: dict):
         raise HTTPException(500, str(e))
 
 
+# ======================================================================
+# Catalog service endpoints (Phase 4 — Automatic master PDF split)
+# ======================================================================
+@app.post("/api/catalog/split-master")
+async def start_master_split(
+    bank_id: str = Query(...),
+    file: UploadFile | None = File(None),
+):
+    """Start an asynchronous master PDF split.
+
+    Accepts a multipart file upload with *bank_id* as a query parameter.
+    The file is saved under ``documents/<bank_id>/master/`` and the split
+    runs in a background thread.
+
+    Returns 202 with ``{ split_id, status }``.
+    """
+    if not bank_id:
+        raise HTTPException(400, "bank_id query parameter is required")
+
+    bank = catalog_service.get_bank(bank_id)
+    if not bank:
+        raise HTTPException(404, f"Bank '{bank_id}' not found")
+
+    if file is None:
+        raise HTTPException(400, "file (multipart upload) is required")
+
+    # Save the uploaded master PDF.
+    master_dir = PROJECT_ROOT / "documents" / bank_id / "master"
+    master_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = sanitize_filename(file.filename or "master.pdf")
+    master_path = master_dir / safe_name
+    content = await file.read()
+    with open(master_path, "wb") as f:
+        f.write(content)
+
+    output_dir = str(PROJECT_ROOT / "documents" / bank_id / "split")
+
+    from master_split_service import master_split_service
+
+    split_id = master_split_service.start_split(
+        str(master_path), output_dir, bank_id
+    )
+    return JSONResponse(
+        status_code=202,
+        content={"split_id": split_id, "status": "pending"},
+    )
+
+
+@app.get("/api/catalog/split/{split_id}")
+def get_split_progress(split_id: str):
+    """Poll split progress. Returns the progress dict or 404."""
+    from master_split_service import master_split_service
+
+    progress = master_split_service.get_progress(split_id)
+    if not progress:
+        raise HTTPException(404, "Split not found")
+    return progress
+
+
 @app.post("/api/pdf/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """

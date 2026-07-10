@@ -3,6 +3,7 @@ import { uploadPdf, listPdfs, deletePdf } from "@/api/client";
 import type { PdfSummary, CatalogDocument } from "@/types";
 import { useStore } from "@/store";
 import ProductAssociationDialog from "./ProductAssociationDialog";
+import SplitProgressIndicator from "./SplitProgressIndicator";
 
 interface UploadStepProps {
   onComplete: (pdfId: string) => void;
@@ -39,6 +40,18 @@ function bankName(catalog: { banks: { id: string; name: string; products: { id: 
   return "";
 }
 
+function isMasterPdfCandidate(f: File): boolean {
+  const folded = f.name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return (
+    folded.includes("igenylesi") ||
+    /_v\d/i.test(folded) ||
+    f.size > 2 * 1024 * 1024
+  );
+}
+
 export default function UploadStep({ onComplete, onOpenExisting }: UploadStepProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -51,6 +64,9 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
   const [deleting, setDeleting] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [associationDoc, setAssociationDoc] = useState<CatalogDocument | null>(null);
+  const [splitting, setSplitting] = useState(false);
+  const [splitId, setSplitId] = useState<string | null>(null);
+  const [dismissedMaster, setDismissedMaster] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Store state (Phase 3 context awareness) ---
@@ -62,6 +78,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
   const associateDocumentWithProduct = useStore((s) => s.associateDocumentWithProduct);
   const uploadedHashes = useStore((s) => s.uploadedHashes);
   const addUploadedHash = useStore((s) => s.addUploadedHash);
+  const startMasterSplit = useStore((s) => s.startMasterSplit);
 
   const hasSelection = !!(selectedBankId && selectedProductId);
 
@@ -96,6 +113,8 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
     }
     setFile(f);
     setError(null);
+    setSplitId(null);
+    setDismissedMaster(false);
   }, []);
 
   // Drag-and-drop handlers
@@ -190,6 +209,29 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
   const handleClearFile = useCallback(() => {
     setFile(null);
     setError(null);
+    setSplitId(null);
+    setDismissedMaster(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleSplit = useCallback(async () => {
+    if (!file || !selectedBankId) return;
+    setSplitting(true);
+    setError(null);
+    try {
+      const id = await startMasterSplit(selectedBankId, file);
+      setSplitId(id);
+    } catch (e) {
+      setError((e as Error).message || "A darabolás indítása sikertelen.");
+    } finally {
+      setSplitting(false);
+    }
+  }, [file, selectedBankId, startMasterSplit]);
+
+  const handleSplitComplete = useCallback(() => {
+    setFile(null);
+    setSplitId(null);
+    setDismissedMaster(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
@@ -443,8 +485,47 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
         </div>
       )}
 
-      {/* Upload button */}
-      {file && (
+      {/* Split progress indicator (Phase 4 — async master split) */}
+      {splitId && (
+        <SplitProgressIndicator splitId={splitId} onComplete={handleSplitComplete} />
+      )}
+
+      {/* Master PDF detection prompt (Phase 4) */}
+      {file && !splitId && !dismissedMaster && isMasterPdfCandidate(file) && (
+        <div
+          className="animate-fade-in"
+          style={{
+            padding: "var(--space-md)",
+            background: "var(--accent-blue-glow, rgba(59,130,246,0.1))",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--accent-blue, #3b82f6)",
+            marginBottom: "var(--space-md)",
+          }}
+        >
+          <p style={{ fontSize: "0.85rem", color: "var(--text-primary)", margin: 0, marginBottom: "var(--space-sm)" }}>
+            Ez a fájl nagy méretű mester PDF-nek tűnik. Fel szeretné darabolni automatikusan?
+          </p>
+          <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleSplit}
+              disabled={splitting}
+            >
+              {splitting ? "Indítás…" : "⚡ Darabolás"}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setDismissedMaster(true)}
+              disabled={splitting}
+            >
+              Feltöltés egészben
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Upload button — hidden during split or when master prompt is shown */}
+      {file && !splitId && !(isMasterPdfCandidate(file) && !dismissedMaster) && (
         <div className="animate-fade-in" style={{ textAlign: "center", marginBottom: "var(--space-xl)" }}>
           <button
             className="btn btn-primary btn-lg"
