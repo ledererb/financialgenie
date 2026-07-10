@@ -3,7 +3,7 @@
 **Project:** FinancialGenie Mapping Studio
 **Author:** OpenCode (Architecture Analysis)
 **Date:** 2026-07-10
-**Status:** Draft for client review (rev 2 — aligned with real OTP Drive structure)
+**Status:** Draft for client review (rev 3 — master split is now fully automatic per client decision)
 
 ---
 
@@ -27,7 +27,7 @@ A document can belong to **multiple products** (M:N). For example `Partner_nyila
 
 Two new requirements from Balázs drive this revision:
 1. **Multi-applicant (adóstárs) handling** — some forms are filled once *per applicant*. The catalog must tag each document with `per_applicant`, and the fill pipeline must fetch N copies and fill N times when there are co-applicants.
-2. **Section-aware master split** — the master PDF has base sections (shared by all products) and product-specific sections; the split UI must auto-assign pages to the right products.
+2. **Section-aware master split (fully automatic)** — the master PDF has base sections (shared by all products) and product-specific sections; uploading the master triggers an automatic, asynchronous split that assigns pages to the right products from the section map, with no manual dialog.
 
 This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
 
@@ -301,7 +301,7 @@ The heuristic for unknown uploads: title contains "személyi adatlap", "jövedel
 | `PUT` | `/api/documents/{doc_id}/products` | Associate a document with product(s) (M:N). |
 | `PUT` | `/api/documents/{doc_id}` | Update document metadata — incl. toggling `per_applicant`. |
 | `DELETE` | `/api/documents/{doc_id}/products/{product_id}` | Remove association (keeps file if referenced elsewhere). |
-| `POST` | `/api/documents/split-master` | **Split master PDF** into base + product sections (§5.3). |
+| `POST` | `/api/documents/split-master` | **Automatic master PDF split** into base + product sections (§5.3). Async, returns `task_id`. |
 | `DELETE` | `/api/documents/{doc_id}` | Delete document (file + catalog entry + mapping). |
 
 ### 5.2 Upload Endpoint (new signature)
@@ -309,43 +309,86 @@ The heuristic for unknown uploads: title contains "személyi adatlap", "jövedel
 `POST /api/documents/upload` (multipart):
 
 ```
-file:           <PDF binary>
-bank_id:        otp
-product_ids:    szabadfelhasznalasu,piaci_hitel     (comma-separated; ≥1)
-title:          "Partner nyilatkozat"                (optional)
-per_applicant:  true                                  (optional; default inferred by heuristic)
-auto_fill:      false                                 (skip immediate AI fill)
+file:              <PDF binary>
+bank_id:           otp
+product_ids:       szabadfelhasznalasu,piaci_hitel     (comma-separated; ≥1)
+title:             "Partner nyilatkozat"                (optional)
+per_applicant:     true                                  (optional; default inferred by heuristic)
+auto_fill:         false                                 (skip immediate AI fill)
+auto_split_master: true                                  (default; if a master PDF is detected, trigger the automatic async split — §5.3)
 ```
 
-### 5.3 Master PDF Split Endpoint — Section-Aware
+> **Master auto-detection at upload:** when `auto_split_master` is `true` (the default), the upload endpoint inspects the file **before** creating a normal catalog entry. If it is detected as a master (filename matches the pattern `Igenylesi_dokumentumok_OTP_*` **OR** page count exceeds the configured threshold, e.g. > 50 pages), the upload stores the file under `_master/` and returns a `task_id` for the asynchronous split instead of a regular document. The frontend shows a progress indicator (§6.1) and the resulting split documents appear in the catalog tree when the task completes.
 
-The master PDF is **not homogeneous**. It contains **base sections** (shared by all 3 products that use the master: Szabadfelhasználású, Otthon Start, Piaci hitel) and **product-specific sections** (scoped to one product). The split endpoint must understand this.
+### 5.3 Master PDF Split Endpoint — Fully Automatic & Asynchronous
+
+> **Client decision (Balázs):** master splitting is **fully automatic**. There is no manual dialog. The user uploads the master PDF and the system handles detection, section mapping, splitting, and product assignment. The source of truth for the page-to-product mapping is the reconciled `DocumentAssembler.PRODUCT_SECTIONS` and `BASE_SECTIONS` (§7.2).
+
+The master PDF is **not homogeneous**. It contains **base sections** (shared by all 3 products that use the master: Szabadfelhasználású, Otthon Start, Piaci hitel) and **product-specific sections** (scoped to one product). The split endpoint understands this — but it derives the mapping **from the section map**, not from user input.
+
+#### 5.3.1 Detection
+
+Master detection happens at **upload time** (§5.2) when `auto_split_master: true`. A file is treated as a master if it satisfies either:
+
+- **Filename pattern** — matches `Igenylesi_dokumentumok_OTP_*` (case-insensitive, accent-insensitive), **or**
+- **Page-count heuristic** — page count > `MASTER_PAGE_THRESHOLD` (default `50`) **and** the filename matches the naming pattern.
+
+Both conditions guard against false positives (a 90-page unrelated form should not trigger a split).
+
+#### 5.3.2 The Split Job (Asynchronous)
 
 `POST /api/documents/split-master`:
 
-```json
+```jsonc
+// Request — minimal: the section map is NOT supplied by the client; it is read from DocumentAssembler.
 {
   "master_pdf_path": "_master/Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf",
-  "bank_id": "otp",
-  "section_map": {
-    "base":            { "pages": "1-30",  "product_ids": ["szabadfelhasznalasu","otthon_start","piaci_hitel"], "per_applicant": "mixed" },
-    "szabadfelhasznalasu": { "pages": "31-36", "product_ids": ["szabadfelhasznalasu"] },
-    "otthon_start":    { "pages": "69-82", "product_ids": ["otthon_start"] },
-    "piaci_hitel":     { "pages": "83-90", "product_ids": ["piaci_hitel"] }
-  }
+  "bank_id": "otp"
+  // section_map is derived server-side from DocumentAssembler.PRODUCT_SECTIONS / BASE_SECTIONS (§7.2)
 }
 ```
 
-This endpoint:
+```jsonc
+// Response (immediate) — 202 Accepted
+{
+  "task_id": "split_a1b2c3",
+  "status": "running",
+  "total_pages": 97,
+  "processed_pages": 0
+}
+```
+
+The endpoint returns a `task_id` immediately and runs the split **in the background** (mirroring the existing AI-recognition polling pattern). Progress is polled via `GET /api/documents/split-master/{task_id}`:
+
+```jsonc
+// Poll response
+{
+  "task_id": "split_a1b2c3",
+  "status": "running",            // running | completed | failed
+  "total_pages": 97,
+  "processed_pages": 27,          // → "Master PDF feldolgozása: 27/97 oldal…"
+  "created_doc_ids": [],          // populated as pages are written
+  "error": null
+}
+```
+
+A 97-page PDF can take 5–10 seconds (PyMuPDF ~50 ms/page plus catalog writes), which is why the job **must** be asynchronous — never blocking the upload request.
+
+#### 5.3.3 What the Split Job Does
+
 1. Opens the master PDF with PyMuPDF.
-2. For each section, splits into page (or page-range) documents.
-3. **Base section** pages → stored in `documents/otp/base/_master_sections/base/`, associated to **all** master-using products.
-4. **Product-specific section** pages → stored in `documents/otp/<product>/_master_sections/`, associated to that product only.
-5. Creates catalog entries with `source: "split:<master>:page N"`, `master_section`, and `per_applicant` (base personal-data pages → `true`; cover/property pages → `false`).
+2. Reads the reconciled `DocumentAssembler.PRODUCT_SECTIONS` (product-specific page ranges) and `BASE_SECTIONS` (shared page ranges) as the **single source of truth** for page → section → product assignment.
+3. For each page, determines its `master_section` (`"base"` or a product slug) and the resulting `product_ids`:
+   - **Base section** pages → `product_ids` = **all** master-using products (Szabadfelhasználású, Otthon Start, Piaci hitel); stored in `documents/otp/base/_master_sections/base/`.
+   - **Product-specific section** pages → `product_ids` = that product only; stored in `documents/otp/<product>/_master_sections/`.
+4. Extracts each page into a standalone single-page PDF.
+5. Creates catalog entries with `source: "split:<master>:page N"`, `master_section`, `master_page_number`, and `per_applicant` (base personal-data pages → `true`; cover/property pages → `false`, per the table in §4.2).
+6. Emits `processed_pages` increments as it writes pages, so the frontend progress indicator advances per page.
+7. On completion, the poll response includes the full `created_doc_ids[]` list and `status: "completed"`.
 
-The `section_map` can be **auto-suggested** from an updated `DocumentAssembler.PRODUCT_SECTIONS` / `BASE_SECTIONS` map (§7.2). The user confirms/adjusts page ranges and `per_applicant` in the `MasterSplitDialog` before the split runs.
+> **Fallback if the section map is wrong:** the split still runs and produces page documents, but a page may land in the wrong section. The user can **manually re-assign pages after the fact** via the existing multi-project association UI (`PUT /api/documents/{doc_id}/products`) — they are never locked into an incorrect auto-assignment. See §7.3.
 
-> **Note:** `Élőzetes értékbecslés megrendelés` does **not** use the master PDF, so it receives no split pages — only its 2 standalone forms.
+> **Note:** `Előzetes értékbecslés megrendelés` does **not** use the master PDF, so it receives no split pages — only its 2 standalone forms.
 
 ### 5.4 Decoupling Upload from Fill
 
@@ -400,9 +443,9 @@ App.tsx
     │   ├── BankSelector.tsx
     │   ├── ProductList.tsx
     │   └── DocumentList.tsx        ← M:N badge + per-applicant badge
-    ├── UploadStep.tsx              ← REFACTORED: context-aware upload
-    │   └── ProductAssociationPicker.tsx
-    ├── MasterSplitDialog.tsx       ← NEW: section-aware master split
+    ├── UploadStep.tsx              ← REFACTORED: context-aware upload + master auto-split
+    │   ├── ProductAssociationPicker.tsx
+    │   └── SplitProgressIndicator.tsx   ← NEW: async master-split progress (polls task_id)
     ├── AnalysisStep.tsx            (unchanged)
     ├── ReviewDashboard.tsx         (unchanged)
     ├── LockStep.tsx                (unchanged)
@@ -443,8 +486,9 @@ applicants: Applicant[];           // igénylő + adóstársak for the active de
 selectedApplicantId: string | null; // which applicant to preview in Fill
 
 loadCatalog: () => Promise<void>;
-uploadToProduct: (file, productIds, opts?: { per_applicant?: boolean }) => Promise<void>;
-splitMaster: (masterPath, sectionMap) => Promise<void>;
+uploadToProduct: (file, productIds, opts?: { per_applicant?: boolean; auto_split_master?: boolean }) => Promise<void>;
+splitMaster: (masterPath, bankId) => Promise<string>;   // returns task_id; map derived server-side from DocumentAssembler
+pollSplitTask: (taskId) => Promise<SplitTaskStatus>;    // for SplitProgressIndicator
 associateDocument: (docId, productIds) => Promise<void>;
 setPerApplicant: (docId, value) => Promise<void>;
 loadApplicants: (dealId) => Promise<void>;
@@ -490,9 +534,9 @@ This is the single biggest fill-pipeline change in this plan and is the reason `
 
 ---
 
-## 7. Master PDF Split — Section Awareness
+## 7. Master PDF Split — Section Awareness (Fully Automatic)
 
-Requirement: the master document must be **split into individual pages and uploaded separately**, but the split must respect **base sections** (shared) vs **product-specific sections** (scoped).
+Requirement: the master document must be **split into individual pages and uploaded separately**, but the split must respect **base sections** (shared) vs **product-specific sections** (scoped). Per the client decision, this split is **fully automatic** — the user only uploads the master PDF; there is no manual dialog. The section map in `DocumentAssembler` (§7.2) is the source of truth for auto-assignment.
 
 ### 7.1 Section Model
 
@@ -516,17 +560,22 @@ PRODUCT_SECTIONS = {
 BASE_SECTIONS = {"fedlap": (1,1), "sza_ig_igenylo": (2,5), ...}  # shared by all 3
 ```
 
-(Page ranges above are illustrative — exact ranges come from inspecting the v5 master. The split dialog lets the user correct them.)
+(Page ranges above are illustrative — exact ranges come from inspecting the v5 master during Phase 1.) 
 
-The split dialog **auto-populates** product assignments from this map: base pages → all 3 products, product pages → that product only. The user confirms or adjusts.
+This map is the **single source of truth** for the automatic split: base pages → all 3 products, product pages → that product only. There is no user confirmation step before the split runs — but because the map is editable by the developer in Phase 1 and reconciled against the real products, the auto-assignment is correct by construction. If a page ever lands in the wrong section, the user can re-assign it afterward (§7.3).
 
-### 7.3 Split Flow
+### 7.3 Automatic Split Flow
 
-1. User selects **"Split master PDF"** in Upload step.
-2. `MasterSplitDialog` detects the master (`_master/…v5.pdf`, ≥90 pages) and renders a page-grid preview (reuse `GET /api/pdf/page/{n}/image`).
-3. The dialog pre-groups pages into **base** and **per-product** sections using the section map, with `per_applicant` pre-checked for personal-data base pages.
-4. User adjusts page ranges, titles, product memberships, and `per_applicant` flags.
-5. On confirm, `POST /api/documents/split-master` extracts each page/section into a standalone PDF and creates catalog entries with correct `master_section` + `product_ids` + `per_applicant`.
+There is no manual dialog. The flow is:
+
+1. **User uploads the master PDF** like any other document in the Upload step (drag-and-drop). No "Split master PDF" button, no mode selection.
+2. **Backend detects the master** at upload time (§5.3.1): filename pattern `Igenylesi_dokumentumok_OTP_*` OR page count > threshold. The file is stored under `_master/` (git-ignored), **not** as a normal catalog document.
+3. **Backend starts the asynchronous split job** (`POST /api/documents/split-master`) and returns a `task_id`. The job reads the reconciled `DocumentAssembler.PRODUCT_SECTIONS` / `BASE_SECTIONS` (§7.2) to determine each page's `master_section` and `product_ids`, then extracts pages into standalone PDFs via PyMuPDF and writes catalog entries.
+4. **Frontend shows a progress indicator** — `SplitProgressIndicator.tsx` polls `GET /api/documents/split-master/{task_id}` and renders: *"Master PDF feldolgozása: 27/97 oldal…"* (progress from `processed_pages` / `total_pages`).
+5. **On completion**, the newly created split documents appear in the catalog tree: base sections under each of the 3 master-using products (`⊕ shared` badge), product-specific sections under their product. No user action required.
+6. **Edge case — wrong section map:** if a page was auto-assigned to the wrong product/section, the user can **manually re-assign it after the split** via the existing multi-project association UI (`PUT /api/documents/{doc_id}/products`), exactly as for any other M:N document. They are never locked into an incorrect auto-assignment.
+
+> **Why automatic:** Balázs confirmed the master PDF structure is stable (one canonical v5 layout per bank), so a curated section map is more reliable than asking the user to set page ranges every time. The map is validated once in Phase 1 and reused on every upload.
 
 ### 7.4 Split Pages vs. Master Reassembly
 
@@ -564,7 +613,8 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 - **Split-page re-upload** — content-hash dedup detects an already-split page; offers association.
 - **Orphaned documents** — last association removed → marked `orphaned: true`; shown under an "Unassigned" virtual folder.
 - **Filename collisions** — physical files under `documents/otp/<product_slug>/` avoid collisions; shared/base under `base/`; `sanitize_filename()` handles Hungarian accents.
-- **Large master split performance** — PyMuPDF ~50 ms/page; 90 pages ≈ 5 s synchronous is acceptable. For 200+ pages, switch to async `task_id` polling.
+- **Large master split performance** — PyMuPDF ~50 ms/page; 90 pages ≈ 5 s. The split runs **asynchronously** (§5.3.2) with `task_id` polling, so the upload request never blocks; the `SplitProgressIndicator` shows per-page progress. For 200+ pages the same async path scales without change.
+- **Auto-detection false positive** — a non-master PDF that happens to match the filename pattern or exceed the page threshold would be split. Mitigation: both conditions (pattern **and** page count > threshold) must hold; and the user can delete the erroneous split docs + re-upload with `auto_split_master: false`.
 - **Concurrent catalog edits** — `CatalogService.save()` uses atomic-write + mtime conflict detection (`FileConflictError` → HTTP 409); frontend reloads on conflict.
 
 ---
@@ -591,11 +641,13 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 - Add `PUT /api/documents/{id}/products`, `PUT /api/documents/{id}` (toggle per_applicant).
 - **Deliverable:** User uploads into a product and shares across products; can toggle per-applicant.
 
-### Phase 4 — Section-Aware Master Splitter
-- Add `POST /api/documents/split-master` (section_map: base vs product-specific).
-- Add `MasterSplitDialog` with page-grid preview, section grouping, `per_applicant` pre-checks.
-- Auto-suggest from updated `PRODUCT_SECTIONS` / `BASE_SECTIONS`.
-- **Deliverable:** User splits the master into base (shared) + product-scoped page documents.
+### Phase 4 — Automatic Master Split (async, no dialog)
+- Add `POST /api/documents/split-master` + `GET /api/documents/split-master/{task_id}`: **automatic** section-aware split driven by `DocumentAssembler.PRODUCT_SECTIONS` / `BASE_SECTIONS` (no client-supplied `section_map`).
+- Add master auto-detection in the upload endpoint (filename pattern `Igenylesi_dokumentumok_OTP_*` OR page count > `MASTER_PAGE_THRESHOLD`), gated by `auto_split_master` (default `true`).
+- Split job: PyMuPDF page extraction → base sections → all master-using products; product sections → that product; catalog entries with `master_section` + `master_page_number` + `per_applicant`.
+- Add `SplitProgressIndicator.tsx` in `UploadStep` (polls `task_id`, renders *"Master PDF feldolgozása: N/M oldal…"*).
+- Manual re-assignment after split reuses the existing `PUT /api/documents/{id}/products` association UI.
+- **Deliverable:** User uploads the master PDF; it is detected, split, and catalogued automatically; results appear in the tree. No manual dialog.
 
 ### Phase 5 — Per-Applicant Fill Pipeline + FillPreviewStep
 - Extend `FormFillerPipeline.run_for_deal()` to accept applicant list and fan out per-applicant docs.
@@ -623,7 +675,7 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 | `frontend/src/components/ProjectBrowser.tsx` | **NEW** — tree nav | 2 |
 | `frontend/src/components/UploadStep.tsx` | Refactor: context-aware upload | 2–3 |
 | `frontend/src/components/ProductAssociationPicker.tsx` | **NEW** — M:N picker | 3 |
-| `frontend/src/components/MasterSplitDialog.tsx` | **NEW** — section-aware splitter | 4 |
+| `frontend/src/components/SplitProgressIndicator.tsx` | **NEW** — async master-split progress (polls `task_id`) | 4 |
 | `frontend/src/components/FillPreviewStep.tsx` | **EXTENDED** — applicant selector + fan-out | 5 |
 
 **Unchanged:** `src/mapping/*.json`, `src/ai/*`, `AnalysisStep`, `ReviewDashboard`, `PageEditor`, `PointsEditor`, `LockStep`.
@@ -638,7 +690,7 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 | 2 | **Master PDF in git** | Move to git-ignored `_master/` in Phase 6. |
 | 3 | **`per_applicant` field keying** — do mappings reference applicant-relative keys? | **Verify** existing mapping JSON uses applicant-agnostic keys that the pipeline can rebind per applicant. If keys are hard-coded to one applicant, a key-namespacing pass is needed. |
 | 4 | **Split docs vs. master assembly** — should fill use split docs or reassemble from master? | **Open for Balázs.** Recommend: keep assembly from `_master/` (proven); split docs for mapping/editing. |
-| 5 | **Exact master page ranges** — base vs product sections need validation against v5. | Inspect the v5 master during Phase 1 to confirm page ranges; user-editable in split dialog regardless. |
+| 5 | **Exact master page ranges** — base vs product sections need validation against v5. | Inspect the v5 master during Phase 1 to confirm page ranges and bake them into `PRODUCT_SECTIONS` / `BASE_SECTIONS`; the auto-split reads from there. If a page is mis-assigned, the user re-assigns it afterward via the association UI (§7.3). |
 | 6 | **Salesforce applicant data shape** — does the deal object expose N applicants cleanly? | **Confirm** the Salesforce query returns igénylő + all adóstárs with the fields each per-applicant form needs. |
 | 7 | **Bank expansion** (K&H, Erste) | Catalog supports it from Phase 1 (`banks[]`); per-bank section maps needed when a 2nd bank arrives. |
 | 8 | **Decoupling upload from fill** — OK that uploads no longer auto-fill? | **Open for Balázs.** `auto_fill` defaults `false`; set `true` to preserve old behavior. |
@@ -650,10 +702,10 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 This plan transforms the flat upload model into a **project-based hierarchy** aligned with the **real OTP Google Drive structure** (4 products, M:N shared documents, deduplicated master PDF), and adds two first-class concepts:
 
 - **Per-applicant documents** (`per_applicant` flag) — the fill pipeline fans out per applicant so adóstárs forms are filled correctly.
-- **Section-aware master split** — base sections shared across products, product-specific sections scoped, auto-suggested from an updated section map.
+- **Section-aware master split (fully automatic)** — uploading the master PDF triggers an asynchronous split that assigns base sections to all products and product-specific sections to their product, driven entirely by the `DocumentAssembler` section map — no manual dialog. The frontend shows a progress indicator and the results land in the catalog tree; mis-assigned pages are correctable afterward via the association UI.
 
 It does so with **no database** (JSON catalog), **no mapping-format changes**, and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phases 1–4 cover catalog + tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
 
 ---
 
-*Prepared by OpenCode · 2026-07-10 · rev 2 — aligned with real OTP Drive structure · For client review*
+*Prepared by OpenCode · 2026-07-10 · rev 3 — master split fully automatic (no manual dialog) · For client review*
