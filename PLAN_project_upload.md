@@ -3,7 +3,7 @@
 **Project:** FinancialGenie Mapping Studio
 **Author:** OpenCode (Architecture Analysis)
 **Date:** 2026-07-10
-**Status:** Draft for client review
+**Status:** Draft for client review (rev 2 — aligned with real OTP Drive structure)
 
 ---
 
@@ -11,17 +11,25 @@
 
 The FinancialGenie Mapping Studio currently uses a **flat document upload model**: a single PDF is dropped into `samples/`, the AI resolves its field mapping, and the pipeline fills it. There is no notion of *which bank* or *which product* a document belongs to.
 
-Balázs needs a **project-based hierarchy**:
+Balázs needs a **project-based hierarchy** reflecting the real OTP Google Drive layout:
 
 ```
 Bank (OTP)
-└── Bank Product (Piaci hitel, CSOK Plusz, Otthon Start, ...)
-    └── PDF documents (split pages of the master + standalone forms)
+└── Bank Product
+    ├── Előzetes értékbecslés megrendelés   (Preliminary property valuation)
+    ├── Szabadfelhasználású hitel            (Free-use mortgage)
+    ├── Otthon Start                          (Green home loan for youth)
+    └── Piaci hitel                           (Market-rate mortgage)
+        └── PDF documents (standalone forms + split pages of the master)
 ```
 
-A document can belong to **multiple products** (e.g. the personal data form is shared). The 97-page OTP master PDF must be **split into individual pages** and uploaded as separate documents — never as a single file.
+A document can belong to **multiple products** (M:N). For example `Partner_nyilatkozat_hiteligeny_leadasakor.pdf` appears in all 4 product folders; `V_szamu_fuggelek_…` appears in 3. The large MASTER PDF (`Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf`, ~2 MB) is **duplicated across 3 folders** but must **never be uploaded as-is** — it must be split into individual pages/sections with base sections shared across products and product-specific sections scoped.
 
-This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships, while keeping the existing file-based architecture intact. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
+Two new requirements from Balázs drive this revision:
+1. **Multi-applicant (adóstárs) handling** — some forms are filled once *per applicant*. The catalog must tag each document with `per_applicant`, and the fill pipeline must fetch N copies and fill N times when there are co-applicants.
+2. **Section-aware master split** — the master PDF has base sections (shared by all products) and product-specific sections; the split UI must auto-assign pages to the right products.
+
+This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
 
 ---
 
@@ -46,13 +54,13 @@ PDF_ROOTS = [PROJECT_ROOT / "otp", PROJECT_ROOT / "samples"]
 
 ### 2.2 The Hierarchy Is Already Half-Built
 
-The backend **already anticipates** the OTP product hierarchy, even though it is unused:
+The backend **already anticipates** the OTP product hierarchy, even though the real folder layout differs from the enum:
 
-- `mapping_path_for()` (config.py:65) has **cross-directory alias logic** (step 4, line 204): if the same filename appears in a sibling OTP product folder, it reuses that sibling's mapping. This implies the authors expected `otp/Piaci hitel/` and `otp/CSOK/` sibling folders with shared forms.
-- `DocumentAssembler` (`src/engine/document_assembler.py`) defines an `OTP ProductType` enum (Piaci hitel, CSOK, CSOK Plusz, Otthon Start, …) and section maps referencing master-PDF page ranges per product.
-- The **`otp/` directory does not exist yet** — it was removed in commit `95eb087` ("remove 90-page OTP v5 PDF and its stale mapping").
+- `mapping_path_for()` (config.py:65) has **cross-directory alias logic** (step 4, line 204): if the same filename appears in a sibling OTP product folder, it reuses that sibling's mapping. This implies the authors expected `otp/Piaci hitel/` and sibling folders with shared forms.
+- `DocumentAssembler` (`src/engine/document_assembler.py`) defines an `OTP ProductType` enum and section maps referencing master-PDF page ranges per product — but the enum lists `CSOK`, `CSOK Plusz`, `Otthon Start`, etc., which **does not match the real Drive** (no CSOK folders; instead `Szabadfelhasználású hitel` and `Előzetes értékbecslés megrendelés`). This enum must be reconciled with reality (§7).
+- The **`otp/` directory does not exist yet** — it was removed in commit `95eb087`.
 
-So the backend supports hierarchy; the **frontend and upload flow are the gap**.
+So the backend supports hierarchy in principle; the **frontend, upload flow, and the product enum are the gaps**.
 
 ### 2.3 Upload Flow (current)
 
@@ -63,7 +71,7 @@ So the backend supports hierarchy; the **frontend and upload flow are the gap**.
 3. Auto-run `FormFillerPipeline.run_for_deal()` which resolves/creates a mapping via AI and fills the PDF.
 4. Return `filled_pdf_url`.
 
-The frontend `UploadStep.tsx` is a drag-and-drop zone + flat list of existing PDFs. There is no way to choose a destination product or bank.
+The frontend `UploadStep.tsx` is a drag-and-drop zone + flat list of existing PDFs. There is no way to choose a destination product or bank, and **no concept of multiple applicants**.
 
 ### 2.4 Frontend Architecture
 
@@ -76,20 +84,26 @@ App.tsx
     │   ├── PageEditor.tsx     ← per-page field mapping
     │   └── PointsEditor.tsx   ← checkbox group / points editor
     ├── LockStep.tsx           ← approval gate
-    └── FillPreviewStep.tsx    ← fill preview with deal data
+    └── FillPreviewStep.tsx    ← fill preview with deal data   ← AFFECTED BY per_applicant
 ```
 
-**State management:** Zustand store (`store.ts`) holds `pdfs[]`, `activePdfId`, `mapping`, `pdfFields`, etc. There is **no router** (`react-router` is not in `package.json`); navigation is purely `useState`-driven within `MappingStudio`.
+**State management:** Zustand store (`store.ts`) holds `pdfs[]`, `activePdfId`, `mapping`, `pdfFields`, etc. There is **no router**; navigation is purely `useState`-driven within `MappingStudio`.
 
-**Styling:** CSS custom properties + Tailwind utility classes; inline styles are used heavily.
+### 2.5 The Multi-Project Constraint (real Drive evidence)
 
-### 2.5 The Multi-Project Constraint
+The real OTP Drive proves the M:N requirement concretely:
 
-Requirement: *"A document can belong to multiple projects."*
+| Document | Értékbecslés | Szab.hitel | Otthon Start | Piaci hitel |
+|---|:---:|:---:|:---:|:---:|
+| `Partner_nyilatkozat_hiteligeny_leadasakor.pdf` | ✓ | ✓ | ✓ | ✓ |
+| `V_szamu_fuggelek_Penzugyi_szolgaltatas_…_nyilatkozat_20250601.pdf` | — | ✓ | ✓ | ✓ |
+| `Igenylesi_dokumentumok_OTP_…_v5.pdf` (MASTER) | — | ✓ | ✓ | ✓ |
+| `Igenylesi_dokumentum_elozetes_ertekbecsleshez_20241104.pdf` | ✓ | — | — | — |
+| `Hozzajarulo_nyilatkozat_munkaviszony_es_jovedelemadatok_ellenorzesehez.pdf` | — | ✓ | — | — |
+| `Zold_Lakashitel_Fiataloknak_Nyilatkozat_elso_lakastulajdonrol_20251201.pdf` | — | — | ✓ | — |
+| `Igazolas_CSOK_AFA_kamattamogatasi_kerelem_atvetelerol_20250901.pdf` | — | — | ✓ | — |
 
-In practice, OTP's base forms (pages 2–30: personal data sheet, declarations, property sheet) are **shared across all products**. The `DocumentAssembler._build_page_plan()` always includes `BASE_SECTIONS` regardless of the chosen `ProductType`. Only product-specific sections (CSOK 37–48, Otthon Start 69–82, etc.) differ.
-
-This means a naive folder hierarchy (`otp/Piaci hitel/form.pdf` + duplicate in `otp/CSOK/form.pdf`) would **duplicate files and mappings** — exactly the problem the existing cross-directory alias code tried to avoid.
+A naive folder hierarchy would **duplicate files and mappings** — exactly what the existing cross-directory alias code tried to avoid. The MASTER PDF being duplicated in 3 folders is a clear anti-pattern the catalog must eliminate: store once, reference many.
 
 ---
 
@@ -97,12 +111,13 @@ This means a naive folder hierarchy (`otp/Piaci hitel/form.pdf` + duplicate in `
 
 ### 3.1 Design Principle: Catalog Overlay on File Hierarchy
 
-We keep PDFs on disk (no DB required) but introduce a **document catalog** — a single JSON manifest that owns the logical hierarchy and the many-to-many product↔document associations. The physical files live in a content-organized store.
+We keep PDFs on disk (no DB required) but introduce a **document catalog** — a single JSON manifest that owns the logical hierarchy, the many-to-many product↔document associations, and the per-applicant metadata. The physical files live in a content-organized store.
 
 ```
 ┌─────────────────────────────────────────────────┐
 │            Document Catalog (JSON)              │  ← single source of truth
 │  banks → products → document associations       │
+│  + per_applicant flags + master-split provenance│
 └──────────────────────┬──────────────────────────┘
                        │ references
 ┌──────────────────────▼──────────────────────────┐
@@ -112,37 +127,49 @@ We keep PDFs on disk (no DB required) but introduce a **document catalog** — a
 └─────────────────────────────────────────────────┘
 ```
 
-**Why JSON catalog over SQLite/database?**
-- Consistent with the existing architecture (everything is JSON + files).
-- Zero-migration cost for the PoC.
-- Human-readable, diffable, git-friendly.
-- Forward-compatible: if the catalog grows, it can be ported to SQLite later without changing the API contract.
+**Why JSON catalog over SQLite?** Consistent with the existing architecture (everything is JSON + files); zero-migration cost for the PoC; human-readable and git-friendly; forward-compatible (can port to SQLite later without changing the API contract).
 
-**Why not pure folders (like the old `otp/<product>/` layout)?**
-- Multi-project documents (requirement #6) cannot be expressed with folders alone — a file can only live in one directory.
-- The catalog decouples **logical grouping** (product membership) from **physical storage** (deduplicated file location).
+**Why not pure folders?** Multi-project documents cannot be expressed with folders alone — a file can only live in one directory. The catalog decouples **logical grouping** from **physical storage**.
 
 ### 3.2 Physical Directory Structure
 
 ```
 financialgenie_review/
-├── documents/                      ← NEW: physical document store
+├── documents/                      ← NEW: physical document store (downloaded from Drive)
 │   └── otp/                        ← per-bank
-│       ├── base/                   ← shared/base forms (multi-product)
-│       │   ├── szemelyi_adatlap_igenylo.pdf
-│       │   ├── szemelyi_adatlap_tarsigenylo.pdf
-│       │   └── ...
-│       ├── piaci_hitel/
-│       │   └── piaci_hitel_nyilatkozat_p01.pdf   ← split master pages
-│       ├── csok_plusz/
-│       │   └── csok_plusz_p57.pdf
-│       └── otthon_start/
-│           └── otthon_start_p69.pdf
+│       ├── base/                   ← shared/base forms (multi-product) + master base sections
+│       │   ├── partner_nyilatkozat_hiteligeny_leadasakor.pdf
+│       │   ├── v_szamu_fuggelek_penzugyi_szolgaltatas_nyilatkozat.pdf
+│       │   └── _master_sections/base/   ← split base sections of the master
+│       ├── elozetes_ertekbecsles/        ← "Előzetes értékbecslés megrendelés"
+│       │   └── igenylesi_dokumentum_elozetes_ertekbecsleshez.pdf
+│       ├── szabadfelhasznalasu_hitel/    ← "Szabadfelhasználású hitel"
+│       │   ├── hozzajarulo_nyilatkozat_munkaviszony_jovedelem_ellenorzes.pdf
+│       │   └── _master_sections/         ← product-specific split sections
+│       ├── otthon_start/
+│       │   ├── zold_lakashitel_fiataloknak_elso_lakastulajdon_nyilatkozat.pdf
+│       │   ├── igazolas_csok_afa_kamattamogatasi_kerelem_atvetel.pdf
+│       │   └── _master_sections/
+│       └── piaci_hitel/
+│           └── _master_sections/
+├── _master/                        ← the source master PDF (git-ignored, not a template)
+│   └── Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf
 ├── catalog/
-│   └── document_catalog.json       ← NEW: hierarchy + associations
+│   └── document_catalog.json       ← NEW: hierarchy + associations + per_applicant
 ├── src/mapping/                    ← existing mappings (unchanged)
 └── samples/                        ← legacy uploads (kept for backward compat)
 ```
+
+### 3.3 Seeding From Google Drive
+
+The real Drive folder **is the seed data**. The initial catalog must be populated by downloading the Drive contents into `documents/`:
+
+1. **Download** each product folder from Drive preserving structure, OR flatten into `documents/otp/<product_slug>/`.
+2. **Deduplicate** identical files by SHA-256: the MASTER PDF appears 3× — store one copy in `_master/`, reference it. `Partner_nyilatkozat_…` appears 4× — store once in `base/`, associate to all 4 products.
+3. **Run `scripts/seed_catalog.py`** to scan `documents/otp/`, hash files, and emit the catalog JSON with correct `product_ids` associations inferred from the folder each unique file was found in.
+4. **Tag `per_applicant`** during seeding based on a curated override table (§4.2) — the default heuristic is: any document whose title contains "személyi adatlap", "nyilatkozat" + applicant-identity keywords, or income/employment consent → `per_applicant: true`.
+
+> **Note on the MASTER PDF:** it is downloaded **once** into `_master/` (git-ignored). It is **never** a catalog document itself. The split endpoint reads from it to produce base/product section PDFs that *do* become catalog documents.
 
 The existing `otp/` and `samples/` roots remain valid (`config.PDF_ROOTS`). The new `documents/` root is added. `mapping_path_for()` continues to work because it resolves by signature/word-match, not by directory.
 
@@ -154,64 +181,109 @@ The catalog is a single JSON file: `catalog/document_catalog.json`.
 
 ```jsonc
 {
-  "version": 1,
+  "version": 2,
   "banks": [
     {
       "id": "otp",
       "name": "OTP Bank",
       "products": [
-        {
-          "id": "piaci_hitel",
-          "name": "Piaci hitel",
-          "document_ids": ["doc_szemelyi_adatlap_igenylo", "doc_piaci_p01", "…"]
-        },
-        {
-          "id": "csok_plusz",
-          "name": "CSOK Plusz",
-          "document_ids": ["doc_szemelyi_adatlap_igenylo", "doc_csok_plusz_p57", "…"]
-        }
+        { "id": "elozetes_ertekbecsles",  "name": "Előzetes értékbecslés megrendelés",
+          "document_ids": ["doc_partner_nyilatkozat", "doc_ertekbecsles_igenyles"] },
+        { "id": "szabadfelhasznalasu",    "name": "Szabadfelhasználású hitel",
+          "document_ids": ["doc_partner_nyilatkozat", "doc_v_szamu_fuggelek",
+                           "doc_hozzajarulo_munkaviszony", "doc_master_base_*"] },
+        { "id": "otthon_start",           "name": "Otthon Start",
+          "document_ids": ["doc_partner_nyilatkozat", "doc_v_szamu_fuggelek",
+                           "doc_zold_lakashitel_elso_lakas", "doc_csok_afa_igazolas",
+                           "doc_master_base_*", "doc_master_otthon_start_*"] },
+        { "id": "piaci_hitel",            "name": "Piaci hitel",
+          "document_ids": ["doc_partner_nyilatkozat", "doc_v_szamu_fuggelek",
+                           "doc_master_base_*", "doc_master_piaci_*"] }
       ]
     }
   ],
   "documents": [
     {
-      "id": "doc_szemelyi_adatlap_igenylo",
-      "title": "Személyi adatlap – Igénylő",
-      "file_path": "documents/otp/base/szemelyi_adatlap_igenylo.pdf",
-      "source": "split:OTP_Igenylesi_Dokumentumok_v5.pdf:pages 2-5",
-      "product_ids": ["piaci_hitel", "csok_plusz", "otthon_start", "afa_visszaterites"],
-      "page_count": 4,
-      "tags": ["base", "personal_data"],
-      "uploaded_at": "2026-07-10T12:00:00",
-      "updated_at": "2026-07-10T12:00:00"
+      "id": "doc_partner_nyilatkozat",
+      "title": "Partner nyilatkozat hiteligény leadásakor",
+      "file_path": "documents/otp/base/partner_nyilatkozat_hiteligeny_leadasakor.pdf",
+      "source": "drive:OTP/Előzetes értékbecslés megrendelés",
+      "product_ids": ["elozetes_ertekbecsles", "szabadfelhasznalasu", "otthon_start", "piaci_hitel"],
+      "page_count": 1,
+      "per_applicant": true,
+      "tags": ["base", "declaration"],
+      "uploaded_at": "2026-07-10T12:00:00"
     },
     {
-      "id": "doc_piaci_p01",
-      "title": "OTP master – Page 1 (Fedlap)",
-      "file_path": "documents/otp/piaci_hitel/piaci_hitel_p01.pdf",
-      "source": "split:OTP_Igenylesi_Dokumentumok_v5.pdf:page 1",
-      "product_ids": ["piaci_hitel"],
+      "id": "doc_hozzajarulo_munkaviszony",
+      "title": "Hozzájáruló nyilatkozat – munkaviszony és jövedelemadatok ellenőrzése",
+      "file_path": "documents/otp/szabadfelhasznalasu_hitel/hozzajarulo_nyilatkozat_munkaviszony_jovedelem.pdf",
+      "source": "drive:OTP/Szabadfelhasználású hitel",
+      "product_ids": ["szabadfelhasznalasu"],
+      "page_count": 1,
+      "per_applicant": true,
+      "tags": ["consent", "income"]
+    },
+    {
+      "id": "doc_master_base_p02",
+      "title": "Master – Személyi adatlap (base section, page 2)",
+      "file_path": "documents/otp/base/_master_sections/base/szemelyi_adatlap_p02.pdf",
+      "source": "split:Igenylesi_dokumentumok_OTP_…_v5.pdf:page 2",
+      "product_ids": ["szabadfelhasznalasu", "otthon_start", "piaci_hitel"],
       "page_count": 1,
       "split_from_master": true,
-      "master_page_number": 1,
-      "uploaded_at": "2026-07-10T12:00:00"
+      "master_section": "base",
+      "master_page_number": 2,
+      "per_applicant": true,
+      "tags": ["base", "personal_data"]
+    },
+    {
+      "id": "doc_master_otthon_start_p69",
+      "title": "Master – Otthon Start nyilatkozat (product section, page 69)",
+      "file_path": "documents/otp/otthon_start/_master_sections/otthon_start_p69.pdf",
+      "source": "split:Igenylesi_dokumentumok_OTP_…_v5.pdf:page 69",
+      "product_ids": ["otthon_start"],
+      "page_count": 1,
+      "split_from_master": true,
+      "master_section": "otthon_start",
+      "master_page_number": 69,
+      "per_applicant": false,
+      "tags": ["product_specific"]
     }
   ]
 }
 ```
 
-**Key fields:**
+### 4.1 Key Fields
 
 | Field | Purpose |
 |---|---|
 | `documents[].id` | Stable unique ID (slug-based). |
 | `documents[].file_path` | Relative path to the physical PDF. |
-| `documents[].source` | Provenance — `upload:<original_name>` or `split:<master>:page N` |
+| `documents[].source` | Provenance — `drive:<folder>` \| `upload:<name>` \| `split:<master>:page N`. |
 | `documents[].product_ids` | **M:N association** — which products reference this doc. Drives the tree. |
-| `documents[].split_from_master` / `master_page_number` | Marks split-page documents; enables re-assembly display. |
+| `documents[].per_applicant` | **NEW.** `true` = must be filled once per applicant (igénylő + each adóstárs); `false` = once per application. Drives fill fan-out (§5.5). |
+| `documents[].split_from_master` / `master_page_number` / `master_section` | Marks split-page documents; `master_section` is `"base"` or a product slug. Enables section-aware re-assembly. |
 | `banks[].products[].document_ids` | Redundant inverse index for efficient tree rendering. |
 
 The M:N relationship is modeled in **both directions** (document → products, product → documents). The catalog service keeps them in sync on writes.
+
+### 4.2 Per-Applicant Tagging Guide
+
+`per_applicant` is set during seeding via a curated override table and editable in the UI. Defaults for the known OTP documents:
+
+| Document | `per_applicant` | Rationale |
+|---|:---:|---|
+| `Partner_nyilatkozat_hiteligeny_leadasakor.pdf` | `true` | A personal declaration per applicant |
+| `Hozzajarulo_nyilatkozat_munkaviszony_…` | `true` | Income/employment consent is individual |
+| Master base: Személyi adatlap pages | `true` | Personal data sheet — one per applicant |
+| `V_szamu_fuggelek_Penzugyi_szolgaltatas_…` | `false` | Intermediary declaration — once per application |
+| `Zold_Lakashitel_…_elso_lakastulajdon_nyilatkozat.pdf` | `true` | First-home-owner declaration — per applicant |
+| `Igazolas_CSOK_AFA_…_atvetel.pdf` | `false` | Subsidy handover confirmation — per application |
+| Master: Fedlap / cover page | `false` | One cover per application |
+| `Igenylesi_dokumentum_elozetes_ertekbecsleshez.pdf` | `false` | Valuation order — per application/property |
+
+The heuristic for unknown uploads: title contains "személyi adatlap", "jövedelem", "munkaviszony", or "nyilatkozat" + a person-identity keyword → `true`; otherwise `false`. Always user-editable.
 
 ---
 
@@ -221,18 +293,16 @@ The M:N relationship is modeled in **both directions** (document → products, p
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/catalog` | Return full catalog (banks → products → documents). Drives the tree view. |
-| `GET` | `/api/catalog/banks` | List banks (for top-level nav). |
+| `GET` | `/api/catalog` | Return full catalog (banks → products → documents). Drives the tree. |
+| `GET` | `/api/catalog/banks` | List banks. |
 | `POST` | `/api/catalog/banks` | Create a new bank. |
-| `GET` | `/api/catalog/banks/{bank_id}/products` | List products under a bank. |
 | `POST` | `/api/catalog/banks/{bank_id}/products` | Create a new product folder. |
-| `GET` | `/api/catalog/products/{product_id}/documents` | List documents in a product. |
-| `POST` | `/api/documents/upload` | **Upload a document into a product** (replaces `/api/pdf/upload` for the new flow). |
-| `PUT` | `/api/documents/{doc_id}/products` | **Associate a document with one or more products** (multi-project). |
-| `DELETE` | `/api/documents/{doc_id}/products/{product_id}` | Remove a document from a product (keeps the file if referenced elsewhere). |
-| `POST` | `/api/documents/split-master` | **Split a master PDF** into individual page documents. |
-| `GET` | `/api/documents/{doc_id}` | Get document metadata. |
-| `DELETE` | `/api/documents/{doc_id}` | Delete a document (file + catalog entry + mapping). |
+| `POST` | `/api/documents/upload` | **Upload a document into product(s)** (replaces `/api/pdf/upload` for new flow). |
+| `PUT` | `/api/documents/{doc_id}/products` | Associate a document with product(s) (M:N). |
+| `PUT` | `/api/documents/{doc_id}` | Update document metadata — incl. toggling `per_applicant`. |
+| `DELETE` | `/api/documents/{doc_id}/products/{product_id}` | Remove association (keeps file if referenced elsewhere). |
+| `POST` | `/api/documents/split-master` | **Split master PDF** into base + product sections (§5.3). |
+| `DELETE` | `/api/documents/{doc_id}` | Delete document (file + catalog entry + mapping). |
 
 ### 5.2 Upload Endpoint (new signature)
 
@@ -241,80 +311,81 @@ The M:N relationship is modeled in **both directions** (document → products, p
 ```
 file:           <PDF binary>
 bank_id:        otp
-product_ids:    piaci_hitel,csok_plusz     (comma-separated; ≥1)
-title:          "Személyi adatlap – Igénylő"   (optional; defaults to filename)
-auto_fill:      false                      (skip immediate AI fill — see §5.4)
+product_ids:    szabadfelhasznalasu,piaci_hitel     (comma-separated; ≥1)
+title:          "Partner nyilatkozat"                (optional)
+per_applicant:  true                                  (optional; default inferred by heuristic)
+auto_fill:      false                                 (skip immediate AI fill)
 ```
 
-**Response:**
-```json
-{
-  "document_id": "doc_szemelyi_adatlap_igenylo",
-  "file_path": "documents/otp/base/szemelyi_adatlap_igenylo.pdf",
-  "product_ids": ["piaci_hitel", "csok_plusz"],
-  "mapping_resolved": true,
-  "fill_triggered": false
-}
-```
+### 5.3 Master PDF Split Endpoint — Section-Aware
 
-### 5.3 Master PDF Split Endpoint
+The master PDF is **not homogeneous**. It contains **base sections** (shared by all 3 products that use the master: Szabadfelhasználású, Otthon Start, Piaci hitel) and **product-specific sections** (scoped to one product). The split endpoint must understand this.
 
 `POST /api/documents/split-master`:
 
 ```json
 {
-  "master_pdf_id": "samples/OTP_Igenylesi_Dokumentumok_v5.pdf",
+  "master_pdf_path": "_master/Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf",
   "bank_id": "otp",
-  "page_assignments": [
-    {"page": 1,  "product_ids": ["piaci_hitel"], "title": "Fedlap"},
-    {"page": 2,  "product_ids": ["piaci_hitel", "csok_plusz"], "title": "Személyi adatlap – Igénylő p1"},
-    {"pages": "2-5", "product_ids": ["piaci_hitel"], "title": "Személyi adatlap – Igénylő (full)"}
-  ]
+  "section_map": {
+    "base":            { "pages": "1-30",  "product_ids": ["szabadfelhasznalasu","otthon_start","piaci_hitel"], "per_applicant": "mixed" },
+    "szabadfelhasznalasu": { "pages": "31-36", "product_ids": ["szabadfelhasznalasu"] },
+    "otthon_start":    { "pages": "69-82", "product_ids": ["otthon_start"] },
+    "piaci_hitel":     { "pages": "83-90", "product_ids": ["piaci_hitel"] }
+  }
 }
 ```
 
 This endpoint:
 1. Opens the master PDF with PyMuPDF.
-2. For each assignment, extracts the page(s) into a new standalone PDF.
-3. Creates catalog entries with `source: "split:<master>:page N"`.
-4. Associates each to the specified product(s).
+2. For each section, splits into page (or page-range) documents.
+3. **Base section** pages → stored in `documents/otp/base/_master_sections/base/`, associated to **all** master-using products.
+4. **Product-specific section** pages → stored in `documents/otp/<product>/_master_sections/`, associated to that product only.
+5. Creates catalog entries with `source: "split:<master>:page N"`, `master_section`, and `per_applicant` (base personal-data pages → `true`; cover/property pages → `false`).
 
-The frontend can offer **two split modes**:
-- **Per-page**: every page becomes its own document (meets requirement #5).
-- **Per-range**: a contiguous page range becomes one document (for multi-page forms like the 4-page personal data sheet).
+The `section_map` can be **auto-suggested** from an updated `DocumentAssembler.PRODUCT_SECTIONS` / `BASE_SECTIONS` map (§7.2). The user confirms/adjusts page ranges and `per_applicant` in the `MasterSplitDialog` before the split runs.
 
-> **Note:** The existing `DocumentAssembler` already splits the master PDF at runtime during filling. The new split endpoint produces **standalone template documents** that the editor can map individually. This is additive, not a replacement.
+> **Note:** `Élőzetes értékbecslés megrendelés` does **not** use the master PDF, so it receives no split pages — only its 2 standalone forms.
 
 ### 5.4 Decoupling Upload from Fill
 
-The current `/api/pdf/upload` runs the **entire fill pipeline synchronously** (AI recognition + Salesforce fill). This is inappropriate for the project flow, where the user uploads many templates and maps them *before* filling.
+The current `/api/pdf/upload` runs the **entire fill pipeline synchronously**. The new upload endpoint **decouples** these: Upload → save file + catalog entry + (optionally) auto-resolve mapping; Fill → happens later from the Fill step with a selected deal. `auto_fill` defaults to `false`.
 
-The new upload endpoint **decouples** these:
-- Upload → save file + create catalog entry + (optionally) auto-resolve mapping.
-- Fill → happens later, when the user explicitly triggers it from the Fill step with a selected deal.
+### 5.5 Per-Applicant Fill Pipeline (NEW)
 
-The `auto_fill` parameter (default `false`) preserves the old behavior for backward compatibility. A new `auto_resolve_mapping` parameter (default `true`) controls whether AI recognition runs on upload.
+When `per_applicant: true`, the fill pipeline must **fan out** across all applicants on the deal. Concretely:
 
-### 5.5 Catalog Service
+1. **Applicant discovery:** `FormFillerPipeline` queries Salesforce for the deal's applicant list — the primary igénylő plus every adóstárs. Let N = number of applicants.
+2. **Per document:** if `document.per_applicant == true`, the pipeline fills the template **N times**, once per applicant, using that applicant's personal/income fields. Each filled copy is named with the applicant's role+name (e.g. `szemelyi_adatlap__igenylo_Kovacs_Janos.pdf`, `szemelyi_adatlap__adostars_Szabo_Maria.pdf`).
+3. **Per application:** if `document.per_applicant == false`, fill **once** using deal/property-level fields (same as today).
+4. **Output grouping:** filled PDFs are grouped in the output so the user sees, per template, either 1 file or N files (one row per applicant) with a clear "per applicant" label.
 
-A new `backend/catalog_service.py` mirrors the existing `mapping_service.py` pattern:
+This requires:
+- `FormFillerPipeline.run_for_deal()` to accept the applicant list and loop per-applicant documents.
+- The catalog `per_applicant` flag to be passed into the pipeline (the pipeline reads the catalog to decide fan-out).
+- **FillPreviewStep** changes (§6.5): it must show the applicant count, let the user pick which applicant to preview, and clearly mark which documents will be multiplied.
+
+For PoC, N is typically 1–2 (igénylő + one adóstárs); the design supports arbitrary N.
+
+### 5.6 Catalog Service
+
+A new `backend/catalog_service.py` mirrors `mapping_service.py`:
 
 ```python
 class CatalogService:
-    def load(self) -> dict: ...           # read catalog/document_catalog.json
-    def save(self, catalog: dict): ...    # atomic write (.tmp + rename)
+    def load(self) -> dict: ...
+    def save(self, catalog: dict): ...      # atomic write (.tmp + rename)
     def list_banks(self) -> list[dict]: ...
     def list_products(self, bank_id: str) -> list[dict]: ...
     def list_documents(self, product_id: str) -> list[dict]: ...
-    def add_document(self, ...) -> dict: ...
+    def add_document(self, ..., per_applicant: bool) -> dict: ...
+    def set_per_applicant(self, doc_id: str, value: bool) -> dict: ...
     def associate(self, doc_id: str, product_ids: list[str]): ...
     def dissociate(self, doc_id: str, product_id: str): ...
     def delete_document(self, doc_id: str): ...
-
-catalog_service = CatalogService()
 ```
 
-It uses the same `threading.Lock` + atomic-write pattern as `mapping_service.py`.
+Uses the same `threading.Lock` + atomic-write pattern as `mapping_service.py`.
 
 ---
 
@@ -326,263 +397,213 @@ It uses the same `threading.Lock` + atomic-write pattern as `mapping_service.py`
 App.tsx
 └── MappingStudio.tsx  (wizard orchestrator — extended)
     ├── ProjectBrowser.tsx          ← NEW: Bank → Product → Document tree
-    │   ├── BankSelector.tsx        ← top-level bank tabs (OTP, …)
-    │   ├── ProductList.tsx         ← product folders under selected bank
-    │   └── DocumentList.tsx        ← documents in selected product (with M:N badge)
-    ├── UploadStep.tsx              ← REFACTORED: context-aware upload (knows selected product)
-    │   └── ProductAssociationPicker.tsx  ← NEW: assign doc to multiple products
-    ├── MasterSplitDialog.tsx       ← NEW: split master PDF into pages
+    │   ├── BankSelector.tsx
+    │   ├── ProductList.tsx
+    │   └── DocumentList.tsx        ← M:N badge + per-applicant badge
+    ├── UploadStep.tsx              ← REFACTORED: context-aware upload
+    │   └── ProductAssociationPicker.tsx
+    ├── MasterSplitDialog.tsx       ← NEW: section-aware master split
     ├── AnalysisStep.tsx            (unchanged)
     ├── ReviewDashboard.tsx         (unchanged)
-    │   ├── PageEditor.tsx          (unchanged)
-    │   └── PointsEditor.tsx        (unchanged)
     ├── LockStep.tsx                (unchanged)
-    └── FillPreviewStep.tsx         (unchanged)
+    └── FillPreviewStep.tsx         ← EXTENDED: applicant selector + per-applicant fan-out
 ```
 
 ### 6.2 The ProjectBrowser — Primary Navigation
 
-This replaces the flat "Meglévő PDF-ek" list in `UploadStep.tsx`. It is a **tree view** rendered from `GET /api/catalog`:
+Replaces the flat "Meglévő PDF-ek" list. Tree rendered from `GET /api/catalog`:
 
 ```
 ▼ OTP Bank
-  ▼ Piaci hitel                    [4 docs]
-    ├─ Fedlap                      [page 1]
-    ├─ Személyi adatlap – Igénylő  [4 pages]  ⊕ shared
-    ├─ Hitelfeltételek             [6 pages]  ⊕ shared
-    └─ Piaci hitel nyilatkozat     [2 pages]
-  ▼ CSOK Plusz                     [3 docs]
-    ├─ Személyi adatlap – Igénylő  [4 pages]  ⊕ shared   ← same doc, shown again
-    └─ CSOK Plusz nyilatkozat      [7 pages]
+  ▼ Előzetes értékbecslés megrendelés        [2 docs]
+    ├─ Partner nyilatkozat …                 ⊕ shared 4×  👤 per-applicant
+    └─ Igénylési dokumentum értékbecsléshez
+  ▼ Szabadfelhasználású hitel                [master + 3 standalone]
+    ├─ Partner nyilatkozat …                 ⊕ shared 4×  👤 per-applicant
+    ├─ V. számú függelék (pénzügyi szolg.)   ⊕ shared 3×
+    ├─ Hozzájáruló nyilatkozat (jövedelem)                👤 per-applicant
+    └─ [master base sections…] + [master szab.hitel sections…]
+  ▼ Otthon Start                              […]
+  ▼ Piaci hitel                               […]
 ```
 
-The `⊕ shared` badge indicates a document that belongs to multiple products (requirement #6). Clicking it opens a tooltip listing the products.
-
-**Selecting a document** in the tree navigates to the Review step (same as the current `onOpenExisting`), skipping Upload. **Selecting a product folder** contextualizes the Upload step so new uploads land in that product.
+Badges: `⊕ shared` = belongs to multiple products (tooltip lists them); `👤 per-applicant` = filled once per applicant. **Selecting a document** opens it in Review; **selecting a product folder** contextualizes Upload.
 
 ### 6.3 Store Changes (`store.ts`)
 
 New Zustand state slices:
 
 ```typescript
-// Catalog state
 catalog: Catalog | null;
 catalogLoading: boolean;
-selectedBankId: string | null;      // e.g. "otp"
-selectedProductId: string | null;   // e.g. "piaci_hitel"
-selectedDocumentId: string | null;  // e.g. "doc_szemelyi_adatlap_igenylo"
+selectedBankId: string | null;
+selectedProductId: string | null;
+selectedDocumentId: string | null;
+applicants: Applicant[];           // igénylő + adóstársak for the active deal
+selectedApplicantId: string | null; // which applicant to preview in Fill
 
-// Actions
 loadCatalog: () => Promise<void>;
-selectBank: (bankId: string) => void;
-selectProduct: (productId: string | null) => void;
-uploadToProduct: (file: File, productIds: string[], opts?: {...}) => Promise<void>;
-splitMaster: (masterPdfId: string, assignments: PageAssignment[]) => Promise<void>;
-associateDocument: (docId: string, productIds: string[]) => Promise<void>;
+uploadToProduct: (file, productIds, opts?: { per_applicant?: boolean }) => Promise<void>;
+splitMaster: (masterPath, sectionMap) => Promise<void>;
+associateDocument: (docId, productIds) => Promise<void>;
+setPerApplicant: (docId, value) => Promise<void>;
+loadApplicants: (dealId) => Promise<void>;
 ```
-
-The existing `uploadPdfFile(file)` action is preserved for backward compatibility but internally calls `uploadToProduct` with the currently-selected product.
 
 ### 6.4 TypeScript Types (`types/index.ts`)
 
 ```typescript
-export interface Bank {
-  id: string;
-  name: string;
-  products: Product[];
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  bank_id: string;
-  document_ids: string[];
-}
-
 export interface CatalogDocument {
   id: string;
   title: string;
-  file_path: string;          // → becomes pdf_id for existing mapping/field endpoints
-  source: string;             // "upload:…" | "split:…:page N"
-  product_ids: string[];      // M:N — drives the tree + shared badge
+  file_path: string;            // → becomes pdf_id for existing endpoints
+  source: string;
+  product_ids: string[];        // M:N
   page_count: number;
+  per_applicant: boolean;       // NEW — fill fan-out
   tags?: string[];
   split_from_master?: boolean;
   master_page_number?: number;
+  master_section?: "base" | string;  // base | product slug
 }
 
-export interface Catalog {
-  version: number;
-  banks: Bank[];
-  documents: CatalogDocument[];
+export interface Applicant {
+  id: string;
+  role: "igenylo" | "adostars";
+  name: string;
 }
 ```
 
-The `file_path` field maps directly to the existing `pdf_id` concept, so all downstream endpoints (`/api/pdf/fields`, `/api/mapping`, `/api/mapping/recognize`) work unchanged.
+The `file_path` maps to the existing `pdf_id`, so all downstream endpoints (`/api/pdf/fields`, `/api/mapping`, …) work unchanged.
+
+### 6.5 FillPreviewStep — Applicant-Aware (CHANGED)
+
+The Fill step is no longer unchanged. It must:
+
+1. Load the applicant list for the deal (`store.applicants`).
+2. For each document in the selected product set, show whether it is `👤 per-applicant` or per-application.
+3. Provide an **applicant selector** (tabs: "Igénylő", "Adóstárs 1", …) so the user previews the filled output for a specific applicant.
+4. When triggering fill, pass the full applicant list; the backend returns grouped results (per-applicant docs appear N times, per-application docs appear once).
+5. Show a summary: *"3 documents × 2 applicants = 6 per-applicant fills + 4 per-application fills = 10 PDFs."*
+
+This is the single biggest fill-pipeline change in this plan and is the reason `FillPreviewStep` moves from "unchanged" to "extended".
 
 ---
 
-## 7. Master PDF Split Handling
+## 7. Master PDF Split — Section Awareness
 
-Requirement #5 is explicit: the master document (`Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf`) must be **split into individual pages and uploaded separately** — never uploaded as a single file.
+Requirement: the master document must be **split into individual pages and uploaded separately**, but the split must respect **base sections** (shared) vs **product-specific sections** (scoped).
 
-### 7.1 Split Flow
+### 7.1 Section Model
 
-1. User selects **"Split master PDF"** in the Upload step.
-2. `MasterSplitDialog` shows the master PDF (detected via `DocumentAssembler.is_master_pdf()` — ≥97 pages).
-3. A page-grid preview renders each page thumbnail (reuse `GET /api/pdf/page/{n}/image`).
-4. For each page (or selected range), the user assigns:
-   - A title.
-   - One or more product memberships (defaults inferred from `DocumentAssembler.PRODUCT_SECTIONS`).
-5. On confirm, `POST /api/documents/split-master` extracts each page into a standalone PDF and creates catalog entries.
+The master PDF logically divides into:
 
-### 7.2 Default Product Assignment (auto-suggest)
+- **Base sections** — personal data sheets, declarations, property sheets. Shared by **all 3 master-using products** (Szabadfelhasználású hitel, Otthon Start, Piaci hitel). Each base page becomes one catalog document with `product_ids` = all 3, stored under `base/`.
+- **Product-specific sections** — e.g. Otthon Start declaration pages, Piaci hitel annex pages. Scoped to one product. Stored under that product's folder.
 
-The `DocumentAssembler` already knows which master-PDF pages belong to which product:
+`Élőzetes értékbecslés megrendelés` is excluded entirely (it has no master pages).
+
+### 7.2 Reconciling `DocumentAssembler.PRODUCT_SECTIONS`
+
+The existing enum lists `CSOK`, `CSOK Plusz`, etc. — **wrong for the real Drive**. It must be updated to:
 
 ```python
 PRODUCT_SECTIONS = {
-    ProductType.CSOK: [("csok_nyilatkozat", 37, 48)],
-    ProductType.OTTHON_START: [("otthon_start", 69, 82)],
-    ...
+    ProductType.SZABADFELHASZNALASU: [("szab_hitel", 31, 36)],
+    ProductType.OTTHON_START:        [("otthon_start", 69, 82)],
+    ProductType.PIACI_HITEL:         [("piaci_hitel", 83, 90)],
 }
-BASE_SECTIONS = {"fedlap": (1,1), "sza_ig_igenylő": (2,5), ...}  # shared by all
+BASE_SECTIONS = {"fedlap": (1,1), "sza_ig_igenylo": (2,5), ...}  # shared by all 3
 ```
 
-The split dialog can **auto-populate** product assignments from this map: pages 1–30 → all products (base), pages 37–48 → CSOK only, pages 69–82 → Otthon Start only, etc. The user confirms or adjusts before the split runs.
+(Page ranges above are illustrative — exact ranges come from inspecting the v5 master. The split dialog lets the user correct them.)
 
-### 7.3 Standalone Page PDFs vs. Master Reassembly
+The split dialog **auto-populates** product assignments from this map: base pages → all 3 products, product pages → that product only. The user confirms or adjusts.
 
-Each split page is a **real, standalone PDF** (single page extracted via PyMuPDF `Document.insert_pdf` with a 1-page range). This means:
-- Each can be mapped independently in the PageEditor.
-- Each has its own mapping JSON (resolved by the existing `mapping_path_for`).
-- They can be filled individually.
+### 7.3 Split Flow
 
-When the fill pipeline needs the **assembled** document (multiple pages in order), the existing `DocumentAssembler` still works — it reads from the master PDF directly. The split documents are for the **editing/mapping workflow**, not for replacing assembly. Both coexist.
+1. User selects **"Split master PDF"** in Upload step.
+2. `MasterSplitDialog` detects the master (`_master/…v5.pdf`, ≥90 pages) and renders a page-grid preview (reuse `GET /api/pdf/page/{n}/image`).
+3. The dialog pre-groups pages into **base** and **per-product** sections using the section map, with `per_applicant` pre-checked for personal-data base pages.
+4. User adjusts page ranges, titles, product memberships, and `per_applicant` flags.
+5. On confirm, `POST /api/documents/split-master` extracts each page/section into a standalone PDF and creates catalog entries with correct `master_section` + `product_ids` + `per_applicant`.
+
+### 7.4 Split Pages vs. Master Reassembly
+
+Each split page is a **real, standalone PDF** — independently mappable and fillable. When the fill pipeline needs the **assembled** multi-page document, the existing `DocumentAssembler` still reads from `_master/` directly. Both coexist: split documents are for **mapping/editing**, assembly is for **final output**. (See Open Question #4.)
 
 ---
 
-## 8. Migration Strategy
+## 8. Migration & Seeding Strategy
 
-### 8.1 Existing Documents in `samples/`
+### 8.1 Seed From the Real Drive
 
-The 8 PDFs currently in `samples/` are a mix of test forms and early OTP splits. Migration approach:
-
-1. **Seed the catalog** with one bank (`OTP`) and 4 products (`piaci_hitel`, `csok_plusz`, `otthon_start`, `afa_visszaterites`) — matching the OTP product structure.
-2. **Assign existing sample PDFs** to products via a one-time migration script (`scripts/seed_catalog.py`):
-   - `Igenylesi_dokumentumok_elso_4_oldal.pdf` → `piaci_hitel` (base, pages 1–4).
-   - `01_SZA_IG_Szemelyi_adatlap_Igenylo.pdf` → all products (base form).
-   - `Partner_nyilatkozat_hiteligeny_leadasakor.pdf` → all products.
-   - etc.
-3. **Files stay where they are** — `samples/` remains a valid PDF root. The catalog `file_path` simply points to `samples/<name>.pdf`. No file moves required.
-4. **Mappings stay where they are** — `src/mapping/*.json` is untouched; `mapping_path_for()` resolves them the same way.
+1. **Create catalog** with one bank (`otp`) and 4 products: `elozetes_ertekbecsles`, `szabadfelhasznalasu`, `otthon_start`, `piaci_hitel`.
+2. **Download Drive folders** into `documents/otp/<product_slug>/` (or `base/` for shared files). See §3.3.
+3. **Run `scripts/seed_catalog.py`**: hash each file, deduplicate, infer `product_ids` from the folders each unique file appeared in, apply the `per_applicant` override table (§4.2).
+4. **Place the master PDF** once in `_master/` (git-ignored); do not seed it as a catalog document.
+5. **Mappings** stay in `src/mapping/`; `mapping_path_for()` resolves them unchanged.
 
 ### 8.2 Backward Compatibility
 
-- `GET /api/pdfs` continues to return the flat list (the old `UploadStep` flat list still works if `ProjectBrowser` is not rendered).
-- `POST /api/pdf/upload` continues to work (saves to `samples/`, runs fill). Marked as **deprecated** in the API docs but not removed.
-- The new `POST /api/documents/upload` is the primary path going forward.
-- `config.PDF_ROOTS` gains `documents/` as a third root. `list_pdfs()` walks all three.
+- `GET /api/pdfs` continues to return the flat list (old `UploadStep` still works if `ProjectBrowser` isn't rendered).
+- `POST /api/pdf/upload` continues to work (saves to `samples/`, runs fill). Marked **deprecated**, not removed.
+- `config.PDF_ROOTS` gains `documents/` as a third root.
 
-### 8.3 The Master PDF at Repo Root
+### 8.3 Master PDF at Repo Root
 
-`OTP_Igenylesi_Dokumentumok_v5.pdf` (7 MB) sits at the repo root. It should **not** be committed long-term (it's a binary, and `.gitignore` already excludes `output/`). Recommendation:
-
-- Move to `documents/otp/_master/` (or a `.gitignore`d path).
-- Reference it by path in the split endpoint, not by `pdf_id` (it's not a mappable template).
-- Add a `.gitignore` entry for `documents/otp/_master/`.
+The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-ignored), referenced by path in the split endpoint, never as a `pdf_id`.
 
 ---
 
 ## 9. Edge Cases
 
-### 9.1 Multi-Project Documents (M:N)
-
-**Scenario:** The personal data form belongs to Piaci hitel, CSOK Plusz, AND Otthon Start.
-
-**Handling:**
-- The document is stored **once** (physical deduplication by `file_path`).
-- The catalog `product_ids: [...]` array lists all owning products.
-- The tree shows the document under each product with a `⊕ shared` badge.
-- Deleting it from one product (`DELETE /api/documents/{id}/products/{product_id}`) only removes the association — the file and mapping survive as long as ≥1 product references it.
-- Deleting the last association triggers a confirmation: *"This document is no longer referenced by any product. Delete the file too?"*
-
-**Deduplication on upload:** If a user uploads a file with identical content (SHA-256) to an existing document, the backend detects the duplicate and offers to **associate** the existing document with the new product instead of creating a copy. This is an optional enhancement (Phase 3).
-
-### 9.2 Split PDF Re-upload
-
-**Scenario:** A user manually uploads a single page that was already extracted by the master splitter.
-
-**Handling:** Content-hash deduplication (§9.1) detects it. The upload endpoint returns the existing `document_id` and asks whether to add the new product association.
-
-### 9.3 Orphaned Documents
-
-**Scenario:** A document's only product association is removed, leaving it unreferenced.
-
-**Handling:** The catalog marks it with `orphaned: true`. The `ProjectBrowser` shows an "Unassigned" virtual folder containing orphans. The user can re-assign or delete them.
-
-### 9.4 Filename Collisions Across Products
-
-**Scenario:** Two products each have a file named `nyilatkozat.pdf`.
-
-**Handling:** Physical files are stored under `documents/otp/<product_slug>/` so paths don't collide. Shared/base documents go under `documents/otp/base/`. The `sanitize_filename()` function (server.py:192) already handles Hungarian-accent collisions.
-
-### 9.5 Large Master PDF Performance
-
-**Scenario:** Splitting a 97-page, 7 MB PDF into 97 individual files.
-
-**Handling:** The split endpoint runs **synchronously** but fast (PyMuPDF page extraction is ~50 ms/page; total ~5 s). For larger documents (200+ pages), it should return a `task_id` and poll like the existing recognition endpoint (`/api/recognize/{task_id}/status`). For the OTP 97-page case, synchronous is acceptable.
-
-### 9.6 Catalog Corruption / Concurrent Edits
-
-**Scenario:** Two browser tabs edit the catalog simultaneously.
-
-**Handling:** The `CatalogService.save()` uses the same atomic-write + mtime conflict detection pattern as `mapping_service.py` (`FileConflictError` → HTTP 409). The frontend reloads on conflict.
-
-### 9.7 Empty Products / Empty Banks
-
-**Scenario:** A user creates a product folder but hasn't uploaded any documents yet.
-
-**Handling:** The tree shows the folder with a "0 documents" count and an inline upload affordance. No special backend handling needed.
+- **M:N documents** — stored once; `product_ids[]` lists owners; tree shows under each product with `⊕ shared`; deleting from one product only removes the association; deleting the last association prompts "delete file too?" Optional: content-hash dedup on upload offers to associate instead of copy.
+- **Per-applicant with 0 adóstárs** — N=1; behaves like today (single fill). No special handling.
+- **Per-applicant field keying** — the mapping must reference the *active applicant's* fields; the pipeline swaps the applicant context per fill iteration. Mappings don't need duplication — they reference applicant-relative keys (e.g. `applicant.given_name`) resolved per iteration.
+- **Split-page re-upload** — content-hash dedup detects an already-split page; offers association.
+- **Orphaned documents** — last association removed → marked `orphaned: true`; shown under an "Unassigned" virtual folder.
+- **Filename collisions** — physical files under `documents/otp/<product_slug>/` avoid collisions; shared/base under `base/`; `sanitize_filename()` handles Hungarian accents.
+- **Large master split performance** — PyMuPDF ~50 ms/page; 90 pages ≈ 5 s synchronous is acceptable. For 200+ pages, switch to async `task_id` polling.
+- **Concurrent catalog edits** — `CatalogService.save()` uses atomic-write + mtime conflict detection (`FileConflictError` → HTTP 409); frontend reloads on conflict.
 
 ---
 
 ## 10. Implementation Phases
 
-### Phase 1 — Catalog Backend & Seeding (foundation)
-- Create `backend/catalog_service.py` (load/save/CRUD).
-- Create `catalog/document_catalog.json` with OTP bank + 4 products seeded.
-- Add `GET /api/catalog` endpoint.
-- Add `documents/` to `config.PDF_ROOTS`.
-- Write `scripts/seed_catalog.py` to assign existing `samples/` PDFs.
-- **Deliverable:** Catalog API returns the OTP hierarchy. No frontend changes yet.
+### Phase 1 — Catalog Backend & Drive Seeding (foundation)
+- Create `backend/catalog_service.py` (load/save/CRUD, incl. `per_applicant`).
+- Create `catalog/document_catalog.json` seeded from the **real Drive** (4 products, real documents, deduped).
+- Download Drive contents into `documents/otp/…` and `_master/`.
+- Write `scripts/seed_catalog.py` (hash, dedup, infer associations, apply per_applicant table).
+- Update `DocumentAssembler.PRODUCT_SECTIONS` enum to real products.
+- Add `GET /api/catalog`; add `documents/` to `PDF_ROOTS`.
+- **Deliverable:** Catalog API returns the real OTP hierarchy with per_applicant flags.
 
 ### Phase 2 — ProjectBrowser Frontend (read-only tree)
-- Add `ProjectBrowser`, `BankSelector`, `ProductList`, `DocumentList` components.
-- Add catalog state to `store.ts`.
-- Replace the flat PDF list in `UploadStep.tsx` with the tree.
-- Clicking a document opens it in Review (existing flow).
-- **Deliverable:** User can browse Bank → Product → Document and open existing docs.
+- Add `ProjectBrowser`, `BankSelector`, `ProductList`, `DocumentList` (with `⊕ shared` + `👤 per-applicant` badges).
+- Add catalog state to `store.ts`; replace flat list in `UploadStep.tsx`.
+- **Deliverable:** User browses Bank → Product → Document and opens existing docs.
 
-### Phase 3 — Context-Aware Upload + Multi-Product Association
-- Add `POST /api/documents/upload` endpoint (with `product_ids`).
-- Refactor `UploadStep` to upload into the selected product.
-- Add `ProductAssociationPicker` for assigning a document to multiple products.
-- Add `PUT /api/documents/{id}/products` and `DELETE …/products/{pid}`.
-- **Deliverable:** User uploads a PDF into a specific product and can share it across products.
+### Phase 3 — Context-Aware Upload + M:N Association
+- Add `POST /api/documents/upload` (with `product_ids`, `per_applicant`).
+- Refactor `UploadStep`; add `ProductAssociationPicker`.
+- Add `PUT /api/documents/{id}/products`, `PUT /api/documents/{id}` (toggle per_applicant).
+- **Deliverable:** User uploads into a product and shares across products; can toggle per-applicant.
 
-### Phase 4 — Master PDF Splitter
-- Add `POST /api/documents/split-master` endpoint.
-- Add `MasterSplitDialog` with page-grid preview + product assignment.
-- Auto-suggest product assignments from `DocumentAssembler.PRODUCT_SECTIONS`.
-- **Deliverable:** User splits the 97-page master into individual page documents.
+### Phase 4 — Section-Aware Master Splitter
+- Add `POST /api/documents/split-master` (section_map: base vs product-specific).
+- Add `MasterSplitDialog` with page-grid preview, section grouping, `per_applicant` pre-checks.
+- Auto-suggest from updated `PRODUCT_SECTIONS` / `BASE_SECTIONS`.
+- **Deliverable:** User splits the master into base (shared) + product-scoped page documents.
 
-### Phase 5 — Polish & Migration
-- Content-hash deduplication on upload.
-- Orphan detection + "Unassigned" virtual folder.
-- Deprecate `/api/pdf/upload` (keep for backward compat).
-- Move master PDF to `documents/otp/_master/`.
-- Tests: catalog CRUD, split, M:N association, dedup.
+### Phase 5 — Per-Applicant Fill Pipeline + FillPreviewStep
+- Extend `FormFillerPipeline.run_for_deal()` to accept applicant list and fan out per-applicant docs.
+- Extend `FillPreviewStep` with applicant selector, per-applicant/per-application labels, fill-count summary.
+- **Deliverable:** Co-applicants are handled — per-applicant docs filled N times.
+
+### Phase 6 — Polish & Migration
+- Content-hash dedup; orphan detection + "Unassigned" folder; deprecate `/api/pdf/upload`; move master to `_master/`; tests (catalog CRUD, split, M:N, per-applicant fan-out).
 
 ---
 
@@ -590,24 +611,22 @@ The 8 PDFs currently in `samples/` are a mix of test forms and early OTP splits.
 
 | File | Change | Phase |
 |---|---|---|
-| `backend/catalog_service.py` | **NEW** — catalog CRUD service | 1 |
-| `backend/server.py` | Add `/api/catalog*`, `/api/documents*`, `/api/documents/split-master` endpoints | 1–4 |
-| `backend/config.py` | Add `documents/` to `PDF_ROOTS`; add `CATALOG_DIR` | 1 |
-| `catalog/document_catalog.json` | **NEW** — seeded OTP hierarchy | 1 |
-| `scripts/seed_catalog.py` | **NEW** — one-time migration | 1 |
-| `frontend/src/api/client.ts` | Add catalog + document API functions | 2–4 |
-| `frontend/src/types/index.ts` | Add `Bank`, `Product`, `CatalogDocument`, `Catalog` types | 2 |
-| `frontend/src/store.ts` | Add catalog state + actions | 2–3 |
-| `frontend/src/components/ProjectBrowser.tsx` | **NEW** — tree navigation | 2 |
-| `frontend/src/components/UploadStep.tsx` | Refactor: context-aware upload, integrate `ProjectBrowser` | 2–3 |
-| `frontend/src/components/ProductAssociationPicker.tsx` | **NEW** — M:N product picker | 3 |
-| `frontend/src/components/MasterSplitDialog.tsx` | **NEW** — master PDF splitter UI | 4 |
+| `backend/catalog_service.py` | **NEW** — catalog CRUD + per_applicant | 1 |
+| `backend/server.py` | Add `/api/catalog*`, `/api/documents*`, split-master endpoints | 1–5 |
+| `backend/config.py` | Add `documents/` to `PDF_ROOTS`; `CATALOG_DIR` | 1 |
+| `catalog/document_catalog.json` | **NEW** — seeded from real Drive | 1 |
+| `scripts/seed_catalog.py` | **NEW** — Drive→catalog seeding + dedup | 1 |
+| `src/engine/document_assembler.py` | Update `PRODUCT_SECTIONS`/enum to real products | 1 |
+| `src/engine/form_filler_pipeline.py` | Per-applicant fan-out | 5 |
+| `frontend/src/types/index.ts` | Add `Bank`, `Product`, `CatalogDocument` (+per_applicant), `Applicant` | 2 |
+| `frontend/src/store.ts` | Catalog state + applicant state + actions | 2–5 |
+| `frontend/src/components/ProjectBrowser.tsx` | **NEW** — tree nav | 2 |
+| `frontend/src/components/UploadStep.tsx` | Refactor: context-aware upload | 2–3 |
+| `frontend/src/components/ProductAssociationPicker.tsx` | **NEW** — M:N picker | 3 |
+| `frontend/src/components/MasterSplitDialog.tsx` | **NEW** — section-aware splitter | 4 |
+| `frontend/src/components/FillPreviewStep.tsx` | **EXTENDED** — applicant selector + fan-out | 5 |
 
-**Unchanged (no modifications needed):**
-- `src/mapping/*.json` — mappings resolve via existing `mapping_path_for()`.
-- `src/engine/*` — fill pipeline untouched.
-- `src/ai/*` — field recognizer untouched.
-- `AnalysisStep`, `ReviewDashboard`, `PageEditor`, `PointsEditor`, `LockStep`, `FillPreviewStep` — all unchanged.
+**Unchanged:** `src/mapping/*.json`, `src/ai/*`, `AnalysisStep`, `ReviewDashboard`, `PageEditor`, `PointsEditor`, `LockStep`.
 
 ---
 
@@ -615,27 +634,26 @@ The 8 PDFs currently in `samples/` are a mix of test forms and early OTP splits.
 
 | # | Risk / Question | Mitigation / Recommendation |
 |---|---|---|
-| 1 | **JSON catalog scaling** — if hundreds of documents are added, the single JSON file could get large. | For PoC (<200 docs) this is fine. The catalog service can be ported to SQLite (same API) without frontend changes. |
-| 2 | **Master PDF in git** — the 7 MB binary is currently committed. | Move to git-ignored path in Phase 5. |
-| 3 | **Mapping reuse across split pages** — split pages share field names with the master; does `mapping_path_for` resolve correctly? | Yes — the signature-match + word-overlap logic (config.py:108–198) already handles this. Verify with a test in Phase 4. |
-| 4 | **Should the fill pipeline use split documents or the master?** | **Open question for Balázs.** Currently the pipeline assembles from the master. If split documents should drive assembly, `DocumentAssembler` needs a new mode. Recommend: keep assembly from master (it's proven), use split documents only for mapping/editing. |
-| 5 | **Bank expansion** — when will the second bank (e.g. K&H, Erste) be added? | The catalog supports it from Phase 1 (`banks[]` array). The `DocumentAssembler` and `ProductType` enum are OTP-specific and will need per-bank section maps when a second bank arrives. |
-| 6 | **Decoupling upload from fill** — the current upload triggers fill automatically. Is the client OK with uploads no longer auto-filling? | **Open question for Balázs.** The new `auto_fill` parameter defaults to `false`. If the client wants the old behavior, set it to `true` in the upload call. |
+| 1 | **JSON catalog scaling** | <200 docs is fine; port to SQLite (same API) later. |
+| 2 | **Master PDF in git** | Move to git-ignored `_master/` in Phase 6. |
+| 3 | **`per_applicant` field keying** — do mappings reference applicant-relative keys? | **Verify** existing mapping JSON uses applicant-agnostic keys that the pipeline can rebind per applicant. If keys are hard-coded to one applicant, a key-namespacing pass is needed. |
+| 4 | **Split docs vs. master assembly** — should fill use split docs or reassemble from master? | **Open for Balázs.** Recommend: keep assembly from `_master/` (proven); split docs for mapping/editing. |
+| 5 | **Exact master page ranges** — base vs product sections need validation against v5. | Inspect the v5 master during Phase 1 to confirm page ranges; user-editable in split dialog regardless. |
+| 6 | **Salesforce applicant data shape** — does the deal object expose N applicants cleanly? | **Confirm** the Salesforce query returns igénylő + all adóstárs with the fields each per-applicant form needs. |
+| 7 | **Bank expansion** (K&H, Erste) | Catalog supports it from Phase 1 (`banks[]`); per-bank section maps needed when a 2nd bank arrives. |
+| 8 | **Decoupling upload from fill** — OK that uploads no longer auto-fill? | **Open for Balázs.** `auto_fill` defaults `false`; set `true` to preserve old behavior. |
 
 ---
 
 ## 13. Summary
 
-This plan transforms the flat upload model into a **project-based hierarchy** with minimal disruption:
+This plan transforms the flat upload model into a **project-based hierarchy** aligned with the **real OTP Google Drive structure** (4 products, M:N shared documents, deduplicated master PDF), and adds two first-class concepts:
 
-- **No database** — a JSON catalog models the Bank → Product → Document tree and M:N associations, consistent with the existing file-based architecture.
-- **No mapping changes** — the existing `mapping_path_for()` resolution works unchanged because it matches by signature and word overlap, not by directory.
-- **No fill-pipeline changes** — assembly and filling continue to read from the master PDF; split documents are for the mapping/editing workflow.
-- **Multi-project documents** are a first-class concept (catalog `product_ids[]` array + `⊕ shared` UI badge).
-- **Master PDF splitting** produces standalone single-page PDFs via a dedicated endpoint, with auto-suggested product assignments from the existing `DocumentAssembler` section map.
+- **Per-applicant documents** (`per_applicant` flag) — the fill pipeline fans out per applicant so adóstárs forms are filled correctly.
+- **Section-aware master split** — base sections shared across products, product-specific sections scoped, auto-suggested from an updated section map.
 
-The work is split into **5 phases**, each independently deliverable. Phase 1–2 (catalog + tree browser) can ship first; Phase 3–4 (context-aware upload + master split) follow. The existing wizard steps (Analysis → Review → Lock → Fill) require **zero changes**.
+It does so with **no database** (JSON catalog), **no mapping-format changes**, and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phases 1–4 cover catalog + tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
 
 ---
 
-*Prepared by OpenCode · 2026-07-10 · For client review*
+*Prepared by OpenCode · 2026-07-10 · rev 2 — aligned with real OTP Drive structure · For client review*
