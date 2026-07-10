@@ -373,9 +373,9 @@ export const useStore = create<EditorState>((set, get) => ({
   },
 
   selectBank: (bankId: string | null) =>
-    set({ selectedBankId: bankId, selectedProductId: null }),
+    set({ selectedBankId: bankId, selectedProductId: null, selectedDocumentId: null }),
   selectProduct: (productId: string | null) =>
-    set({ selectedProductId: productId }),
+    set({ selectedProductId: productId, selectedDocumentId: null }),
   selectDocument: (docId: string | null) =>
     set({ selectedDocumentId: docId }),
 }));

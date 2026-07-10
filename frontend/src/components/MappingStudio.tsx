@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useStore } from "@/store";
 import UploadStep from "./UploadStep";
 import AnalysisStep from "./AnalysisStep";
 import ReviewDashboard from "./ReviewDashboard";
@@ -6,6 +7,9 @@ import PageEditor from "./PageEditor";
 import PointsEditor from "./PointsEditor";
 import LockStep from "./LockStep";
 import FillPreviewStep from "./FillPreviewStep";
+import ProjectBrowser from "./ProjectBrowser";
+import BankSetupDialog from "./BankSetupDialog";
+import ProductSetupDialog from "./ProductSetupDialog";
 
 type WizardStep = "upload" | "analysis" | "review" | "lock" | "fill";
 
@@ -24,6 +28,29 @@ export default function MappingStudio() {
   const [editingPoints, setEditingPoints] = useState(false);
   const [mappedCount, setMappedCount] = useState(0);
   const [totalFields, setTotalFields] = useState(0);
+
+  // Catalog / gate state
+  const catalog = useStore((s) => s.catalog);
+  const loadCatalog = useStore((s) => s.loadCatalog);
+  const selectedBankId = useStore((s) => s.selectedBankId);
+  const selectedProductId = useStore((s) => s.selectedProductId);
+
+  const [showBankDialog, setShowBankDialog] = useState(false);
+  const [productDialogBankId, setProductDialogBankId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!catalog) loadCatalog();
+  }, [catalog, loadCatalog]);
+
+  const gatePassed =
+    selectedBankId !== null && selectedProductId !== null;
+
+  // Look up the selected bank name for gate messaging
+  const selectedBank = selectedBankId
+    ? catalog?.banks.find((b) => b.id === selectedBankId)
+    : null;
 
   const handleUploadComplete = useCallback((pdfId: string) => {
     setActivePdfId(pdfId);
@@ -59,7 +86,6 @@ export default function MappingStudio() {
   }, []);
 
   const handleLockApprove = useCallback(() => {
-    // After locking → go to fill preview
     setStep("fill");
   }, []);
 
@@ -72,6 +98,26 @@ export default function MappingStudio() {
     setActivePdfId(null);
     setEditingPage(null);
     setStep("upload");
+  }, []);
+
+  const handleAddBank = useCallback(() => setShowBankDialog(true), []);
+
+  const handleAddProduct = useCallback((bankId: string) => {
+    setProductDialogBankId(bankId);
+  }, []);
+
+  // After a bank is created, advance to the product dialog to complete
+  // the define-first flow.
+  const handleBankCreated = useCallback(
+    (bankId: string) => {
+      setShowBankDialog(false);
+      setProductDialogBankId(bankId);
+    },
+    [],
+  );
+
+  const handleProductCreated = useCallback(() => {
+    setProductDialogBankId(null);
   }, []);
 
   // If editing a specific page, show the page editor full-screen
@@ -156,50 +202,213 @@ export default function MappingStudio() {
         </div>
       </header>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: "auto" }} className="animate-fade-in" key={step}>
-        {step === "upload" && (
-          <UploadStep
-            onComplete={handleUploadComplete}
-            onOpenExisting={handleOpenExisting}
+      {/* Body: sidebar + content */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Sidebar — ProjectBrowser tree */}
+        <aside
+          style={{
+            width: 280,
+            flexShrink: 0,
+            borderRight: "1px solid var(--border-subtle)",
+            background: "var(--bg-secondary)",
+            overflow: "hidden",
+          }}
+        >
+          <ProjectBrowser
+            onAddBank={handleAddBank}
+            onAddProduct={handleAddProduct}
           />
-        )}
-        {step === "analysis" && activePdfId && (
-          <AnalysisStep
-            pdfId={activePdfId}
-            onComplete={handleAnalysisComplete}
-          />
-        )}
-        {step === "review" && activePdfId && (
-          <ReviewDashboard
-            pdfId={activePdfId}
-            onPageClick={handlePageClick}
-            onOpenPoints={handleOpenPoints}
-            onBack={() => setStep("upload")}
-            onApprove={handleApprove}
-            onStatsReady={(mapped, total) => {
-              setMappedCount(mapped);
-              setTotalFields(total);
-            }}
-          />
-        )}
-        {step === "lock" && activePdfId && (
-          <LockStep
-            pdfId={activePdfId}
-            mappedCount={mappedCount}
-            totalFields={totalFields}
-            onApprove={handleLockApprove}
-            onBack={handleBackToReview}
-          />
-        )}
-        {step === "fill" && activePdfId && (
-          <FillPreviewStep
-            pdfId={activePdfId}
-            onBack={() => setStep("lock")}
-            onDone={handleFillDone}
-          />
-        )}
+        </aside>
+
+        {/* Main content area */}
+        <div
+          style={{ flex: 1, overflow: "auto" }}
+          className="animate-fade-in"
+          key={step}
+        >
+          {/* Upload step with define-first gate */}
+          {step === "upload" && !gatePassed && (
+            <div
+              className="animate-fade-in"
+              style={{
+                maxWidth: 680,
+                margin: "0 auto",
+                padding: "var(--space-2xl) var(--space-xl)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  gap: "var(--space-lg)",
+                  padding: "var(--space-2xl) var(--space-xl)",
+                  border: "2px dashed var(--border-default)",
+                  borderRadius: "var(--radius-xl)",
+                  background: "var(--bg-secondary)",
+                }}
+              >
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--accent-amber)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+
+                {!selectedBankId ? (
+                  <>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 500,
+                          color: "var(--text-primary)",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Először hozzon létre egy bankot
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        A dokumentumok feltöltéséhez előbb definiálni kell egy
+                        bankot és egy terméket.
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "var(--space-sm)",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setShowBankDialog(true)}
+                      >
+                        + Bank létrehozása
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 500,
+                          color: "var(--text-primary)",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Hozzon létre egy terméket
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        A(z){" "}
+                        <strong style={{ color: "var(--text-primary)" }}>
+                          {selectedBank?.name || selectedBankId}
+                        </strong>{" "}
+                        bank alatt még nincs termék kiválasztva.
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "var(--space-sm)",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          setProductDialogBankId(selectedBankId)
+                        }
+                      >
+                        + Termék létrehozása
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === "upload" && gatePassed && (
+            <UploadStep
+              onComplete={handleUploadComplete}
+              onOpenExisting={handleOpenExisting}
+            />
+          )}
+          {step === "analysis" && activePdfId && (
+            <AnalysisStep
+              pdfId={activePdfId}
+              onComplete={handleAnalysisComplete}
+            />
+          )}
+          {step === "review" && activePdfId && (
+            <ReviewDashboard
+              pdfId={activePdfId}
+              onPageClick={handlePageClick}
+              onOpenPoints={handleOpenPoints}
+              onBack={() => setStep("upload")}
+              onApprove={handleApprove}
+              onStatsReady={(mapped, total) => {
+                setMappedCount(mapped);
+                setTotalFields(total);
+              }}
+            />
+          )}
+          {step === "lock" && activePdfId && (
+            <LockStep
+              pdfId={activePdfId}
+              mappedCount={mappedCount}
+              totalFields={totalFields}
+              onApprove={handleLockApprove}
+              onBack={handleBackToReview}
+            />
+          )}
+          {step === "fill" && activePdfId && (
+            <FillPreviewStep
+              pdfId={activePdfId}
+              onBack={() => setStep("lock")}
+              onDone={handleFillDone}
+            />
+          )}
+        </div>
       </div>
+
+      {/* Dialogs */}
+      {showBankDialog && (
+        <BankSetupDialog
+          onClose={() => setShowBankDialog(false)}
+          onCreated={handleBankCreated}
+        />
+      )}
+      {productDialogBankId && (
+        <ProductSetupDialog
+          bankId={productDialogBankId}
+          onClose={() => setProductDialogBankId(null)}
+          onCreated={handleProductCreated}
+        />
+      )}
     </div>
   );
 }

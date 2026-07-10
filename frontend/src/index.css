@@ -363,6 +363,18 @@ body {
 .badge-purple { background: var(--accent-purple-glow); color: var(--accent-purple); }
 
 /* ============================================================
+   Tree navigation (ProjectBrowser)
+   ============================================================ */
+.tree-node {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tree-leaf {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ============================================================
    Mapping list / table
    ============================================================ */
 .mapping-row {
