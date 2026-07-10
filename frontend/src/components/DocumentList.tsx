@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { CatalogDocument } from "@/types";
+import { useStore } from "@/store";
 
 interface DocumentListProps {
   documents: CatalogDocument[];
@@ -12,6 +13,7 @@ function DocumentListImpl({
   selectedDocumentId,
   onSelectDocument,
 }: DocumentListProps) {
+  const applicantCount = useStore((s) => s.applicants.length);
   if (documents.length === 0) {
     return (
       <p
@@ -105,7 +107,7 @@ function DocumentListImpl({
                   title="Igénylőnként kitöltendő"
                   style={{ fontSize: "0.6rem", padding: "1px 6px" }}
                 >
-                  👤
+                  👤{applicantCount > 1 ? ` ×${applicantCount}` : ""}
                 </span>
               )}
             </div>

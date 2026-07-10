@@ -8,6 +8,9 @@ import PointsEditor from "./PointsEditor";
 import LockStep from "./LockStep";
 import FillPreviewStep from "./FillPreviewStep";
 import ProjectBrowser from "./ProjectBrowser";
+import ApplicantManager from "./ApplicantManager";
+import ApplicantSelector from "./ApplicantSelector";
+import FillSummary from "./FillSummary";
 import BankSetupDialog from "./BankSetupDialog";
 import ProductSetupDialog from "./ProductSetupDialog";
 
@@ -212,12 +215,17 @@ export default function MappingStudio() {
             borderRight: "1px solid var(--border-subtle)",
             background: "var(--bg-secondary)",
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <ProjectBrowser
-            onAddBank={handleAddBank}
-            onAddProduct={handleAddProduct}
-          />
+          <ApplicantManager />
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <ProjectBrowser
+              onAddBank={handleAddBank}
+              onAddProduct={handleAddProduct}
+            />
+          </div>
         </aside>
 
         {/* Main content area */}
@@ -386,11 +394,26 @@ export default function MappingStudio() {
             />
           )}
           {step === "fill" && activePdfId && (
-            <FillPreviewStep
-              pdfId={activePdfId}
-              onBack={() => setStep("lock")}
-              onDone={handleFillDone}
-            />
+            <>
+              <div
+                style={{
+                  maxWidth: 960,
+                  margin: "0 auto",
+                  padding: "var(--space-lg) var(--space-lg) 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-md)",
+                }}
+              >
+                <ApplicantSelector />
+                <FillSummary />
+              </div>
+              <FillPreviewStep
+                pdfId={activePdfId}
+                onBack={() => setStep("lock")}
+                onDone={handleFillDone}
+              />
+            </>
           )}
         </div>
       </div>

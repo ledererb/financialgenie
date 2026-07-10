@@ -192,6 +192,6 @@ export interface Catalog {
 
 export interface Applicant {
   id: string;
-  role: "igenylo" | "adostars";
   name: string;
+  role: "primary" | "coapplicant";
 }

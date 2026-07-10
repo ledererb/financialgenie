@@ -122,6 +122,11 @@ interface EditorState {
   associateDocumentWithProduct: (docId: string, productIds: string[]) => Promise<void>;
   addUploadedHash: (hash: string) => void;
 
+  // Applicant actions (Phase 5 — per-applicant fill)
+  addApplicant: (name: string) => void;
+  removeApplicant: (id: string) => void;
+  selectApplicant: (id: string) => void;
+
   // Catalog actions (Phase 4 — master split)
   setActiveSplitId: (splitId: string | null) => void;
   startMasterSplit: (bankId: string, file: File) => Promise<string>;
@@ -161,8 +166,10 @@ export const useStore = create<EditorState>((set, get) => ({
   selectedBankId: null,
   selectedProductId: null,
   selectedDocumentId: null,
-  applicants: [],
-  selectedApplicantId: null,
+  applicants: [
+    { id: "primary", name: "Főadós", role: "primary" as const },
+  ],
+  selectedApplicantId: "primary",
 
   // Phase 3 — session-only dedup tracking
   uploadedHashes: new Set<string>(),
@@ -443,6 +450,28 @@ export const useStore = create<EditorState>((set, get) => ({
       uploadedHashes: new Set([...state.uploadedHashes, hash]),
     }));
   },
+
+  // --- Applicant actions (Phase 5 — per-applicant fill) ---
+  addApplicant: (name) => {
+    const id = `coapp_${Date.now()}`;
+    set((state) => ({
+      applicants: [...state.applicants, { id, name, role: "coapplicant" }],
+      selectedApplicantId: state.selectedApplicantId ?? id,
+    }));
+  },
+
+  removeApplicant: (id) => {
+    set((state) => {
+      const remaining = state.applicants.filter((a) => a.id !== id);
+      const selectedApplicantId =
+        state.selectedApplicantId === id
+          ? remaining[0]?.id ?? null
+          : state.selectedApplicantId;
+      return { applicants: remaining, selectedApplicantId };
+    });
+  },
+
+  selectApplicant: (id) => set({ selectedApplicantId: id }),
 
   // --- Catalog actions (Phase 4 — master split) ---
   setActiveSplitId: (splitId) => set({ activeSplitId: splitId }),
