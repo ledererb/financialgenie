@@ -974,6 +974,16 @@ export default function PageEditor({
                         }}
                       >
                         <option value="">— nem mappelt —</option>
+                        {mf.canonical_field &&
+                          !validCanonicalPaths.has(mf.canonical_field) && (
+                            <option
+                              value={mf.canonical_field}
+                              disabled
+                              style={{ color: "var(--accent-red)" }}
+                            >
+                              ⚠ {mf.canonical_field} (ismeretlen SF mező)
+                            </option>
+                          )}
                         {(() => {
                           // Group canonicals by SF object prefix
                           const groups = new Map<string, CanonicalField[]>();
@@ -1007,9 +1017,11 @@ export default function PageEditor({
                         style={{
                           flex: 1,
                           fontSize: "0.75rem",
-                          color: mf.canonical_field
-                            ? "var(--text-primary)"
-                            : "var(--accent-red)",
+                          color: !mf.canonical_field
+                            ? "var(--accent-red)"
+                            : !validCanonicalPaths.has(mf.canonical_field)
+                              ? "var(--accent-amber)"
+                              : "var(--text-primary)",
                           fontStyle: mf.canonical_field ? "normal" : "italic",
                           cursor: "pointer",
                           padding: "2px 4px",
@@ -1018,7 +1030,11 @@ export default function PageEditor({
                         }}
                         title="Kattints a mapping szerkesztéséhez"
                       >
-                        {mf.canonical_field ?? "nem mappelt"}
+                        {!mf.canonical_field
+                          ? "nem mappelt"
+                          : !validCanonicalPaths.has(mf.canonical_field)
+                            ? `⚠ ${mf.canonical_field}`
+                            : mf.canonical_field}
                       </span>
                     )}
                   </div>
