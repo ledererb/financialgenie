@@ -3,7 +3,7 @@
 **Project:** FinancialGenie Mapping Studio
 **Author:** OpenCode (Architecture Analysis)
 **Date:** 2026-07-10
-**Status:** Draft for client review (rev 3 — master split is now fully automatic per client decision)
+**Status:** Draft for client review (rev 4 — "define first, upload second" workflow; empty-by-default catalog per Balázs)
 
 ---
 
@@ -25,11 +25,14 @@ Bank (OTP)
 
 A document can belong to **multiple products** (M:N). For example `Partner_nyilatkozat_hiteligeny_leadasakor.pdf` appears in all 4 product folders; `V_szamu_fuggelek_…` appears in 3. The large MASTER PDF (`Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf`, ~2 MB) is **duplicated across 3 folders** but must **never be uploaded as-is** — it must be split into individual pages/sections with base sections shared across products and product-specific sections scoped.
 
-Two new requirements from Balázs drive this revision:
+Three requirements from Balázs drive this revision:
 1. **Multi-applicant (adóstárs) handling** — some forms are filled once *per applicant*. The catalog must tag each document with `per_applicant`, and the fill pipeline must fetch N copies and fill N times when there are co-applicants.
 2. **Section-aware master split (fully automatic)** — the master PDF has base sections (shared by all products) and product-specific sections; uploading the master triggers an automatic, asynchronous split that assigns pages to the right products from the section map, with no manual dialog.
+3. **Define-first workflow (empty-by-default catalog)** — the user **defines the project structure before uploading any documents**: create a Bank → create its Products → *then* upload documents into those products. The catalog ships **empty** (no pre-seeded data); banks and products are created through the UI. A **"Quick Start: OTP"** one-click option can scaffold OTP Bank + its 4 products for convenience, but the catalog itself never ships populated. This must also support adding more banks later (e.g. K&H, Erste).
 
-This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
+This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact. The catalog is **empty by default** — banks/products/documents are created by the user in the frontend (with a Quick Start option for OTP), not seeded from Drive. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
+
+The resulting **wizard flow** is: **Select/Create Bank → Select/Create Product → Upload Documents → Analysis → Review → Lock → Fill** — definition precedes upload at every level.
 
 ---
 
@@ -131,6 +134,8 @@ We keep PDFs on disk (no DB required) but introduce a **document catalog** — a
 
 **Why not pure folders?** Multi-project documents cannot be expressed with folders alone — a file can only live in one directory. The catalog decouples **logical grouping** from **physical storage**.
 
+**Empty by default.** The catalog JSON ships with `banks: []` and `documents: []` — there is **no seed data** and no seeding script. Banks and products are created through the frontend (`POST /api/catalog/banks`, `POST /api/catalog/banks/{id}/products`) *before* documents are uploaded. A **"Quick Start: OTP"** button can scaffold OTP Bank + its 4 empty products in one click for convenience, but this is a UI shortcut that calls the same creation API — it is not a pre-populated catalog. Additional banks (K&H, Erste, …) are added later the same way. Physical document directories (`documents/<bank_slug>/…`) are created on demand as banks/products/documents come into existence.
+
 ### 3.2 Physical Directory Structure
 
 ```
@@ -160,16 +165,20 @@ financialgenie_review/
 └── samples/                        ← legacy uploads (kept for backward compat)
 ```
 
-### 3.3 Seeding From Google Drive
+### 3.3 Empty Catalog & Quick Start (No Seeding)
 
-The real Drive folder **is the seed data**. The initial catalog must be populated by downloading the Drive contents into `documents/`:
+There is **no seed data** and **no seeding script**. The catalog ships empty (`banks: []`, `documents: []`). The structure is created by the user through the UI:
 
-1. **Download** each product folder from Drive preserving structure, OR flatten into `documents/otp/<product_slug>/`.
-2. **Deduplicate** identical files by SHA-256: the MASTER PDF appears 3× — store one copy in `_master/`, reference it. `Partner_nyilatkozat_…` appears 4× — store once in `base/`, associate to all 4 products.
-3. **Run `scripts/seed_catalog.py`** to scan `documents/otp/`, hash files, and emit the catalog JSON with correct `product_ids` associations inferred from the folder each unique file was found in.
-4. **Tag `per_applicant`** during seeding based on a curated override table (§4.2) — the default heuristic is: any document whose title contains "személyi adatlap", "nyilatkozat" + applicant-identity keywords, or income/employment consent → `per_applicant: true`.
+1. **Create a Bank** (e.g. "OTP Bank") via the frontend → `POST /api/catalog/banks`. This also creates `documents/otp/`.
+2. **Create Products** under it (e.g. "Piaci hitel", "Otthon Start", …) → `POST /api/catalog/banks/{bank_id}/products`.
+3. **Upload documents** into those products (§5.2). Upload-time behavior applies: SHA-256 **deduplication** (a file already known by hash is offered as an *association* rather than a copy), and `per_applicant` **inference** via the heuristic in §4.2 (title contains "személyi adatlap", "nyilatkozat" + applicant-identity keywords, or income/employment consent → `true`), always user-editable.
+4. **Adding banks later** (K&H, Erste, …) follows exactly the same path — create the bank, create products, upload. The catalog schema and API already model `banks[]`, so no structural change is needed.
 
-> **Note on the MASTER PDF:** it is downloaded **once** into `_master/` (git-ignored). It is **never** a catalog document itself. The split endpoint reads from it to produce base/product section PDFs that *do* become catalog documents.
+> **Quick Start: OTP** — a one-click UI button scaffolds OTP Bank + its 4 products (`elozetes_ertekbecsles`, `szabadfelhasznalasu`, `otthon_start`, `piaci_hitel`) with **empty** document lists, by issuing the same creation API calls. It is a convenience shortcut, not pre-populated data; the user still uploads documents manually afterward. Without Quick Start, the user creates the bank and products inline (`BankSetupDialog` / `ProductSetupDialog`, §6).
+
+> **Optional: bulk import from Drive.** The real OTP Drive folder remains a useful source of documents. A user may still download Drive contents and upload them product-by-product into the now-empty catalog (dedup + per_applicant inference apply at upload time). This is a **manual, user-driven** action, not an automatic seed. A `scripts/import_from_drive.py` helper may be provided later, but the catalog never depends on it to start.
+
+> **Note on the MASTER PDF:** when uploaded, it is stored **once** in `_master/` (git-ignored). It is **never** a catalog document itself. The split endpoint reads from it to produce base/product section PDFs that *do* become catalog documents (§5.3, §7).
 
 The existing `otp/` and `samples/` roots remain valid (`config.PDF_ROOTS`). The new `documents/` root is added. `mapping_path_for()` continues to work because it resolves by signature/word-match, not by directory.
 
@@ -178,6 +187,8 @@ The existing `otp/` and `samples/` roots remain valid (`config.PDF_ROOTS`). The 
 ## 4. Data Model — Document Catalog Schema
 
 The catalog is a single JSON file: `catalog/document_catalog.json`.
+
+> **Note:** the JSON below is an **illustrative example** of the schema shape, *not* seed data. Per §3.3/§8 the catalog ships **empty** (`banks: []`, `documents: []`); the bank, products, and documents shown here would be created by the user through the UI / Quick Start and uploads.
 
 ```jsonc
 {
@@ -335,6 +346,8 @@ Master detection happens at **upload time** (§5.2) when `auto_split_master: tru
 
 Both conditions guard against false positives (a 90-page unrelated form should not trigger a split).
 
+> **AI section-mapping helper (separate utility).** Deriving the page → section → product mapping is handled by a **standalone utility** — `src/ai/section_mapper.py` (or similar) — that is **invoked when a master PDF is detected during upload**. It is **not** part of the synchronous upload request and **not** a manual dialog the user fills out. For OTP, whose layout is known and stable, the curated `DocumentAssembler.PRODUCT_SECTIONS` / `BASE_SECTIONS` map (§7.2) is used directly and the AI helper is a no-op. For a **new bank** (K&H, Erste, …) whose section map is not yet curated, the AI helper analyzes the detected master (page text/structure) and proposes the base vs product-section boundaries, which the split job then consumes. Its output can be reviewed/corrected via the existing association UI (§7.3). It is a separate, optional growth-path utility: the split pipeline works purely off the section map and never depends on the AI helper being correct.
+
 #### 5.3.2 The Split Job (Asynchronous)
 
 `POST /api/documents/split-master`:
@@ -439,11 +452,14 @@ Uses the same `threading.Lock` + atomic-write pattern as `mapping_service.py`.
 ```
 App.tsx
 └── MappingStudio.tsx  (wizard orchestrator — extended)
-    ├── ProjectBrowser.tsx          ← NEW: Bank → Product → Document tree
-    │   ├── BankSelector.tsx
-    │   ├── ProductList.tsx
+    ├── ProjectBrowser.tsx          ← NEW: Bank → Product → Document tree (EMPTY by default)
+    │   ├── EmptyState.tsx          ← NEW: "No banks yet" → [Quick Start: OTP] / [Add Bank]
+    │   ├── BankSelector.tsx        ← "Add Bank" action → BankSetupDialog
+    │   ├── ProductList.tsx         ← "Add Product" action → ProductSetupDialog
     │   └── DocumentList.tsx        ← M:N badge + per-applicant badge
-    ├── UploadStep.tsx              ← REFACTORED: context-aware upload + master auto-split
+    ├── BankSetupDialog.tsx         ← NEW: create a bank (runs BEFORE UploadStep)
+    ├── ProductSetupDialog.tsx      ← NEW: create a product under a bank (runs BEFORE UploadStep)
+    ├── UploadStep.tsx              ← REFACTORED: gated until a bank+product exist; context-aware upload + master auto-split
     │   ├── ProductAssociationPicker.tsx
     │   └── SplitProgressIndicator.tsx   ← NEW: async master-split progress (polls task_id)
     ├── AnalysisStep.tsx            (unchanged)
@@ -452,9 +468,13 @@ App.tsx
     └── FillPreviewStep.tsx         ← EXTENDED: applicant selector + per-applicant fan-out
 ```
 
+> **Wizard ordering (define-first):** the wizard enforces **Select/Create Bank → Select/Create Product → Upload Documents → Analysis → Review → Lock → Fill**. `UploadStep` is **disabled until at least one bank and one product exist** — documents can only be uploaded into a defined product. If the user lands on Upload with no bank/product, `BankSetupDialog` / `ProductSetupDialog` are presented inline (or `EmptyState` offers Quick Start) before the drop zone is enabled.
+
 ### 6.2 The ProjectBrowser — Primary Navigation
 
-Replaces the flat "Meglévő PDF-ek" list. Tree rendered from `GET /api/catalog`:
+Replaces the flat "Meglévő PDF-ek" list. Tree rendered from `GET /api/catalog`. Because the catalog ships **empty**, the first render is an `EmptyState` ("Még nincs bank. Hozzon létre egyet, vagy használja a Quick Start-ot.") with two actions: **[Quick Start: OTP]** (one click → OTP Bank + 4 empty products) and **[+ Bank hozzáadása]** (opens `BankSetupDialog`).
+
+Once a bank exists, the tree header gains an **[+ Bank hozzáadása]** action (top-level "Add Bank"), and each bank node gains an **[+ Termék hozzáadása]** action ("Add Product" → `ProductSetupDialog`). These creation actions are the **only** way structure enters the catalog — there is no seed step.
 
 ```
 ▼ OTP Bank
@@ -472,6 +492,15 @@ Replaces the flat "Meglévő PDF-ek" list. Tree rendered from `GET /api/catalog`
 
 Badges: `⊕ shared` = belongs to multiple products (tooltip lists them); `👤 per-applicant` = filled once per applicant. **Selecting a document** opens it in Review; **selecting a product folder** contextualizes Upload.
 
+### 6.2.1 BankSetupDialog & ProductSetupDialog (creation, before upload)
+
+These dialogs are the **define-first** gate. They run *before* `UploadStep` and are the sole entry point for creating structure:
+
+- **`BankSetupDialog`** — a small form: Bank name (e.g. "OTP Bank"). On submit it `POST /api/catalog/banks`, which creates the catalog bank entry and the physical `documents/<bank_slug>/` directory. Slug is derived from the name (accent-folded). Also reachable from the top-level **"Add Bank"** action and from `EmptyState`.
+- **`ProductSetupDialog`** — a small form scoped to a parent bank: Product name (e.g. "Piaci hitel"). On submit it `POST /api/catalog/banks/{bank_id}/products`. Also reachable from each bank node's **"Add Product"** action.
+- **Empty-state enforcement:** `UploadStep`'s drop zone is disabled until `selectedBankId` and `selectedProductId` are both set. If the user tries to upload with no product defined, the wizard surfaces `BankSetupDialog` then `ProductSetupDialog` inline (or offers **Quick Start: OTP**) and only then enables the drop zone.
+- **Adding more banks later** (K&H, Erste) is identical: "Add Bank" → `BankSetupDialog` → create products → upload. The UI and API make no OTP-specific assumptions.
+
 ### 6.3 Store Changes (`store.ts`)
 
 New Zustand state slices:
@@ -486,6 +515,9 @@ applicants: Applicant[];           // igénylő + adóstársak for the active de
 selectedApplicantId: string | null; // which applicant to preview in Fill
 
 loadCatalog: () => Promise<void>;
+createBank: (name: string) => Promise<string>;                 // returns bank_id; creates documents/<slug>/
+createProduct: (bankId: string, name: string) => Promise<string>; // returns product_id
+quickStartOTP: () => Promise<void>;                            // scaffolds OTP bank + 4 empty products
 uploadToProduct: (file, productIds, opts?: { per_applicant?: boolean; auto_split_master?: boolean }) => Promise<void>;
 splitMaster: (masterPath, bankId) => Promise<string>;   // returns task_id; map derived server-side from DocumentAssembler
 pollSplitTask: (taskId) => Promise<SplitTaskStatus>;    // for SplitProgressIndicator
@@ -585,13 +617,18 @@ Each split page is a **real, standalone PDF** — independently mappable and fil
 
 ## 8. Migration & Seeding Strategy
 
-### 8.1 Seed From the Real Drive
+### 8.1 Empty Catalog + Quick Start (No Seeding)
 
-1. **Create catalog** with one bank (`otp`) and 4 products: `elozetes_ertekbecsles`, `szabadfelhasznalasu`, `otthon_start`, `piaci_hitel`.
-2. **Download Drive folders** into `documents/otp/<product_slug>/` (or `base/` for shared files). See §3.3.
-3. **Run `scripts/seed_catalog.py`**: hash each file, deduplicate, infer `product_ids` from the folders each unique file appeared in, apply the `per_applicant` override table (§4.2).
-4. **Place the master PDF** once in `_master/` (git-ignored); do not seed it as a catalog document.
-5. **Mappings** stay in `src/mapping/`; `mapping_path_for()` resolves them unchanged.
+The catalog starts **empty** — no seed script, no pre-populated data. There is no `scripts/seed_catalog.py`.
+
+1. **Ship an empty catalog** (`banks: []`, `documents: []`) and the `GET/POST /api/catalog*` endpoints.
+2. **Frontend creates structure** via `BankSetupDialog` / `ProductSetupDialog` (or **Quick Start: OTP**, which issues the same creation calls): bank "OTP Bank" + 4 products (`elozetes_ertekbecsles`, `szabadfelhasznalasu`, `otthon_start`, `piaci_hitel`) with **empty** document lists.
+3. **User uploads documents** into those products (§5.2). Dedup (SHA-256) and `per_applicant` inference (§4.2) run **at upload time**, not at seed time.
+4. **Master PDF** is uploaded once → stored in `_master/` (git-ignored) → auto-detected → async-split (§5.3). It is never a catalog document itself.
+5. **Adding banks later** (K&H, Erste) = "Add Bank" → products → upload; no schema or API change.
+6. **Mappings** stay in `src/mapping/`; `mapping_path_for()` resolves them unchanged.
+
+> **Optional bulk import.** A user may still download Drive contents and upload product-by-product into the empty catalog. This is a manual user action with upload-time dedup/per_applicant inference — it is **not** an automatic seed and the catalog does not depend on it. A `scripts/import_from_drive.py` helper may be provided later for convenience.
 
 ### 8.2 Backward Compatibility
 
@@ -621,19 +658,17 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 
 ## 10. Implementation Phases
 
-### Phase 1 — Catalog Backend & Drive Seeding (foundation)
-- Create `backend/catalog_service.py` (load/save/CRUD, incl. `per_applicant`).
-- Create `catalog/document_catalog.json` seeded from the **real Drive** (4 products, real documents, deduped).
-- Download Drive contents into `documents/otp/…` and `_master/`.
-- Write `scripts/seed_catalog.py` (hash, dedup, infer associations, apply per_applicant table).
+### Phase 1 — Catalog Backend + Bank/Product Creation (foundation, define-first)
+- Create `backend/catalog_service.py` (load/save/CRUD, incl. `per_applicant`); ship **empty** `catalog/document_catalog.json` (`banks: []`, `documents: []`). No seed script.
+- Add `POST /api/catalog/banks`, `POST /api/catalog/banks/{id}/products`, `GET /api/catalog`; add `documents/` to `PDF_ROOTS`; create `documents/<bank_slug>/` on bank creation.
+- Frontend **bank/product creation UI**: `BankSetupDialog`, `ProductSetupDialog`, `EmptyState`, and the **"Quick Start: OTP"** action (scaffolds OTP Bank + 4 empty products via the same API). "Add Bank" / "Add Product" actions on `ProjectBrowser`.
 - Update `DocumentAssembler.PRODUCT_SECTIONS` enum to real products.
-- Add `GET /api/catalog`; add `documents/` to `PDF_ROOTS`.
-- **Deliverable:** Catalog API returns the real OTP hierarchy with per_applicant flags.
+- **Deliverable:** User can create a Bank and Products through the UI (or one-click Quick Start); catalog is empty-by-default and extensible to K&H/Erste later. Define-first gate in place.
 
 ### Phase 2 — ProjectBrowser Frontend (read-only tree)
-- Add `ProjectBrowser`, `BankSelector`, `ProductList`, `DocumentList` (with `⊕ shared` + `👤 per-applicant` badges).
-- Add catalog state to `store.ts`; replace flat list in `UploadStep.tsx`.
-- **Deliverable:** User browses Bank → Product → Document and opens existing docs.
+- Add `ProjectBrowser`, `BankSelector`, `ProductList`, `DocumentList` (with `⊕ shared` + `👤 per-applicant` badges), rendering the (initially empty, then user-created) tree.
+- Add catalog state to `store.ts`; replace flat list in `UploadStep.tsx`; disable `UploadStep` until a bank+product exist.
+- **Deliverable:** User browses Bank → Product → Document and opens existing docs; structure comes only from Phase 1 creation actions.
 
 ### Phase 3 — Context-Aware Upload + M:N Association
 - Add `POST /api/documents/upload` (with `product_ids`, `per_applicant`).
@@ -666,17 +701,20 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 | `backend/catalog_service.py` | **NEW** — catalog CRUD + per_applicant | 1 |
 | `backend/server.py` | Add `/api/catalog*`, `/api/documents*`, split-master endpoints | 1–5 |
 | `backend/config.py` | Add `documents/` to `PDF_ROOTS`; `CATALOG_DIR` | 1 |
-| `catalog/document_catalog.json` | **NEW** — seeded from real Drive | 1 |
-| `scripts/seed_catalog.py` | **NEW** — Drive→catalog seeding + dedup | 1 |
+| `catalog/document_catalog.json` | **NEW** — ships EMPTY (`banks: []`), created via UI | 1 |
+| `frontend/src/components/EmptyState.tsx` | **NEW** — no-bank state → Quick Start / Add Bank | 1 |
+| `frontend/src/components/BankSetupDialog.tsx` | **NEW** — create a bank (runs before upload) | 1 |
+| `frontend/src/components/ProductSetupDialog.tsx` | **NEW** — create a product under a bank | 1 |
 | `src/engine/document_assembler.py` | Update `PRODUCT_SECTIONS`/enum to real products | 1 |
 | `src/engine/form_filler_pipeline.py` | Per-applicant fan-out | 5 |
 | `frontend/src/types/index.ts` | Add `Bank`, `Product`, `CatalogDocument` (+per_applicant), `Applicant` | 2 |
-| `frontend/src/store.ts` | Catalog state + applicant state + actions | 2–5 |
-| `frontend/src/components/ProjectBrowser.tsx` | **NEW** — tree nav | 2 |
-| `frontend/src/components/UploadStep.tsx` | Refactor: context-aware upload | 2–3 |
+| `frontend/src/store.ts` | Catalog state + applicant state + create-bank/product/quickStart actions | 1–5 |
+| `frontend/src/components/ProjectBrowser.tsx` | **NEW** — tree nav + Add Bank / Add Product actions | 1–2 |
+| `frontend/src/components/UploadStep.tsx` | Refactor: define-first gate + context-aware upload | 2–3 |
 | `frontend/src/components/ProductAssociationPicker.tsx` | **NEW** — M:N picker | 3 |
 | `frontend/src/components/SplitProgressIndicator.tsx` | **NEW** — async master-split progress (polls `task_id`) | 4 |
 | `frontend/src/components/FillPreviewStep.tsx` | **EXTENDED** — applicant selector + fan-out | 5 |
+| `src/ai/section_mapper.py` | **NEW (optional)** — AI section-mapping helper, runs when master detected | 4 |
 
 **Unchanged:** `src/mapping/*.json`, `src/ai/*`, `AnalysisStep`, `ReviewDashboard`, `PageEditor`, `PointsEditor`, `LockStep`.
 
@@ -699,13 +737,14 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 
 ## 13. Summary
 
-This plan transforms the flat upload model into a **project-based hierarchy** aligned with the **real OTP Google Drive structure** (4 products, M:N shared documents, deduplicated master PDF), and adds two first-class concepts:
+This plan transforms the flat upload model into a **project-based hierarchy** aligned with the **real OTP Google Drive structure** (4 products, M:N shared documents, deduplicated master PDF), and adds three first-class concepts:
 
+- **Define-first workflow (empty-by-default catalog)** — the user creates a Bank → Products **before** uploading any documents; the catalog ships empty with no seed data, a "Quick Start: OTP" button optionally scaffolds OTP Bank + 4 empty products, and additional banks (K&H, Erste) are added the same way. Wizard order: **Select/Create Bank → Select/Create Product → Upload → Analysis → Review → Lock → Fill**.
 - **Per-applicant documents** (`per_applicant` flag) — the fill pipeline fans out per applicant so adóstárs forms are filled correctly.
-- **Section-aware master split (fully automatic)** — uploading the master PDF triggers an asynchronous split that assigns base sections to all products and product-specific sections to their product, driven entirely by the `DocumentAssembler` section map — no manual dialog. The frontend shows a progress indicator and the results land in the catalog tree; mis-assigned pages are correctable afterward via the association UI.
+- **Section-aware master split (fully automatic)** — uploading the master PDF triggers an asynchronous split that assigns base sections to all products and product-specific sections to their product, driven entirely by the `DocumentAssembler` section map (with an optional AI section-mapping helper for new banks) — no manual dialog. The frontend shows a progress indicator and the results land in the catalog tree; mis-assigned pages are correctable afterward via the association UI.
 
-It does so with **no database** (JSON catalog), **no mapping-format changes**, and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phases 1–4 cover catalog + tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
+It does so with **no database** (JSON catalog), **no mapping-format changes**, **no seeding script** (empty-by-default), and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phase 1 now covers the catalog backend + bank/product creation UI (define-first), Phases 2–4 cover tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
 
 ---
 
-*Prepared by OpenCode · 2026-07-10 · rev 3 — master split fully automatic (no manual dialog) · For client review*
+*Prepared by OpenCode · 2026-07-10 · rev 4 — define-first workflow, empty-by-default catalog, Quick Start, AI section-mapping helper · For client review*
