@@ -117,6 +117,10 @@ export interface PointData {
   blocks: PointBlock[];
   rule_type: number; // 1..7
   params: Record<string, any>;
+  // Editor-only metadata: marks points auto-generated from checkbox groups
+  // (PLAN_CHECKBOX_GROUPS.md §5.2). Nested inside points[] so it survives the
+  // top-level "_"-strip in mapping_service.save().
+  _source?: string;
 }
 
 export interface MappingConfig {

@@ -889,6 +889,66 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
     mutatePoints([...points, next]);
   }, [mutatePoints, points]);
 
+  // PLAN §4.3 — auto-generate points from mapping checkbox groups.
+  // Each checkbox_group.group_id → one PointData (rule_type 3, mutually
+  // exclusive). block_id = option_value, members = the group's pdf fields
+  // sharing that option. Replaces existing AUTO_* points for the same groups.
+  const handleAutoGenerateFromGroups = useCallback(() => {
+    if (!mapping) return;
+    const fields = mapping.fields as MappingField[];
+
+    // group_id → { label, page, options: Map<option_value, members[]> }
+    const groups = new Map<string, { label: string; page: number; options: Map<string, string[]> }>();
+    for (const f of fields) {
+      const cg = f.checkbox_group;
+      const gid = cg?.group_id;
+      if (!gid) continue;
+      // option_value preferred; match_value = deprecated alias (backward compat)
+      const ov = (cg?.option_value ?? cg?.match_value ?? f.pdf_field_name) as string;
+      let g = groups.get(gid);
+      if (!g) {
+        g = { label: cg?.group_label ?? gid, page: f.page_number, options: new Map() };
+        groups.set(gid, g);
+      }
+      const members = g.options.get(ov) ?? [];
+      members.push(f.pdf_field_name);
+      g.options.set(ov, members);
+    }
+
+    if (groups.size === 0) {
+      window.alert(
+        "Nincsenek checkbox-csoportok a mapping-ben.\n" +
+          "Először a PageEditor-ban állíts be group_id-t a checkboxokon, vagy futtasd újra az AI felismerést.",
+      );
+      return;
+    }
+
+    const generated: PointData[] = Array.from(groups.entries()).map(([gid, g]) => ({
+      point_id: `AUTO_${gid}`,
+      framework: "*",
+      label: g.label,
+      page_number: g.page,
+      blocks: Array.from(g.options.entries()).map(([blockId, members]) => ({
+        block_id: blockId,
+        members,
+      })),
+      rule_type: 3, // mutually exclusive (safe default; user can change)
+      params: defaultParamsForRule(3),
+      _source: "auto_group",
+    }));
+
+    const generatedIds = new Set(generated.map((p) => p.point_id));
+    const existingAuto = points.filter((p) => generatedIds.has(p.point_id));
+    if (existingAuto.length > 0) {
+      if (!window.confirm(`${existingAuto.length} db AUTO_* pont már létezik és frissülni fog. Folytatod?`)) {
+        return;
+      }
+    }
+    // keep non-AUTO points for these groups; append the freshly generated ones
+    const next = [...points.filter((p) => !generatedIds.has(p.point_id)), ...generated];
+    mutatePoints(next);
+  }, [mapping, points, mutatePoints]);
+
   const handleManualSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     if (mapping) persist({ ...mapping, points });
@@ -949,6 +1009,13 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
             disabled={!dirty || saving}
           >
             Mentés
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleAutoGenerateFromGroups}
+            title="Checkbox-csoportokból automatikusan pontokat generál (rule_type 3)"
+          >
+            ⚡ Auto csoportokból
           </button>
           <button className="btn btn-primary btn-sm" onClick={handleAddPoint}>
             + Új pont

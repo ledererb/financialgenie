@@ -712,8 +712,14 @@ class FormFillerPipeline:
                 # PLAN §5.3 — runtime active_block feloldás auto-generált
                 # checkbox-csoport pontoknál (rule_type 3). A Contact tényleges
                 # canonical értéke határozza meg, melyik opció (blokk) aktív.
+                # Egyezik ha _source="auto_group" VAGY point_id "AUTO_" prefixű
+                # (frontend-generált pontok is).
                 p_def_eff = p_def
-                if p_def.get("_source") == "auto_group" and rt == 3:
+                is_auto = (
+                    p_def.get("_source") == "auto_group"
+                    or str(p_def.get("point_id", "")).startswith("AUTO_")
+                )
+                if is_auto and rt == 3:
                     canonical_field = _infer_canonical_from_blocks(p_def, mapping)
                     actual_value = ctx.canonical_values.get(canonical_field) if canonical_field else None
                     matched_block = next(
