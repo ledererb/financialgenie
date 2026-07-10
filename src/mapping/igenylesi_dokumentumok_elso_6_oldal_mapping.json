@@ -1,66 +1,68 @@
 {
   "bank_name": "OTP Bank",
-  "form_name": "Igenylesi_dokumentumok_elso_6_oldal",
+  "form_name": "Igenylesi_dokumentumok_elso_4_oldal",
   "form_type": "acroform",
   "approved": false,
   "approved_by": null,
-  "notes": "Összefésült mapping: heurisztikus + AI (139 leképezve).",
+  "notes": "Összefésült mapping: heurisztikus + AI (115 leképezve).",
   "page_structure": {
     "1": "global",
     "2": "per_participant",
     "3": "per_participant",
-    "4": "per_participant",
-    "5": "per_participant",
-    "6": "per_participant"
+    "4": "per_participant"
   },
   "fields": [
     {
       "pdf_field_name": "Fedlap LAHI ingatlan adatlap",
-      "label": "Ingatlan adatlap (IA) / Finanszírozás összetétele (FA) / Általános nyilatkozat (Á NY) darabszám",
+      "label": "Ingatlan adatlap (IA) darabszám",
       "field_type": "text",
       "canonical_field": "Opportunity.Description",
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Igénylőcsomag tartalma – IA/FA/Á NY",
+      "notes": "Igénylőcsomag tartalma – IA darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_Elsődleges_Szerep",
       "label": "Igénylő szerepe: Igénylő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Relation__c",
-      "confidence": "high",
+      "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
       "notes": "Az igénylő elsődleges szerepe a hiteligénylésben",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_további_szerep",
-      "label": "További szerep: Fedezet tulajdonosa (zálogkötelezett)",
+      "label": "További szerep: Fedezeti ingatlan tulajdonosa (zálogkötelezett)",
       "field_type": "checkbox",
       "canonical_field": "Contact.Mortgagor__c",
-      "confidence": "high",
+      "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Igénylő fedezeti zálogkötelezetti szerepe",
+      "notes": "Fedezeti ingatlan tulajdonosa / zálogkötelezett szerep",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_Szerep_társigénylésben",
       "label": "Szerepe a támogatásigénylésben: Nem támogatott személy",
       "field_type": "checkbox",
       "canonical_field": "Contact.Relation__c",
-      "confidence": "medium",
+      "confidence": "low",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Nem támogatott személyként vesz részt az igénylésben",
+      "notes": "Nem támogatott személy jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_név",
@@ -70,9 +72,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Az igénylő teljes neve",
+      "notes": "Teljes viselt név",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_név",
@@ -82,9 +85,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Születési név",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_hely",
@@ -94,9 +98,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Születési helység neve",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_év",
@@ -106,33 +111,36 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Születési dátum év komponense",
+      "notes": "Születési dátum – csak az év részre",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_hónap",
       "label": "Születési idő – hónap",
       "field_type": "text",
       "canonical_field": "Contact.Birthdate_month",
-      "confidence": "medium",
+      "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Születési dátum hónap komponense; a teljes dátum Contact.Birthdate-be kerül",
+      "notes": "Születési dátum – csak a hónap részre",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_szül_nap",
       "label": "Születési idő – nap",
       "field_type": "text",
       "canonical_field": "Contact.Birthdate_day",
-      "confidence": "medium",
+      "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Születési dátum nap komponense",
+      "notes": "Születési dátum – csak a nap részre",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állampolgárság___Yes",
@@ -142,9 +150,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Magyar állampolgárság jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állampolgárság___no",
@@ -154,21 +163,23 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéb állampolgárság jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állampolgárság_egyéb",
-      "label": "Állampolgárság – egyéb (szabad szöveges)",
+      "label": "Állampolgárság – egyéb megnevezése",
       "field_type": "text",
       "canonical_field": "Contact.Citizenship__c",
-      "confidence": "high",
+      "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Ha nem magyar, ide írják be az állampolgárságot",
+      "notes": "Szabad szöveges mező az egyéb állampolgárság megadásához",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_anyja_neve",
@@ -178,9 +189,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Anyja teljes születési neve",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum___1,2",
@@ -190,9 +202,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "A kiválasztott dokumentum típusa; az igazolvány száma külön mezőben szerepel",
+      "notes": "Személyi igazolvány típus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum___2,3",
@@ -202,9 +215,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Jogosítvány típus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum___3,4",
@@ -214,21 +228,23 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Útlevél típus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum___4,5",
       "label": "Személyazonosító dokumentum: Egyéb",
       "field_type": "checkbox",
       "canonical_field": "Contact.ID_Card_Number__c",
-      "confidence": "medium",
+      "confidence": "low",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéb dokumentum típus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum_egyéb",
@@ -238,9 +254,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Szabad szöveges egyéb dokumentumtípus",
+      "notes": "Egyéb dokumentum típus szabad szöveges megnevezése",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_személyazonosíó_szám",
@@ -250,21 +267,23 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Az igazolvány okmányszáma",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_személyiszám",
       "label": "Személyi azonosító szám (régi személyi szám)",
       "field_type": "text",
-      "canonical_field": "Contact.Last_4_nr_of_ID__c",
+      "canonical_field": "Contact.Employee_registration_c__c",
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Régi személyi szám; nincs dedikált SF mező, Last_4_nr_of_ID__c a legjobb közelítés",
+      "notes": "Régi személyi szám / TAJ szám jellegű azonosító",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_adóazonosító",
@@ -274,9 +293,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "10 jegyű adóazonosító jel",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_neme___Yes",
@@ -286,9 +306,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nem – Nő jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_neme___no",
@@ -298,9 +319,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nem – Férfi jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_kegészítő_adatok",
@@ -310,9 +332,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Írástudatlan jelölő – nincs pontos Salesforce mező",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_kegészítő_adatok_2",
@@ -322,9 +345,10 @@
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Látássérült jelölő – nincs pontos Salesforce mező",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot___1,2",
@@ -334,9 +358,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Házas vagy bejegyzett élettárs jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot___2,3",
@@ -346,9 +371,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Élettárs jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot___3,4",
@@ -358,9 +384,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Özvegy jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot___4,5",
@@ -370,9 +397,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Elvált jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_családiállapot___5,6",
@@ -382,9 +410,10 @@
       "confidence": "high",
       "page_number": 2,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyedülálló jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_létszám",
@@ -394,9 +423,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Háztartási létszám – nincs külön SF mező, Dependents_count__c a legközelebbi",
+      "notes": "Háztartás összes tagjainak száma",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_eltartottak",
@@ -406,9 +436,10 @@
       "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Gyermekek száma a háztartásban",
+      "notes": "Háztartásban élő gyermekek száma",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_lakcim_ország___Yes",
@@ -418,9 +449,10 @@
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Állandó lakcím – Magyarország jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_lakcim_ország___no",
@@ -430,21 +462,23 @@
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Állandó lakcím – egyéb ország jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állandó_lakcim_ország_egyéb",
-      "label": "Állandó lakcím országa – egyéb (szabad szöveges)",
+      "label": "Állandó lakcím – egyéb ország neve",
       "field_type": "text",
       "canonical_field": "Contact.OtherCountry",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéb ország megnevezése szabad szövegként",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állandó_lakcím_irányító",
@@ -454,9 +488,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Állandó lakcím irányítószáma",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állandó_lakcim_település",
@@ -466,9 +501,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Állandó lakcím település; OtherCity ha állandó cím ≠ levelezési",
+      "notes": "Állandó lakcím – helység neve",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_állandó_lakcim_utca",
@@ -478,33 +514,36 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Állandó lakcím – utca és házszám részletek",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_levelezési_cím___Yes",
-      "label": "Levelezési cím: Megegyezik az állandó lakcímmel",
+      "label": "Levelezési cím: megegyezik az állandó lakcímmel",
       "field_type": "checkbox",
       "canonical_field": "Contact.MailingStreet",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Ha be van jelölve, a levelezési cím = állandó lakcím",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_levelezési_cím___no",
-      "label": "Levelezési cím: Eltér az állandó lakcímtől",
+      "label": "Levelezési cím: eltér az állandó lakcímtől",
       "field_type": "checkbox",
       "canonical_field": "Contact.MailingStreet",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Ha be van jelölve, külön levelezési cím adható meg",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_levelezési_cím_irányító",
@@ -514,9 +553,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Levelezési cím irányítószáma",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_levelezési_cím_település",
@@ -526,9 +566,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Levelezési cím helysége",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_levelezési_lakcim_utca",
@@ -538,21 +579,23 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Levelezési cím utca és házszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_email_cím",
-      "label": "E-mail cím",
+      "label": "E-mail-cím",
       "field_type": "text",
       "canonical_field": "Contact.Email",
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Kapcsolattartási e-mail cím",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_mobil",
@@ -562,9 +605,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Mobil / telefonszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_egyébadat_jogcím___1,2",
@@ -574,9 +618,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Lakóhely jogcíme – tulajdonos",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_egyébadat_jogcím___2,3",
@@ -586,9 +631,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Lakóhely jogcíme – bérlő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_egyébadat_jogcím___3,4",
@@ -598,9 +644,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Lakóhely jogcíme – családtag",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_egyébadat_jogcím___4,5",
@@ -610,9 +657,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Lakóhely jogcíme – egyéb",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_mióta_lakik_év",
@@ -622,9 +670,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Év komponens",
+      "notes": "Beköltözés éve (lakcímkártyán szereplő)",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_mióta_lakik_hónap",
@@ -634,9 +683,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Hónap komponens",
+      "notes": "Beköltözés hónapja",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_mióta_lakik_nap",
@@ -646,9 +696,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": "Nap komponens",
+      "notes": "Beköltözés napja",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_végzettség___1,2",
@@ -658,9 +709,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Felsőfokú végzettség jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_végzettség___2,3",
@@ -670,9 +722,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Szakképesítés jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_végzettség___3,4",
@@ -682,9 +735,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Érettségi jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_végzettség___4,5",
@@ -694,9 +748,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "8 általános vagy alacsonyabb jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás",
@@ -706,33 +761,36 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Szellemi munkát végző alkalmazott jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás_egyéb",
-      "label": "Foglalkoztatás típusa – egyéb megnevezése",
+      "label": "Foglalkoztatás – egyéb megnevezése",
       "field_type": "text",
       "canonical_field": "Contact.Occupation__c",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéb foglalkozás szabad szöveges megadása",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem1",
-      "label": "Jövedelem típusa: Munkabér (belföldről)",
+      "label": "Jövedelemtípus: Munkabér (belföldről) – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Belföldi munkabér jövedelemtípus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg1",
@@ -742,69 +800,75 @@
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Belföldi munkabér havi összege",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza1",
       "label": "Munkabér (belföldről) – devizanem",
       "field_type": "text",
-      "canonical_field": "Contact.Average_monthly_net_income__c",
+      "canonical_field": "Contact.Other_income__c",
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
-      "notes": "Devizanem pl. Ft, EUR",
+      "notes": "Devizanem pl. HUF, EUR – nincs dedikált Salesforce mező",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk1___1,2",
-      "label": "Munkabér érkezési módja: OTP-s számlára érkezik",
+      "label": "Munkabér jóváírás: OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "OTP-s számlára érkezik jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk1___2,3",
-      "label": "Munkabér érkezési módja: Nem OTP-s számlára érkezik",
+      "label": "Munkabér jóváírás: Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nem OTP-s számlára érkezik jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk1___3,4",
-      "label": "Munkabér érkezési módja: Nem bankszámlára érkezik",
+      "label": "Munkabér jóváírás: Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nem bankszámlára érkezik jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem2",
-      "label": "Jövedelem típusa: Családi pótlék (nevelési ellátás, iskoláztatási támogatás)",
+      "label": "Jövedelemtípus: Családi pótlék (nevelési ellátás, iskoláztatási támogatás) – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Családi pótlék jövedelemtípus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg2",
@@ -814,141 +878,153 @@
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Családi pótlék havi összege",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza2",
       "label": "Családi pótlék – devizanem",
       "field_type": "text",
-      "canonical_field": "Contact.Other_monthly_income__c",
+      "canonical_field": "Contact.Other_income__c",
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Devizanem",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2___1,2",
-      "label": "Családi pótlék érkezési módja: OTP-s számlára érkezik",
+      "label": "Családi pótlék jóváírás: OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2___2,3",
-      "label": "Családi pótlék érkezési módja: Nem OTP-s számlára érkezik",
+      "label": "Családi pótlék jóváírás: Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2___3,4",
-      "label": "Családi pótlék érkezési módja: Nem bankszámlára érkezik",
+      "label": "Családi pótlék jóváírás: Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem3",
-      "label": "Jövedelem típusa: Cafetéria havi összege",
+      "label": "Jövedelemtípus: Cafetéria havi összege – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Cafetéria jövedelemtípus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg3",
-      "label": "Cafetéria – összeg",
+      "label": "Cafetéria havi összege – összeg",
       "field_type": "number",
       "canonical_field": "Contact.Cafeteria_bonus__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Cafetéria havi összege",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza3",
       "label": "Cafetéria – devizanem",
       "field_type": "text",
-      "canonical_field": "Contact.Cafeteria_bonus__c",
+      "canonical_field": "Contact.Other_income__c",
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3___1,2",
-      "label": "Cafetéria érkezési módja: OTP-s számlára érkezik",
+      "label": "Cafetéria jóváírás: OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3___2,3",
-      "label": "Cafetéria érkezési módja: Nem OTP-s számlára érkezik",
+      "label": "Cafetéria jóváírás: Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3___3,4",
-      "label": "Cafetéria érkezési módja: Nem bankszámlára érkezik",
+      "label": "Cafetéria jóváírás: Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem4",
-      "label": "Jövedelem típusa: Vállalkozásból származó jövedelem",
+      "label": "Jövedelemtípus: Vállalkozásból származó jövedelem – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Vállalkozói jövedelem jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg4",
@@ -960,71 +1036,77 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza4",
-      "label": "Vállalkozásból származó jövedelem – devizanem",
+      "label": "Vállalkozásból jövedelem – devizanem",
       "field_type": "text",
-      "canonical_field": "Contact.Income_from_self_owned_company__c",
+      "canonical_field": "Contact.Other_income__c",
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk4___1,2",
-      "label": "Vállalkozói jövedelem érkezési módja: OTP-s számlára érkezik",
+      "label": "Vállalkozói jövedelem jóváírás: OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk4___2,3",
-      "label": "Vállalkozói jövedelem érkezési módja: Nem OTP-s számlára érkezik",
+      "label": "Vállalkozói jövedelem jóváírás: Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk4___3,4",
-      "label": "Vállalkozói jövedelem érkezési módja: Nem bankszámlára érkezik",
+      "label": "Vállalkozói jövedelem jóváírás: Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem5",
-      "label": "Jövedelem típusa: Gyermekgondozási díj (GYED)",
+      "label": "Jövedelemtípus: Gyermekgondozási díj (GYED) – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "GYED jövedelemtípus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg5",
-      "label": "GYED – összeg",
+      "label": "Gyermekgondozási díj (GYED) – összeg",
       "field_type": "number",
       "canonical_field": "Contact.Other_monthly_income__c",
       "confidence": "medium",
@@ -1032,199 +1114,216 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza5",
       "label": "GYED – devizanem",
       "field_type": "text",
-      "canonical_field": "Contact.Other_monthly_income__c",
+      "canonical_field": "Contact.Other_income__c",
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk5___1,2",
-      "label": "GYED érkezési módja: OTP-s számlára érkezik",
+      "label": "GYED jóváírás: OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk5___2,3",
-      "label": "GYED érkezési módja: Nem OTP-s számlára érkezik",
+      "label": "GYED jóváírás: Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk5___3,4",
-      "label": "GYED érkezési módja: Nem bankszámlára érkezik",
+      "label": "GYED jóváírás: Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
-      "confidence": "low",
+      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem6",
-      "label": "Jövedelem típusa: Nyugdíj",
+      "label": "Jövedelemtípus: Nyugdíj – jelölő",
       "field_type": "checkbox",
       "canonical_field": "Contact.Income_type__c",
       "confidence": "high",
       "page_number": 4,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nyugdíj jövedelemtípus jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_nyugdíj",
-      "label": "Nyugdíjas törzsszám",
-      "field_type": "text",
-      "canonical_field": "Contact.Employee_registration_c__c",
-      "confidence": "medium",
+      "label": "Sza Ig Jövedelem Nyugdíj",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
       "page_number": 4,
       "coordinates": null,
-      "notes": "Nyugdíjas törzsszám azonosító",
+      "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg6",
-      "label": "Nyugdíj – összeg",
+      "label": "Sza Ig Jövedelem Összeg6",
       "field_type": "number",
-      "canonical_field": "Contact.Average_monthly_net_income__c",
-      "confidence": "medium",
+      "canonical_field": null,
+      "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza6",
-      "label": "Nyugdíj – devizanem",
+      "label": "Sza Ig Jövedelem Deviza6",
       "field_type": "text",
-      "canonical_field": "Contact.Average_monthly_net_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk6___1,2",
-      "label": "Nyugdíj érkezési módja: OTP-s számlára érkezik",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "label": "Sza Ig Jövedelem Érk6   1,2",
+      "field_type": "text",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk6___2,3",
-      "label": "Nyugdíj érkezési módja: Nem OTP-s számlára érkezik",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "label": "Sza Ig Jövedelem Érk6   2,3",
+      "field_type": "text",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk6___3,4",
-      "label": "Nyugdíj érkezési módja: Nem bankszámlára érkezik",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "label": "Sza Ig Jövedelem Érk6   3,4",
+      "field_type": "text",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem7",
-      "label": "Jövedelem típusa: Külföldről származó munkabér",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Income_type__c",
-      "confidence": "high",
+      "label": "Sza Ig Jövedelem7",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg7",
-      "label": "Külföldről származó munkabér – összeg",
+      "label": "Sza Ig Jövedelem Összeg7",
       "field_type": "number",
-      "canonical_field": "Contact.Average_monthly_net_income__c",
-      "confidence": "medium",
+      "canonical_field": null,
+      "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza7",
-      "label": "Külföldről származó munkabér – devizanem",
+      "label": "Sza Ig Jövedelem Deviza7",
       "field_type": "text",
-      "canonical_field": "Contact.Average_monthly_net_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___1,2",
-      "label": "Külföldi munkabér érkezési módja: OTP-s számlára érkezik",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "label": "Sza Ig Jövedelem Érk7   1,2",
+      "field_type": "text",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___2,3",
-      "label": "Külföldi munkabér érkezési módja: Nem OTP-s számlára érkezik",
-      "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "label": "Sza Ig Jövedelem Érk7   2,3",
+      "field_type": "text",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___3,4",
@@ -1236,7 +1335,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem8",
@@ -1248,7 +1348,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg8",
@@ -1260,7 +1361,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza8",
@@ -1272,7 +1374,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk8___1,2",
@@ -1284,7 +1387,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk8___2,3",
@@ -1296,7 +1400,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk8___3,4",
@@ -1308,7 +1413,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem9",
@@ -1320,7 +1426,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg9",
@@ -1332,7 +1439,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza9",
@@ -1344,7 +1452,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk9___1,2",
@@ -1356,7 +1465,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk9___2,3",
@@ -1368,7 +1478,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk9___3,4",
@@ -1380,7 +1491,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_egyéb1",
@@ -1392,7 +1504,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg10",
@@ -1404,7 +1517,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza10",
@@ -1416,7 +1530,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk10___1,2",
@@ -1428,7 +1543,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk10___2,3",
@@ -1440,7 +1556,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk10___3,4",
@@ -1452,7 +1569,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_egyéb2",
@@ -1464,7 +1582,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg11",
@@ -1476,7 +1595,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza11",
@@ -1488,7 +1608,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk11___1,2",
@@ -1500,7 +1621,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk11___2,3",
@@ -1512,7 +1634,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk11___3,4",
@@ -1524,7 +1647,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_egyéb3",
@@ -1536,7 +1660,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg12",
@@ -1548,7 +1673,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza12",
@@ -1560,7 +1686,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk12___1,2",
@@ -1572,7 +1699,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk12___2,3",
@@ -1584,7 +1712,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk12___3,4",
@@ -1596,211 +1725,8 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_nav___Igen",
-      "label": "Sza Ig Nav   Igen",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_nav___no",
-      "label": "Sza Ig Nav   No",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_nav_igen",
-      "label": "Sza Ig Nav Igen",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_további_szerep-társ",
-      "label": "Sza Ig További Szerep-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_állampolgárság-társ___Yes",
-      "label": "Sza Ig Állampolgárság-Társ   Yes",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_állampolgárság-társ___no",
-      "label": "Sza Ig Állampolgárság-Társ   No",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_dokumentum-társ___1,2",
-      "label": "Sza Ig Dokumentum-Társ   1,2",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_dokumentum-társ___2,3",
-      "label": "Sza Ig Dokumentum-Társ   2,3",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_dokumentum-társ___3,4",
-      "label": "Sza Ig Dokumentum-Társ   3,4",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_dokumentum-társ___4,5",
-      "label": "Sza Ig Dokumentum-Társ   4,5",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_neme-társ___Yes",
-      "label": "Sza Ig Neme-Társ   Yes",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_neme-társ___no",
-      "label": "Sza Ig Neme-Társ   No",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_családiállapot-társ___1,2",
-      "label": "Sza Ig Családiállapot-Társ   1,2",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_családiállapot-társ___2,3",
-      "label": "Sza Ig Családiállapot-Társ   2,3",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_családiállapot-társ___3,4",
-      "label": "Sza Ig Családiállapot-Társ   3,4",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_családiállapot-társ___4,5",
-      "label": "Sza Ig Családiállapot-Társ   4,5",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_családiállapot-társ___5,6",
-      "label": "Sza Ig Családiállapot-Társ   5,6",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI Kölcsön azonosító",
@@ -1810,9 +1736,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – partner törzsszám azonosító mező",
+      "notes": "Partner törzsszám / belső azonosító – nincs pontos Salesforce megfelelő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI Igenylesi azonosító",
@@ -1822,9 +1749,10 @@
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Igénylési azonosító a fedlapon",
+      "notes": "Igénylési azonosító a fedőlapon",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI személyi igénylő",
@@ -1834,9 +1762,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Igénylőcsomag tartalma – hány SZA IG adatlap kerül benyújtásra",
+      "notes": "Igénylőcsomag tartalma – SZA IG darabszám mező",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI Munkavállalói_adatlap",
@@ -1846,9 +1775,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Igénylőcsomag tartalma – hány MA IG adatlap",
+      "notes": "Igénylőcsomag tartalma – MA IG darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI ingatlan adatlaptka",
@@ -1858,9 +1788,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Igénylőcsomag tartalma – KTKA",
+      "notes": "Igénylőcsomag tartalma – KTKA darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI személyi adatlap egyéb",
@@ -1870,9 +1801,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – SZA ESZ darabszám",
+      "notes": "Igénylőcsomag tartalma – SZA ESZ darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI CSOK",
@@ -1882,9 +1814,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – CSOK NY darabszám",
+      "notes": "Igénylőcsomag tartalma – CSOK NY darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAHI ÁFA",
@@ -1894,9 +1827,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – ÁFA NY darabszám",
+      "notes": "Igénylőcsomag tartalma – ÁFA NY darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap LAKHK",
@@ -1906,9 +1840,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – LAKHK darabszám",
+      "notes": "Igénylőcsomag tartalma – LAKHK darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap csokplusz",
@@ -1918,9 +1853,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – CSOKP NY darabszám",
+      "notes": "Igénylőcsomag tartalma – CSOKP NY darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap ostart",
@@ -1930,9 +1866,10 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – OSTART NY darabszám",
+      "notes": "Igénylőcsomag tartalma – OSTART NY darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "Fedlap videki",
@@ -1942,21 +1879,23 @@
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Fedlap – VOFK NY darabszám",
+      "notes": "Igénylőcsomag tartalma – VOFK NY darabszám",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_további_szerep2",
-      "label": "További szerep: Fedezet haszonélvezője/Özvegyi jog jogosultja",
+      "label": "További szerep: Fedezeti haszonélvező / Özvegyi jog jogosultja",
       "field_type": "checkbox",
       "canonical_field": "Contact.Usufructuary__c",
-      "confidence": "high",
+      "confidence": "medium",
       "page_number": 2,
       "coordinates": null,
-      "notes": "Haszonélvező / özvegyi jog jogosultja checkbox",
+      "notes": "Fedezeti haszonélvező / özvegyi jog jogosultja szerep",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-1",
@@ -1966,9 +1905,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Fizikai munkát végző alkalmazott jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-2",
@@ -1978,9 +1918,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Vezető alkalmazott jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-3",
@@ -1990,9 +1931,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Közalkalmazott / köztisztviselő jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-4",
@@ -2002,9 +1944,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéni vállalkozó jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-5",
@@ -2014,9 +1957,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Kkt./Bt. tag jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-6",
@@ -2026,21 +1970,23 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Társas vállalkozás tulajdonosa jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-7",
-      "label": "Foglalkoztatás típusa: Egyszemélyes ügyvédi / végrehajtói iroda / Közjegyzői iroda tulajdonosa",
+      "label": "Foglalkoztatás típusa: Egyszemélyes ügyvédi / végrehajtói iroda, Közjegyzői iroda tulajdonosa",
       "field_type": "checkbox",
       "canonical_field": "Contact.Foglalkozas_tipusa__c",
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Ügyvédi / közjegyzői iroda tulajdonosa jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-8",
@@ -2050,9 +1996,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Háztartásbeli / GYES / GYED jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-9",
@@ -2062,9 +2009,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Őstermelő jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-10",
@@ -2074,9 +2022,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Nyugdíjas jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-11",
@@ -2086,9 +2035,10 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Rokkantnyugdíjas jelölő",
       "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_foglalkoztatás-12",
@@ -2098,321 +2048,13 @@
       "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Egyéb foglalkoztatás jelölő",
       "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_nav_igen2",
-      "label": "Sza Ig Nav Igen2",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_khr",
-      "label": "Sza Ig Khr",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_khr_összeg",
-      "label": "Sza Ig Khr Összeg",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_khr_deviza",
-      "label": "Sza Ig Khr Deviza",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_kata",
-      "label": "Sza Ig Kata",
-      "field_type": "text",
-      "canonical_field": "Contact.Self_employment_details__c",
-      "confidence": "high",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_kelt",
-      "label": "Sza Ig Kelt",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 5,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_Elsődleges_Szerep-társ",
-      "label": "Sza Ig Elsődleges Szerep-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.Relation__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_további_szerep2-társ",
-      "label": "Sza Ig További Szerep2-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_Szerep_társigénylésben-társ",
-      "label": "Sza Ig Szerep Társigénylésben-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_név-társ",
-      "label": "Sza Ig Név-Társ",
-      "field_type": "date",
-      "canonical_field": "Contact.Name",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_szül_név-társ",
-      "label": "Sza Ig Szül Név-Társ",
-      "field_type": "date",
-      "canonical_field": "Contact.Szuletesi_nev__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_szül_hely-társ",
-      "label": "Sza Ig Szül Hely-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.Place_of_Birth__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_szül_év-társ",
-      "label": "Sza Ig Szül Év-Társ",
-      "field_type": "date",
-      "canonical_field": "Contact.Birthdate_year",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_szül_hónap-társ",
-      "label": "Sza Ig Szül Hónap-Társ",
-      "field_type": "date",
-      "canonical_field": "Contact.Birthdate_month",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_szül_nap-társ",
-      "label": "Sza Ig Szül Nap-Társ",
-      "field_type": "date",
-      "canonical_field": "Contact.Birthdate_day",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_állampolgárság_egyéb-társ",
-      "label": "Sza Ig Állampolgárság Egyéb-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_anyja_neve-társ",
-      "label": "Sza Ig Anyja Neve-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.Mother_s_Name__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_dokumentum_egyéb-társ",
-      "label": "Sza Ig Dokumentum Egyéb-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_személyazonosíó_szám-társ",
-      "label": "Sza Ig Személyazonosíó Szám-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.ID_Card_Number__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_személyiszám-társ",
-      "label": "Sza Ig Személyiszám-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.ID_Card_Number__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_adóazonosító-társ",
-      "label": "Sza Ig Adóazonosító-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.Tax_ID__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_kegészítő_adatok-társ",
-      "label": "Sza Ig Kegészítő Adatok-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_kegészítő_adatok_2-társ",
-      "label": "Sza Ig Kegészítő Adatok 2-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_létszám-társ",
-      "label": "Sza Ig Létszám-Társ",
-      "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
-    },
-    {
-      "pdf_field_name": "SZA_IG_eltartottak-társ",
-      "label": "Sza Ig Eltartottak-Társ",
-      "field_type": "number",
-      "canonical_field": "Contact.Dependents_count__c",
-      "confidence": "high",
-      "page_number": 6,
-      "coordinates": null,
-      "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null
+      "fill_rule": null,
+      "fragment": null
     }
   ],
   "character_groups": [],
-  "points": [
-    {
-      "point_id": "POINT_MRE1RETQ",
-      "framework": "*",
-      "label": "",
-      "page_number": 1,
-      "blocks": [],
-      "rule_type": 1,
-      "params": {}
-    }
-  ]
+  "points": [],
+  "rule_sets": []
 }
