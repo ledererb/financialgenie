@@ -1,10 +1,13 @@
 """
-Catalog service: thread-safe CRUD for the document catalog JSON.
+Catalog service: thread-safe SQLite CRUD for the document catalog.
 
-Mirrors mapping_service.py's concurrency pattern:
-  - threading.Lock guards the atomic write
-  - .tmp -> os.replace for crash-safe writes
-  - mtime tracking for optimistic-concurrency conflict detection
+Uses Python's built-in sqlite3 module (no ORM, no external server).
+The database file (catalog/catalog.db) is created automatically on first
+access with the correct schema.
+
+Thread safety: each thread gets its own sqlite3.Connection via
+threading.local(). WAL mode enables concurrent reads. Foreign keys
+are enforced (PRAGMA foreign_keys=ON).
 
 The catalog models the Bank -> Product -> Document hierarchy with M:N
 document-product associations and per-applicant metadata.
@@ -14,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sqlite3
 import threading
 import unicodedata
 from pathlib import Path
@@ -25,8 +29,8 @@ PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
 log = logging.getLogger("catalog_service")
 
-#: Path to the single catalog manifest.
-CATALOG_PATH: Path = PROJECT_ROOT / "catalog" / "document_catalog.json"
+#: Path to the SQLite catalog database.
+DB_PATH: Path = PROJECT_ROOT / "catalog" / "catalog.db"
 
 
 def _slugify(name: str) -> str:
@@ -37,120 +41,277 @@ def _slugify(name: str) -> str:
     "OTP Bank" -> "otp_bank", "Piaci hitel" -> "piaci_hitel".
     """
     nfd = unicodedata.normalize("NFKD", name.lower())
-    ascii_str = "".join(ch for ch in nfd if not unicodedata.combining(ch))
+    ascii_str = nfd.encode("ascii", "ignore").decode()
     return ascii_str.replace(" ", "_").replace("-", "_")
 
 
 class CatalogService:
-    """Thread-safe CRUD over the document catalog JSON."""
+    """Thread-safe SQLite-based catalog for banks, products, and documents."""
 
     def __init__(self) -> None:
-        self._lock = threading.Lock()
-        self._mtime: float | None = None
+        self._local = threading.local()
+        self._ensure_db()
 
     # ------------------------------------------------------------------
-    # Load / save
+    # Connection management
     # ------------------------------------------------------------------
-    def _ensure_exists(self) -> None:
-        """Create an empty catalog file on disk if it doesn't exist yet."""
-        if not CATALOG_PATH.exists():
-            CATALOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            self.save({"version": 1, "banks": [], "documents": []})
+    def _get_conn(self) -> sqlite3.Connection:
+        if not hasattr(self._local, "conn") or self._local.conn is None:
+            self._local.conn = sqlite3.connect(str(DB_PATH))
+            self._local.conn.row_factory = sqlite3.Row
+            self._local.conn.execute("PRAGMA journal_mode=WAL")
+            self._local.conn.execute("PRAGMA foreign_keys=ON")
+        return self._local.conn
 
-    def load(self) -> dict:
-        """Load and return the full catalog dict. Creates it if missing."""
-        self._ensure_exists()
-        with open(CATALOG_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        self._mtime = os.path.getmtime(CATALOG_PATH)
-        return data
-
-    def save(self, catalog: dict) -> None:
-        """Atomically persist the full catalog (tmp + rename).
-
-        Raises FileConflictError if the on-disk mtime changed since the
-        last load() — a concurrent writer beat us.
-        """
-        with self._lock:
-            if self._mtime is not None and CATALOG_PATH.exists():
-                current_mtime = os.path.getmtime(CATALOG_PATH)
-                if current_mtime != self._mtime:
-                    raise FileConflictError(
-                        "Catalog modified by another process"
-                    )
-            tmp_path = CATALOG_PATH.with_suffix(".tmp")
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(catalog, f, indent=2, ensure_ascii=False)
-            os.replace(tmp_path, CATALOG_PATH)
-            self._mtime = os.path.getmtime(CATALOG_PATH)
+    def _ensure_db(self) -> None:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS banks (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                slug TEXT UNIQUE NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS products (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                slug TEXT UNIQUE NOT NULL,
+                bank_id TEXT NOT NULL REFERENCES banks(id) ON DELETE CASCADE,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS documents (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                source TEXT DEFAULT '',
+                page_count INTEGER DEFAULT 0,
+                per_applicant INTEGER DEFAULT 0,
+                split_from_master INTEGER DEFAULT 0,
+                master_page_number INTEGER,
+                master_section TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS document_products (
+                document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+                product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+                PRIMARY KEY (document_id, product_id)
+            );
+            CREATE TABLE IF NOT EXISTS document_tags (
+                document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+                tag TEXT NOT NULL,
+                PRIMARY KEY (document_id, tag)
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
 
     # ------------------------------------------------------------------
-    # Banks
+    # Bank CRUD
     # ------------------------------------------------------------------
     def list_banks(self) -> list[dict]:
-        return self.load()["banks"]
+        conn = self._get_conn()
+        rows = conn.execute("SELECT * FROM banks ORDER BY created_at").fetchall()
+        banks = []
+        for row in rows:
+            bank = dict(row)
+            prods = conn.execute(
+                "SELECT * FROM products WHERE bank_id = ? ORDER BY created_at",
+                (bank["id"],),
+            ).fetchall()
+            bank["products"] = []
+            for p in prods:
+                prod = dict(p)
+                doc_rows = conn.execute(
+                    "SELECT document_id FROM document_products WHERE product_id = ?",
+                    (prod["id"],),
+                ).fetchall()
+                prod["document_ids"] = [d["document_id"] for d in doc_rows]
+                bank["products"].append(prod)
+            banks.append(bank)
+        return banks
 
     def add_bank(self, name: str) -> dict:
-        """Create a bank entry and return it."""
         slug = _slugify(name)
-        bank: dict = {"id": slug, "name": name, "products": []}
-        catalog = self.load()
-        catalog["banks"].append(bank)
-        self.save(catalog)
-        return bank
+        conn = self._get_conn()
+        conn.execute(
+            "INSERT INTO banks (id, name, slug) VALUES (?, ?, ?)",
+            (slug, name, slug),
+        )
+        conn.commit()
+        return {"id": slug, "name": name, "slug": slug, "products": []}
 
     def get_bank(self, bank_id: str) -> dict | None:
-        catalog = self.load()
-        for bank in catalog["banks"]:
-            if bank["id"] == bank_id:
-                return bank
-        return None
+        conn = self._get_conn()
+        row = conn.execute(
+            "SELECT * FROM banks WHERE id = ?", (bank_id,)
+        ).fetchone()
+        if not row:
+            return None
+        bank = dict(row)
+        prods = conn.execute(
+            "SELECT * FROM products WHERE bank_id = ? ORDER BY created_at",
+            (bank_id,),
+        ).fetchall()
+        bank["products"] = [dict(p) for p in prods]
+        return bank
 
     # ------------------------------------------------------------------
-    # Products
+    # Product CRUD
     # ------------------------------------------------------------------
     def add_product(self, bank_id: str, name: str) -> dict:
-        """Create a product under a bank. Returns the product dict."""
         slug = _slugify(name)
-        product: dict = {"id": slug, "name": name, "document_ids": []}
-        catalog = self.load()
-        for bank in catalog["banks"]:
-            if bank["id"] == bank_id:
-                bank["products"].append(product)
-                self.save(catalog)
-                return product
-        raise ValueError(f"Bank '{bank_id}' not found")
+        conn = self._get_conn()
+        bank = conn.execute(
+            "SELECT id FROM banks WHERE id = ?", (bank_id,)
+        ).fetchone()
+        if not bank:
+            raise ValueError(f"Bank '{bank_id}' not found")
+        conn.execute(
+            "INSERT INTO products (id, name, slug, bank_id) VALUES (?, ?, ?, ?)",
+            (slug, name, slug, bank_id),
+        )
+        conn.commit()
+        return {
+            "id": slug,
+            "name": name,
+            "slug": slug,
+            "bank_id": bank_id,
+            "document_ids": [],
+        }
 
-    def get_product(self, product_id: str, bank_id: str | None = None) -> dict | None:
-        catalog = self.load()
-        for bank in catalog["banks"]:
-            if bank_id and bank["id"] != bank_id:
-                continue
-            for product in bank["products"]:
-                if product["id"] == product_id:
-                    return product
-        return None
+    def get_product(self, product_id: str, bank_id: str = None) -> dict | None:
+        conn = self._get_conn()
+        query = "SELECT * FROM products WHERE id = ?"
+        params: list = [product_id]
+        if bank_id:
+            query += " AND bank_id = ?"
+            params.append(bank_id)
+        row = conn.execute(query, params).fetchone()
+        if not row:
+            return None
+        prod = dict(row)
+        doc_rows = conn.execute(
+            "SELECT document_id FROM document_products WHERE product_id = ?",
+            (product_id,),
+        ).fetchall()
+        prod["document_ids"] = [d["document_id"] for d in doc_rows]
+        return prod
 
     # ------------------------------------------------------------------
-    # Documents
+    # Document CRUD
     # ------------------------------------------------------------------
     def add_document(self, document: dict) -> dict:
-        """Add a document to the catalog and update each referenced
-        product's ``document_ids`` (M:N inverse index)."""
-        catalog = self.load()
-        catalog["documents"].append(document)
-        for product_id in document.get("product_ids", []):
-            for bank in catalog["banks"]:
-                for product in bank["products"]:
-                    if product["id"] == product_id:
-                        if document["id"] not in product["document_ids"]:
-                            product["document_ids"].append(document["id"])
-        self.save(catalog)
+        conn = self._get_conn()
+        conn.execute(
+            """
+            INSERT INTO documents (id, title, file_path, source, page_count,
+                                   per_applicant, split_from_master,
+                                   master_page_number, master_section)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                document["id"],
+                document["title"],
+                document["file_path"],
+                document.get("source", ""),
+                document.get("page_count", 0),
+                1 if document.get("per_applicant") else 0,
+                1 if document.get("split_from_master") else 0,
+                document.get("master_page_number"),
+                document.get("master_section"),
+            ),
+        )
+        for pid in document.get("product_ids", []):
+            conn.execute(
+                "INSERT OR IGNORE INTO document_products (document_id, product_id) VALUES (?, ?)",
+                (document["id"], pid),
+            )
+        for tag in document.get("tags", []):
+            conn.execute(
+                "INSERT OR IGNORE INTO document_tags (document_id, tag) VALUES (?, ?)",
+                (document["id"], tag),
+            )
+        conn.commit()
         return document
 
+    def get_document(self, doc_id: str) -> dict | None:
+        conn = self._get_conn()
+        row = conn.execute(
+            "SELECT * FROM documents WHERE id = ?", (doc_id,)
+        ).fetchone()
+        if not row:
+            return None
+        doc = dict(row)
+        doc["per_applicant"] = bool(doc["per_applicant"])
+        doc["split_from_master"] = bool(doc["split_from_master"])
+        prod_rows = conn.execute(
+            "SELECT product_id FROM document_products WHERE document_id = ?",
+            (doc_id,),
+        ).fetchall()
+        doc["product_ids"] = [p["product_id"] for p in prod_rows]
+        tag_rows = conn.execute(
+            "SELECT tag FROM document_tags WHERE document_id = ?", (doc_id,)
+        ).fetchall()
+        doc["tags"] = [t["tag"] for t in tag_rows]
+        return doc
 
-class FileConflictError(Exception):
-    """Raised when the catalog was modified externally (mtime mismatch)."""
+    def list_documents(self) -> list[dict]:
+        conn = self._get_conn()
+        rows = conn.execute(
+            "SELECT * FROM documents ORDER BY created_at"
+        ).fetchall()
+        docs = []
+        for row in rows:
+            doc = dict(row)
+            doc["per_applicant"] = bool(doc["per_applicant"])
+            doc["split_from_master"] = bool(doc["split_from_master"])
+            prod_rows = conn.execute(
+                "SELECT product_id FROM document_products WHERE document_id = ?",
+                (doc["id"],),
+            ).fetchall()
+            doc["product_ids"] = [p["product_id"] for p in prod_rows]
+            tag_rows = conn.execute(
+                "SELECT tag FROM document_tags WHERE document_id = ?",
+                (doc["id"],),
+            ).fetchall()
+            doc["tags"] = [t["tag"] for t in tag_rows]
+            docs.append(doc)
+        return docs
+
+    def update_document_products(self, doc_id: str, product_ids: list[str]) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "DELETE FROM document_products WHERE document_id = ?", (doc_id,)
+        )
+        for pid in product_ids:
+            conn.execute(
+                "INSERT OR IGNORE INTO document_products (document_id, product_id) VALUES (?, ?)",
+                (doc_id, pid),
+            )
+        conn.commit()
+
+    def set_per_applicant(self, doc_id: str, value: bool) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE documents SET per_applicant = ? WHERE id = ?",
+            (1 if value else 0, doc_id),
+        )
+        conn.commit()
+
+    # ------------------------------------------------------------------
+    # Full catalog export (for the GET /api/catalog endpoint)
+    # ------------------------------------------------------------------
+    def load_catalog(self) -> dict:
+        return {
+            "version": 2,
+            "banks": self.list_banks(),
+            "documents": self.list_documents(),
+        }
 
 
 #: Module-level singleton (mirrors mapping_service / pdf_service pattern).

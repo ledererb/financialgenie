@@ -680,8 +680,8 @@ def health():
 # ======================================================================
 @app.get("/api/catalog")
 def get_catalog():
-    """Return the full document catalog (banks -> products -> documents)."""
-    return catalog_service.load()
+    """Return the full document catalog (banks -> products -> documents) from the SQLite DB."""
+    return catalog_service.load_catalog()
 
 
 @app.post("/api/catalog/banks")

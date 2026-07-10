@@ -22,6 +22,11 @@ venv/
 # Output PDF-ek (generált)
 output/
 
+# SQLite catalog database (created on first access)
+catalog/catalog.db
+catalog/catalog.db-wal
+catalog/catalog.db-shm
+
 # Env / secrets
 .env
 *.env
