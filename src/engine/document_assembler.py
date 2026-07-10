@@ -19,14 +19,18 @@ logger = logging.getLogger(__name__)
 
 
 class ProductType(str, Enum):
-    """OTP hiteltermék típusok."""
+    """OTP hiteltermék típusok (reconciled with real Drive layout)."""
     PIACI_HITEL = "piaci_hitel"
-    CSOK = "csok"
-    CSOK_PLUSZ = "csok_plusz"
+    SZABADFELHASZNALASU = "szabadfelhasznalasu_hitel"
     OTTHON_START = "otthon_start"
-    AFA_VISSZATERITES = "afa_visszaterites"
-    VIDEKI_FELUJITAS = "videki_felujitas"
-    HITELKARTYA = "hitelkartya"
+    ERTEKBECSLES = "elozetes_ertekbecsles_megrendeles"
+
+    # --- Legacy values (may be needed later, kept for reference) ---
+    # CSOK = "csok"
+    # CSOK_PLUSZ = "csok_plusz"
+    # AFA_VISSZATERITES = "afa_visszaterites"
+    # VIDEKI_FELUJITAS = "videki_felujitas"
+    # HITELKARTYA = "hitelkartya"
 
 
 # ============================================================
@@ -46,28 +50,12 @@ BASE_SECTIONS = {
 }
 
 # Termékspecifikus szekciók
+# TODO: Page ranges below are illustrative — validate against v5 master PDF
 PRODUCT_SECTIONS = {
-    ProductType.PIACI_HITEL: [],  # Csak az alap
-    ProductType.CSOK: [
-        ("csok_nyilatkozat", 37, 48),
-    ],
-    ProductType.AFA_VISSZATERITES: [
-        ("afa_nyilatkozat", 49, 56),
-    ],
-    ProductType.CSOK_PLUSZ: [
-        ("csok_plusz", 57, 63),
-        ("csok_plusz_kiegesz", 64, 68),
-    ],
-    ProductType.OTTHON_START: [
-        ("otthon_start", 69, 82),
-    ],
-    ProductType.HITELKARTYA: [
-        ("hitelkartya", 83, 85),
-    ],
-    ProductType.VIDEKI_FELUJITAS: [
-        ("videki_felujitas", 86, 93),
-        ("videki_kiegesz", 94, 97),
-    ],
+    ProductType.PIACI_HITEL: [("piaci_hitel", 83, 90)],
+    ProductType.SZABADFELHASZNALASU: [("szab_hitel", 31, 36)],
+    ProductType.OTTHON_START: [("otthon_start", 69, 82)],
+    ProductType.ERTEKBECSLES: [],  # no master pages
 }
 
 # Társadós bővített adatlap – ha ≥2 szereplő

@@ -34,6 +34,7 @@ if str(_SRC) not in sys.path:
 PDF_ROOTS: list[Path] = [
     PROJECT_ROOT / "otp",
     PROJECT_ROOT / "samples",
+    PROJECT_ROOT / "documents",
 ]
 
 #: Where mapping JSON files live.

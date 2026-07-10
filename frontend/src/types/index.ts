@@ -153,3 +153,45 @@ export type FieldColorKey =
   | "selected"
   | "group"
   | "static";
+
+// ---------------------------------------------------------------------------
+// Document Catalog types (PLAN_project_upload.md §4, §6.4)
+// ---------------------------------------------------------------------------
+
+export interface Product {
+  id: string;
+  name: string;
+  document_ids: string[];
+}
+
+export interface Bank {
+  id: string;
+  name: string;
+  products: Product[];
+}
+
+export interface CatalogDocument {
+  id: string;
+  title: string;
+  file_path: string;
+  source: string;
+  product_ids: string[];
+  page_count: number;
+  per_applicant?: boolean;
+  tags?: string[];
+  split_from_master?: boolean;
+  master_page_number?: number;
+  master_section?: "base" | string;
+}
+
+export interface Catalog {
+  version: number;
+  banks: Bank[];
+  documents: CatalogDocument[];
+}
+
+export interface Applicant {
+  id: string;
+  role: "igenylo" | "adostars";
+  name: string;
+}

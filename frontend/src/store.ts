@@ -5,6 +5,8 @@ import type {
   CanonicalField,
   PdfField,
   PdfSummary,
+  Catalog,
+  Applicant,
 } from "@/types";
 import {
   listPdfs,
@@ -63,6 +65,15 @@ interface EditorState {
   placeFieldMode: boolean;
   darkMode: boolean;
 
+  // Catalog (Phase 1 — Bank/Product creation)
+  catalog: Catalog | null;
+  catalogLoading: boolean;
+  selectedBankId: string | null;
+  selectedProductId: string | null;
+  selectedDocumentId: string | null;
+  applicants: Applicant[];
+  selectedApplicantId: string | null;
+
   // Actions
   loadPdfs: () => Promise<void>;
   selectPdf: (pdfId: string) => Promise<void>;
@@ -81,6 +92,15 @@ interface EditorState {
   clearUploadedResult: () => void;
   runAiRecognition: () => Promise<void>;
   clearRecognitionError: () => void;
+
+  // Catalog actions (Phase 1)
+  loadCatalog: () => Promise<void>;
+  createBank: (name: string) => Promise<string>;
+  createProduct: (bankId: string, name: string) => Promise<string>;
+  quickStartOTP: () => Promise<void>;
+  selectBank: (bankId: string | null) => void;
+  selectProduct: (productId: string | null) => void;
+  selectDocument: (docId: string | null) => void;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -110,6 +130,15 @@ export const useStore = create<EditorState>((set, get) => ({
   searchQuery: "",
   placeFieldMode: false,
   darkMode: false,
+
+  // Catalog (Phase 1)
+  catalog: null,
+  catalogLoading: false,
+  selectedBankId: null,
+  selectedProductId: null,
+  selectedDocumentId: null,
+  applicants: [],
+  selectedApplicantId: null,
 
   loadPdfs: async () => {
     set({ pdfsLoading: true });
@@ -285,4 +314,68 @@ export const useStore = create<EditorState>((set, get) => ({
     }
   },
   clearRecognitionError: () => set({ recognitionError: null }),
+
+  // --- Catalog actions (Phase 1) ---
+  loadCatalog: async () => {
+    set({ catalogLoading: true });
+    try {
+      const res = await fetch("/api/catalog");
+      const catalog = await res.json();
+      set({ catalog, catalogLoading: false });
+    } catch {
+      set({ catalogLoading: false });
+    }
+  },
+
+  createBank: async (name: string) => {
+    const res = await fetch("/api/catalog/banks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    const bank = await res.json();
+    await get().loadCatalog();
+    set({ selectedBankId: bank.id });
+    return bank.id;
+  },
+
+  createProduct: async (bankId: string, name: string) => {
+    const res = await fetch(`/api/catalog/banks/${encodeURIComponent(bankId)}/products`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    const product = await res.json();
+    await get().loadCatalog();
+    set({ selectedProductId: product.id });
+    return product.id;
+  },
+
+  quickStartOTP: async () => {
+    const bankId = await get().createBank("OTP Bank");
+    const products = [
+      "Előzetes értékbecslés megrendelés",
+      "Szabadfelhasználású hitel",
+      "Otthon Start",
+      "Piaci hitel",
+    ];
+    for (const name of products) {
+      await get().createProduct(bankId, name);
+    }
+  },
+
+  selectBank: (bankId: string | null) =>
+    set({ selectedBankId: bankId, selectedProductId: null }),
+  selectProduct: (productId: string | null) =>
+    set({ selectedProductId: productId }),
+  selectDocument: (docId: string | null) =>
+    set({ selectedDocumentId: docId }),
 }));

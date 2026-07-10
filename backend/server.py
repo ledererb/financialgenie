@@ -78,6 +78,7 @@ from config import (  # noqa: E402
 from mapping_service import FileConflictError, mapping_service  # noqa: E402
 from pdf_service import pdf_service  # noqa: E402
 from recognize_service import recognize_service  # noqa: E402
+from catalog_service import catalog_service  # noqa: E402
 
 app = FastAPI(title="FinancialGenie Mapping Editor API", version="1.0")
 
@@ -672,6 +673,51 @@ def health():
         "project_root": str(PROJECT_ROOT),
         "mapping_dir": str(MAPPING_DIR),
     }
+
+
+# ======================================================================
+# Catalog service endpoints (Phase 1 — Bank/Product creation)
+# ======================================================================
+@app.get("/api/catalog")
+def get_catalog():
+    """Return the full document catalog (banks -> products -> documents)."""
+    return catalog_service.load()
+
+
+@app.post("/api/catalog/banks")
+def create_bank(body: dict):
+    """Create a new bank and its physical documents directory."""
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "Bank name is required")
+    try:
+        bank = catalog_service.add_bank(name)
+        docs_dir = PROJECT_ROOT / "documents" / bank["id"]
+        docs_dir.mkdir(parents=True, exist_ok=True)
+        return bank
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("create_bank failed")
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/catalog/banks/{bank_id}/products")
+def create_product(bank_id: str, body: dict):
+    """Create a product under an existing bank."""
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "Product name is required")
+    try:
+        product = catalog_service.add_product(bank_id, name)
+        return product
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("create_product failed")
+        raise HTTPException(500, str(e))
 
 
 @app.post("/api/pdf/upload")
