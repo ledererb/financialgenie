@@ -217,6 +217,12 @@ class CatalogService:
     # Document CRUD
     # ------------------------------------------------------------------
     def add_document(self, document: dict) -> dict:
+        """Insert a document, or update it if the id already exists (upsert).
+
+        This makes the split idempotent: re-splitting the same master PDF for
+        the same bank overwrites the existing ``split_<bank>_<section>``
+        documents instead of raising ``UNIQUE constraint failed``.
+        """
         conn = self._get_conn()
         conn.execute(
             """
@@ -224,6 +230,16 @@ class CatalogService:
                                    per_applicant, split_from_master,
                                    master_page_number, master_section, sha256)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                file_path = excluded.file_path,
+                source = excluded.source,
+                page_count = excluded.page_count,
+                per_applicant = excluded.per_applicant,
+                split_from_master = excluded.split_from_master,
+                master_page_number = excluded.master_page_number,
+                master_section = excluded.master_section,
+                sha256 = excluded.sha256
             """,
             (
                 document["id"],
@@ -340,8 +356,7 @@ class CatalogService:
         conn.commit()
 
     def delete_bank(self, bank_id: str) -> None:
-        """Delete a bank and all associated products, documents, and
-        relationships.
+        """Delete a bank, its products, exclusive documents, and on-disk files.
 
         SQLite foreign keys cascade products → banks and
         document_products → products/documents.  However, the
@@ -352,6 +367,8 @@ class CatalogService:
 
         Shared documents (associated with products from other banks)
         are kept; only the association is removed via CASCADE.
+
+        The ``documents/<bank_id>/`` directory on disk is removed as well.
         """
         conn = self._get_conn()
         # Collect product ids that belong to this bank.
@@ -376,8 +393,8 @@ class CatalogService:
                     (doc_id, bank_id),
                 ).fetchone()
                 if not shared:
-                    # Exclusive to this bank — delete the document row.
-                    # document_products and document_tags cascade via FK.
+                    # Exclusive to this bank — delete the document row and file.
+                    self._delete_document_file(conn, doc_id)
                     conn.execute(
                         "DELETE FROM documents WHERE id = ?", (doc_id,)
                     )
@@ -386,11 +403,76 @@ class CatalogService:
         conn.execute("DELETE FROM banks WHERE id = ?", (bank_id,))
         conn.commit()
 
-    def delete_document(self, doc_id: str) -> None:
-        """Delete a document from the catalog only (does not delete the
-        file on disk). Product associations and tags are removed via CASCADE.
+        # Remove the bank's on-disk directory (master + sections + splits).
+        import shutil
+        bank_dir = PROJECT_ROOT / "documents" / bank_id
+        if bank_dir.exists():
+            shutil.rmtree(str(bank_dir), ignore_errors=True)
+
+    def delete_product(self, product_id: str) -> dict:
+        """Delete a product. Documents are NOT deleted (M:N — a document
+        may belong to multiple products). The ``document_products`` rows
+        cascade via FK.
+
+        Returns ``{"deleted": true, "orphaned_documents": [...]}`` — the
+        document IDs that now have zero product associations after this
+        deletion, so the frontend can warn the user.
         """
         conn = self._get_conn()
+        # Find documents that will be orphaned (this is their only product).
+        orphan_rows = conn.execute(
+            """
+            SELECT dp.document_id
+            FROM document_products dp
+            WHERE dp.product_id = ?
+              AND dp.document_id IN (
+                SELECT document_id FROM document_products
+                GROUP BY document_id HAVING COUNT(*) = 1
+              )
+            """,
+            (product_id,),
+        ).fetchall()
+        orphaned = [r["document_id"] for r in orphan_rows]
+
+        conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        conn.commit()
+        return {"deleted": True, "orphaned_documents": orphaned}
+
+    def _delete_document_file(self, conn, doc_id: str) -> None:
+        """Delete the on-disk file for *doc_id* if it exists and no other
+        document references the same file_path. This protects against
+        accidental deletion of shared files.
+        """
+        row = conn.execute(
+            "SELECT file_path FROM documents WHERE id = ?", (doc_id,)
+        ).fetchone()
+        if not row or not row["file_path"]:
+            return
+        file_path_str = row["file_path"]
+        # Check if any OTHER document points to the same file_path.
+        dup = conn.execute(
+            "SELECT COUNT(*) AS n FROM documents WHERE file_path = ? AND id != ?",
+            (file_path_str, doc_id),
+        ).fetchone()
+        if dup["n"] > 0:
+            return  # Shared file — don't delete from disk.
+        file_path = PROJECT_ROOT / file_path_str
+        if file_path.is_file():
+            try:
+                file_path.unlink()
+                log.info("Deleted file: %s", file_path)
+            except OSError as e:
+                log.warning("Could not delete file %s: %s", file_path, e)
+
+    def delete_document(self, doc_id: str) -> None:
+        """Delete a document from the catalog AND its file on disk.
+
+        Product associations and tags are removed via CASCADE. The
+        on-disk PDF is deleted only if no other catalog document
+        references the same ``file_path`` (dedup protection).
+        """
+        conn = self._get_conn()
+        self._delete_document_file(conn, doc_id)
         conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
         conn.commit()
 

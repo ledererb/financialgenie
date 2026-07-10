@@ -281,10 +281,30 @@ def delete_pdf(pdf_id: str = Query(...)):
     pdf_path.unlink()
     log.info("Deleted PDF: %s", pdf_id)
 
+    # Also remove any catalog document row pointing to this file (so we
+    # don't leave orphaned catalog entries when a file is deleted here).
+    catalog_deleted = False
+    try:
+        rel_path = str(pdf_path.relative_to(PROJECT_ROOT))
+        # Match by file_path (relative or absolute) or by pdf_id.
+        from catalog_service import catalog_service as _cs
+
+        docs = catalog_service.list_documents()
+        for doc in docs:
+            doc_file = doc.get("file_path", "")
+            # Normalize: compare relative path and pdf_id
+            if doc_file == rel_path or doc_file == pdf_id or doc_file == str(pdf_path):
+                catalog_service.delete_document(doc["id"])
+                catalog_deleted = True
+                log.info("Deleted catalog document: %s", doc["id"])
+    except Exception as e:
+        log.warning("Catalog cleanup for %s failed: %s", pdf_id, e)
+
     return {
         "deleted": True,
         "pdf_id": pdf_id,
         "mapping_deleted": mapping_deleted,
+        "catalog_deleted": catalog_deleted,
     }
 
 
@@ -756,7 +776,7 @@ def set_document_products(doc_id: str, body: dict):
 # ======================================================================
 @app.delete("/api/catalog/banks/{bank_id}")
 def delete_bank(bank_id: str):
-    """Delete a bank and cascade-remove its products and associations."""
+    """Delete a bank and cascade-remove its products, documents, and files."""
     try:
         catalog_service.delete_bank(bank_id)
         return {"ok": True}
@@ -765,9 +785,24 @@ def delete_bank(bank_id: str):
         raise HTTPException(500, str(e))
 
 
+@app.delete("/api/catalog/products/{product_id}")
+def delete_product(product_id: str):
+    """Delete a product. Documents are kept (M:N) but lose this association.
+
+    Returns ``orphaned_documents`` — IDs of documents that now have zero
+    product associations, so the frontend can warn the user.
+    """
+    try:
+        result = catalog_service.delete_product(product_id)
+        return result
+    except Exception as e:
+        log.exception("delete_product failed")
+        raise HTTPException(500, str(e))
+
+
 @app.delete("/api/catalog/documents/{doc_id}")
 def delete_catalog_document(doc_id: str):
-    """Remove a document from the catalog (does NOT delete the file on disk)."""
+    """Delete a document from the catalog AND its file on disk."""
     try:
         catalog_service.delete_document(doc_id)
         return {"ok": True}
@@ -835,13 +870,124 @@ def get_split_progress(split_id: str):
     return progress
 
 
+@app.post("/api/catalog/extract-section")
+async def extract_section(
+    bank_id: str = Query(...),
+    file: UploadFile = File(...),
+    start_page: int = Query(..., ge=1),
+    end_page: int = Query(..., ge=1),
+    title: str = Query(...),
+    product_ids: list[str] = Query(default=[]),
+):
+    """Manually extract a page range from a master PDF into a new document.
+
+    Accepts a master PDF file upload and a page range (1-indexed, inclusive),
+    extracts those pages into a new PDF under ``documents/<bank_id>/sections/``,
+    and registers it in the catalog with the given ``product_ids``.
+
+    Returns the created document.
+    """
+    bank = catalog_service.get_bank(bank_id)
+    if not bank:
+        raise HTTPException(404, f"Bank '{bank_id}' not found")
+
+    if start_page > end_page:
+        raise HTTPException(400, "start_page must be <= end_page")
+
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "File must be a PDF")
+
+    # Save the master PDF temporarily.
+    sections_dir = PROJECT_ROOT / "documents" / bank_id / "master"
+    sections_dir.mkdir(parents=True, exist_ok=True)
+    safe_master_name = sanitize_filename(file.filename or "master.pdf")
+    master_path = sections_dir / safe_master_name
+    content = await file.read()
+    with open(master_path, "wb") as f:
+        f.write(content)
+
+    # Extract the requested page range.
+    from master_split_service import extract_page_range, _compute_sha256
+
+    out_dir = PROJECT_ROOT / "documents" / bank_id / "sections"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # sanitize_filename returns a full filename ending in .pdf; we just want
+    # the stem for the output path and doc id.
+    safe_name = sanitize_filename(title)
+    safe_stem = Path(safe_name).stem or "section"
+    output_file = out_dir / safe_name
+
+    try:
+        page_count = extract_page_range(master_path, start_page, end_page, output_file)
+    except Exception as e:
+        raise HTTPException(400, f"Extraction failed: {e}")
+
+    sha256 = _compute_sha256(output_file)
+
+    doc_id = f"section_{bank_id}_{safe_stem}"
+    relative_path = str(output_file.relative_to(PROJECT_ROOT))
+
+    doc = catalog_service.add_document(
+        {
+            "id": doc_id,
+            "title": title,
+            "file_path": relative_path,
+            "source": f"manual:{master_path.name}:pages {start_page}-{end_page}",
+            "page_count": page_count,
+            "product_ids": product_ids,
+            "sha256": sha256,
+            "split_from_master": True,
+            "master_page_number": start_page,
+            "master_section": title,
+        }
+    )
+    return {"saved": True, "document": doc}
+
+
+@app.post("/api/catalog/upload-master")
+async def upload_master_pdf(
+    bank_id: str = Query(...),
+    file: UploadFile = File(...),
+):
+    """Upload a master PDF for the manual section editor (no fill pipeline).
+
+    Saves the file under ``documents/<bank_id>/master/`` and returns the
+    ``pdf_id`` (path relative to project root) plus the page count, so the
+    frontend can render page thumbnails via ``/api/pdf/page/{n}/image``.
+    """
+    bank = catalog_service.get_bank(bank_id)
+    if not bank:
+        raise HTTPException(404, f"Bank '{bank_id}' not found")
+
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "File must be a PDF")
+
+    master_dir = PROJECT_ROOT / "documents" / bank_id / "master"
+    master_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = sanitize_filename(file.filename or "master.pdf")
+    master_path = master_dir / safe_name
+    content = await file.read()
+    with open(master_path, "wb") as f:
+        f.write(content)
+
+    import fitz
+    doc = fitz.open(str(master_path))
+    page_count = doc.page_count
+    doc.close()
+
+    pdf_id = str(master_path.relative_to(PROJECT_ROOT))
+    return {"pdf_id": pdf_id, "page_count": page_count, "filename": safe_name}
+
+
 @app.post("/api/pdf/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """
-    Upload a new PDF template, automatically resolve/create mapping using AI, and fill it.
-    Uses actual Salesforce Sandbox data if credentials are set, otherwise falls back to mock data.
+    Upload a new PDF template (no AI recognition, no filling).
+
+    Saves the file under ``samples/`` and returns its ``pdf_id`` and SHA-256
+    hash. AI field recognition happens separately via the Analysis step
+    (``POST /api/mapping/recognize``), and PDF filling via ``POST /api/pdf/fill``.
     """
-    import uuid
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF files are allowed")
 
@@ -857,7 +1003,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     safe_filename = sanitize_filename(file.filename, existing=existing_names)
 
     pdf_path = uploads_dir / safe_filename
-    
+
     # Save the uploaded file
     try:
         content = await file.read()
@@ -880,89 +1026,13 @@ async def upload_pdf(file: UploadFile = File(...)):
     except ValueError:
         pdf_id = f"samples/{safe_filename}"
 
-    # Now trigger AI/Heuristic mapping & PDF filling
-    try:
-        from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
-        import importlib.util
-        
-        # Load settings dynamically from the root config directory to avoid shadowing backend/config.py
-        settings_path = PROJECT_ROOT / "config" / "settings.py"
-        spec = importlib.util.spec_from_file_location("project_settings", settings_path)
-        settings = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(settings)
-        
-        has_sf_credentials = bool(settings.SF_USERNAME and settings.SF_PASSWORD)
-        
-        if has_sf_credentials:
-            log.info("☁️ Salesforce credentials found. Initializing real Salesforce Client...")
-            sf_client = SalesforceClient(
-                username=settings.SF_USERNAME,
-                password=settings.SF_PASSWORD,
-                security_token=settings.SF_SECURITY_TOKEN,
-                domain=settings.SF_DOMAIN,
-                mock_mode=False
-            )
-        else:
-            log.info("ℹ️ Salesforce credentials not set. Falling back to mock Salesforce client...")
-            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
-            
-        # Instantiate pipeline using the client
-        pipeline = FormFillerPipeline(
-            sf_client=sf_client,
-            output_dir=PROJECT_ROOT / "output"
-        )
-        
-        # Get a deal ID to fill the PDF with
-        deals = pipeline.sf_client.list_deals()
-        if not deals:
-            raise RuntimeError("No deals available for filling in Salesforce")
-            
-        first_deal = deals[0]
-        deal_id = first_deal.get("Id") or first_deal.get("deal_id")
-        if not deal_id:
-            raise RuntimeError("Failed to extract deal ID from Salesforce records")
-            
-        log.info(f"Automatically resolving mapping and filling for uploaded PDF {pdf_path.name} with deal {deal_id}")
-        
-        # This will resolve mapping (create it if missing via AI/heuristic) and fill it!
-        # FIX L9 — do NOT force-recreate the mapping on every upload: that
-        # discards any user-edited mapping a signature match already resolved
-        # (see config.mapping_path_for). Auto-resolution still generates a
-        # mapping when none exists; callers who want to force a fresh AI run
-        # can request the /api/mapping/recognize endpoint explicitly.
-        result = pipeline.run_for_deal(
-            deal_id=deal_id,
-            template_pdf=pdf_path,
-            mapping_config=None,  # triggers auto-resolution!
-            force_recreate_mapping=False,
-        )
-        
-        if not result["success"]:
-            issues = ", ".join(result.get("issues", []))
-            raise RuntimeError(f"Filling pipeline failed: {issues}")
-            
-        filled_path = result["output_path"]
-        
-        # Build download URL
-        download_url = f"/api/pdf/download?path={urllib.parse.quote(str(filled_path))}"
-        
-        return {
-            "success": True,
-            "pdf_id": pdf_id,
-            "filename": safe_filename,
-            "hash": file_hash,
-            "path": str(pdf_path.relative_to(PROJECT_ROOT).as_posix()),
-            "filled_pdf_url": download_url,
-            "message": "AI-driven mapping generated and PDF filled successfully!"
-        }
-        
-    except Exception as e:
-        log.exception("Upload filling pipeline failed")
-        # Clean up PDF if pipeline fails so we don't pollute samples with broken PDFs
-        if pdf_path.exists():
-            pdf_path.unlink()
-        raise HTTPException(500, f"Error processing PDF: {str(e)}")
+    return {
+        "success": True,
+        "pdf_id": pdf_id,
+        "filename": safe_filename,
+        "hash": file_hash,
+        "path": pdf_id,
+    }
 
 
 
