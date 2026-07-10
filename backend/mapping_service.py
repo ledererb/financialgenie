@@ -36,6 +36,13 @@ try:
 except Exception:  # pragma: no cover - defensive
     CANONICAL_FIELDS = {}
 
+# PLAN_CHECKBOX_GROUPS.md §3.5 — checkbox-csoport konzisztencia validáló.
+# Importolt modul-szintű függvény; nem blokkolja a mentést, csak jelez.
+try:
+    from ai.field_recognizer import _validate_checkbox_groups  # type: ignore
+except Exception:  # pragma: no cover - defensive
+    _validate_checkbox_groups = None
+
 
 _LOCK = threading.Lock()
 
@@ -102,6 +109,18 @@ class MappingService:
         mtime = path.stat().st_mtime
         log.info("mapping saved: %s (%d fields, %d char groups)",
                  path, len(clean.get("fields", [])), len(clean.get("character_groups", [])))
+
+        # PLAN_CHECKBOX_GROUPS.md §5.1 — opcionális checkbox-csoport
+        # konzisztencia ellenőrzés a mentés után. Nem blokkolja a mentést,
+        # csak logger.warning-ot jelez, hogy a review során látszódjon.
+        if _validate_checkbox_groups is not None:
+            try:
+                errs = _validate_checkbox_groups(clean.get("fields", []))
+                for e in errs:
+                    log.warning("checkbox_group: %s", e)
+            except Exception as exc:  # pragma: no cover - defensive
+                log.debug("checkbox_group validation skipped: %s", exc)
+
         return {
             "saved_at": datetime.now().isoformat(timespec="seconds"),
             "mtime": mtime,
