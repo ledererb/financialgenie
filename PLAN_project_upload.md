@@ -3,7 +3,7 @@
 **Project:** FinancialGenie Mapping Studio
 **Author:** OpenCode (Architecture Analysis)
 **Date:** 2026-07-10
-**Status:** Draft for client review (rev 4 — "define first, upload second" workflow; empty-by-default catalog per Balázs)
+**Status:** Draft for client review (rev 5 — SQLite catalog backend; define-first, empty-by-default catalog per Balázs)
 
 ---
 
@@ -30,7 +30,7 @@ Three requirements from Balázs drive this revision:
 2. **Section-aware master split (fully automatic)** — the master PDF has base sections (shared by all products) and product-specific sections; uploading the master triggers an automatic, asynchronous split that assigns pages to the right products from the section map, with no manual dialog.
 3. **Define-first workflow (empty-by-default catalog)** — the user **defines the project structure before uploading any documents**: create a Bank → create its Products → *then* upload documents into those products. The catalog ships **empty** (no pre-seeded data); banks and products are created through the UI. A **"Quick Start: OTP"** one-click option can scaffold OTP Bank + its 4 products for convenience, but the catalog itself never ships populated. This must also support adding more banks later (e.g. K&H, Erste).
 
-This plan introduces a **document catalog** (a lightweight JSON manifest) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact. The catalog is **empty by default** — banks/products/documents are created by the user in the frontend (with a Quick Start option for OTP), not seeded from Drive. No database migration is required for the PoC; the design is forward-compatible with SQLite if needed later.
+This plan introduces a **document catalog** (a SQLite database) that models the Bank → Product → Document hierarchy with many-to-many relationships and per-applicant metadata, while keeping the existing file-based architecture intact for PDFs and mappings. The catalog is **empty by default** — banks/products/documents are created by the user in the frontend (with a Quick Start option for OTP), not seeded from Drive. The database (a single `catalog.db` file created automatically on first access via Python's built-in `sqlite3` module) requires no external server and no separate setup.
 
 The resulting **wizard flow** is: **Select/Create Bank → Select/Create Product → Upload Documents → Analysis → Review → Lock → Fill** — definition precedes upload at every level.
 
@@ -38,9 +38,9 @@ The resulting **wizard flow** is: **Select/Create Bank → Select/Create Product
 
 ## 2. Current State Analysis
 
-### 2.1 Storage Model (no database)
+### 2.1 Storage Model (SQLite catalog + files)
 
-The codebase is **entirely file-based** — there is no database:
+The codebase is **file-based for PDFs and mappings**, now with a **SQLite catalog database** for the document hierarchy:
 
 | Artifact | Location | Notes |
 |---|---|---|
@@ -48,6 +48,7 @@ The codebase is **entirely file-based** — there is no database:
 | Field mappings | `src/mapping/*.json` | One JSON per form; resolved by `mapping_path_for()` |
 | Filled output | `output/` | Generated PDFs from the fill pipeline |
 | Master PDF | repo root (`OTP_Igenylesi_Dokumentumok_v5.pdf`) | 97 pages, split by `DocumentAssembler` |
+| Document catalog | `catalog/catalog.db` | **SQLite database** — banks, products, documents, M:N associations, per-applicant metadata |
 
 `backend/config.py:34` defines:
 ```python
@@ -114,13 +115,13 @@ A naive folder hierarchy would **duplicate files and mappings** — exactly what
 
 ### 3.1 Design Principle: Catalog Overlay on File Hierarchy
 
-We keep PDFs on disk (no DB required) but introduce a **document catalog** — a single JSON manifest that owns the logical hierarchy, the many-to-many product↔document associations, and the per-applicant metadata. The physical files live in a content-organized store.
+We keep PDFs on disk but introduce a **document catalog** — a SQLite database (`catalog.db`) that owns the logical hierarchy, the many-to-many product↔document associations, and the per-applicant metadata. The physical files live in a content-organized store.
 
 ```
 ┌─────────────────────────────────────────────────┐
-│            Document Catalog (JSON)              │  ← single source of truth
-│  banks → products → document associations       │
-│  + per_applicant flags + master-split provenance│
+│          Document Catalog (SQLite DB)            │  ← single source of truth
+│  banks → products → document associations        │
+│  + per_applicant flags + master-split provenance │
 └──────────────────────┬──────────────────────────┘
                        │ references
 ┌──────────────────────▼──────────────────────────┐
@@ -130,11 +131,11 @@ We keep PDFs on disk (no DB required) but introduce a **document catalog** — a
 └─────────────────────────────────────────────────┘
 ```
 
-**Why JSON catalog over SQLite?** Consistent with the existing architecture (everything is JSON + files); zero-migration cost for the PoC; human-readable and git-friendly; forward-compatible (can port to SQLite later without changing the API contract).
+**Why SQLite?** Python's built-in `sqlite3` module provides a zero-configuration, serverless relational database — no external dependencies, no setup scripts. It handles concurrent reads via WAL mode, enforces referential integrity (foreign keys), and scales well beyond the PoC. Thread safety is achieved via per-thread connections (`threading.local()`). The DB file is created automatically on first access.
 
 **Why not pure folders?** Multi-project documents cannot be expressed with folders alone — a file can only live in one directory. The catalog decouples **logical grouping** from **physical storage**.
 
-**Empty by default.** The catalog JSON ships with `banks: []` and `documents: []` — there is **no seed data** and no seeding script. Banks and products are created through the frontend (`POST /api/catalog/banks`, `POST /api/catalog/banks/{id}/products`) *before* documents are uploaded. A **"Quick Start: OTP"** button can scaffold OTP Bank + its 4 empty products in one click for convenience, but this is a UI shortcut that calls the same creation API — it is not a pre-populated catalog. Additional banks (K&H, Erste, …) are added later the same way. Physical document directories (`documents/<bank_slug>/…`) are created on demand as banks/products/documents come into existence.
+**Empty by default.** The SQLite database ships **empty** (no `banks` rows, no `documents` rows) — it is created automatically on first access with the correct schema but zero data. Banks and products are created through the frontend (`POST /api/catalog/banks`, `POST /api/catalog/banks/{id}/products`) *before* documents are uploaded. A **"Quick Start: OTP"** button can scaffold OTP Bank + its 4 empty products in one click for convenience, but this is a UI shortcut that calls the same creation API — it is not a pre-populated catalog. Additional banks (K&H, Erste, …) are added later the same way. Physical document directories (`documents/<bank_slug>/…`) are created on demand as banks/products/documents come into existence.
 
 ### 3.2 Physical Directory Structure
 
@@ -160,14 +161,14 @@ financialgenie_review/
 ├── _master/                        ← the source master PDF (git-ignored, not a template)
 │   └── Igenylesi_dokumentumok_OTP_Jelzaloghitelek_es_tamogatasok_20260330_v5.pdf
 ├── catalog/
-│   └── document_catalog.json       ← NEW: hierarchy + associations + per_applicant
+│   └── catalog.db                  ← NEW: SQLite database (banks, products, documents, M:N, per_applicant)
 ├── src/mapping/                    ← existing mappings (unchanged)
 └── samples/                        ← legacy uploads (kept for backward compat)
 ```
 
 ### 3.3 Empty Catalog & Quick Start (No Seeding)
 
-There is **no seed data** and **no seeding script**. The catalog ships empty (`banks: []`, `documents: []`). The structure is created by the user through the UI:
+There is **no seed data** and **no seeding script**. The SQLite database is created empty on first access (tables exist, but `banks` and `documents` tables have zero rows). The structure is created by the user through the UI:
 
 1. **Create a Bank** (e.g. "OTP Bank") via the frontend → `POST /api/catalog/banks`. This also creates `documents/otp/`.
 2. **Create Products** under it (e.g. "Piaci hitel", "Otthon Start", …) → `POST /api/catalog/banks/{bank_id}/products`.
@@ -184,11 +185,27 @@ The existing `otp/` and `samples/` roots remain valid (`config.PDF_ROOTS`). The 
 
 ---
 
-## 4. Data Model — Document Catalog Schema
+## 4. Data Model — Document Catalog Schema (SQLite)
 
-The catalog is a single JSON file: `catalog/document_catalog.json`.
+The catalog is a SQLite database: `catalog/catalog.db`, created automatically on first access by `CatalogService`. It uses Python's built-in `sqlite3` module (no ORM, no external server).
 
-> **Note:** the JSON below is an **illustrative example** of the schema shape, *not* seed data. Per §3.3/§8 the catalog ships **empty** (`banks: []`, `documents: []`); the bank, products, and documents shown here would be created by the user through the UI / Quick Start and uploads.
+> **Note:** the JSON below is an **illustrative example** of the data shape (the `GET /api/catalog` response), *not* seed data. Per §3.3/§8 the database ships **empty** (zero rows); the bank, products, and documents shown here would be created by the user through the UI / Quick Start and uploads.
+
+### 4.0 SQLite Tables
+
+The database schema consists of five tables:
+
+| Table | Columns | Purpose |
+|---|---|---|
+| `banks` | `id` (PK), `name`, `slug` (UNIQUE), `created_at` | Bank entries |
+| `products` | `id` (PK), `name`, `slug` (UNIQUE), `bank_id` (FK→banks, CASCADE), `created_at` | Products under a bank |
+| `documents` | `id` (PK), `title`, `file_path`, `source`, `page_count`, `per_applicant`, `split_from_master`, `master_page_number`, `master_section`, `created_at` | Document metadata |
+| `document_products` | `document_id` (FK→documents, CASCADE), `product_id` (FK→products, CASCADE), PK(document_id, product_id) | **M:N junction table** |
+| `document_tags` | `document_id` (FK→documents, CASCADE), `tag`, PK(document_id, tag) | Document tags |
+
+Foreign keys are enforced (`PRAGMA foreign_keys=ON`). WAL mode enables concurrent reads. The `per_applicant` and `split_from_master` columns are stored as `INTEGER` (0/1) and converted to `bool` on read.
+
+The `GET /api/catalog` endpoint returns the data assembled into the shape below so the frontend API contract is unchanged:
 
 ```jsonc
 {
@@ -304,7 +321,7 @@ The heuristic for unknown uploads: title contains "személyi adatlap", "jövedel
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/catalog` | Return full catalog (banks → products → documents). Drives the tree. |
+| `GET` | `/api/catalog` | Return full catalog (banks → products → documents) from the SQLite DB. Drives the tree. |
 | `GET` | `/api/catalog/banks` | List banks. |
 | `POST` | `/api/catalog/banks` | Create a new bank. |
 | `POST` | `/api/catalog/banks/{bank_id}/products` | Create a new product folder. |
@@ -425,23 +442,31 @@ For PoC, N is typically 1–2 (igénylő + one adóstárs); the design supports 
 
 ### 5.6 Catalog Service
 
-A new `backend/catalog_service.py` mirrors `mapping_service.py`:
+A new `backend/catalog_service.py` uses SQLite via Python's built-in `sqlite3` module:
 
 ```python
 class CatalogService:
-    def load(self) -> dict: ...
-    def save(self, catalog: dict): ...      # atomic write (.tmp + rename)
+    """Thread-safe SQLite-based catalog for banks, products, and documents."""
+    
+    def __init__(self):
+        self._local = threading.local()   # per-thread connections
+        self._ensure_db()                 # creates tables on first access
+    
+    def _get_conn(self) -> sqlite3.Connection: ...   # WAL + foreign_keys ON
+    def load_catalog(self) -> dict: ...              # assembles banks+products+documents
     def list_banks(self) -> list[dict]: ...
-    def list_products(self, bank_id: str) -> list[dict]: ...
-    def list_documents(self, product_id: str) -> list[dict]: ...
-    def add_document(self, ..., per_applicant: bool) -> dict: ...
-    def set_per_applicant(self, doc_id: str, value: bool) -> dict: ...
-    def associate(self, doc_id: str, product_ids: list[str]): ...
-    def dissociate(self, doc_id: str, product_id: str): ...
-    def delete_document(self, doc_id: str): ...
+    def add_bank(self, name: str) -> dict: ...
+    def get_bank(self, bank_id: str) -> dict | None: ...
+    def add_product(self, bank_id: str, name: str) -> dict: ...
+    def get_product(self, product_id: str, bank_id: str = None) -> dict | None: ...
+    def add_document(self, document: dict) -> dict: ...
+    def get_document(self, doc_id: str) -> dict | None: ...
+    def list_documents(self) -> list[dict]: ...
+    def update_document_products(self, doc_id: str, product_ids: list[str]) -> None: ...
+    def set_per_applicant(self, doc_id: str, value: bool) -> None: ...
 ```
 
-Uses the same `threading.Lock` + atomic-write pattern as `mapping_service.py`.
+Thread safety: each thread gets its own `sqlite3.Connection` via `threading.local()`. WAL mode allows concurrent reads. No `threading.Lock` needed — SQLite handles row-level locking.
 
 ---
 
@@ -621,7 +646,7 @@ Each split page is a **real, standalone PDF** — independently mappable and fil
 
 The catalog starts **empty** — no seed script, no pre-populated data. There is no `scripts/seed_catalog.py`.
 
-1. **Ship an empty catalog** (`banks: []`, `documents: []`) and the `GET/POST /api/catalog*` endpoints.
+1. **Ship an empty SQLite database** (`catalog/catalog.db`, created on first access with zero rows) and the `GET/POST /api/catalog*` endpoints.
 2. **Frontend creates structure** via `BankSetupDialog` / `ProductSetupDialog` (or **Quick Start: OTP**, which issues the same creation calls): bank "OTP Bank" + 4 products (`elozetes_ertekbecsles`, `szabadfelhasznalasu`, `otthon_start`, `piaci_hitel`) with **empty** document lists.
 3. **User uploads documents** into those products (§5.2). Dedup (SHA-256) and `per_applicant` inference (§4.2) run **at upload time**, not at seed time.
 4. **Master PDF** is uploaded once → stored in `_master/` (git-ignored) → auto-detected → async-split (§5.3). It is never a catalog document itself.
@@ -652,14 +677,14 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 - **Filename collisions** — physical files under `documents/otp/<product_slug>/` avoid collisions; shared/base under `base/`; `sanitize_filename()` handles Hungarian accents.
 - **Large master split performance** — PyMuPDF ~50 ms/page; 90 pages ≈ 5 s. The split runs **asynchronously** (§5.3.2) with `task_id` polling, so the upload request never blocks; the `SplitProgressIndicator` shows per-page progress. For 200+ pages the same async path scales without change.
 - **Auto-detection false positive** — a non-master PDF that happens to match the filename pattern or exceed the page threshold would be split. Mitigation: both conditions (pattern **and** page count > threshold) must hold; and the user can delete the erroneous split docs + re-upload with `auto_split_master: false`.
-- **Concurrent catalog edits** — `CatalogService.save()` uses atomic-write + mtime conflict detection (`FileConflictError` → HTTP 409); frontend reloads on conflict.
+- **Concurrent catalog edits** — SQLite in WAL mode handles concurrent reads natively; writes are serialized by the database engine itself (per-thread connections via `threading.local()`). No manual conflict detection needed — SQLite's own locking is the safety mechanism.
 
 ---
 
 ## 10. Implementation Phases
 
 ### Phase 1 — Catalog Backend + Bank/Product Creation (foundation, define-first)
-- Create `backend/catalog_service.py` (load/save/CRUD, incl. `per_applicant`); ship **empty** `catalog/document_catalog.json` (`banks: []`, `documents: []`). No seed script.
+- Create `backend/catalog_service.py` (SQLite CRUD via `sqlite3`, incl. `per_applicant`); the `catalog/catalog.db` database is **created empty on first access** with the correct schema (tables exist, zero rows). No seed script.
 - Add `POST /api/catalog/banks`, `POST /api/catalog/banks/{id}/products`, `GET /api/catalog`; add `documents/` to `PDF_ROOTS`; create `documents/<bank_slug>/` on bank creation.
 - Frontend **bank/product creation UI**: `BankSetupDialog`, `ProductSetupDialog`, `EmptyState`, and the **"Quick Start: OTP"** action (scaffolds OTP Bank + 4 empty products via the same API). "Add Bank" / "Add Product" actions on `ProjectBrowser`.
 - Update `DocumentAssembler.PRODUCT_SECTIONS` enum to real products.
@@ -701,7 +726,7 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 | `backend/catalog_service.py` | **NEW** — catalog CRUD + per_applicant | 1 |
 | `backend/server.py` | Add `/api/catalog*`, `/api/documents*`, split-master endpoints | 1–5 |
 | `backend/config.py` | Add `documents/` to `PDF_ROOTS`; `CATALOG_DIR` | 1 |
-| `catalog/document_catalog.json` | **NEW** — ships EMPTY (`banks: []`), created via UI | 1 |
+| `catalog/catalog.db` | **NEW** — SQLite database, created empty on first access (zero rows) | 1 |
 | `frontend/src/components/EmptyState.tsx` | **NEW** — no-bank state → Quick Start / Add Bank | 1 |
 | `frontend/src/components/BankSetupDialog.tsx` | **NEW** — create a bank (runs before upload) | 1 |
 | `frontend/src/components/ProductSetupDialog.tsx` | **NEW** — create a product under a bank | 1 |
@@ -724,7 +749,7 @@ The 7 MB binary should **not** be committed long-term. Move to `_master/` (git-i
 
 | # | Risk / Question | Mitigation / Recommendation |
 |---|---|---|
-| 1 | **JSON catalog scaling** | <200 docs is fine; port to SQLite (same API) later. |
+| 1 | **Catalog scaling** | **Handled by SQLite.** The `sqlite3` engine scales to thousands of documents with indexed queries; WAL mode supports concurrent reads. No scaling concern for the PoC or production. |
 | 2 | **Master PDF in git** | Move to git-ignored `_master/` in Phase 6. |
 | 3 | **`per_applicant` field keying** — do mappings reference applicant-relative keys? | **Verify** existing mapping JSON uses applicant-agnostic keys that the pipeline can rebind per applicant. If keys are hard-coded to one applicant, a key-namespacing pass is needed. |
 | 4 | **Split docs vs. master assembly** — should fill use split docs or reassemble from master? | **Open for Balázs.** Recommend: keep assembly from `_master/` (proven); split docs for mapping/editing. |
@@ -743,8 +768,8 @@ This plan transforms the flat upload model into a **project-based hierarchy** al
 - **Per-applicant documents** (`per_applicant` flag) — the fill pipeline fans out per applicant so adóstárs forms are filled correctly.
 - **Section-aware master split (fully automatic)** — uploading the master PDF triggers an asynchronous split that assigns base sections to all products and product-specific sections to their product, driven entirely by the `DocumentAssembler` section map (with an optional AI section-mapping helper for new banks) — no manual dialog. The frontend shows a progress indicator and the results land in the catalog tree; mis-assigned pages are correctable afterward via the association UI.
 
-It does so with **no database** (JSON catalog), **no mapping-format changes**, **no seeding script** (empty-by-default), and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phase 1 now covers the catalog backend + bank/product creation UI (define-first), Phases 2–4 cover tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
+It does so with a **SQLite catalog database** (Python `sqlite3`, zero-config), **no mapping-format changes**, **no seeding script** (empty-by-default), and keeps assembly from the master for proven output. The work splits into **6 phases**, each independently deliverable; Phase 1 now covers the catalog backend + bank/product creation UI (define-first), Phases 2–4 cover tree + upload + split, Phase 5 adds the per-applicant fill pipeline and FillPreviewStep, Phase 6 is polish.
 
 ---
 
-*Prepared by OpenCode · 2026-07-10 · rev 4 — define-first workflow, empty-by-default catalog, Quick Start, AI section-mapping helper · For client review*
+*Prepared by OpenCode · 2026-07-10 · rev 5 — SQLite catalog backend (sqlite3, WAL, thread-safe per-thread connections), empty-by-default DB · For client review*
