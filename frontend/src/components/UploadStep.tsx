@@ -1,10 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadPdf, listPdfs, deletePdf } from "@/api/client";
-import type { PdfSummary } from "@/types";
+import type { PdfSummary, CatalogDocument } from "@/types";
+import { useStore } from "@/store";
+import ProductAssociationDialog from "./ProductAssociationDialog";
 
 interface UploadStepProps {
   onComplete: (pdfId: string) => void;
   onOpenExisting: (pdfId: string) => void;
+}
+
+interface UploadedDoc {
+  docId: string;
+  title: string;
+  hash: string;
+  duplicate: boolean;
 }
 
 function formatBytes(bytes: number): string {
@@ -13,16 +22,53 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function productName(catalog: { banks: { id: string; name: string; products: { id: string; name: string }[] }[] } | null, pid: string): string {
+  if (!catalog) return pid;
+  for (const bank of catalog.banks) {
+    const prod = bank.products.find((p) => p.id === pid);
+    if (prod) return prod.name;
+  }
+  return pid;
+}
+
+function bankName(catalog: { banks: { id: string; name: string; products: { id: string; name: string }[] }[] } | null, pid: string): string {
+  if (!catalog) return "";
+  for (const bank of catalog.banks) {
+    if (bank.products.some((p) => p.id === pid)) return bank.name;
+  }
+  return "";
+}
+
 export default function UploadStep({ onComplete, onOpenExisting }: UploadStepProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pdfs, setPdfs] = useState<PdfSummary[]>([]);
   const [pdfsLoading, setPdfsLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<PdfSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
+  const [associationDoc, setAssociationDoc] = useState<CatalogDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Store state (Phase 3 context awareness) ---
+  const selectedBankId = useStore((s) => s.selectedBankId);
+  const selectedProductId = useStore((s) => s.selectedProductId);
+  const catalog = useStore((s) => s.catalog);
+  const loadCatalog = useStore((s) => s.loadCatalog);
+  const registerDocument = useStore((s) => s.registerDocument);
+  const associateDocumentWithProduct = useStore((s) => s.associateDocumentWithProduct);
+  const uploadedHashes = useStore((s) => s.uploadedHashes);
+  const addUploadedHash = useStore((s) => s.addUploadedHash);
+
+  const hasSelection = !!(selectedBankId && selectedProductId);
+
+  // Look up catalog documents for the selected product (for association display)
+  const selectedProductDocs: CatalogDocument[] = (catalog?.documents ?? []).filter(
+    (d) => selectedProductId && d.product_ids.includes(selectedProductId),
+  );
 
   // Load existing PDFs on mount
   useEffect(() => {
@@ -82,18 +128,64 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
   );
 
   const handleUpload = useCallback(async () => {
-    if (!file) return;
+    if (!file || !selectedProductId) return;
     setUploading(true);
+    setProgress(0);
     setError(null);
+
     try {
+      // Simulated progress for UX
+      const progressTimer = setInterval(() => {
+        setProgress((p) => Math.min(p + 10, 90));
+      }, 200);
+
       const res = await uploadPdf(file);
+      clearInterval(progressTimer);
+      setProgress(100);
+
+      const fileHash = res.hash || "";
+      const isDuplicate = fileHash !== "" && uploadedHashes.has(fileHash);
+
+      if (fileHash) addUploadedHash(fileHash);
+
+      // Register the document in the catalog and associate with the selected product
+      const docId = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const title = file.name.replace(/\.pdf$/i, "");
+
+      if (isDuplicate) {
+        // Dedup: file already uploaded this session — just associate with the new product
+        const existingDoc = uploadedDocs.find((d) => d.hash === fileHash);
+        if (existingDoc && !existingDoc.duplicate) {
+          await associateDocumentWithProduct(existingDoc.docId, [
+            ...new Set([...(catalog?.documents.find((d) => d.id === existingDoc.docId)?.product_ids ?? []), selectedProductId]),
+          ]);
+        }
+        setError(`Ez a fájl már létezik: ${file.name} — termék társítva.`);
+      } else {
+        const doc = await registerDocument({
+          id: docId,
+          title,
+          file_path: res.path || res.pdf_id,
+          product_ids: [selectedProductId],
+          page_count: 0,
+          source: `upload:${file.name}`,
+          sha256: fileHash,
+        });
+        setUploadedDocs((prev) => [
+          ...prev,
+          { docId: doc.id, title, hash: fileHash, duplicate: false },
+        ]);
+      }
+
+      await loadCatalog();
       onComplete(res.pdf_id);
     } catch (e) {
       setError((e as Error).message || "A feltöltés sikertelen. Próbáld újra.");
     } finally {
       setUploading(false);
+      setProgress(0);
     }
-  }, [file, onComplete]);
+  }, [file, selectedProductId, uploadedHashes, addUploadedHash, uploadedDocs, catalog, associateDocumentWithProduct, registerDocument, loadCatalog, onComplete]);
 
   const handleClearFile = useCallback(() => {
     setFile(null);
@@ -115,8 +207,110 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
     }
   }, [deleteTarget]);
 
+  // --- No bank/product selected: show message instead of drop zone ---
+  if (!hasSelection) {
+    return (
+      <div className="animate-fade-in" style={{ maxWidth: 680, margin: "0 auto" }}>
+        <div
+          style={{
+            padding: "var(--space-xl)",
+            textAlign: "center",
+            background: "var(--bg-secondary)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px dashed var(--border-subtle)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--text-tertiary)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ margin: "0 auto var(--space-md)", display: "block" }}
+          >
+            <path d="M3 6h18M3 12h18M3 18h18" />
+          </svg>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: 500 }}>
+            Válasszon bankot és terméket a bal oldali fán
+          </p>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", marginTop: "var(--space-xs)" }}>
+            A dokumentum feltöltés előtt ki kell választani egy bankot és egy terméket.
+          </p>
+        </div>
+
+        {/* Keep existing PDF list accessible even without selection */}
+        {pdfs.length > 0 && (
+          <div style={{ marginTop: "var(--space-xl)" }}>
+            <h3
+              style={{
+                fontSize: "0.8rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--text-secondary)",
+                marginBottom: "var(--space-md)",
+              }}
+            >
+              Meglévő PDF-ek
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+              {pdfs.map((pdf) => (
+                <div key={pdf.pdf_id} className="mapping-row" style={{ cursor: "pointer" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flex: 1 }}
+                    onClick={() => onOpenExisting(pdf.pdf_id)}
+                  >
+                    <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)" }}>
+                      {pdf.name}
+                    </span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
+                      {formatBytes(pdf.size_bytes)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in" style={{ maxWidth: 680, margin: "0 auto" }}>
+      {/* Context banner: selected bank / product */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-sm)",
+          padding: "10px 16px",
+          background: "var(--accent-blue-glow, rgba(59,130,246,0.1))",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--border-subtle)",
+          marginBottom: "var(--space-lg)",
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent-blue)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+        </svg>
+        <span style={{ fontSize: "0.85rem", color: "var(--text-primary)" }}>
+          <strong>Feltöltés:</strong> {bankName(catalog, selectedProductId!)} / {productName(catalog, selectedProductId!)}
+        </span>
+      </div>
+
       {/* Drop zone */}
       <div
         className={`drop-zone ${dragging ? "dragging" : ""}`}
@@ -205,7 +399,34 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
         )}
       </div>
 
-      {/* Error */}
+      {/* Upload progress bar */}
+      {uploading && (
+        <div style={{ marginBottom: "var(--space-md)" }}>
+          <div
+            style={{
+              height: 6,
+              background: "var(--bg-primary)",
+              borderRadius: 3,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background: "var(--accent-blue)",
+                borderRadius: 3,
+                transition: "width 0.2s ease",
+              }}
+            />
+          </div>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textAlign: "center", marginTop: "var(--space-xs)" }}>
+            {progress}%
+          </p>
+        </div>
+      )}
+
+      {/* Error / dedup warning */}
       {error && (
         <div
           className="animate-fade-in"
@@ -249,6 +470,72 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
               <>Feltöltés és elemzés</>
             )}
           </button>
+        </div>
+      )}
+
+      {/* Product Association section — documents in the selected product */}
+      {selectedProductDocs.length > 0 && (
+        <div style={{ marginBottom: "var(--space-xl)" }}>
+          <h3
+            style={{
+              fontSize: "0.8rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: "var(--text-secondary)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            Feltöltött dokumentumok ({selectedProductDocs.length})
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
+            {selectedProductDocs.map((doc) => (
+              <div
+                key={doc.id}
+                className="mapping-row"
+                style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-xs)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", width: "100%" }}>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--text-tertiary)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)" }}>
+                    {doc.title}
+                  </span>
+                </div>
+                {/* Product association badges */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center", paddingLeft: 26 }}>
+                  {doc.product_ids.map((pid) => (
+                    <span
+                      key={pid}
+                      className="badge badge-blue"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setAssociationDoc(doc)}
+                      title="Kattintson a termékek szerkesztéséhez"
+                    >
+                      {productName(catalog, pid)}
+                    </span>
+                  ))}
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: "2px 8px", fontSize: "0.75rem" }}
+                    onClick={() => setAssociationDoc(doc)}
+                  >
+                    ✎ Szerkesztés
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -325,6 +612,16 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
         <p style={{ textAlign: "center", color: "var(--text-tertiary)", fontSize: "0.8rem" }}>
           Meglévő PDF-ek betöltése…
         </p>
+      )}
+
+      {/* Product Association Dialog */}
+      {associationDoc && (
+        <ProductAssociationDialog
+          docId={associationDoc.id}
+          docTitle={associationDoc.title}
+          currentProductIds={associationDoc.product_ids}
+          onClose={() => setAssociationDoc(null)}
+        />
       )}
 
       {/* Delete confirmation modal */}

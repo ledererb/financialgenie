@@ -252,7 +252,7 @@ export async function recognizeResult(
 
 export async function uploadPdf(
   file: File,
-): Promise<{ success: boolean; pdf_id: string; filename: string; filled_pdf_url: string; message: string }> {
+): Promise<{ success: boolean; pdf_id: string; filename: string; hash: string; path: string; filled_pdf_url: string; message: string }> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${API_BASE}/api/pdf/upload`, {

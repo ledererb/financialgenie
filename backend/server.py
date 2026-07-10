@@ -39,6 +39,7 @@ API surface (spec §3):
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import logging
 import sys
@@ -720,6 +721,36 @@ def create_product(bank_id: str, body: dict):
         raise HTTPException(500, str(e))
 
 
+# ======================================================================
+# Catalog service endpoints (Phase 3 — Document registration + M:N)
+# ======================================================================
+@app.post("/api/catalog/documents")
+def add_catalog_document(body: dict):
+    """Register an uploaded document in the catalog with product associations."""
+    required = ["id", "title", "file_path"]
+    for field in required:
+        if field not in body:
+            raise HTTPException(400, f"Missing required field: {field}")
+    try:
+        doc = catalog_service.add_document(body)
+        return doc
+    except Exception as e:
+        log.exception("add_catalog_document failed")
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/catalog/documents/{doc_id}/products")
+def set_document_products(doc_id: str, body: dict):
+    """Add/update product associations for a document (M:N)."""
+    product_ids = body.get("product_ids", [])
+    try:
+        catalog_service.update_document_products(doc_id, product_ids)
+        return {"ok": True}
+    except Exception as e:
+        log.exception("set_document_products failed")
+        raise HTTPException(500, str(e))
+
+
 @app.post("/api/pdf/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """
@@ -751,6 +782,13 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         log.error(f"Failed to save uploaded PDF: {e}")
         raise HTTPException(500, f"Failed to save uploaded PDF: {e}")
+
+    # Compute SHA-256 hash of the file content for dedup (Phase 3)
+    sha256 = hashlib.sha256()
+    with open(pdf_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    file_hash = sha256.hexdigest()
 
     # Resolve PDF relative ID (pdf_id)
     try:
@@ -829,6 +867,8 @@ async def upload_pdf(file: UploadFile = File(...)):
             "success": True,
             "pdf_id": pdf_id,
             "filename": safe_filename,
+            "hash": file_hash,
+            "path": str(pdf_path.relative_to(PROJECT_ROOT).as_posix()),
             "filled_pdf_url": download_url,
             "message": "AI-driven mapping generated and PDF filled successfully!"
         }

@@ -6,6 +6,7 @@ import type {
   PdfField,
   PdfSummary,
   Catalog,
+  CatalogDocument,
   Applicant,
 } from "@/types";
 import {
@@ -74,6 +75,9 @@ interface EditorState {
   applicants: Applicant[];
   selectedApplicantId: string | null;
 
+  // Phase 3 — client-side dedup tracking (session only)
+  uploadedHashes: Set<string>;
+
   // Actions
   loadPdfs: () => Promise<void>;
   selectPdf: (pdfId: string) => Promise<void>;
@@ -101,6 +105,19 @@ interface EditorState {
   selectBank: (bankId: string | null) => void;
   selectProduct: (productId: string | null) => void;
   selectDocument: (docId: string | null) => void;
+
+  // Catalog actions (Phase 3)
+  registerDocument: (document: {
+    id: string;
+    title: string;
+    file_path: string;
+    product_ids: string[];
+    page_count: number;
+    source?: string;
+    sha256?: string;
+  }) => Promise<CatalogDocument>;
+  associateDocumentWithProduct: (docId: string, productIds: string[]) => Promise<void>;
+  addUploadedHash: (hash: string) => void;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -139,6 +156,9 @@ export const useStore = create<EditorState>((set, get) => ({
   selectedDocumentId: null,
   applicants: [],
   selectedApplicantId: null,
+
+  // Phase 3 — session-only dedup tracking
+  uploadedHashes: new Set<string>(),
 
   loadPdfs: async () => {
     set({ pdfsLoading: true });
@@ -378,4 +398,39 @@ export const useStore = create<EditorState>((set, get) => ({
     set({ selectedProductId: productId, selectedDocumentId: null }),
   selectDocument: (docId: string | null) =>
     set({ selectedDocumentId: docId }),
+
+  // --- Catalog actions (Phase 3) ---
+  registerDocument: async (document) => {
+    const res = await fetch("/api/catalog/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(document),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    const doc = await res.json();
+    await get().loadCatalog();
+    return doc as CatalogDocument;
+  },
+
+  associateDocumentWithProduct: async (docId, productIds) => {
+    const res = await fetch(`/api/catalog/documents/${encodeURIComponent(docId)}/products`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product_ids: productIds }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    await get().loadCatalog();
+  },
+
+  addUploadedHash: (hash: string) => {
+    set((state) => ({
+      uploadedHashes: new Set([...state.uploadedHashes, hash]),
+    }));
+  },
 }));

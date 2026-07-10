@@ -109,6 +109,17 @@ class CatalogService:
         )
         conn.commit()
         conn.close()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add columns introduced after the initial schema (idempotent)."""
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        cols = [row[1] for row in conn.execute("PRAGMA table_info(documents)").fetchall()]
+        if "sha256" not in cols:
+            conn.execute("ALTER TABLE documents ADD COLUMN sha256 TEXT")
+            conn.commit()
+        conn.close()
 
     # ------------------------------------------------------------------
     # Bank CRUD
@@ -211,8 +222,8 @@ class CatalogService:
             """
             INSERT INTO documents (id, title, file_path, source, page_count,
                                    per_applicant, split_from_master,
-                                   master_page_number, master_section)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   master_page_number, master_section, sha256)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 document["id"],
@@ -224,6 +235,7 @@ class CatalogService:
                 1 if document.get("split_from_master") else 0,
                 document.get("master_page_number"),
                 document.get("master_section"),
+                document.get("sha256"),
             ),
         )
         for pid in document.get("product_ids", []):
@@ -256,6 +268,30 @@ class CatalogService:
         doc["product_ids"] = [p["product_id"] for p in prod_rows]
         tag_rows = conn.execute(
             "SELECT tag FROM document_tags WHERE document_id = ?", (doc_id,)
+        ).fetchall()
+        doc["tags"] = [t["tag"] for t in tag_rows]
+        return doc
+
+    def find_by_hash(self, sha256_hash: str) -> dict | None:
+        """Check if a document with this SHA-256 hash already exists."""
+        if not sha256_hash:
+            return None
+        conn = self._get_conn()
+        row = conn.execute(
+            "SELECT * FROM documents WHERE sha256 = ?", (sha256_hash,)
+        ).fetchone()
+        if not row:
+            return None
+        doc = dict(row)
+        doc["per_applicant"] = bool(doc["per_applicant"])
+        doc["split_from_master"] = bool(doc["split_from_master"])
+        prod_rows = conn.execute(
+            "SELECT product_id FROM document_products WHERE document_id = ?",
+            (doc["id"],),
+        ).fetchall()
+        doc["product_ids"] = [p["product_id"] for p in prod_rows]
+        tag_rows = conn.execute(
+            "SELECT tag FROM document_tags WHERE document_id = ?", (doc["id"],)
         ).fetchall()
         doc["tags"] = [t["tag"] for t in tag_rows]
         return doc
