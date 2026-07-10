@@ -361,7 +361,9 @@ class RecognizedField:
     page_number: int                       # Melyik oldalon van
     coordinates: Optional[dict] = None     # Overlay módhoz: {x, y, width, height}
     notes: Optional[str] = None            # AI megjegyzés
-    checkbox_group: Optional[dict] = None   # {"group_id": str, "match_value": str}
+    checkbox_group: Optional[dict] = None   # {"group_id": str, "group_label": str|None,
+                                             #  "option_value": str|None, "option_label": str|None,
+                                             #  "match_value": str|None (deprecated alias → option_value)}
     fill_rule: Optional[dict] = None         # {"type": "static"|"per_participant"|"conditional"|"role_based", "value": str, ...}
     # C8 (birth-date / date fragmentation ground-work): when a single logical
     # date (e.g. birth date) is split across several PDF fields (year / month /
@@ -504,6 +506,87 @@ class MappingConfig:
         }
 
 
+def _group_meta(f: RecognizedField) -> Optional[dict]:
+    """Visszaadja a mező checkbox_group dict-jét függetlenül attól, hogy a
+    mező RecognizedField dataclass vagy raw dict (mapping JSON-ból)."""
+    if isinstance(f, dict):
+        return f.get("checkbox_group")
+    return getattr(f, "checkbox_group", None)
+
+
+def _field_canonical(f) -> Optional[str]:
+    if isinstance(f, dict):
+        return f.get("canonical_field")
+    return getattr(f, "canonical_field", None)
+
+
+def _field_page(f) -> int:
+    if isinstance(f, dict):
+        return f.get("page_number", 1)
+    return getattr(f, "page_number", 1)
+
+
+def _validate_checkbox_groups(fields) -> list[str]:
+    """Visszatér a checkbox-csoport konzisztencia-hibák listájával (üres = OK).
+
+    Ellenőrzések (PLAN_CHECKBOX_GROUPS.md §3.5):
+    - Egy group_id-n belül minden tagnak azonos canonical_fieldje van-e.
+    - Egy group_id-n belül minden option_value egyedi-e (nincs duplikáció).
+    - group_label konzisztens (ugyanaz minden tagon) — ha meg van adva.
+
+    Nem fail-hard: a hívó (logger.warning) jelzi a találatot, hogy a review
+    során látszódjon.
+    """
+    errors: list[str] = []
+    # group_id → list[fields]
+    by_group: dict[str, list] = {}
+    for f in fields:
+        g = _group_meta(f)
+        if not g or not g.get("group_id"):
+            continue
+        by_group.setdefault(g["group_id"], []).append(f)
+
+    for gid, members in by_group.items():
+        if len(members) < 1:
+            continue
+        # canonical_field konzisztencia
+        canonicals = {_field_canonical(m) for m in members}
+        if len(canonicals) > 1:
+            errors.append(
+                f"checkbox_group '{gid}': a tagok különböző canonical_field-re "
+                f"mutatnak: {sorted(c for c in canonicals if c)}"
+            )
+        # option_value egyediség
+        seen_ov: dict[str, str] = {}  # option_value → first pdf_field_name
+        for m in members:
+            g = _group_meta(m)
+            ov = g.get("option_value") if g else None
+            if not ov:
+                continue
+            if ov in seen_ov:
+                first = seen_ov[ov]
+                pdf = m.get("pdf_field_name") if isinstance(m, dict) else m.pdf_field_name
+                errors.append(
+                    f"checkbox_group '{gid}': duplikált option_value '{ov}' "
+                    f"({first} és {pdf})"
+                )
+            else:
+                seen_ov[ov] = (
+                    m.get("pdf_field_name") if isinstance(m, dict) else m.pdf_field_name
+                )
+        # group_label konzisztencia (ha meg van adva)
+        labels = {
+            (_group_meta(m).get("group_label"))
+            for m in members
+            if _group_meta(m) and _group_meta(m).get("group_label")
+        }
+        if len(labels) > 1:
+            errors.append(
+                f"checkbox_group '{gid}': inkonzisztens group_label: {sorted(labels)}"
+            )
+    return errors
+
+
 class FieldRecognizer:
     """
     AI-alapú mezőfelismerő – Claude Sonnet 4 API-val.
@@ -538,7 +621,12 @@ Válaszolj JSON formátumban az alábbi struktúrával:
       "confidence": "high|medium|low",
       "page_number": 1,
       "notes": "opcionális megjegyzés",
-      "checkbox_group": "ha ez egy rádiógomb csoport része (pl. Neme, Családi állapot), adj meg egy közös csoport azonosítót",
+      "checkbox_group": {
+        "group_id": "stabil snake_case azonosító, közös a csoport minden tagján (pl. 'highest_education')",
+        "group_label": "a KÉRDÉS felirata (pl. 'Legmagasabb iskolai végzettség')",
+        "option_value": "a Salesforce picklist érték, ami ezt az opciót kiválasztja (pl. 'Felsőfokú')",
+        "option_label": "az opció felirata a PDF-en (általában = option_value)"
+      },
       "fill_rule": {{"match_value": "Az a Salesforce mező érték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
     }}
   ]
@@ -549,7 +637,7 @@ Fontos szabályok:
 - Ha ingatlan-specifikus, használd a Lead.Ingatlan_* mezőket
 - Ha nem vagy biztos a leképezésben, jelöld "low" confidence-szel
 - Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a Contact.* mezőkre képeződnek
-- **Rádiógombok / Egymást kizáró Checkboxok**: Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb. Ilyenkor MÁSOLD BE a megadott bounding box (bbox) koordinátákat, Keresd meg a képen a feliratot, és az alapján töltsd ki a `checkbox_group` (pl. 'neme') és a `fill_rule.match_value` mezőket (pl. 'Férfi' vagy 'Nő')!"""
+- **Rádiógombok / Kölcsönösen kizáró Checkbox-csoportok**: Ha egy kérdés alatt több checkbox opció van (pl. "Mi a legmagasabb iskolai végzettsége? ☐ Felsőfokú ☐ Szakképesítés ☐ Érettségi ☐ 8 általános"), ez egy EXKLÚZÍV csoport. MINDEN tagnak add meg a `checkbox_group`-ot ugyanazzal `group_id`-val és `group_label`-lel, de KÜLÖNBÖZŐ `option_value`/`option_label`-lel. A `group_label` a kérdés szövege, az `option_value` pedig az a picklist érték, amit a Contact mezőbe tárolunk. Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb — ilyenkor MÁSOLD BE a bbox koordinátákat, keresd meg a képen a feliratot, és töltsd ki a `checkbox_group` mezőket!"""
 
     def __init__(self, api_key: str = None):
         """
@@ -763,11 +851,26 @@ EXAMPLES of correct mappings:
   {{"f": "LAHI_összeg", "c": "Opportunity.Hitel_sszeg__c", "t": "number"}} — "LAHI" = lakáshitel
   {{"f": "CSOK_tervezett", "c": "Lead.Tervezett_CSOK_Plusz__c", "t": "text"}}
 
-CHECKBOX GROUP DETECTION:
-If you see multiple checkboxes next to options like "☐ lakás ☐ ház ☐ telek" that represent
-a SINGLE CHOICE from a picklist, include a "g" (group) key with a short group_id, and "mv" (match_value)
-with the option label that would trigger this checkbox.
-Example: {{"f": "IT_checkbox_1", "c": "Lead.Ingatlan_jellege__c", "t": "checkbox", "g": "property_type", "mv": "lakás"}}
+CHECKBOX GROUP DETECTION (CRITICAL — do this for EVERY mutually-exclusive option group):
+When you see a question followed by multiple checkboxes, each next to a different option
+(e.g. "Mi a legmagasabb iskolai végzettsége?  ☐ Felsőfokú  ☐ Szakképesítés  ☐ Érettségi  ☐ 8 általános"),
+this is a RADIO/EXCLUSIVE group. For EACH checkbox in the group, add ALL of:
+  "g"   — group_id: stable snake_case id shared by all members (e.g. "highest_education")
+  "gl"  — group_label: the QUESTION text (e.g. "Legmagasabb iskolai végzettség")
+  "ov"  — option_value: the Salesforce picklist value this option represents (e.g. "Felsőfokú")
+  "ol"  — option_label: the option text printed next to this checkbox (e.g. "Felsőfokú")
+
+Rules:
+- Every member of an exclusive group MUST share the SAME "g" and "gl", but have DIFFERENT "ov"/"ol".
+- "ov" must be the value stored in Salesforce (Contact.Highest_Educational_Qualification__c = "Felsőfokú").
+- If a checkbox is a standalone yes/no (not part of a picklist group), do NOT set "g" — leave it as a plain checkbox.
+- Look at the RED BOXES: options belonging to one question are visually clustered (same row or stacked column).
+
+Example (full group, 4 members):
+  {{"f": "végzettség___1,2", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Felsőfokú", "ol": "Felsőfokú"}}
+  {{"f": "végzettség___2,3", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Szakképesítés", "ol": "Szakképesítés"}}
+  {{"f": "végzettség___3,4", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Érettségi", "ol": "Érettségi"}}
+  {{"f": "végzettség___4,5", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "8 általános", "ol": "8 általános"}}
 
 RULES:
 - Map EVERY field to the BEST matching Salesforce field from the list above.
@@ -779,7 +882,7 @@ RULES:
 - When multiple people (adós/adóstárs) share the same field structure, they ALL map to the same Contact.* fields.
 
 Output format: [{{"f": "field_name", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
-For checkbox groups add: "g": "group_id", "mv": "match_value"
+For checkbox groups add: "g": "group_id", "gl": "group_label", "ov": "option_value", "ol": "option_label"
 
 Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
@@ -872,7 +975,13 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                         confidence=MappingConfidence.MEDIUM,
                                         page_number=item.get("p", page_num),
                                         checkbox_group=(
-                                            {"group_id": item["g"], "match_value": item.get("mv", "")}
+                                            {
+                                                "group_id": item["g"],
+                                                "group_label": item.get("gl"),
+                                                # ov preferált; mv = régi alias (backward compat)
+                                                "option_value": item.get("ov") if item.get("ov") is not None else item.get("mv"),
+                                                "option_label": item.get("ol"),
+                                            }
                                             if item.get("g") else None
                                         ),
                                         fill_rule=item.get("fill_rule"),
@@ -908,6 +1017,11 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
         total_mapped = sum(1 for f in all_fields if f.canonical_field)
         logger.info(f"🏁 Batch AI összesítés: {total_mapped}/{len(all_fields)} mező leképezve ({batch_count} API hívás)")
+
+        # PLAN §3.5 — checkbox-csoport konzisztencia ellenőrzés (nem blokkol)
+        group_errors = _validate_checkbox_groups(all_fields)
+        for e in group_errors:
+            logger.warning("⚠️ checkbox_group: %s", e)
 
         return MappingConfig(
             bank_name="OTP Bank",
@@ -984,6 +1098,11 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
         total_mapped = sum(1 for f in merged if f.canonical_field)
         logger.info(f"📊 Merge eredmény: {total_mapped}/{len(merged)} mező leképezve")
+
+        # PLAN §3.5 — checkbox-csoport konzisztencia ellenőrzés a merge után
+        group_errors = _validate_checkbox_groups(merged)
+        for e in group_errors:
+            logger.warning("⚠️ checkbox_group (merge): %s", e)
 
         return MappingConfig(
             bank_name=base.bank_name or ai.bank_name,
