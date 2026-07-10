@@ -339,6 +339,61 @@ class CatalogService:
         )
         conn.commit()
 
+    def delete_bank(self, bank_id: str) -> None:
+        """Delete a bank and all associated products, documents, and
+        relationships.
+
+        SQLite foreign keys cascade products → banks and
+        document_products → products/documents.  However, the
+        ``documents`` table has no direct FK to ``banks`` (the link is
+        M:N via ``document_products``), so documents that are
+        *exclusively* associated with this bank's products must be
+        removed explicitly before the bank row is deleted.
+
+        Shared documents (associated with products from other banks)
+        are kept; only the association is removed via CASCADE.
+        """
+        conn = self._get_conn()
+        # Collect product ids that belong to this bank.
+        prod_rows = conn.execute(
+            "SELECT id FROM products WHERE bank_id = ?", (bank_id,)
+        ).fetchall()
+        product_ids = [r["id"] for r in prod_rows]
+
+        if product_ids:
+            placeholders = ",".join("?" * len(product_ids))
+            # Find documents associated with ANY of this bank's products.
+            doc_rows = conn.execute(
+                f"SELECT DISTINCT document_id FROM document_products WHERE product_id IN ({placeholders})",
+                product_ids,
+            ).fetchall()
+            for row in doc_rows:
+                doc_id = row["document_id"]
+                # Check if this document is also associated with a product
+                # that does NOT belong to this bank.
+                shared = conn.execute(
+                    f"SELECT 1 FROM document_products dp JOIN products p ON dp.product_id = p.id WHERE dp.document_id = ? AND p.bank_id != ? LIMIT 1",
+                    (doc_id, bank_id),
+                ).fetchone()
+                if not shared:
+                    # Exclusive to this bank — delete the document row.
+                    # document_products and document_tags cascade via FK.
+                    conn.execute(
+                        "DELETE FROM documents WHERE id = ?", (doc_id,)
+                    )
+        # Finally, delete the bank. CASCADE removes its products and any
+        # remaining document_products / document_tags entries.
+        conn.execute("DELETE FROM banks WHERE id = ?", (bank_id,))
+        conn.commit()
+
+    def delete_document(self, doc_id: str) -> None:
+        """Delete a document from the catalog only (does not delete the
+        file on disk). Product associations and tags are removed via CASCADE.
+        """
+        conn = self._get_conn()
+        conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+        conn.commit()
+
     # ------------------------------------------------------------------
     # Full catalog export (for the GET /api/catalog endpoint)
     # ------------------------------------------------------------------

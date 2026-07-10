@@ -167,6 +167,8 @@ export interface Product {
 export interface Bank {
   id: string;
   name: string;
+  slug?: string;
+  created_at?: string;
   products: Product[];
 }
 
@@ -195,3 +197,5 @@ export interface Applicant {
   name: string;
   role: "primary" | "coapplicant";
 }
+
+export type AdminTab = "banks" | "documents";

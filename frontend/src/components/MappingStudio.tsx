@@ -24,7 +24,11 @@ const STEPS: { key: WizardStep; label: string }[] = [
   { key: "fill", label: "Kitöltés" },
 ];
 
-export default function MappingStudio() {
+interface MappingStudioProps {
+  onOpenAdmin: () => void;
+}
+
+export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
   const [step, setStep] = useState<WizardStep>("upload");
   const [activePdfId, setActivePdfId] = useState<string | null>(null);
   const [editingPage, setEditingPage] = useState<number | null>(null);
@@ -202,6 +206,25 @@ export default function MappingStudio() {
               {s.label}
             </span>
           ))}
+          <button
+            className="btn btn-ghost"
+            onClick={onOpenAdmin}
+            title="Admin katalógus"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "6px 10px",
+              fontSize: "0.8rem",
+              marginLeft: "8px",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Admin
+          </button>
         </div>
       </header>
 

@@ -752,6 +752,31 @@ def set_document_products(doc_id: str, body: dict):
 
 
 # ======================================================================
+# Catalog service endpoints (Phase 6 — Admin delete)
+# ======================================================================
+@app.delete("/api/catalog/banks/{bank_id}")
+def delete_bank(bank_id: str):
+    """Delete a bank and cascade-remove its products and associations."""
+    try:
+        catalog_service.delete_bank(bank_id)
+        return {"ok": True}
+    except Exception as e:
+        log.exception("delete_bank failed")
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/catalog/documents/{doc_id}")
+def delete_catalog_document(doc_id: str):
+    """Remove a document from the catalog (does NOT delete the file on disk)."""
+    try:
+        catalog_service.delete_document(doc_id)
+        return {"ok": True}
+    except Exception as e:
+        log.exception("delete_catalog_document failed")
+        raise HTTPException(500, str(e))
+
+
+# ======================================================================
 # Catalog service endpoints (Phase 4 — Automatic master PDF split)
 # ======================================================================
 @app.post("/api/catalog/split-master")

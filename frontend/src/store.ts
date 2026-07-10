@@ -130,6 +130,10 @@ interface EditorState {
   // Catalog actions (Phase 4 — master split)
   setActiveSplitId: (splitId: string | null) => void;
   startMasterSplit: (bankId: string, file: File) => Promise<string>;
+
+  // Catalog actions (Phase 6 — admin delete)
+  deleteBank: (bankId: string) => Promise<void>;
+  deleteCatalogDocument: (docId: string) => Promise<void>;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -495,5 +499,30 @@ export const useStore = create<EditorState>((set, get) => ({
     const data = await res.json();
     set({ activeSplitId: data.split_id });
     return data.split_id as string;
+  },
+
+  // --- Catalog actions (Phase 6 — admin delete) ---
+  deleteBank: async (bankId: string) => {
+    const res = await fetch(
+      `/api/catalog/banks/${encodeURIComponent(bankId)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    await get().loadCatalog();
+  },
+
+  deleteCatalogDocument: async (docId: string) => {
+    const res = await fetch(
+      `/api/catalog/documents/${encodeURIComponent(docId)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    await get().loadCatalog();
   },
 }));
