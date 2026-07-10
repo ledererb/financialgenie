@@ -8,3 +8,4 @@ python-dotenv>=1.0.0
 json_repair>=0.28.0
 pytest>=8.0
 pytest-cov>=5.0
+pytest-timeout>=2.0
