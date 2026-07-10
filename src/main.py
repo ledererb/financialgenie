@@ -48,6 +48,7 @@ from src.ai.field_recognizer import (
     FieldRecognizer,
     MappingConfig,
     print_mapping_summary,
+    _normalize_key,
 )
 from src.ai.legal_classifier import (
     LegalClassifier,
@@ -123,6 +124,44 @@ def _apply_fragment(value, fragment):
 
     # Unknown fragment kind: return value unchanged (forward-compatible).
     return value
+
+
+def _field_canonical_lookup(mapping) -> dict:
+    """PDF-mezőnév → canonical_field térkép a mapping-ből (dict vagy MappingConfig)."""
+    fields = mapping.get("fields", []) if isinstance(mapping, dict) else getattr(mapping, "fields", [])
+    out = {}
+    for f in fields:
+        if isinstance(f, dict):
+            name = f.get("pdf_field_name")
+            canon = f.get("canonical_field")
+        else:
+            name = getattr(f, "pdf_field_name", None)
+            canon = getattr(f, "canonical_field", None)
+        if name:
+            out[name] = canon
+    return out
+
+
+def _infer_canonical_from_blocks(p_def: dict, mapping) -> str | None:
+    """PLAN §5.3 — kikövetkezteti a canonical mezőt, amihez a csoport tartozik.
+
+    A blokkok members PDF-mezőinek canonical_field-jéből (a mapping-ből
+    kikeresve). Mindegyik blokk ugyanoda mutat, elég az első member.
+    """
+    lookup = _field_canonical_lookup(mapping)
+    for blk in p_def.get("blocks", []):
+        for member in blk.get("members", []):
+            canon = lookup.get(member)
+            if canon:
+                return canon
+    return None
+
+
+def _values_match(block_id, actual_value) -> bool:
+    """PLAN §5.3 — kisbetűs, ékezet-normalizált egyezés (felsőfokú ~= Felsofoku)."""
+    if actual_value is None:
+        return False
+    return _normalize_key(str(block_id)) == _normalize_key(str(actual_value))
 
 
 class FormFillerPipeline:
@@ -669,12 +708,39 @@ class FormFillerPipeline:
                         rt, p_def.get("point_id"),
                     )
                     continue
+
+                # PLAN §5.3 — runtime active_block feloldás auto-generált
+                # checkbox-csoport pontoknál (rule_type 3). A Contact tényleges
+                # canonical értéke határozza meg, melyik opció (blokk) aktív.
+                p_def_eff = p_def
+                if p_def.get("_source") == "auto_group" and rt == 3:
+                    canonical_field = _infer_canonical_from_blocks(p_def, mapping)
+                    actual_value = ctx.canonical_values.get(canonical_field) if canonical_field else None
+                    matched_block = next(
+                        (
+                            b.get("block_id") for b in p_def.get("blocks", [])
+                            if _values_match(b.get("block_id"), actual_value)
+                        ),
+                        None,
+                    )
+                    if matched_block is None:
+                        logger.info(
+                            "auto_group pont %s: a canonical érték %r nem illik "
+                            "egyik opcióra sem (mező: %s) — minden checkbox 'nem'",
+                            p_def.get("point_id"),
+                            actual_value, canonical_field,
+                        )
+                    p_def_eff = {
+                        **p_def,
+                        "params": {**p_def.get("params", {}), "active_block": matched_block},
+                    }
+
                 point = Point(
-                    point_id=p_def["point_id"],
-                    framework=p_def.get("framework", "*"),
-                    blocks=p_def.get("blocks", []),
+                    point_id=p_def_eff["point_id"],
+                    framework=p_def_eff.get("framework", "*"),
+                    blocks=p_def_eff.get("blocks", []),
                     rule_type=rt,
-                    params=p_def.get("params", {}),
+                    params=p_def_eff.get("params", {}),
                 )
                 result = fn(point, ctx)
                 for pdf_field, tick_value in result.ticks.items():
