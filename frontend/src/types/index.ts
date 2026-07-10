@@ -66,7 +66,13 @@ export interface MappingField {
   coordinates: Rect | null;
   notes?: string | null;
   options?: string[] | null;
-  checkbox_group?: { group_id: string; match_value: string } | null;
+  checkbox_group?: {
+    group_id: string;
+    group_label?: string | null;
+    option_value?: string | null;
+    option_label?: string | null;
+    match_value?: string | null; // deprecated alias (read-only, → option_value)
+  } | null;
   fill_rule?: FillRule | null;
 }
 
