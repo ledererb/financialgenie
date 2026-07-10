@@ -8,6 +8,7 @@ import SplitProgressIndicator from "./SplitProgressIndicator";
 interface UploadStepProps {
   onComplete: (pdfId: string) => void;
   onOpenExisting: (pdfId: string) => void;
+  onOpenSectionEditor: (file: File) => void;
 }
 
 interface UploadedDoc {
@@ -52,7 +53,7 @@ function isMasterPdfCandidate(f: File): boolean {
   );
 }
 
-export default function UploadStep({ onComplete, onOpenExisting }: UploadStepProps) {
+export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEditor }: UploadStepProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -241,13 +242,16 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
     try {
       await deletePdf(deleteTarget.pdf_id);
       setPdfs((prev) => prev.filter((p) => p.pdf_id !== deleteTarget.pdf_id));
+      // The backend now also removes any catalog document pointing to this
+      // file, so refresh the catalog to clear orphaned entries.
+      await loadCatalog();
     } catch (e) {
       setError(`Törlés sikertelen: ${(e as Error).message}`);
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
     }
-  }, [deleteTarget]);
+  }, [deleteTarget, loadCatalog]);
 
   // --- No bank/product selected: show message instead of drop zone ---
   if (!hasSelection) {
@@ -503,15 +507,23 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
           }}
         >
           <p style={{ fontSize: "0.85rem", color: "var(--text-primary)", margin: 0, marginBottom: "var(--space-sm)" }}>
-            Ez a fájl nagy méretű mester PDF-nek tűnik. Fel szeretné darabolni automatikusan?
+            Ez a fájl nagy méretű mester PDF-nek tűnik. Hogyan szeretné feldolgozni?
           </p>
-          <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
             <button
               className="btn btn-primary btn-sm"
               onClick={handleSplit}
               disabled={splitting}
             >
-              {splitting ? "Indítás…" : "⚡ Darabolás"}
+              {splitting ? "Indítás…" : "⚡ Automatikus darabolás"}
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{ background: "var(--bg-elevated)", border: "1px solid var(--accent-blue)" }}
+              onClick={() => file && onOpenSectionEditor(file)}
+              disabled={splitting}
+            >
+              ✎ Manuális szerkesztő
             </button>
             <button
               className="btn btn-ghost btn-sm"
@@ -548,7 +560,7 @@ export default function UploadStep({ onComplete, onOpenExisting }: UploadStepPro
                 Feltöltés…
               </>
             ) : (
-              <>Feltöltés és elemzés</>
+              <>Feltöltés</>
             )}
           </button>
         </div>

@@ -192,10 +192,4 @@ export interface Catalog {
   documents: CatalogDocument[];
 }
 
-export interface Applicant {
-  id: string;
-  name: string;
-  role: "primary" | "coapplicant";
-}
-
 export type AdminTab = "banks" | "documents";

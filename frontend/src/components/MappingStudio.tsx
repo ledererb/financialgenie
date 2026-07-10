@@ -8,9 +8,7 @@ import PointsEditor from "./PointsEditor";
 import LockStep from "./LockStep";
 import FillPreviewStep from "./FillPreviewStep";
 import ProjectBrowser from "./ProjectBrowser";
-import ApplicantManager from "./ApplicantManager";
-import ApplicantSelector from "./ApplicantSelector";
-import FillSummary from "./FillSummary";
+import SectionEditor from "./SectionEditor";
 import BankSetupDialog from "./BankSetupDialog";
 import ProductSetupDialog from "./ProductSetupDialog";
 
@@ -33,6 +31,7 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
   const [activePdfId, setActivePdfId] = useState<string | null>(null);
   const [editingPage, setEditingPage] = useState<number | null>(null);
   const [editingPoints, setEditingPoints] = useState(false);
+  const [sectionEditorFile, setSectionEditorFile] = useState<File | null>(null);
   const [mappedCount, setMappedCount] = useState(0);
   const [totalFields, setTotalFields] = useState(0);
 
@@ -41,6 +40,9 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
   const loadCatalog = useStore((s) => s.loadCatalog);
   const selectedBankId = useStore((s) => s.selectedBankId);
   const selectedProductId = useStore((s) => s.selectedProductId);
+  const deleteBank = useStore((s) => s.deleteBank);
+  const deleteProduct = useStore((s) => s.deleteProduct);
+  const deleteCatalogDocument = useStore((s) => s.deleteCatalogDocument);
 
   const [showBankDialog, setShowBankDialog] = useState(false);
   const [productDialogBankId, setProductDialogBankId] = useState<string | null>(
@@ -53,6 +55,9 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
 
   const gatePassed =
     selectedBankId !== null && selectedProductId !== null;
+
+  // Whether the catalog has at least one bank (loaded + non-empty).
+  const hasBanks = !!catalog && catalog.banks.length > 0;
 
   // Look up the selected bank name for gate messaging
   const selectedBank = selectedBankId
@@ -113,6 +118,34 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
     setProductDialogBankId(bankId);
   }, []);
 
+  const handleDeleteBank = useCallback(async (bankId: string, _name: string) => {
+    try {
+      await deleteBank(bankId);
+    } catch (e) {
+      console.error("deleteBank failed:", e);
+    }
+  }, [deleteBank]);
+
+  const handleDeleteProduct = useCallback(async (productId: string, name: string) => {
+    try {
+      const orphaned = await deleteProduct(productId);
+      if (orphaned.length > 0) {
+        // Could surface a toast here; for now just log.
+        console.info(`${orphaned.length} document(s) orphaned after deleting product "${name}"`);
+      }
+    } catch (e) {
+      console.error("deleteProduct failed:", e);
+    }
+  }, [deleteProduct]);
+
+  const handleDeleteDocument = useCallback(async (docId: string, _title: string) => {
+    try {
+      await deleteCatalogDocument(docId);
+    } catch (e) {
+      console.error("deleteDocument failed:", e);
+    }
+  }, [deleteCatalogDocument]);
+
   // After a bank is created, advance to the product dialog to complete
   // the define-first flow.
   const handleBankCreated = useCallback(
@@ -134,6 +167,7 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
         pdfId={activePdfId}
         pageNumber={editingPage}
         onBack={handleBackFromEditor}
+        onPageChange={setEditingPage}
       />
     );
   }
@@ -144,6 +178,17 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
       <PointsEditor
         pdfId={activePdfId}
         onBack={handleBackFromPoints}
+      />
+    );
+  }
+
+  // Manual section editor full-screen
+  if (sectionEditorFile && selectedBankId) {
+    return (
+      <SectionEditor
+        bankId={selectedBankId}
+        initialFile={sectionEditorFile}
+        onClose={() => setSectionEditorFile(null)}
       />
     );
   }
@@ -242,11 +287,13 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
             flexDirection: "column",
           }}
         >
-          <ApplicantManager />
           <div style={{ flex: 1, overflow: "hidden" }}>
             <ProjectBrowser
               onAddBank={handleAddBank}
               onAddProduct={handleAddProduct}
+              onDeleteBank={handleDeleteBank}
+              onDeleteProduct={handleDeleteProduct}
+              onDeleteDocument={handleDeleteDocument}
             />
           </div>
         </aside>
@@ -294,7 +341,7 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
 
-                {!selectedBankId ? (
+                {!hasBanks ? (
                   <>
                     <div>
                       <p
@@ -331,6 +378,30 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
                       >
                         + Bank létrehozása
                       </button>
+                    </div>
+                  </>
+                ) : !selectedBankId ? (
+                  <>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 500,
+                          color: "var(--text-primary)",
+                          marginBottom: "var(--space-xs)",
+                        }}
+                      >
+                        Válasszon ki egy bankot
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        A bal oldali fán kattintson egy bankra, majd válasszon
+                        egy terméket a dokumentumok feltöltéséhez.
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -386,6 +457,7 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
             <UploadStep
               onComplete={handleUploadComplete}
               onOpenExisting={handleOpenExisting}
+              onOpenSectionEditor={setSectionEditorFile}
             />
           )}
           {step === "analysis" && activePdfId && (
@@ -417,26 +489,11 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
             />
           )}
           {step === "fill" && activePdfId && (
-            <>
-              <div
-                style={{
-                  maxWidth: 960,
-                  margin: "0 auto",
-                  padding: "var(--space-lg) var(--space-lg) 0",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-md)",
-                }}
-              >
-                <ApplicantSelector />
-                <FillSummary />
-              </div>
-              <FillPreviewStep
-                pdfId={activePdfId}
-                onBack={() => setStep("lock")}
-                onDone={handleFillDone}
-              />
-            </>
+            <FillPreviewStep
+              pdfId={activePdfId}
+              onBack={() => setStep("lock")}
+              onDone={handleFillDone}
+            />
           )}
         </div>
       </div>

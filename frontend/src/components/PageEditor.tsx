@@ -28,11 +28,13 @@ import {
   updateField,
   updateGroup,
 } from "@/api/client";
+import CheckboxGroupDialog from "./CheckboxGroupDialog";
 
 interface PageEditorProps {
   pdfId: string;
   pageNumber: number;
   onBack: () => void;
+  onPageChange?: (page: number) => void;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -61,6 +63,170 @@ function confidenceBadgeClass(c: Confidence): string {
   if (c === "high" || c === "manual") return "badge badge-green";
   if (c === "medium") return "badge badge-amber";
   return "badge badge-red";
+}
+
+// ── CanonicalFieldSearch: searchable combobox for canonical field selection ──
+// Replaces the native <select> which was impractical for 249+ SF fields.
+function CanonicalFieldSearch({
+  autoFocus,
+  value,
+  fields,
+  validPaths,
+  onSelect,
+  onClear,
+}: {
+  autoFocus?: boolean;
+  value: string;
+  fields: CanonicalField[];
+  validPaths: Set<string>;
+  onSelect: (path: string) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (autoFocus) {
+      setOpen(true);
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        onClear();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClear]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return fields;
+    const q = query.toLowerCase();
+    return fields.filter(
+      (c) => c.path.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q),
+    );
+  }, [fields, query]);
+
+  // Group by SF object prefix
+  const groups = useMemo(() => {
+    const g = new Map<string, CanonicalField[]>();
+    for (const c of filtered) {
+      const dot = c.path.indexOf(".");
+      const obj = dot > 0 ? c.path.slice(0, dot) : "Other";
+      const arr = g.get(obj);
+      if (arr) arr.push(c);
+      else g.set(obj, [c]);
+    }
+    return g;
+  }, [filtered]);
+
+  const isValid = !value || validPaths.has(value);
+
+  return (
+    <div ref={containerRef} style={{ flex: 1, position: "relative" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={open ? query : value}
+          placeholder={value || "— keresés —"}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => { setOpen(true); setQuery(""); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { setOpen(false); onClear(); }
+            if (e.key === "Enter" && filtered.length > 0) {
+              onSelect(filtered[0].path);
+              setOpen(false);
+            }
+          }}
+          style={{
+            flex: 1,
+            background: "var(--bg-tertiary)",
+            color: "var(--text-primary)",
+            border: `1px solid ${isValid ? "var(--border-strong)" : "var(--accent-red)"}`,
+            borderRadius: "var(--radius-sm)",
+            padding: "4px 8px",
+            fontSize: "0.75rem",
+            outline: "none",
+          }}
+        />
+        {value && (
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={(e) => { e.stopPropagation(); onSelect(""); }}
+            title="Törlés"
+            style={{ padding: "2px 6px", fontSize: "0.7rem", flexShrink: 0 }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          marginTop: "2px",
+          maxHeight: "280px",
+          overflow: "auto",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-default)",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "var(--shadow-lg)",
+          zIndex: 50,
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: "8px 12px", fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
+              Nincs találat
+            </div>
+          ) : (
+            Array.from(groups.entries()).map(([obj, gFields]) => (
+              <div key={obj}>
+                <div style={{
+                  padding: "3px 10px",
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "var(--text-tertiary)",
+                  background: "var(--bg-tertiary)",
+                }}>
+                  {obj} ({gFields.length})
+                </div>
+                {gFields.map((c) => (
+                  <div
+                    key={c.path}
+                    onClick={() => { onSelect(c.path); setOpen(false); }}
+                    style={{
+                      padding: "4px 12px",
+                      fontSize: "0.73rem",
+                      cursor: "pointer",
+                      color: "var(--text-primary)",
+                      background: c.path === value ? "var(--accent-blue-glow)" : "transparent",
+                    }}
+                    onMouseEnter={(e) => { if (c.path !== value) e.currentTarget.style.background = "var(--bg-hover)"; }}
+                    onMouseLeave={(e) => { if (c.path !== value) e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <strong>{c.path.split(".").pop()}</strong>
+                    <span style={{ color: "var(--text-tertiary)" }}> — {c.label}</span>
+                    {c.sf_type && <span style={{ color: "var(--text-tertiary)", fontSize: "0.65rem" }}> [{c.sf_type}]</span>}
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // PLAN_CHECKBOX_GROUPS.md §4.2(a) — bucket checkbox fields that share a
@@ -101,6 +267,7 @@ export default function PageEditor({
   pdfId,
   pageNumber,
   onBack,
+  onPageChange,
 }: PageEditorProps) {
   // ── state ──────────────────────────────────────────────────────────────
 
@@ -114,6 +281,8 @@ export default function PageEditor({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [loadedPage, setLoadedPage] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [showOverlayLabels, setShowOverlayLabels] = useState(true);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -172,6 +341,24 @@ export default function PageEditor({
     setEditingField(null);
     setLoadedPage(null);
   }, [pageNumber]);
+
+  // Keyboard navigation: ←/→ to switch pages (when not typing in an input)
+  useEffect(() => {
+    if (!onPageChange || !fieldsRes) return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowLeft" && pageNumber > 1) {
+        e.preventDefault();
+        onPageChange(pageNumber - 1);
+      } else if (e.key === "ArrowRight" && pageNumber < fieldsRes.total_pages) {
+        e.preventDefault();
+        onPageChange(pageNumber + 1);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onPageChange, fieldsRes, pageNumber]);
 
   // ── derived: fields for this page ─────────────────────────────────────
 
@@ -284,7 +471,15 @@ export default function PageEditor({
     [mapping, pdfId],
   );
 
-  // ── canonical‐field update ────────────────────────────────────────────
+  // Bulk checkbox-group assignment (from the CheckboxGroupDialog)
+  const handleBulkCheckboxGroup = useCallback(
+    async (updates: { fieldName: string; checkboxGroup: NonNullable<MappingField["checkbox_group"]> }[]) => {
+      for (const u of updates) {
+        await handleFieldUpdate(u.fieldName, { checkbox_group: u.checkboxGroup });
+      }
+    },
+    [handleFieldUpdate],
+  );
 
   const handleCanonicalChange = useCallback(
     async (fieldName: string, canonicalPath: string | null) => {
@@ -586,14 +781,36 @@ export default function PageEditor({
         <button className="btn btn-ghost btn-sm" onClick={onBack}>
           Vissza az irányítópultra
         </button>
-        <h2
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 600,
-          }}
-        >
-          {pageNumber}. oldal
-        </h2>
+
+        {/* Page navigation */}
+        {onPageChange && fieldsRes && (
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)" }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => onPageChange(Math.max(1, pageNumber - 1))}
+              disabled={pageNumber <= 1}
+              title="Előző oldal (←)"
+            >
+              ←
+            </button>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+              {pageNumber} / {fieldsRes.total_pages}
+            </span>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => onPageChange(Math.min(fieldsRes.total_pages, pageNumber + 1))}
+              disabled={pageNumber >= fieldsRes.total_pages}
+              title="Következő oldal (→)"
+            >
+              →
+            </button>
+          </div>
+        )}
+        {!onPageChange && (
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600 }}>
+            {pageNumber}. oldal
+          </h2>
+        )}
         <span
           style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}
         >
@@ -621,6 +838,33 @@ export default function PageEditor({
         >
           {previewLoading ? "Generálás..." : "👀 Oldal előnézete"}
         </button>
+
+        {/* Overlay labels toggle */}
+        <button
+          className={`btn btn-sm ${showOverlayLabels ? "btn-accent" : "btn-ghost"}`}
+          onClick={() => setShowOverlayLabels(!showOverlayLabels)}
+          title="Mezőnevek mutatása a PDF képen"
+          style={{
+            background: showOverlayLabels ? "var(--accent-blue)" : undefined,
+            color: showOverlayLabels ? "#fff" : undefined,
+            fontSize: "0.75rem",
+          }}
+        >
+          {showOverlayLabels ? "🏷 Címkék" : "🏷 Címkék"}
+        </button>
+
+        {/* Checkbox grouping — only if there are checkbox fields on this page */}
+        {pageFields.some((f) => f.field_type === "checkbox") && (
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShowGroupDialog(true)}
+            title="Checkbox mezők csoportosítása"
+            style={{ fontSize: "0.75rem" }}
+          >
+            ⊕ Csoportosítás
+          </button>
+        )}
+
         {saving && (
           <span
             className="badge badge-blue"
@@ -788,6 +1032,9 @@ export default function PageEditor({
                 const rect = pf?.rect ?? mf.coordinates;
                 if (!rect) return null;
 
+                const labelText = mf.canonical_field ?? mf.label ?? mf.pdf_field_name;
+                const isAlwaysChecked = mf.fill_rule?.type === "static";
+
                 return (
                   <div
                     key={mf.pdf_field_name}
@@ -809,7 +1056,35 @@ export default function PageEditor({
                       borderRadius: "var(--radius-sm)",
                     }}
                     title={`${mf.pdf_field_name}${mf.canonical_field ? ` → ${mf.canonical_field}` : ""}`}
-                  />
+                  >
+                    {/* Field label overlay (toggleable) */}
+                    {showOverlayLabels && rect.width * scale > 30 && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: -14,
+                          left: 0,
+                          fontSize: "7px",
+                          fontWeight: 600,
+                          lineHeight: "12px",
+                          padding: "0 3px",
+                          borderRadius: "2px",
+                          background: mf.canonical_field
+                            ? "rgba(59,130,246,0.85)"
+                            : "rgba(239,68,68,0.85)",
+                          color: "white",
+                          whiteSpace: "nowrap",
+                          maxWidth: 120,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          pointerEvents: "none",
+                          zIndex: 5,
+                        }}
+                      >
+                        {isAlwaysChecked && "📌 "}{labelText}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
           </div>
@@ -989,60 +1264,16 @@ export default function PageEditor({
                     </span>
 
                     {isEditing || isSelected ? (
-                      <select
+                      <CanonicalFieldSearch
                         autoFocus={isEditing}
                         value={mf.canonical_field ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value || null;
-                          handleCanonicalChange(mf.pdf_field_name, val);
+                        fields={canonicals}
+                        validPaths={validCanonicalPaths}
+                        onSelect={(val) => {
+                          handleCanonicalChange(mf.pdf_field_name, val || null);
                         }}
-                        onBlur={() => setEditingField(null)}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          flex: 1,
-                          background: "var(--bg-tertiary)",
-                          color: "var(--text-primary)",
-                          border: "1px solid var(--border-strong)",
-                          borderRadius: "var(--radius-sm)",
-                          padding: "4px 8px",
-                          fontSize: "0.75rem",
-                          outline: "none",
-                        }}
-                      >
-                        <option value="">— nem mappelt —</option>
-                        {mf.canonical_field &&
-                          !validCanonicalPaths.has(mf.canonical_field) && (
-                            <option
-                              value={mf.canonical_field}
-                              disabled
-                              style={{ color: "var(--accent-red)" }}
-                            >
-                              ⚠ {mf.canonical_field} (ismeretlen SF mező)
-                            </option>
-                          )}
-                        {(() => {
-                          // Group canonicals by SF object prefix
-                          const groups = new Map<string, CanonicalField[]>();
-                          canonicals.forEach((c) => {
-                            const dot = c.path.indexOf(".");
-                            const obj = dot > 0 ? c.path.slice(0, dot) : "Other";
-                            const arr = groups.get(obj);
-                            if (arr) arr.push(c);
-                            else groups.set(obj, [c]);
-                          });
-                          return Array.from(groups.entries()).map(
-                            ([obj, fields]) => (
-                              <optgroup key={obj} label={obj}>
-                                {fields.map((c) => (
-                                  <option key={c.path} value={c.path}>
-                                    {c.path.split(".").pop()} — {c.label}{c.sf_type ? ` [${c.sf_type}]` : ""}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            ),
-                          );
-                        })()}
-                      </select>
+                        onClear={() => setEditingField(null)}
+                      />
                     ) : (
                       <span
                         onClick={(e) => {
@@ -1114,6 +1345,39 @@ export default function PageEditor({
                         <option value="money">Money</option>
                         <option value="character_split">Character Split</option>
                       </select>
+
+                      {/* "Always check" quick toggle for checkbox fields */}
+                      {mf.field_type === "checkbox" && (
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "var(--space-xs) var(--space-sm)",
+                            background: mf.fill_rule?.type === "static" ? "rgba(34,197,94,0.12)" : "var(--bg-tertiary)",
+                            borderRadius: "var(--radius-sm)",
+                            border: mf.fill_rule?.type === "static" ? "1px solid var(--accent-green)" : "1px solid var(--border-subtle)",
+                            cursor: "pointer",
+                            fontSize: "0.75rem",
+                            color: "var(--text-primary)",
+                          }}
+                        >
+                          <span>📌 Mindig pipál</span>
+                          <input
+                            type="checkbox"
+                            checked={mf.fill_rule?.type === "static"}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleFieldUpdate(mf.pdf_field_name, {
+                                  fill_rule: { type: "static", value: "igen" },
+                                });
+                              } else {
+                                handleFieldUpdate(mf.pdf_field_name, { fill_rule: null });
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
 
                       {/* Fill rule editor (Task 1.3 — dict format) */}
                       <div style={{
@@ -1591,6 +1855,15 @@ export default function PageEditor({
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {/* Checkbox grouping dialog */}
+      {showGroupDialog && (
+        <CheckboxGroupDialog
+          fields={pageFields}
+          onApply={handleBulkCheckboxGroup}
+          onClose={() => setShowGroupDialog(false)}
+        />
       )}
     </div>
   );

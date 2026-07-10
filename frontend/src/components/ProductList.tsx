@@ -9,6 +9,8 @@ interface ProductListProps {
   selectedDocumentId: string | null;
   onSelectProduct: (productId: string) => void;
   onSelectDocument: (docId: string) => void;
+  onDeleteProduct: (productId: string, name: string) => void;
+  onDeleteDocument: (docId: string, title: string) => void;
 }
 
 function ProductListImpl({
@@ -18,8 +20,11 @@ function ProductListImpl({
   selectedDocumentId,
   onSelectProduct,
   onSelectDocument,
+  onDeleteProduct,
+  onDeleteDocument,
 }: ProductListProps) {
   const [expanded, setExpanded] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isProductSelected = product.id === selectedProductId;
   const docCount = documents.length;
 
@@ -107,15 +112,91 @@ function ProductListImpl({
         >
           {docCount} {docCount === 1 ? "dok." : "dok."}
         </span>
+
+        {/* Delete product button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmDelete(true);
+          }}
+          title="Termék törlése"
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-tertiary)",
+            cursor: "pointer",
+            padding: "0 2px",
+            fontSize: "0.8rem",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+        >
+          ✕
+        </button>
       </div>
 
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div
+          style={{
+            margin: "2px var(--space-xs)",
+            padding: "var(--space-xs) var(--space-sm)",
+            background: "var(--accent-red-glow)",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid rgba(239,68,68,0.3)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.7rem",
+              color: "var(--accent-red)",
+              margin: "0 0 var(--space-xs) 0",
+              lineHeight: 1.4,
+            }}
+          >
+            Törli a terméket? A dokumentumok megmaradnak, de eltűnnek alóla.
+          </p>
+          <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+            <button
+              className="btn btn-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteProduct(product.id, product.name);
+                setConfirmDelete(false);
+              }}
+              style={{
+                background: "var(--accent-red)",
+                color: "white",
+                fontSize: "0.7rem",
+                padding: "3px 10px",
+              }}
+            >
+              Igen
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDelete(false);
+              }}
+              style={{ fontSize: "0.7rem", padding: "3px 10px" }}
+            >
+              Mégse
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Expanded content */}
-      {expanded && (
+      {expanded && !confirmDelete && (
         <div style={{ paddingLeft: "26px" }}>
           <DocumentList
             documents={documents}
             selectedDocumentId={selectedDocumentId}
             onSelectDocument={onSelectDocument}
+            onDeleteDocument={onDeleteDocument}
           />
         </div>
       )}

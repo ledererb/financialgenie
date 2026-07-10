@@ -39,8 +39,12 @@ catalog/catalog.db-shm
 htmlcov/
 .coverage
 
-# Agents
+# Agents / tooling
 .agents/
+.zcode/
+
+# Ad hoc PDF-ek a gyökérben (csak a samples/ mappában tartjuk a mintákat)
+/*.pdf
 
 # Other projects/unrelated folders
 peksnack_ugralos/

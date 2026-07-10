@@ -7,7 +7,6 @@ import type {
   PdfSummary,
   Catalog,
   CatalogDocument,
-  Applicant,
 } from "@/types";
 import {
   listPdfs,
@@ -49,7 +48,7 @@ interface EditorState {
   // Upload
   uploading: boolean;
   uploadError: string | null;
-  uploadedResult: { pdfId: string; filledPdfUrl: string } | null;
+  uploadedResult: { pdfId: string } | null;
 
   // Recognition
   recognizing: boolean;
@@ -72,8 +71,6 @@ interface EditorState {
   selectedBankId: string | null;
   selectedProductId: string | null;
   selectedDocumentId: string | null;
-  applicants: Applicant[];
-  selectedApplicantId: string | null;
 
   // Phase 3 — client-side dedup tracking (session only)
   uploadedHashes: Set<string>;
@@ -122,11 +119,6 @@ interface EditorState {
   associateDocumentWithProduct: (docId: string, productIds: string[]) => Promise<void>;
   addUploadedHash: (hash: string) => void;
 
-  // Applicant actions (Phase 5 — per-applicant fill)
-  addApplicant: (name: string) => void;
-  removeApplicant: (id: string) => void;
-  selectApplicant: (id: string) => void;
-
   // Catalog actions (Phase 4 — master split)
   setActiveSplitId: (splitId: string | null) => void;
   startMasterSplit: (bankId: string, file: File) => Promise<string>;
@@ -134,6 +126,7 @@ interface EditorState {
   // Catalog actions (Phase 6 — admin delete)
   deleteBank: (bankId: string) => Promise<void>;
   deleteCatalogDocument: (docId: string) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<string[]>;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -170,11 +163,6 @@ export const useStore = create<EditorState>((set, get) => ({
   selectedBankId: null,
   selectedProductId: null,
   selectedDocumentId: null,
-  applicants: [
-    { id: "primary", name: "Főadós", role: "primary" as const },
-  ],
-  selectedApplicantId: "primary",
-
   // Phase 3 — session-only dedup tracking
   uploadedHashes: new Set<string>(),
 
@@ -311,7 +299,6 @@ export const useStore = create<EditorState>((set, get) => ({
         uploading: false,
         uploadedResult: {
           pdfId: res.pdf_id,
-          filledPdfUrl: res.filled_pdf_url,
         },
       });
     } catch (e) {
@@ -455,28 +442,6 @@ export const useStore = create<EditorState>((set, get) => ({
     }));
   },
 
-  // --- Applicant actions (Phase 5 — per-applicant fill) ---
-  addApplicant: (name) => {
-    const id = `coapp_${Date.now()}`;
-    set((state) => ({
-      applicants: [...state.applicants, { id, name, role: "coapplicant" }],
-      selectedApplicantId: state.selectedApplicantId ?? id,
-    }));
-  },
-
-  removeApplicant: (id) => {
-    set((state) => {
-      const remaining = state.applicants.filter((a) => a.id !== id);
-      const selectedApplicantId =
-        state.selectedApplicantId === id
-          ? remaining[0]?.id ?? null
-          : state.selectedApplicantId;
-      return { applicants: remaining, selectedApplicantId };
-    });
-  },
-
-  selectApplicant: (id) => set({ selectedApplicantId: id }),
-
   // --- Catalog actions (Phase 4 — master split) ---
   setActiveSplitId: (splitId) => set({ activeSplitId: splitId }),
 
@@ -524,5 +489,20 @@ export const useStore = create<EditorState>((set, get) => ({
       throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
     }
     await get().loadCatalog();
+  },
+
+  deleteProduct: async (productId: string) => {
+    const res = await fetch(
+      `/api/catalog/products/${encodeURIComponent(productId)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    const data = await res.json();
+    await get().loadCatalog();
+    // Return orphaned document IDs so the UI can warn the user.
+    return (data.orphaned_documents as string[]) ?? [];
   },
 }));

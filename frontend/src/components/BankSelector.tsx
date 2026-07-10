@@ -12,6 +12,9 @@ interface BankSelectorProps {
   onSelectProduct: (productId: string) => void;
   onSelectDocument: (docId: string) => void;
   onAddProduct: (bankId: string) => void;
+  onDeleteBank: (bankId: string, name: string) => void;
+  onDeleteProduct: (productId: string, name: string) => void;
+  onDeleteDocument: (docId: string, title: string) => void;
 }
 
 function BankSelectorImpl({
@@ -24,8 +27,12 @@ function BankSelectorImpl({
   onSelectProduct,
   onSelectDocument,
   onAddProduct,
+  onDeleteBank,
+  onDeleteProduct,
+  onDeleteDocument,
 }: BankSelectorProps) {
   const [expanded, setExpanded] = useState(true);
+  const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
   const isBankSelected = bank.id === selectedBankId;
 
   // Auto-expand if this bank or any of its products is selected
@@ -151,10 +158,86 @@ function BankSelectorImpl({
         >
           + Termék
         </button>
+
+        {/* Delete bank button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmDeleteBank(true);
+          }}
+          title="Bank törlése"
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-tertiary)",
+            cursor: "pointer",
+            padding: "0 4px",
+            fontSize: "0.8rem",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+        >
+          ✕
+        </button>
       </div>
 
+      {/* Delete bank confirmation */}
+      {confirmDeleteBank && (
+        <div
+          style={{
+            margin: "2px var(--space-sm)",
+            padding: "var(--space-xs) var(--space-sm)",
+            background: "var(--accent-red-glow)",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid rgba(239,68,68,0.3)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.7rem",
+              color: "var(--accent-red)",
+              margin: "0 0 var(--space-xs) 0",
+              lineHeight: 1.4,
+            }}
+          >
+            Biztosan törli a bankot? Az összes termék és a hozzájuk tartozó
+            dokumentumok és fájlok is törlődnek.
+          </p>
+          <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+            <button
+              className="btn btn-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteBank(bank.id, bank.name);
+                setConfirmDeleteBank(false);
+              }}
+              style={{
+                background: "var(--accent-red)",
+                color: "white",
+                fontSize: "0.7rem",
+                padding: "3px 10px",
+              }}
+            >
+              Igen
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDeleteBank(false);
+              }}
+              style={{ fontSize: "0.7rem", padding: "3px 10px" }}
+            >
+              Mégse
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Expanded content — products */}
-      {(expanded || hasSelectedChild) && (
+      {(expanded || hasSelectedChild) && !confirmDeleteBank && (
         <div
           style={{
             padding: "var(--space-xs) var(--space-sm) var(--space-sm)",
@@ -184,6 +267,8 @@ function BankSelectorImpl({
                 selectedDocumentId={selectedDocumentId}
                 onSelectProduct={onSelectProduct}
                 onSelectDocument={onSelectDocument}
+                onDeleteProduct={onDeleteProduct}
+                onDeleteDocument={onDeleteDocument}
               />
             ))
           )}

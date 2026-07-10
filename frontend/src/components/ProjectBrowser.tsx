@@ -8,9 +8,12 @@ import BankSelector from "./BankSelector";
 interface ProjectBrowserProps {
   onAddBank: () => void;
   onAddProduct: (bankId: string) => void;
+  onDeleteBank: (bankId: string, name: string) => void;
+  onDeleteProduct: (productId: string, name: string) => void;
+  onDeleteDocument: (docId: string, title: string) => void;
 }
 
-export function ProjectBrowser({ onAddBank, onAddProduct }: ProjectBrowserProps) {
+export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDeleteProduct, onDeleteDocument }: ProjectBrowserProps) {
   const catalog = useStore((s) => s.catalog);
   const catalogLoading = useStore((s) => s.catalogLoading);
   const loadCatalog = useStore((s) => s.loadCatalog);
@@ -132,6 +135,9 @@ export function ProjectBrowser({ onAddBank, onAddProduct }: ProjectBrowserProps)
                 onSelectProduct={selectProduct}
                 onSelectDocument={selectDocument}
                 onAddProduct={onAddProduct}
+                onDeleteBank={onDeleteBank}
+                onDeleteProduct={onDeleteProduct}
+                onDeleteDocument={onDeleteDocument}
               />
             ))}
           </div>

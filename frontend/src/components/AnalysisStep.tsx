@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { startRecognition, recognizeStatus } from "@/api/client";
+import { startRecognition, recognizeStatus, getMapping } from "@/api/client";
 import type { RecognizeStatus } from "@/api/client";
 
 interface AnalysisStepProps {
@@ -58,13 +58,29 @@ export default function AnalysisStep({ pdfId, onComplete }: AnalysisStepProps) {
     }
   }, [pdfId, onComplete, stopPolling]);
 
-  // Auto-start on mount
+  // Auto-start on mount — but skip AI if a mapping already exists.
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    beginRecognition();
+
+    // Check if a mapping already exists for this PDF. If it does (and has
+    // at least one field), skip recognition and go straight to review.
+    getMapping(pdfId)
+      .then((mapping) => {
+        if (mapping.fields && mapping.fields.length > 0) {
+          // Mapping exists — skip AI, go to review.
+          onComplete();
+        } else {
+          beginRecognition();
+        }
+      })
+      .catch(() => {
+        // Mapping check failed — proceed with recognition as fallback.
+        beginRecognition();
+      });
+
     return () => stopPolling();
-  }, [beginRecognition, stopPolling]);
+  }, [pdfId, beginRecognition, stopPolling, onComplete]);
 
   const handleRetry = useCallback(() => {
     stopPolling();

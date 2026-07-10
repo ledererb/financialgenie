@@ -70,7 +70,7 @@ export async function listPdfs(): Promise<PdfSummary[]> {
 
 export async function deletePdf(
   pdfId: string,
-): Promise<{ deleted: boolean; pdf_id: string; mapping_deleted: boolean }> {
+): Promise<{ deleted: boolean; pdf_id: string; mapping_deleted: boolean; catalog_deleted: boolean }> {
   return http("/api/pdf", {
     method: "DELETE",
     query: { pdf_id: pdfId },
@@ -252,13 +252,72 @@ export async function recognizeResult(
 
 export async function uploadPdf(
   file: File,
-): Promise<{ success: boolean; pdf_id: string; filename: string; hash: string; path: string; filled_pdf_url: string; message: string }> {
+): Promise<{ success: boolean; pdf_id: string; filename: string; hash: string; path: string }> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${API_BASE}/api/pdf/upload`, {
     method: "POST",
     body: form,
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export interface ExtractedDocument {
+  id: string;
+  title: string;
+  file_path: string;
+  page_count: number;
+  product_ids: string[];
+  master_section: string;
+  master_page_number: number;
+}
+
+/** Extract a page range from a master PDF into a new catalog document. */
+export async function extractSection(
+  bankId: string,
+  masterFile: File,
+  startPage: number,
+  endPage: number,
+  title: string,
+  productIds: string[],
+): Promise<{ saved: boolean; document: ExtractedDocument }> {
+  const params = new URLSearchParams({
+    bank_id: bankId,
+    start_page: String(startPage),
+    end_page: String(endPage),
+    title,
+  });
+  for (const pid of productIds) {
+    params.append("product_ids", pid);
+  }
+  const form = new FormData();
+  form.append("file", masterFile);
+  const res = await fetch(
+    `${API_BASE}/api/catalog/extract-section?${params.toString()}`,
+    { method: "POST", body: form },
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+/** Upload a master PDF for the manual section editor (no fill pipeline). */
+export async function uploadMasterPdf(
+  bankId: string,
+  file: File,
+): Promise<{ pdf_id: string; page_count: number; filename: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(
+    `${API_BASE}/api/catalog/upload-master?bank_id=${enc(bankId)}`,
+    { method: "POST", body: form },
+  );
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || `${res.status} ${res.statusText}`);
