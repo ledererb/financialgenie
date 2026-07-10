@@ -63,6 +63,38 @@ function confidenceBadgeClass(c: Confidence): string {
   return "badge badge-red";
 }
 
+// PLAN_CHECKBOX_GROUPS.md §4.2(a) — bucket checkbox fields that share a
+// checkbox_group.group_id into a group; everything else stays "single".
+// Group members keep their original order within the group.
+type GroupedField =
+  | { kind: "single"; field: MappingField }
+  | { kind: "group"; groupId: string; groupLabel: string; members: MappingField[] };
+
+function groupPageFields(fields: MappingField[]): GroupedField[] {
+  const result: GroupedField[] = [];
+  const groupIndex = new Map<string, number>(); // groupId → index in result
+  for (const f of fields) {
+    const gid = f.checkbox_group?.group_id;
+    if (f.field_type === "checkbox" && gid) {
+      const existing = groupIndex.get(gid);
+      if (existing !== undefined) {
+        (result[existing] as Extract<GroupedField, { kind: "group" }>).members.push(f);
+      } else {
+        groupIndex.set(gid, result.length);
+        result.push({
+          kind: "group",
+          groupId: gid,
+          groupLabel: f.checkbox_group?.group_label ?? gid,
+          members: [f],
+        });
+      }
+    } else {
+      result.push({ kind: "single", field: f });
+    }
+  }
+  return result;
+}
+
 // ── component ──────────────────────────────────────────────────────────────
 
 export default function PageEditor({
@@ -147,6 +179,9 @@ export default function PageEditor({
     if (!mapping) return [];
     return mapping.fields.filter((f) => f.page_number === pageNumber);
   }, [mapping, pageNumber]);
+
+  // PLAN §4.2(a) — checkbox fields bucketed by checkbox_group.group_id.
+  const groupedPageFields = useMemo(() => groupPageFields(pageFields), [pageFields]);
 
   const pdfFieldsByName = useMemo(() => {
     if (!fieldsRes) return new Map<string, PdfField>();
@@ -878,11 +913,12 @@ export default function PageEditor({
               </div>
             )}
 
-            {pageFields.map((mf) => {
-              const isSelected = selectedField === mf.pdf_field_name;
-              const isEditing = editingField === mf.pdf_field_name;
+            {groupedPageFields.map((entry) => {
+              const renderMember = (mf: MappingField) => {
+                const isSelected = selectedField === mf.pdf_field_name;
+                const isEditing = editingField === mf.pdf_field_name;
 
-              return (
+                return (
                 <div
                   key={mf.pdf_field_name}
                   ref={(el) => {
@@ -1172,57 +1208,83 @@ export default function PageEditor({
                         style={inputStyle}
                       />
 
-                      {/* ── checkbox group inputs ──────────────────── */}
-                      {mf.field_type === "checkbox" && (
-                        <div style={{
-                          padding: "var(--space-xs) var(--space-sm)",
-                          background: "var(--bg-tertiary)",
-                          borderRadius: "var(--radius-sm)",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
-                        }}>
-                          <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
-                            Jelölőnégyzet csoport
-                          </span>
-                          <datalist id="existing-groups">
-                            {Array.from(
-                              new Set(
-                                mapping?.fields
-                                  .map((f) => f.checkbox_group?.group_id)
-                                  .filter(Boolean)
-                              )
-                            ).map((g) => (
-                              <option key={g} value={g} />
-                            ))}
-                          </datalist>
-                          <input
-                            list="existing-groups"
-                            placeholder="csoport_azonosító (pl. csaladi_allapot)"
-                            value={mf.checkbox_group?.group_id ?? ""}
-                            onChange={(e) =>
-                              handleFieldUpdate(mf.pdf_field_name, {
-                                checkbox_group: e.target.value || mf.checkbox_group?.match_value
-                                  ? { group_id: e.target.value, match_value: mf.checkbox_group?.match_value ?? "" }
-                                  : null,
-                              })
-                            }
-                            style={inputStyle}
-                          />
-                          <input
-                            placeholder="egyező_érték"
-                            value={mf.checkbox_group?.match_value ?? ""}
-                            onChange={(e) =>
-                              handleFieldUpdate(mf.pdf_field_name, {
-                                checkbox_group: mf.checkbox_group?.group_id || e.target.value
-                                  ? { group_id: mf.checkbox_group?.group_id ?? "", match_value: e.target.value }
-                                  : null,
-                              })
-                            }
-                            style={inputStyle}
-                          />
-                        </div>
-                      )}
+                      {/* ── checkbox group inputs (PLAN §4.2b) ───────── */}
+                      {mf.field_type === "checkbox" && (() => {
+                        const cg = mf.checkbox_group;
+                        // option_value falls back to deprecated match_value on read
+                        const gid = cg?.group_id ?? "";
+                        const glabel = cg?.group_label ?? "";
+                        const ovalue = cg?.option_value ?? cg?.match_value ?? "";
+                        const olabel = cg?.option_label ?? "";
+                        const setGroup = (
+                          patch: Partial<{
+                            group_id: string;
+                            group_label: string;
+                            option_value: string;
+                            option_label: string;
+                          }>,
+                        ) => {
+                          const next = {
+                            group_id: patch.group_id ?? gid,
+                            group_label: patch.group_label ?? glabel,
+                            option_value: patch.option_value ?? ovalue,
+                            option_label: patch.option_label ?? olabel,
+                          };
+                          handleFieldUpdate(mf.pdf_field_name, {
+                            checkbox_group: next.group_id ? next : null,
+                          });
+                        };
+                        return (
+                          <div style={{
+                            padding: "var(--space-xs) var(--space-sm)",
+                            background: "var(--bg-tertiary)",
+                            borderRadius: "var(--radius-sm)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                          }}>
+                            <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
+                              Jelölőnégyzet csoport
+                            </span>
+                            <datalist id="existing-groups">
+                              {Array.from(
+                                new Set(
+                                  mapping?.fields
+                                    .map((f) => f.checkbox_group?.group_id)
+                                    .filter(Boolean)
+                                ),
+                              ).map((g) => (
+                                <option key={g} value={g} />
+                              ))}
+                            </datalist>
+                            <input
+                              list="existing-groups"
+                              placeholder="csoport_azonosító (pl. highest_education)"
+                              value={gid}
+                              onChange={(e) => setGroup({ group_id: e.target.value })}
+                              style={inputStyle}
+                            />
+                            <input
+                              placeholder="csoport felirata / kérdés (pl. Legmagasabb iskolai végzettség)"
+                              value={glabel}
+                              onChange={(e) => setGroup({ group_label: e.target.value })}
+                              style={inputStyle}
+                            />
+                            <input
+                              placeholder="option_value — SF picklist érték (pl. Felsőfokú)"
+                              value={ovalue}
+                              onChange={(e) => setGroup({ option_value: e.target.value })}
+                              style={inputStyle}
+                            />
+                            <input
+                              placeholder="option_label — opció felirata a PDF-en (pl. Felsőfokú)"
+                              value={olabel}
+                              onChange={(e) => setGroup({ option_label: e.target.value })}
+                              style={inputStyle}
+                            />
+                          </div>
+                        );
+                      })()}
 
                       {/* Delete button (Task 3.5) */}
                       <button
@@ -1243,6 +1305,54 @@ export default function PageEditor({
                       </button>
                     </div>
                   )}
+                </div>
+                );
+              };
+
+              if (entry.kind === "single") return renderMember(entry.field);
+
+              // PLAN §4.2(a) — checkbox-csoport konténer (fieldset-szerű)
+              return (
+                <div
+                  key={`group-${entry.groupId}`}
+                  className="mapping-row"
+                  style={{
+                    flexDirection: "column",
+                    alignItems: "stretch",
+                    gap: 0,
+                    padding: 0,
+                    borderLeft: "3px solid var(--accent-blue)",
+                    background: "var(--bg-tertiary)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-sm)",
+                      padding: "var(--space-xs) var(--space-sm)",
+                      borderBottom: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <span style={{ fontSize: "0.7rem" }}>▼</span>
+                    <span
+                      title={entry.groupLabel}
+                      style={{
+                        fontSize: "0.8rem",
+                        fontWeight: 700,
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {entry.groupLabel}
+                    </span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>
+                      {entry.members.length} opció
+                    </span>
+                  </div>
+                  {entry.members.map((mf) => renderMember(mf))}
                 </div>
               );
             })}
