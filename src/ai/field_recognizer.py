@@ -514,6 +514,41 @@ def _group_meta(f: RecognizedField) -> Optional[dict]:
     return getattr(f, "checkbox_group", None)
 
 
+def _normalize_checkbox_group(cg_raw) -> Optional[dict]:
+    """PLAN §3.3 — AI válaszból érkező checkbox_group normalizálása.
+
+    Kezeli a teljes kulcsokat (group_id/group_label/option_value/option_label,
+    amit a SYSTEM_PROMPT kér), a rövidített kulcsokat (g/gl/ov/ol, amit a
+    _ai_batch_recognize prompt használ), és a deprecated alias-t (match_value/mv).
+    Visszatér a kanonikus 4-kulcsos alakkal, vagy None ha nincs group_id.
+    """
+    if not cg_raw or not isinstance(cg_raw, dict):
+        return None
+    gid = cg_raw.get("group_id") or cg_raw.get("g")
+    if not gid:
+        return None
+    ov = cg_raw.get("option_value")
+    if ov is None:
+        ov = cg_raw.get("ov")
+    if ov is None:
+        ov = cg_raw.get("match_value")
+    if ov is None:
+        ov = cg_raw.get("mv")
+    gl = cg_raw.get("group_label")
+    if gl is None:
+        gl = cg_raw.get("gl")
+    ol = cg_raw.get("option_label")
+    if ol is None:
+        ol = cg_raw.get("ol")
+    return {
+        "group_id": gid,
+        "group_label": gl,
+        "option_value": ov,
+        "option_label": ol,
+    }
+
+
+
 def _field_canonical(f) -> Optional[str]:
     if isinstance(f, dict):
         return f.get("canonical_field")
@@ -621,12 +656,12 @@ Válaszolj JSON formátumban az alábbi struktúrával:
       "confidence": "high|medium|low",
       "page_number": 1,
       "notes": "opcionális megjegyzés",
-      "checkbox_group": {
+      "checkbox_group": {{
         "group_id": "stabil snake_case azonosító, közös a csoport minden tagján (pl. 'highest_education')",
         "group_label": "a KÉRDÉS felirata (pl. 'Legmagasabb iskolai végzettség')",
         "option_value": "a Salesforce picklist érték, ami ezt az opciót kiválasztja (pl. 'Felsőfokú')",
         "option_label": "az opció felirata a PDF-en (általában = option_value)"
-      },
+      }},
       "fill_rule": {{"match_value": "Az a Salesforce mező érték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
     }}
   ]
@@ -974,16 +1009,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                         canonical_field=canonical,
                                         confidence=MappingConfidence.MEDIUM,
                                         page_number=item.get("p", page_num),
-                                        checkbox_group=(
-                                            {
-                                                "group_id": item["g"],
-                                                "group_label": item.get("gl"),
-                                                # ov preferált; mv = régi alias (backward compat)
-                                                "option_value": item.get("ov") if item.get("ov") is not None else item.get("mv"),
-                                                "option_label": item.get("ol"),
-                                            }
-                                            if item.get("g") else None
-                                        ),
+                                        checkbox_group=_normalize_checkbox_group(item),
                                         fill_rule=item.get("fill_rule"),
                                     ))
                                     mapped += 1
@@ -1636,7 +1662,16 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 page_number=f_data.get("page_number", 1),
                 coordinates=f_data.get("coordinates"),
                 notes=f_data.get("notes"),
+                # PLAN §3.3 — checkbox_group normalizálása (teljes/rövidített/
+                # alias kulcsok → kanonikus 4-kulcsos alak). Korábban itt eldobódott.
+                checkbox_group=_normalize_checkbox_group(f_data.get("checkbox_group")),
+                fill_rule=f_data.get("fill_rule"),
             ))
+
+        # PLAN §3.5 — checkbox-csoport konzisztencia ellenőrzés
+        group_errors = _validate_checkbox_groups(fields)
+        for e in group_errors:
+            logger.warning("⚠️ checkbox_group (parse): %s", e)
 
         return MappingConfig(
             bank_name="OTP Bank",
