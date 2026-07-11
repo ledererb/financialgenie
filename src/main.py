@@ -1032,48 +1032,59 @@ class FormFillerPipeline:
             # field_data-t ad vissza — ezért mindkettőt canonical-alapúvá
             # transzformáljuk a mapping.fields segítségével.
             placements: dict[str, TextPlacement] = {}
-            canonical_field_data: dict[str, str] = {}
-            
+            overlay_field_data: dict[str, str] = {}
+
             # Load template PDF to determine page heights for Y axis inversion
             import fitz
             doc = fitz.open(str(template_pdf))
-            
+
             for f in mapping.fields:
-                if not (f.coordinates and f.canonical_field):
+                # Checkbox mezőknek is kell canonical_field VAGY fill_rule,
+                # plusz koordináták. Szöveg mezőknek canonical_field kell.
+                if not f.coordinates:
                     continue
-                
+                is_checkbox = (f.field_type == "checkbox")
+                if not is_checkbox and not f.canonical_field:
+                    continue
+
                 page_idx = max(int(f.page_number) - 1, 0)
                 if page_idx < len(doc):
                     page_h = float(doc[page_idx].rect.height)
                 else:
                     page_h = 842.0  # Fallback to standard A4 height
-                
+
                 coords = f.coordinates
+                coord_w = float(coords.get("width", 12.0) or 12.0)
+                coord_h = float(coords.get("height", 12.0) or 12.0)
                 y_top_left = float(coords.get("y", 0.0))
-                h = float(coords.get("height", 12.0) or 12.0)
-                
+
                 # Invert Y axis: ReportLab y0 is from bottom, mapping y0 is from top
-                y_bottom_left = page_h - y_top_left - h + 3
-                
-                placements[f.canonical_field] = TextPlacement(
+                y_bottom_left = page_h - y_top_left - coord_h + 3
+
+                # Key by pdf_field_name so checkbox_group options don't
+                # overwrite each other (they share a canonical_field).
+                placements[f.pdf_field_name] = TextPlacement(
                     x=float(coords.get("x", 0.0)),
                     y=y_bottom_left,
                     font_size=10.0,
                     page_index=page_idx,
+                    field_type="checkbox" if is_checkbox else "text",
+                    width=coord_w,
+                    height=coord_h,
                 )
-                
-                # pdf_field_name → value override
+
+                # Pass the value from field_data (keyed by pdf_field_name)
                 if f.pdf_field_name in field_data:
                     val = field_data[f.pdf_field_name]
                     if val:
-                        canonical_field_data[f.canonical_field] = val
+                        overlay_field_data[f.pdf_field_name] = val
             doc.close()
 
             filler = OverlayFiller()
             result = filler.fill(
                 template_path=template_pdf,
                 output_path=output_path,
-                field_data=canonical_field_data,
+                field_data=overlay_field_data,
                 mapping=placements,
             )
             if not result.success:

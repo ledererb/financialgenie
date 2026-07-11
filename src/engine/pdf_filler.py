@@ -920,10 +920,17 @@ class AcroFormFiller(BaseFiller):
 # Overlay kitöltő (reportlab + PyMuPDF)
 # ---------------------------------------------------------------------------
 
+def _overlay_is_truthy(value: str) -> bool:
+    """Egy overlay checkbox érték truthy-e (pipa rajzolás vagy sem)."""
+    if not value:
+        return False
+    return value.strip().lower() in ("igen", "true", "yes", "1", "checked")
+
+
 @dataclass
 class TextPlacement:
     """
-    Egy szöveg elhelyezési specifikációja az overlay módhoz.
+    Egy szöveg vagy checkbox elhelyezési specifikációja az overlay módhoz.
 
     Attributes:
         x: Bal oldali pozíció pontokban (1 pont = 1/72 inch).
@@ -931,12 +938,18 @@ class TextPlacement:
         font_name: Betűtípus neve (reportlab-kompatibilis).
         font_size: Betűméret pontokban.
         page_index: A céloldal indexe (0-alapú).
+        field_type: "text" (szöveg) vagy "checkbox" (pipa rajzolás).
+        width: Checkbox doboz szélessége pontokban.
+        height: Checkbox doboz magassága pontokban.
     """
     x: float
     y: float
     font_name: str = "Helvetica"
     font_size: float = 10.0
     page_index: int = 0
+    field_type: str = "text"
+    width: float = 0.0
+    height: float = 0.0
 
 
 class OverlayFiller(BaseFiller):
@@ -1115,21 +1128,42 @@ class OverlayFiller(BaseFiller):
                     continue
 
                 value_str = str(value)
-                font = placement.font_name or self.default_font
-                size = placement.font_size or self.default_font_size
 
                 try:
-                    c.setFont(font, size)
-                    c.drawString(placement.x, placement.y, value_str)
-                    result.filled_fields.append(canonical_name)
-                    logger.debug(
-                        "Overlay szöveg: %s = '%s' @ (%s, %s) oldal %d",
-                        canonical_name,
-                        value_str[:40],
-                        placement.x,
-                        placement.y,
-                        page_idx,
-                    )
+                    if placement.field_type == "checkbox":
+                        # Checkbox: X jelet rajzolunk a dobozba ha truthy.
+                        # Nem truthy értéknél nem rajzolunk semmit (üres checkbox).
+                        if _overlay_is_truthy(value_str):
+                            w = placement.width or 10.0
+                            h = placement.height or 10.0
+                            cx = placement.x + w / 2
+                            cy = placement.y + h / 2
+                            s = min(w, h) * 0.35
+                            c.setLineWidth(1.5)
+                            c.line(cx - s, cy - s, cx + s, cy + s)
+                            c.line(cx - s, cy + s, cx + s, cy - s)
+                            result.filled_fields.append(canonical_name)
+                            logger.debug(
+                                "Overlay pipa: %s @ (%s, %s) oldal %d",
+                                canonical_name, placement.x, placement.y, page_idx,
+                            )
+                        else:
+                            result.skipped_fields.append(canonical_name)
+                    else:
+                        # Szöveg mező
+                        font = placement.font_name or self.default_font
+                        size = placement.font_size or self.default_font_size
+                        c.setFont(font, size)
+                        c.drawString(placement.x, placement.y, value_str)
+                        result.filled_fields.append(canonical_name)
+                        logger.debug(
+                            "Overlay szöveg: %s = '%s' @ (%s, %s) oldal %d",
+                            canonical_name,
+                            value_str[:40],
+                            placement.x,
+                            placement.y,
+                            page_idx,
+                        )
                 except Exception as exc:
                     result.errors.append({
                         "field": canonical_name,
