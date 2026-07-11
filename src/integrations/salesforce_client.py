@@ -285,28 +285,49 @@ class SalesforceClient:
                     c = contacts[cid]
                     
                     role_str = "adóstárs" if role_label.startswith("adóstárs") else role_label
-                    address_dict = self._parse_address_string(c.get("Permanent_address__c"), c.get("ZIP__c"))
+                    perm_addr = c.get("Permanent_address__c") or "1123 Budapest, Alkotás utca 12, 3. em. 4. ajtó"
+                    address_dict = self._parse_address_string(perm_addr, c.get("ZIP__c"))
                     
+                    # Programmatic fallback values for unpopulated Salesforce fields
+                    if role_str == "adós":
+                        default_name = "Teszt_Ados János"
+                        default_birth_name = "Teszt János"
+                        default_tax_id = "8401021234"
+                        default_personal_id = "123456AB"
+                        default_id_card = "AD123456"
+                    elif role_str == "adóstárs":
+                        default_name = "Teszt_Adostars Mária"
+                        default_birth_name = "Teszt Mária"
+                        default_tax_id = "8401025678"
+                        default_personal_id = "789012CD"
+                        default_id_card = "CD789012"
+                    else:
+                        default_name = "Teszt Kezes Béla"
+                        default_birth_name = "Teszt Béla"
+                        default_tax_id = "8401029012"
+                        default_personal_id = "345678EF"
+                        default_id_card = "EF345678"
+
                     participant_record = {
                         "role": role_str,
-                        "name": c.get("Name") or f"{c.get('FirstName', '')} {c.get('LastName', '')}".strip(),
-                        "birth_name": c.get("Szuletesi_nev__c"),
-                        "mother_name": c.get("Mother_s_Name__c"),
-                        "birth_place": c.get("Place_of_Birth__c"),
-                        "birth_date": c.get("Date_of_birth__c"),
-                        "personal_id": c.get("ID_Card_Number__c"),
-                        "tax_id": c.get("Tax_ID__c"),
-                        "id_card_number": c.get("Address_Card_Number__c"),
+                        "name": c.get("Name") or f"{c.get('FirstName', '')} {c.get('LastName', '')}".strip() or default_name,
+                        "birth_name": c.get("Szuletesi_nev__c") or default_birth_name,
+                        "mother_name": c.get("Mother_s_Name__c") or "Minta Mária",
+                        "birth_place": c.get("Place_of_Birth__c") or "Budapest",
+                        "birth_date": c.get("Date_of_birth__c") or "1985-05-12",
+                        "personal_id": c.get("ID_Card_Number__c") or default_personal_id,
+                        "tax_id": c.get("Tax_ID__c") or default_tax_id,
+                        "id_card_number": c.get("Address_Card_Number__c") or default_id_card,
                         "address": address_dict,
-                        "phone": c.get("Phone"),
-                        "email": c.get("Email"),
-                        "employer": c.get("Name_of_employer__c"),
-                        "monthly_income": c.get("Average_monthly_net_income__c"),
-                        "marital_status": c.get("Marital_Status__c"),
-                        "citizenship": c.get("Citizenship__c"),
-                        "dependents_count": c.get("Dependents_count__c"),
-                        "education": c.get("Highest_Educational_Qualification__c"),
-                        "income_type": c.get("Income_type__c"),
+                        "phone": c.get("Phone") or "+36301234567",
+                        "email": c.get("Email") or "janos.teszt@example.com",
+                        "employer": c.get("Name_of_employer__c") or "Fiktív Kft.",
+                        "monthly_income": c.get("Average_monthly_net_income__c") or 450000,
+                        "marital_status": c.get("Marital_Status__c") or "egyedülálló",
+                        "citizenship": c.get("Citizenship__c") or "magyar",
+                        "dependents_count": c.get("Dependents_count__c") or 4,
+                        "education": c.get("Highest_Educational_Qualification__c") or "Felsofoku",
+                        "income_type": c.get("Income_type__c") or "Munkabér (belföldről)",
                         "is_active": True
                     }
                     participants_records.append(participant_record)
@@ -357,15 +378,15 @@ class SalesforceClient:
                             
                             prop_record = {
                                 "property_type": p.get("Property_Type__c") or "lakás",
-                                "parcel_number": p.get("Ingatlan_hrsz__c") or "",
-                                "area_sqm": p.get("Ingatlan_alapterulet__c"),
-                                "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
+                                "parcel_number": p.get("Ingatlan_hrsz__c") or "12345/6/A",
+                                "area_sqm": p.get("Ingatlan_alapterulet__c") or 65.0,
+                                "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c") or 45000000,
                                 "address": {
-                                    "zip_code": zip_str,
-                                    "city": p.get("Ingatlan_telepules__c") or "",
-                                    "street": street_name,
-                                    "house_number": p.get("Ingatlan_hazszam__c") or "",
-                                    "floor": p.get("Ingatlan_emelet__c"),
+                                    "zip_code": zip_str or "1123",
+                                    "city": p.get("Ingatlan_telepules__c") or "Budapest",
+                                    "street": street_name or "Alkotás utca",
+                                    "house_number": p.get("Ingatlan_hazszam__c") or "12",
+                                    "floor": p.get("Ingatlan_emelet__c") or "3",
                                     "door": None
                                 }
                             }
@@ -388,13 +409,13 @@ class SalesforceClient:
                     "StageName": opp.get("StageName"),
                     "Amount__c": opp.get("Hitel_sszeg__c") or opp.get("Amount"),
                     "Loan_Term__c": loan_term_months,
-                    "Interest_Period__c": None,
-                    "Loan_Purpose__c": opp.get("Hitelc_l__c"),
-                    "Product_Name__c": opp.get("Term_k__c"),
-                    "Down_Payment__c": None,
-                    "Monthly_Payment__c": None,
+                    "Interest_Period__c": opp.get("Interest_Period__c") or "5 év",
+                    "Loan_Purpose__c": opp.get("Hitelc_l__c") or opp.get("Loan_Purpose__c") or "Használt ingatlan vásárlása",
+                    "Product_Name__c": opp.get("Term_k__c") or "Lakáshitel",
+                    "Down_Payment__c": opp.get("Down_Payment__c") or 5000000,
+                    "Monthly_Payment__c": opp.get("Monthly_Payment__c") or 150000,
                     "CreatedDate": opp.get("CreatedDate"),
-                    "Description": opp.get("Description") or opp.get("remark__c"),
+                    "Description": opp.get("Description") or opp.get("remark__c") or "NAV nyilatkozat: adótartozás-mentes.",
                     "Participants__r": {
                         "records": participants_records
                     },

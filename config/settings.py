@@ -19,6 +19,10 @@ MAPPINGS_DIR = PROJECT_ROOT / "src" / "mapping"
 env_path = PROJECT_ROOT / ".env"
 if env_path.exists():
     load_dotenv(env_path)
+else:
+    config_env_path = CONFIG_DIR / ".env"
+    if config_env_path.exists():
+        load_dotenv(config_env_path)
 
 # API kulcsok
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
