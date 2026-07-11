@@ -323,16 +323,31 @@ export default function ReviewDashboard({
           </h3>
 
           <div className="heatmap-grid">
-            {pageHeatmap.map((entry) => (
-              <div
-                key={entry.page}
-                className={heatmapClass(entry)}
-                onClick={() => onPageClick(entry.page)}
-                title={`${entry.page}. oldal: ${entry.mapped}/${entry.total} leképezve`}
-              >
-                {entry.page}
-              </div>
-            ))}
+            {pageHeatmap.map((entry) => {
+              const cls = heatmapClass(entry);
+              const isEmpty = entry.total === 0;
+              const isLow = entry.total > 0 && entry.mapped / entry.total < 0.2;
+              return (
+                <div
+                  key={entry.page}
+                  className={cls}
+                  onClick={() => onPageClick(entry.page)}
+                  title={
+                    isEmpty
+                      ? `${entry.page}. oldal: nincs mező`
+                      : `${entry.page}. oldal: ${entry.mapped}/${entry.total} leképezve — kattints a szerkesztéshez`
+                  }
+                >
+                  {entry.page}
+                  {isEmpty && (
+                    <span style={{ fontSize: "0.55rem", display: "block", opacity: 0.6 }}>(nincs)</span>
+                  )}
+                  {isLow && (
+                    <span style={{ fontSize: "0.55rem", display: "block" }}>{entry.mapped}/{entry.total}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div
@@ -551,7 +566,21 @@ export default function ReviewDashboard({
         <button className="btn btn-ghost" onClick={onBack}>
           ← Vissza
         </button>
-        <button className="btn btn-success" onClick={onApprove}>
+        <button
+          className="btn btn-success"
+          onClick={() => {
+            if (stats) {
+              const rate = stats.total > 0 ? stats.mapped / stats.total : 0;
+              if (rate < 0.5 && stats.total > 0) {
+                if (!window.confirm(
+                  `Figyelem: csak ${Math.round(rate * 100)}% (${stats.mapped}/${stats.total}) a mezők lefedettsége. ` +
+                  `Biztosan folytatod a kitöltéssel?`
+                )) return;
+              }
+            }
+            onApprove();
+          }}
+        >
           Mapping jóváhagyása
         </button>
       </div>

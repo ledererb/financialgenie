@@ -1,10 +1,13 @@
 import { useState, memo } from "react";
 import type { Product, CatalogDocument } from "@/types";
 import DocumentList from "./DocumentList";
+import PackageGenerationDialog from "./PackageGenerationDialog";
 
 interface ProductListProps {
   product: Product;
   documents: CatalogDocument[];
+  bankId: string;
+  bankName: string;
   selectedProductId: string | null;
   selectedDocumentId: string | null;
   onSelectProduct: (productId: string) => void;
@@ -17,6 +20,8 @@ interface ProductListProps {
 function ProductListImpl({
   product,
   documents,
+  bankId,
+  bankName,
   selectedProductId,
   selectedDocumentId,
   onSelectProduct,
@@ -27,6 +32,7 @@ function ProductListImpl({
 }: ProductListProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showPackageDialog, setShowPackageDialog] = useState(false);
   const isProductSelected = product.id === selectedProductId;
   const docCount = documents.length;
 
@@ -115,6 +121,32 @@ function ProductListImpl({
           {docCount} {docCount === 1 ? "dok." : "dok."}
         </span>
 
+        {/* Generate package button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowPackageDialog(true);
+          }}
+          title="Dokumentumcsomag generálása"
+          disabled={docCount === 0}
+          style={{
+            background: "none",
+            border: "none",
+            color: docCount === 0 ? "var(--text-quaternary)" : "var(--text-tertiary)",
+            cursor: docCount === 0 ? "not-allowed" : "pointer",
+            padding: "0 2px",
+            fontSize: "0.8rem",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (docCount > 0) e.currentTarget.style.color = "var(--accent-blue)";
+          }}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+        >
+          📦
+        </button>
+
         {/* Delete product button */}
         <button
           onClick={(e) => {
@@ -202,6 +234,16 @@ function ProductListImpl({
             onDeleteDocument={onDeleteDocument}
           />
         </div>
+      )}
+
+      {showPackageDialog && (
+        <PackageGenerationDialog
+          bankId={bankId}
+          bankName={bankName}
+          productId={product.id}
+          productName={product.name}
+          onClose={() => setShowPackageDialog(false)}
+        />
       )}
     </div>
   );

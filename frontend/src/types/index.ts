@@ -192,4 +192,22 @@ export interface Catalog {
   documents: CatalogDocument[];
 }
 
+export interface PackageDocument {
+  title: string;
+  file: string | null;
+  success: boolean;
+  filled_fields?: number;
+  skipped_fields?: number;
+  per_applicant?: boolean;
+  error?: string;
+}
+
+export interface PackageResult {
+  success: boolean;
+  package_url: string;
+  documents: PackageDocument[];
+  total_documents: number;
+  errors: { document: string; error: string }[];
+}
+
 export type AdminTab = "banks" | "documents";

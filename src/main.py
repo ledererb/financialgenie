@@ -252,16 +252,21 @@ class FormFillerPipeline:
         template_pdf: Path,
         mapping_config: MappingConfig = None,
         force_recreate_mapping: bool = False,
+        participant_override: str | None = None,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
-        
+
         Args:
             deal_id: Salesforce ügylet azonosító
             template_pdf: A kitöltendő PDF sablon
             mapping_config: Mező-leképezés konfiguráció (opcionális, automatikusan feloldódik)
             force_recreate_mapping: Mapping kényszerített újragenerálása (AI automatikus futtatása)
-            
+            participant_override: Ha "co_borrower", a -társ nélküli (sima) mezők
+                is a co_borrower (adóstárs) adatait kapják. Per-applicant
+                dokumentumoknál használjuk, hogy a társigénylő lapból egy
+                második példány is készüljön az adóstárs adataival.
+
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
         """
@@ -313,7 +318,7 @@ class FormFillerPipeline:
 
         # 4. Mezőadatok összeállítása
         logger.info("📋 4. Mezőadatok összeállítása")
-        field_data = self._prepare_field_data(deal, mapping_config)
+        field_data = self._prepare_field_data(deal, mapping_config, participant_override=participant_override)
         logger.info(f"   {len(field_data)} mező kitöltve")
 
         # 5. PDF kitöltés
@@ -419,7 +424,7 @@ class FormFillerPipeline:
         report = checker.check(deal, required_fields)
         return report
 
-    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig) -> dict:
+    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: str | None = None) -> dict:
         """
         Kanonikus adatokból mező-értékpárok összeállítása.
         A mapping alapján a PDF mezőnevekre képezi le az értékeket.
@@ -467,6 +472,13 @@ class FormFillerPipeline:
                 borrower_data = p_data
             else:
                 co_borrower_data = p_data
+
+        # Per-applicant override: ha a dokumentumot a co_borrower
+        # adataival kell kitölteni (pl. társigénylő lap 2. példánya),
+        # akkor a "sima" (nem -társ) mezők is a co_borrower adatait
+        # kapják — a borrower_data-t felülírjuk a co_borrower adataival.
+        if participant_override == "co_borrower" and co_borrower_data:
+            borrower_data = dict(co_borrower_data)
 
         # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
         loan = deal.loan
@@ -554,6 +566,12 @@ class FormFillerPipeline:
 
             # Contact.Relation__c → checkbox, szöveggel nem töltjük
             if canonical == "Contact.Relation__c":
+                continue
+
+            # Radio-group checkbox opciók (___suffix vagy checkbox_group):
+            # ezeket nem szövegként kell kitölteni, hanem a checkbox group
+            # / fill_rule logika kezeli (match_value → "igen" + base name).
+            if "___" in pdf_name or getattr(f, 'checkbox_group', None):
                 continue
 
             if canonical.startswith("Contact."):
@@ -666,10 +684,21 @@ class FormFillerPipeline:
                 continue
 
             pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
+            canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
+            # For legacy match_value rules, pass the canonical field's deal value
+            canonical_value = None
+            if canonical:
+                canonical_value = all_data.get(canonical) or borrower_data.get(canonical) or co_borrower_data.get(canonical)
             try:
-                value = self._eval_fill_rule(fill_rule, all_data, borrower_data, co_borrower_data, deal)
+                value = self._eval_fill_rule(fill_rule, all_data, borrower_data, co_borrower_data, deal, canonical_value)
                 if value is not None:
                     field_data[pdf_name] = value
+                    # For radio-group checkbox options (___suffix), also set the
+                    # base widget name with the export value so the PDF filler
+                    # can toggle the actual radio button in the PDF.
+                    if "___" in pdf_name and value == "igen":
+                        base_name, export_val = pdf_name.split("___", 1)
+                        field_data[base_name] = export_val
             except Exception as e:
                 logger.debug(f"fill_rule error on {pdf_name}: {e}")
 
@@ -813,13 +842,19 @@ class FormFillerPipeline:
 
         return field_data
 
-    def _eval_fill_rule(self, rule, all_data: dict, borrower: dict, co_borrower: dict, deal) -> str | None:
+    def _eval_fill_rule(self, rule, all_data: dict, borrower: dict, co_borrower: dict, deal, canonical_value: str | None = None) -> str | None:
         """
         Evaluate a single fill_rule expression.
-        
+
         rule can be:
-        - dict: {"type": "static", "value": "igen"} (standard format per brief)
-        - str: legacy format (backward compat) — treated as static value
+        - dict with type=static, value=igen (standard format per brief)
+        - dict with match_value=Magyar (legacy format, checkbox radio option)
+        - str: legacy format (backward compat), treated as static value
+
+        For legacy ``match_value`` rules (radio button options), the checkbox
+        is checked (returns "igen") if the field's canonical_field value from
+        the deal data matches the ``match_value``. This is passed in via
+        *canonical_value* by the caller.
         """
         if not rule:
             return None
@@ -832,6 +867,16 @@ class FormFillerPipeline:
             return None
 
         rule_type = rule.get("type", "")
+
+        # Legacy match_value format (radio button option): checked if the
+        # canonical field's deal value matches this option's match_value.
+        match_value = rule.get("match_value")
+        if match_value is not None and not rule_type:
+            if canonical_value is not None:
+                if str(canonical_value).strip().lower() == str(match_value).strip().lower():
+                    return "igen"
+            return None
+
         value = rule.get("value", "")
 
         # static — always this value

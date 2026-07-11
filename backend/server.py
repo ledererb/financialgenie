@@ -1036,6 +1036,156 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 
+@app.post("/api/catalog/generate-package")
+def generate_package(body: dict):
+    """
+    Generate a complete document package for a product+deal.
+
+    Gathers all catalog documents associated with the given product,
+    fills each with the deal data, packages them into a ZIP, and
+    returns a download URL. Per-applicant documents produce one copy
+    per active participant (borrower + co-borrower).
+
+    Body: { bank_id: str, product_id: str, deal_id: str }
+    Returns: { success, package_url, documents[], total_documents, errors[] }
+    """
+    import zipfile
+    from datetime import datetime
+
+    bank_id = body.get("bank_id")
+    product_id = body.get("product_id")
+    deal_id = body.get("deal_id")
+    if not bank_id or not product_id or not deal_id:
+        raise HTTPException(400, "bank_id, product_id, and deal_id are required")
+
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(
+                mock_mode=True,
+                mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data",
+            )
+        pipeline = FormFillerPipeline(
+            sf_client=sf_client, output_dir=PROJECT_ROOT / "output"
+        )
+
+        # Gather documents for this product
+        cat = catalog_service.load_catalog()
+        docs = [d for d in cat["documents"] if product_id in (d.get("product_ids") or [])]
+
+        # Determine participant count for per_applicant docs
+        deal_raw = sf_client.get_deal(deal_id)
+        if deal_raw is None:
+            raise HTTPException(404, f"Deal not found: {deal_id}")
+        deal = pipeline.normalizer.normalize_deal(deal_raw)
+        num_borrowers = len(deal.borrowers)
+        num_co_borrowers = len(deal.co_borrowers)
+        has_co_borrower = num_co_borrowers > 0
+
+        results = []
+        errors = []
+        output_files = []  # (filename_in_zip, absolute_path)
+
+        for doc in docs:
+            title = doc.get("title", doc["id"])
+            per_applicant = doc.get("per_applicant", False)
+            file_path = doc.get("file_path", "")
+            try:
+                pdf_path = _get_pdf(file_path)
+            except HTTPException:
+                errors.append({"document": title, "error": "PDF fájl nem található"})
+                results.append({
+                    "title": title, "file": None, "success": False,
+                    "error": "PDF fájl nem található",
+                })
+                continue
+
+            # Determine how many copies to produce
+            if per_applicant and has_co_borrower:
+                copies = [
+                    ("adós", None),
+                    ("adóstárs", "co_borrower"),
+                ]
+            else:
+                copies = [(None, None)]
+
+            for suffix, override in copies:
+                try:
+                    result = pipeline.run_for_deal(
+                        deal_id=deal_id,
+                        template_pdf=pdf_path,
+                        mapping_config=None,
+                        force_recreate_mapping=False,
+                        participant_override=override,
+                    )
+                    if not result["success"]:
+                        err_msg = ", ".join(result.get("issues", [])) or "Ismeretlen hiba"
+                        errors.append({"document": title, "error": err_msg})
+                        results.append({
+                            "title": f"{title} ({suffix})" if suffix else title,
+                            "file": None, "success": False, "error": err_msg,
+                        })
+                        continue
+
+                    # Build filename for the ZIP
+                    safe_title = title.replace("/", "_").replace("\\", "_")
+                    if suffix:
+                        zip_name = f"{safe_title} ({suffix}).pdf"
+                    else:
+                        zip_name = f"{safe_title}.pdf"
+
+                    output_files.append((zip_name, result["output_path"]))
+                    results.append({
+                        "title": f"{title} ({suffix})" if suffix else title,
+                        "file": zip_name,
+                        "success": True,
+                        "filled_fields": len(result.get("filled_fields", [])),
+                        "skipped_fields": len(result.get("skipped_fields", [])),
+                        "per_applicant": per_applicant,
+                    })
+                except Exception as e:
+                    log.exception("Package fill error on %s", title)
+                    errors.append({"document": title, "error": str(e)})
+                    results.append({
+                        "title": title, "file": None, "success": False,
+                        "error": str(e),
+                    })
+
+        # Package into ZIP
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        bank_slug = bank_id.replace("/", "_")
+        product_slug = product_id.replace("/", "_")
+        zip_filename = f"package_{bank_slug}_{product_slug}_{deal_id}_{timestamp}.zip"
+        zip_path = PROJECT_ROOT / "output" / zip_filename
+        zip_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for zip_name, abs_path in output_files:
+                if abs_path and Path(abs_path).exists():
+                    zf.write(abs_path, zip_name)
+
+        package_url = f"/api/pdf/download?path={urllib.parse.quote(str(zip_path))}"
+
+        return {
+            "success": True,
+            "package_url": package_url,
+            "documents": results,
+            "total_documents": len([r for r in results if r["success"]]),
+            "errors": errors,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Package generation failed")
+        raise HTTPException(500, f"Csomag generálási hiba: {str(e)}")
+
+
 @app.post("/api/pdf/fill")
 def fill_pdf(body: dict):
     """
@@ -1110,6 +1260,63 @@ def fill_pdf_pages(path: str = Query(...), count: int = Query(default=10, ge=1, 
     return {"total_pages": len(doc), "pages": pages, "path": str(abs_path)}
 
 
+@app.get("/api/pdf/field-values")
+def field_values(pdf_id: str = Query(...)):
+    """Resolve field values for a PDF using mock/SF deal data and the existing mapping.
+
+    Returns ``{ values: { pdf_field_name: value, ... } }`` so the PageEditor
+    can overlay actual data on the PDF image — the user sees what value each
+    mapped field will receive, making mapping verification much easier.
+    """
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(
+                mock_mode=True,
+                mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data",
+            )
+
+        pipeline = FormFillerPipeline(
+            sf_client=sf_client,
+            output_dir=PROJECT_ROOT / "output",
+        )
+
+        # Load the mapping for this PDF (dict from service → MappingConfig)
+        from ai.field_recognizer import MappingConfig
+
+        mapping_dict = mapping_service.load(pdf_id)
+        mapping_config = MappingConfig.from_dict(mapping_dict)
+
+        # Get the first deal
+        deals = pipeline.sf_client.list_deals()
+        if not deals:
+            return {"values": {}, "warning": "No deals available"}
+
+        deal_id = deals[0].get("Id") or deals[0].get("deal_id")
+        if not deal_id:
+            return {"values": {}, "warning": "No deal ID found"}
+
+        # Fetch and normalize the deal
+        raw_data = pipeline.sf_client.get_deal(deal_id)
+        if raw_data is None:
+            return {"values": {}, "warning": f"Deal {deal_id} not found"}
+
+        deal = pipeline.normalizer.normalize_deal(raw_data)
+
+        # Resolve field values via the pipeline's _prepare_field_data
+        field_data = pipeline._prepare_field_data(deal, mapping_config)
+
+        return {"values": field_data, "deal_id": deal_id}
+    except Exception as e:
+        log.exception("field_values failed")
+        raise HTTPException(500, f"Field values error: {str(e)}")
+
+
 @app.get("/api/sf/deals")
 def list_deals():
     """List available Salesforce deals for the fill preview dropdown."""
@@ -1129,7 +1336,7 @@ def list_deals():
 
 @app.get("/api/pdf/download")
 def pdf_download(path: str = Query(...)):
-    """Serve a filled PDF file from the output directory for downloading."""
+    """Serve a filled PDF or ZIP file from the output directory for downloading."""
     # Safety check: make sure the path is inside PROJECT_ROOT / "output"
     out_dir = (PROJECT_ROOT / "output").resolve()
     abs_path = Path(path).resolve()
@@ -1138,7 +1345,8 @@ def pdf_download(path: str = Query(...)):
     # Prevent directory traversal
     if not str(abs_path).startswith(str(out_dir)):
         raise HTTPException(403, "Access denied")
-    return FileResponse(abs_path, media_type="application/pdf", filename=abs_path.name)
+    media_type = "application/zip" if abs_path.suffix == ".zip" else "application/pdf"
+    return FileResponse(abs_path, media_type=media_type, filename=abs_path.name)
 
 
 @app.exception_handler(Exception)

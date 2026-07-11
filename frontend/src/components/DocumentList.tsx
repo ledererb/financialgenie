@@ -103,7 +103,7 @@ function DocumentListImpl({
                 {hasNoProducts && (
                   <span
                     className="badge"
-                    title="Nincs termékhez rendelve"
+                    title="⚠︎ Ez a dokumentum nincs egyetlen termékhez sem rendelve. Kattints a mellette lévő ✎ gombra a termékek szerkesztéséhez."
                     style={{
                       fontSize: "0.6rem",
                       padding: "1px 6px",
@@ -117,7 +117,7 @@ function DocumentListImpl({
                 {isShared && (
                   <span
                     className="badge badge-purple"
-                    title={`Megosztott ${doc.product_ids.length} termékben`}
+                    title={`⊕ Megosztott dokumentum: ${doc.product_ids.length} termékhez tartozik.`}
                     style={{ fontSize: "0.6rem", padding: "1px 6px" }}
                   >
                     ⊕ {doc.product_ids.length}×
@@ -126,7 +126,7 @@ function DocumentListImpl({
                 {doc.per_applicant && (
                   <span
                     className="badge badge-amber"
-                    title="Igénylőnként kitöltendő"
+                    title="👤 Igénylőnként kitöltendő — minden adós/adóstárs számára külön példány kell."
                     style={{ fontSize: "0.6rem", padding: "1px 6px" }}
                   >
                     👤

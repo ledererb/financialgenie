@@ -11,6 +11,7 @@ import type {
   CharacterGroupUpdate,
   MappingConfig,
   MappingField,
+  PackageResult,
   PdfField,
   PdfFieldsResponse,
   PdfInfo,
@@ -91,6 +92,13 @@ export function pageImageUrl(pdfId: string, page: number, dpr = 1): string {
 
 export async function getPdfFields(pdfId: string): Promise<PdfFieldsResponse> {
   return http<PdfFieldsResponse>("/api/pdf/fields", { query: { pdf_id: pdfId } });
+}
+
+/** Resolve field values (mock/SF deal data applied to the mapping). */
+export async function getFieldValues(
+  pdfId: string,
+): Promise<{ values: Record<string, string>; deal_id?: string }> {
+  return http("/api/pdf/field-values", { query: { pdf_id: pdfId } });
 }
 
 export async function previewPage(pdfId: string, pageNumber: number): Promise<{ image: string }> {
@@ -323,5 +331,25 @@ export async function uploadMasterPdf(
     throw new Error(body.detail || `${res.status} ${res.statusText}`);
   }
   return res.json();
+}
+
+export async function generatePackage(
+  bankId: string,
+  productId: string,
+  dealId: string,
+): Promise<PackageResult> {
+  return http<PackageResult>("/api/catalog/generate-package", {
+    method: "POST",
+    body: JSON.stringify({ bank_id: bankId, product_id: productId, deal_id: dealId }),
+  });
+}
+
+export async function listDeals(): Promise<
+  { Id: string; Name?: string; StageName?: string; CloseDate?: string; AccountName?: string }[]
+> {
+  const data = await http<{ deals: { Id: string; Name?: string; StageName?: string; CloseDate?: string; AccountName?: string }[] }>(
+    "/api/sf/deals",
+  );
+  return data.deals;
 }
 

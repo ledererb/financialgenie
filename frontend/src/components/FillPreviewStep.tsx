@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface Deal {
   Id: string;
@@ -107,6 +107,15 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
     link.download = `filled_${selectedDealId}.pdf`;
     link.click();
   };
+
+  // Auto-fill when a deal is first loaded (dummy data flows automatically)
+  const autoFilledRef = useRef(false);
+  useEffect(() => {
+    if (selectedDealId && !autoFilledRef.current && !filling && !fillResult) {
+      autoFilledRef.current = true;
+      handleFill();
+    }
+  }, [selectedDealId, filling, fillResult, handleFill]);
 
   const selectedDeal = deals.find((d) => d.Id === selectedDealId);
 
@@ -330,6 +339,14 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               PDF letöltése
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={onDone}
+              style={{ background: "var(--accent-green)" }}
+              title="Befejezés — visszatérés a főoldalra"
+            >
+              ✓ Befejezés
             </button>
           </div>
 

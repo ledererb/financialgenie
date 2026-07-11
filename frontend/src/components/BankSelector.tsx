@@ -265,6 +265,8 @@ function BankSelectorImpl({
                 key={product.id}
                 product={product}
                 documents={docsForProduct(product.id)}
+                bankId={bank.id}
+                bankName={bank.name}
                 selectedProductId={selectedProductId}
                 selectedDocumentId={selectedDocumentId}
                 onSelectProduct={onSelectProduct}

@@ -64,11 +64,13 @@ def extract_acroform_fields(
     finally:
         pdf.close()
 
-    # Patch page numbers from PyMuPDF — pikepdf /P references are unreliable.
-    # Pre-build a name→page map from PyMuPDF for reliable lookup, then
-    # fall back to coordinate-based matching for any remaining fields.
+    # Patch page numbers and rect positions from PyMuPDF — pikepdf /P
+    # references are unreliable and radio-group widgets all share the parent's
+    # rect. The multi-widget map lets suffix-based fields (___Yes, ___1,2)
+    # get their individual widget positions.
     mupdf_page_map = _build_mupdf_name_page_map(pdf_path, render_scale)
-    _patch_page_numbers_from_mupdf(pdf_path, fields, render_scale, mupdf_page_map)
+    mupdf_multi_map = _build_mupdf_multi_widget_map(pdf_path, render_scale)
+    _patch_page_numbers_from_mupdf(pdf_path, fields, render_scale, mupdf_page_map, mupdf_multi_map)
 
     # Fallback: pick up widgets PyMuPDF sees but pikepdf missed (deeply
     # nested AcroForm hierarchies, radio widgets stored outside /Fields).
@@ -231,8 +233,9 @@ def _build_mupdf_name_page_map(pdf_path: Path, render_scale: float = 150.0/72.0)
     """Build a {field_name: (page, x, y, w, h)} map from PyMuPDF.
 
     For radio groups (multiple widgets sharing one field name), we store the
-    FIRST widget's geometry — the suffix-based fields (___Yes, ___No) will
-    match via _add_missing_mupdf_widgets or coordinate fallback.
+    FIRST widget's geometry. The suffix-based fields (___Yes, ___No) are
+    matched by index in _patch_page_numbers_from_mupdf via a separate
+    multi-widget map.
 
     Returns an empty dict if PyMuPDF cannot open the PDF.
     """
@@ -259,57 +262,124 @@ def _build_mupdf_name_page_map(pdf_path: Path, render_scale: float = 150.0/72.0)
     return result
 
 
+def _build_mupdf_multi_widget_map(pdf_path: Path, render_scale: float = 150.0/72.0) -> dict[str, list[tuple[int, float, float, float, float]]]:
+    """Build a {field_name: [(page, x, y, w, h), ...]} map from PyMuPDF.
+
+    Unlike _build_mupdf_name_page_map (which keeps only the first widget per
+    name), this stores ALL widgets for radio groups — so suffix-based fields
+    (___Yes, ___1,2) can be matched to their individual widget positions by
+    index.
+
+    Returns an empty dict if PyMuPDF cannot open the PDF.
+    """
+    result: dict[str, list[tuple[int, float, float, float, float]]] = {}
+    try:
+        doc = fitz.open(str(pdf_path))
+        for i, page in enumerate(doc):
+            for w in page.widgets():
+                if w.field_name:
+                    r = w.rect
+                    key = w.field_name
+                    entry = (
+                        i + 1,
+                        round(r.x0 * render_scale, 2),
+                        round(r.y0 * render_scale, 2),
+                        round(r.width * render_scale, 2),
+                        round(r.height * render_scale, 2),
+                    )
+                    if key in result:
+                        result[key].append(entry)
+                    else:
+                        result[key] = [entry]
+        doc.close()
+        log.info("PyMuPDF multi-widget map built: %d names", len(result))
+    except Exception as e:
+        log.warning("PyMuPDF multi-widget map build failed: %s", e)
+    return result
+
+
 def _patch_page_numbers_from_mupdf(
     pdf_path: Path,
     fields: list[dict],
     render_scale: float,
     name_page_map: dict | None = None,
+    multi_widget_map: dict[str, list] | None = None,
 ):
-    """Fix page numbers on pikepdf fields.
+    """Fix page numbers and rect positions on pikepdf fields.
 
     Strategy (in priority order):
-    1. **Name-based lookup** — use the pre-built PyMuPDF name→(page,rect)
-       map. This is fast, reliable, and doesn't depend on coordinate
-       precision. Handles radio suffixes (base name lookup).
-    2. **Coordinate-based fallback** — for fields whose name isn't in the
-       map (deeply nested AcroForm hierarchies, renamed fields), fall back
-       to the old x/width proximity match.
-    3. **Leave unchanged** — fields we can't resolve keep their page_number
-       (typically 1, from _widget_rect_px). _add_missing_mupdf_widgets will
-       separately add any widgets PyMuPDF sees that pikepdf entirely missed.
-
-    The ENTIRE function must NOT raise — if the map is empty or PyMuPDF
-    fails, we leave fields as-is rather than corrupting page numbers.
+    1. **Exact name lookup** — field name is in the PyMuPDF map directly.
+    2. **Multi-widget index lookup** — for suffix-based radio fields
+       (___Yes, ___1,2), match by index within the base name's widget list.
+       This ensures each radio option gets its own correct position, not
+       the parent's.
+    3. **Base name lookup** — fall back to the first widget for the base name.
+    4. **Coordinate-based fallback** — for deeply nested hierarchies.
     """
     if name_page_map is None:
         name_page_map = _build_mupdf_name_page_map(pdf_path, render_scale)
+    if multi_widget_map is None:
+        multi_widget_map = _build_mupdf_multi_widget_map(pdf_path, render_scale)
 
     if not name_page_map:
         log.warning("PyMuPDF name→page map is empty — page numbers NOT patched")
         return
 
-    # ── Pass 1: name-based lookup (fast path) ────────────────────────
+    # ── Pass 1: exact name lookup + multi-widget index matching ──────
+    # Group suffix-based fields by base name so we can assign widget indices.
+    # Track which widget index each base name is at.
+    widget_index_tracker: dict[str, int] = {}
+
     name_patched = 0
+    multi_patched = 0
     for f in fields:
         name = f.get("pdf_field_name", "")
         if not name:
             continue
 
-        # Try exact match first, then base name (strip ___ suffix for radio widgets)
+        # Try exact match first
         entry = name_page_map.get(name)
-        if entry is None:
-            base = name.split("___")[0]
-            if base != name:
-                entry = name_page_map.get(base)
-
         if entry is not None:
             page, x, y, w, h = entry
             f["page_number"] = page
             f["rect"] = {"x": x, "y": y, "width": w, "height": h}
             name_patched += 1
+            continue
 
-    if name_patched:
-        log.info("Name-based patch: %d/%d fields", name_patched, len(fields))
+        # Suffix-based radio field (___Yes, ___1,2) — use multi-widget map
+        base = name.split("___")[0]
+        if base != name and multi_widget_map and base in multi_widget_map:
+            widgets = multi_widget_map[base]
+            idx = widget_index_tracker.get(base, 0)
+            if idx < len(widgets):
+                page, x, y, w, h = widgets[idx]
+                f["page_number"] = page
+                f["rect"] = {"x": x, "y": y, "width": w, "height": h}
+                widget_index_tracker[base] = idx + 1
+                multi_patched += 1
+                continue
+            else:
+                # More suffix fields than widgets — reuse last widget
+                page, x, y, w, h = widgets[-1]
+                f["page_number"] = page
+                f["rect"] = {"x": x, "y": y, "width": w, "height": h}
+                multi_patched += 1
+                continue
+
+        # Base name fallback (first widget)
+        if base != name:
+            entry = name_page_map.get(base)
+            if entry is not None:
+                page, x, y, w, h = entry
+                f["page_number"] = page
+                f["rect"] = {"x": x, "y": y, "width": w, "height": h}
+                name_patched += 1
+
+    if name_patched or multi_patched:
+        log.info(
+            "Name-based patch: %d fields, multi-widget: %d fields (total %d/%d)",
+            name_patched, multi_patched, name_patched + multi_patched, len(fields),
+        )
 
     # ── Pass 2: coordinate-based fallback for unmatched fields ───────
     unmatched = [f for f in fields if f.get("page_number", 1) == 1

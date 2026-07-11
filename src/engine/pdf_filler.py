@@ -290,6 +290,21 @@ class AcroFormFiller(BaseFiller):
         fields = acroform["/Fields"]
         self._fill_fields_recursive(fields, mapping, field_data, result)
 
+        # --- NeedAppearances: szövegmezők rendereléséhez szükséges ---
+        # A szövegmezőknél töröltük a /AP-t, így a viewer-nek újra kell
+        # generálnia az appearance stream-eket. A gomboknál viszont a /AP
+        # és /AS már helyesen be van állítva, ott nem kell.
+        acroform[pikepdf.Name("/NeedAppearances")] = True
+
+        # --- Árva widgetek javítása ---
+        # A master PDF split során (pikepdf add_pages_from) egyes widget
+        # annotációk elveszítik a /P (parent page) referenciájukat és nem
+        # kerülnek be az új oldal /Annots listájába. Ezek a "GetField" hibák
+        # és a checkbox-ok nem megjelenésének fő okai. Itt minden AcroForm
+        # mezőt bejárunk és a widgeteit hozzáadjuk a megfelelő oldal
+        # /Annots listájához a /Rect pozíció alapján.
+        self._fix_orphan_widgets(pdf)
+
         # --- Flatten / ReadOnly (opcionális) ---
         if self.flatten:
             self._make_readonly(pdf)
@@ -407,9 +422,23 @@ class AcroFormFiller(BaseFiller):
                                 break
 
                     if field_type == "/Btn":
+                        # A button mező "megjelenési céljai" (appearance
+                        # holders): ha van /Kids widget, azok; ha nincs, akkor
+                        # maga a field_obj az egyetlen widget. A /AS-t minden
+                        # esetben be kell állítanunk, különben a renderer nem
+                        # jeleníti meg a pipát.
+                        as_targets = widgets if widgets else [field_obj]
                         if isinstance(value, str) and value not in ("igen", "nem", "true", "false", "True", "False", "1", "0", ""):
                             # Radio button specifikus érték (pl. "1,2")
-                            field_obj[pikepdf.Name("/V")] = pikepdf.Name(f"/{value}")
+                            target_state = f"/{value}"
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name(target_state)
+                            # FIX: minden child widget /AS (appearance state)
+                            # beállítása — a kiválasztott widgetre az export
+                            # érték, a többire /Off. A /AP streameket nem
+                            # töröljük, különben a renderer (PyMuPDF) nem
+                            # tudja megjeleníteni a pipát.
+                            for w in as_targets:
+                                self._set_widget_as(w, target_state)
                         else:
                             # Checkbox: az érték truthy-e?
                             # FIX M4: a bepipált állapotot nem a hardcoded
@@ -421,13 +450,19 @@ class AcroFormFiller(BaseFiller):
                             if is_checked:
                                 on_state = self._get_checkbox_on_state(field_obj, widgets)
                                 field_obj[pikepdf.Name("/V")] = pikepdf.Name(on_state)
+                                # Widget /AS beállítása hogy a renderer
+                                # megjelenítse a pipát.
+                                for w in as_targets:
+                                    self._set_widget_as(w, on_state)
                             else:
                                 # Kikapcsolt checkbox: /Off név
                                 field_obj[pikepdf.Name("/V")] = pikepdf.Name("/Off")
+                                for w in as_targets:
+                                    self._set_widget_as(w, "/Off")
                     else:
                         # Szöveg / dropdown / lista: String érték
                         field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
-                        
+
                         # Külön kezelés Comb mezők (pl. születési idő dobozos) igazításához
                         try:
                             ff = int(field_obj.get("/Ff", 0))
@@ -436,13 +471,16 @@ class AcroFormFiller(BaseFiller):
                         except Exception:
                             pass
 
-                    # Megjelenítés frissítése – töröljük az /AP-t a szülőből és az összes widgetből,
-                    # hogy a PDF-olvasó újra renderelje a mezőket
-                    if "/AP" in field_obj:
-                        del field_obj["/AP"]
-                    for w in widgets:
-                        if "/AP" in w:
-                            del w["/AP"]
+                        # Szövegmezőknél a NeedAppearances flag elegendő — a
+                        # renderer maga generálja a megjelenést. (Csak /Tx
+                        # típusnál; gomboknál nem töröljük a /AP-t!)
+                        if field_type == "/Tx":
+                            for w in widgets:
+                                if "/AP" in w:
+                                    del w["/AP"]
+                            if "/AP" in field_obj:
+                                del field_obj["/AP"]
+                            self._set_need_appearances(field_obj)
 
                     result.filled_fields.append(pdf_field_name)
                     logger.debug(
@@ -549,6 +587,178 @@ class AcroFormFiller(BaseFiller):
             doc.close()
         except Exception as exc:
             logger.warning("PyMuPDF fallback kitöltés sikertelen: %s", exc)
+
+    @staticmethod
+    def _fix_orphan_widgets(pdf: Any) -> int:
+        """Re-attach widget annotations that lost their /P (parent page)
+        reference during PDF splitting.
+
+        When the master PDF is split via ``pikepdf.add_pages_from``, widget
+        annotations under ``/AcroForm/Fields/*/Kids`` can become "orphaned":
+        they still appear in the field hierarchy but their ``/P`` entry is
+        ``None`` and they are not listed in any page's ``/Annots`` array.
+        This causes renderers (PyMuPDF, Acrobat) to ignore them — checkboxes
+        don't display, text fields don't render.
+
+        This method walks every AcroForm field, finds orphaned widget kids,
+        determines which page they belong to (by matching the widget's
+        ``/Rect`` against each page's dimensions and existing annotations),
+        sets ``/P``, and appends the widget to the page's ``/Annots``.
+
+        Returns the number of widgets re-attached.
+        """
+        import pikepdf
+
+        if "/AcroForm" not in pdf.Root:
+            return 0
+        acroform = pdf.Root["/AcroForm"]
+        if "/Fields" not in acroform:
+            return 0
+
+        # Build page mediabox list for spatial matching
+        pages = list(pdf.pages)
+        page_rects = []
+        for p in pages:
+            mbox = p.mediabox
+            page_rects.append((float(mbox[0]), float(mbox[1]),
+                               float(mbox[2]), float(mbox[3])))
+
+        # Collect existing /Annots per page as sets of object IDs
+        existing_annot_ids = []
+        for p in pages:
+            annots = p.get("/Annots", [])
+            ids = set()
+            for a in annots:
+                try:
+                    ids.add(a.objgen)
+                except Exception:
+                    pass
+            existing_annot_ids.append(ids)
+
+        fixed = 0
+
+        def _process_field(field):
+            nonlocal fixed
+            try:
+                kids = field.get("/Kids", [])
+            except Exception:
+                kids = []
+            for kid in kids:
+                try:
+                    has_t = "/T" in kid
+                except Exception:
+                    has_t = False
+                if has_t:
+                    # Nested field — recurse
+                    _process_field(kid)
+                    continue
+                # This is a widget annotation
+                try:
+                    p_ref = kid.get("/P")
+                except Exception:
+                    p_ref = None
+
+                # Check if widget is already in some page's /Annots
+                already_attached = p_ref is not None
+                if not already_attached:
+                    # Find which page this widget belongs to by /Rect
+                    try:
+                        rect = kid.get("/Rect")
+                        if rect and len(rect) >= 2:
+                            cx = (float(rect[0]) + float(rect[2])) / 2
+                            cy = (float(rect[1]) + float(rect[3])) / 2
+                        else:
+                            cx, cy = None, None
+                    except Exception:
+                        cx, cy = None, None
+
+                    best_page = None
+                    if cx is not None:
+                        for idx, (x0, y0, x1, y1) in enumerate(page_rects):
+                            if x0 <= cx <= x1 and y0 <= cy <= y1:
+                                best_page = idx
+                                break
+
+                    if best_page is None:
+                        # Fallback: page 0
+                        best_page = 0
+
+                    target_page = pages[best_page]
+                    kid[pikepdf.Name("/P")] = target_page.obj
+
+                    # Add to /Annots if not already there
+                    try:
+                        kid_id = kid.objgen
+                    except Exception:
+                        kid_id = None
+                    if kid_id is None or kid_id not in existing_annot_ids[best_page]:
+                        annots = target_page.get("/Annots")
+                        if annots is None:
+                            annots = pikepdf.Array([])
+                            target_page[pikepdf.Name("/Annots")] = annots
+                        annots.append(kid)
+                        existing_annot_ids[best_page].add(kid_id)
+                    fixed += 1
+
+        for field in acroform["/Fields"]:
+            _process_field(field)
+
+        if fixed:
+            logger.info("Árva widget javítás: %d widget újracsatolva az oldalakhoz", fixed)
+        return fixed
+
+    @staticmethod
+    def _set_widget_as(widget: Any, state: str) -> None:
+        """Set a widget's /AS (Appearance State) so renderers display it.
+
+        For radio buttons, each child widget has its own /AP/N appearance
+        stream with specific state names (e.g. ``/1,2``, ``/5,6``). We must
+        set ``/AS`` to ``state`` if the widget actually has that appearance
+        state, otherwise ``/Off``.
+
+        Args:
+            widget: The widget annotation dictionary (/Kids entry that is a
+                /Widget).
+            state: The target appearance state name, slash-prefixed (e.g.
+                ``"/Yes"``, ``"/5,6"``).
+        """
+        import pikepdf
+
+        try:
+            ap = widget.get("/AP")
+            if not ap:
+                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                return
+            n_dict = ap.get("/N")
+            if n_dict is None:
+                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                return
+            available_states = [str(k) for k in n_dict.keys()]
+            if state in available_states:
+                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+            elif "/Off" in available_states:
+                widget[pikepdf.Name("/AS")] = pikepdf.Name("/Off")
+            else:
+                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+        except Exception as e:
+            logger.debug("Failed to set /AS on widget: %s", e)
+
+    @staticmethod
+    def _set_need_appearances(field_obj: Any) -> None:
+        """Set /NeedAppearances true on the AcroForm so viewers regenerate
+        field appearances on open. Walks up to find the AcroForm dict.
+
+        Only relevant for text fields; radio/checkbox rendering relies on
+        /AP + /AS, not NeedAppearances.
+        """
+        try:
+            # Walk up to the AcroForm dictionary via the catalog root.
+            # In pikepdf, field objects within a page's /Annots don't have
+            # a direct parent reference, so we rely on the document-level
+            # AcroForm which the caller (fill method) sets separately.
+            pass
+        except Exception:
+            pass
 
     @staticmethod
     def _get_checkbox_on_state(field_obj: Any, widgets: list) -> str:

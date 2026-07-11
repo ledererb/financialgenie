@@ -28,7 +28,8 @@
         "option_label": "Igénylő"
       },
       "fill_rule": {
-        "match_value": "Igénylő"
+        "type": "static",
+        "value": "igen"
       },
       "fragment": null
     },
@@ -206,7 +207,8 @@
         "option_label": "Egyéb"
       },
       "fill_rule": {
-        "match_value": "Egyéb"
+        "type": "static",
+        "value": "igen"
       },
       "fragment": null
     },
@@ -576,7 +578,8 @@
         "option_label": "Magyarország"
       },
       "fill_rule": {
-        "match_value": "Magyarország"
+        "type": "static",
+        "value": "igen"
       },
       "fragment": null
     },
@@ -617,8 +620,8 @@
       "pdf_field_name": "SZA_IG_állandó_lakcím_irányító",
       "label": "Állandó lakcím – Irányítószám",
       "field_type": "text",
-      "canonical_field": "Contact.OtherPostalCode",
-      "confidence": "high",
+      "canonical_field": "Contact.MailingPostalCode",
+      "confidence": "manual",
       "page_number": 2,
       "coordinates": null,
       "notes": null,

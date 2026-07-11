@@ -624,7 +624,10 @@
       "coordinates": null,
       "notes": "Nyilatkozat arról, hogy nem áll felmondás/próbaidő alatt és nem fizetés nélküli szabadságon. Nincs pontos Salesforce megfelelő; a legközelebbi kapcsolódó mező a TB jogviszonyhoz kötött. Alternatíva: Contact.Description mezőbe szövegként rögzíteni.",
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "static",
+        "value": "igen"
+      },
       "fragment": null
     },
     {

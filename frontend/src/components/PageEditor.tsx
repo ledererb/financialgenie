@@ -21,6 +21,7 @@ import {
   deleteField,
   deleteGroup,
   getCanonicalFields,
+  getFieldValues,
   getMapping,
   getPdfFields,
   pageImageUrl,
@@ -283,6 +284,9 @@ export default function PageEditor({
   const [saving, setSaving] = useState(false);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [showOverlayLabels, setShowOverlayLabels] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showData, setShowData] = useState(true);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -334,6 +338,13 @@ export default function PageEditor({
   useEffect(() => {
     refetchData();
   }, [refetchData]);
+
+  // Load field values (mock/SF deal data) once for overlay display
+  useEffect(() => {
+    getFieldValues(pdfId)
+      .then((res) => setFieldValues(res.values ?? {}))
+      .catch(() => { /* silent — values are optional */ });
+  }, [pdfId]);
 
   // Reset selection when page changes
   useEffect(() => {
@@ -850,7 +861,21 @@ export default function PageEditor({
             fontSize: "0.75rem",
           }}
         >
-          {showOverlayLabels ? "🏷 Címkék" : "🏷 Címkék"}
+          {showOverlayLabels ? "🏷 Címkék ON" : "🏷 Címkék"}
+        </button>
+
+        {/* Data overlay toggle */}
+        <button
+          className={`btn btn-sm ${showData ? "btn-accent" : "btn-ghost"}`}
+          onClick={() => setShowData(!showData)}
+          title="Mezőértékek mutatása a PDF képen (mock adatok)"
+          style={{
+            background: showData ? "var(--accent-green)" : undefined,
+            color: showData ? "#fff" : undefined,
+            fontSize: "0.75rem",
+          }}
+        >
+          {showData ? "📊 Adatok ON" : "📊 Adatok"}
         </button>
 
         {/* Checkbox grouping — only if there are checkbox fields on this page */}
@@ -1084,6 +1109,32 @@ export default function PageEditor({
                         {isAlwaysChecked && "📌 "}{labelText}
                       </span>
                     )}
+
+                    {/* Field value overlay (toggleable — shows deal data) */}
+                    {showData && fieldValues[mf.pdf_field_name] && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          fontSize: "6px",
+                          fontWeight: 600,
+                          lineHeight: "9px",
+                          padding: "0 2px",
+                          background: "rgba(34,197,94,0.9)",
+                          color: "white",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          pointerEvents: "none",
+                          zIndex: 4,
+                          textAlign: "center",
+                        }}
+                      >
+                        {fieldValues[mf.pdf_field_name]}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -1138,7 +1189,7 @@ export default function PageEditor({
                   fontSize: "0.72rem",
                 }}
               >
-                <option value="">+ Mezo hozzaadasa ({unmappedPdfFields.length} elerheto)</option>
+                <option value="">+ Mező hozzáadása ({unmappedPdfFields.length} elérhető)</option>
                 {unmappedPdfFields.map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
@@ -1150,7 +1201,7 @@ export default function PageEditor({
             )}
             <button
               onClick={refetchData}
-              title="Mapping ujratoltes"
+              title="Mapping újratöltése"
               style={{
                 background: "none",
                 border: "1px solid var(--border-subtle)",
@@ -1235,10 +1286,25 @@ export default function PageEditor({
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                         flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                       title={mf.pdf_field_name}
                     >
-                      {mf.pdf_field_name}
+                      {mf.checkbox_group?.option_value && (
+                        <span
+                          className="badge badge-blue"
+                          style={{ fontSize: "0.65rem", padding: "1px 6px", flexShrink: 0 }}
+                        >
+                          {mf.checkbox_group.option_label || mf.checkbox_group.option_value}
+                        </span>
+                      )}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {mf.checkbox_group?.option_value
+                          ? mf.pdf_field_name.replace(/_{2,}.*$/, "")
+                          : mf.pdf_field_name}
+                      </span>
                     </span>
                     <span className={confidenceBadgeClass(mf.confidence)}>
                       {mf.confidence ?? "nincs"}
@@ -1323,29 +1389,6 @@ export default function PageEditor({
                         Mező részletek
                       </span>
 
-                      {/* Label (Task 3.2) */}
-                      <input
-                        placeholder="Címke"
-                        value={mf.label ?? ""}
-                        onChange={(e) => handleFieldUpdate(mf.pdf_field_name, { label: e.target.value || null })}
-                        style={inputStyle}
-                      />
-
-                      {/* Field type (Task 3.2) */}
-                      <select
-                        value={mf.field_type}
-                        onChange={(e) => handleFieldUpdate(mf.pdf_field_name, { field_type: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="date">Date</option>
-                        <option value="checkbox">Checkbox</option>
-                        <option value="dropdown">Dropdown</option>
-                        <option value="money">Money</option>
-                        <option value="character_split">Character Split</option>
-                      </select>
-
                       {/* "Always check" quick toggle for checkbox fields */}
                       {mf.field_type === "checkbox" && (
                         <label
@@ -1379,21 +1422,65 @@ export default function PageEditor({
                         </label>
                       )}
 
-                      {/* Fill rule editor (Task 1.3 — dict format) */}
-                      <div style={{
-                        padding: "var(--space-xs) var(--space-sm)",
-                        background: mf.fill_rule ? "rgba(34,197,94,0.08)" : "var(--bg-tertiary)",
-                        borderRadius: "var(--radius-sm)",
-                        border: mf.fill_rule ? "1px solid var(--accent-green)" : "1px solid var(--border-subtle)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 4,
-                      }}>
-                        <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
-                          Fill Rule
-                        </span>
-                        <select
-                          value={mf.fill_rule?.type ?? ""}
+                      {/* Haladó panel: Label, Field type, Fill Rule, Notes */}
+                      <button
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        style={{
+                          background: "none",
+                          border: "1px dashed var(--border-default)",
+                          borderRadius: "var(--radius-sm)",
+                          padding: "4px 8px",
+                          fontSize: "0.7rem",
+                          color: "var(--text-tertiary)",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                        }}
+                      >
+                        {showAdvanced ? "▲ Haladó elrejtése" : "▼ Haladó beállítások"}
+                      </button>
+
+                      {showAdvanced && (
+                        <>
+                          {/* Label */}
+                          <input
+                            placeholder="Címke"
+                            value={mf.label ?? ""}
+                            onChange={(e) => handleFieldUpdate(mf.pdf_field_name, { label: e.target.value || null })}
+                            style={inputStyle}
+                          />
+
+                          {/* Field type (character_split elrejtve) */}
+                          <select
+                            value={mf.field_type === "character_split" ? "text" : mf.field_type}
+                            onChange={(e) => handleFieldUpdate(mf.pdf_field_name, { field_type: e.target.value })}
+                            style={inputStyle}
+                          >
+                            <option value="text">Text</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <option value="checkbox">Checkbox</option>
+                            <option value="dropdown">Dropdown</option>
+                            <option value="money">Money</option>
+                          </select>
+
+                          {/* Fill rule editor */}
+                          <div style={{
+                            padding: "var(--space-xs) var(--space-sm)",
+                            background: mf.fill_rule ? "rgba(34,197,94,0.08)" : "var(--bg-tertiary)",
+                            borderRadius: "var(--radius-sm)",
+                            border: mf.fill_rule ? "1px solid var(--accent-green)" : "1px solid var(--border-subtle)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                          }}>
+                            <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
+                              Fill Rule
+                            </span>
+                            <select
+                              value={mf.fill_rule?.type ?? ""}
                           onChange={(e) => {
                             const t = e.target.value as FillRule["type"] | "";
                             if (!t) {
@@ -1471,84 +1558,8 @@ export default function PageEditor({
                         onChange={(e) => handleFieldUpdate(mf.pdf_field_name, { notes: e.target.value || null })}
                         style={inputStyle}
                       />
-
-                      {/* ── checkbox group inputs (PLAN §4.2b) ───────── */}
-                      {mf.field_type === "checkbox" && (() => {
-                        const cg = mf.checkbox_group;
-                        // option_value falls back to deprecated match_value on read
-                        const gid = cg?.group_id ?? "";
-                        const glabel = cg?.group_label ?? "";
-                        const ovalue = cg?.option_value ?? cg?.match_value ?? "";
-                        const olabel = cg?.option_label ?? "";
-                        const setGroup = (
-                          patch: Partial<{
-                            group_id: string;
-                            group_label: string;
-                            option_value: string;
-                            option_label: string;
-                          }>,
-                        ) => {
-                          const next = {
-                            group_id: patch.group_id ?? gid,
-                            group_label: patch.group_label ?? glabel,
-                            option_value: patch.option_value ?? ovalue,
-                            option_label: patch.option_label ?? olabel,
-                          };
-                          handleFieldUpdate(mf.pdf_field_name, {
-                            checkbox_group: next.group_id ? next : null,
-                          });
-                        };
-                        return (
-                          <div style={{
-                            padding: "var(--space-xs) var(--space-sm)",
-                            background: "var(--bg-tertiary)",
-                            borderRadius: "var(--radius-sm)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 4,
-                          }}>
-                            <span style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)" }}>
-                              Jelölőnégyzet csoport
-                            </span>
-                            <datalist id="existing-groups">
-                              {Array.from(
-                                new Set(
-                                  mapping?.fields
-                                    .map((f) => f.checkbox_group?.group_id)
-                                    .filter(Boolean)
-                                ),
-                              ).map((g) => (
-                                <option key={g} value={g} />
-                              ))}
-                            </datalist>
-                            <input
-                              list="existing-groups"
-                              placeholder="csoport_azonosító (pl. highest_education)"
-                              value={gid}
-                              onChange={(e) => setGroup({ group_id: e.target.value })}
-                              style={inputStyle}
-                            />
-                            <input
-                              placeholder="csoport felirata / kérdés (pl. Legmagasabb iskolai végzettség)"
-                              value={glabel}
-                              onChange={(e) => setGroup({ group_label: e.target.value })}
-                              style={inputStyle}
-                            />
-                            <input
-                              placeholder="option_value — SF picklist érték (pl. Felsőfokú)"
-                              value={ovalue}
-                              onChange={(e) => setGroup({ option_value: e.target.value })}
-                              style={inputStyle}
-                            />
-                            <input
-                              placeholder="option_label — opció felirata a PDF-en (pl. Felsőfokú)"
-                              value={olabel}
-                              onChange={(e) => setGroup({ option_label: e.target.value })}
-                              style={inputStyle}
-                            />
-                          </div>
-                        );
-                      })()}
+                        </>
+                      )}
 
                       {/* Delete button (Task 3.5) */}
                       <button

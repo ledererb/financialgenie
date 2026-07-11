@@ -5,20 +5,18 @@ import AnalysisStep from "./AnalysisStep";
 import ReviewDashboard from "./ReviewDashboard";
 import PageEditor from "./PageEditor";
 import PointsEditor from "./PointsEditor";
-import LockStep from "./LockStep";
 import FillPreviewStep from "./FillPreviewStep";
 import ProjectBrowser from "./ProjectBrowser";
 import SectionEditor from "./SectionEditor";
 import BankSetupDialog from "./BankSetupDialog";
 import ProductSetupDialog from "./ProductSetupDialog";
 
-type WizardStep = "upload" | "analysis" | "review" | "lock" | "fill";
+type WizardStep = "upload" | "analysis" | "review" | "fill";
 
 const STEPS: { key: WizardStep; label: string }[] = [
   { key: "upload", label: "Feltöltés" },
   { key: "analysis", label: "AI elemzés" },
   { key: "review", label: "Áttekintés" },
-  { key: "lock", label: "Jóváhagyás" },
   { key: "fill", label: "Kitöltés" },
 ];
 
@@ -90,14 +88,6 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
   }, []);
 
   const handleApprove = useCallback(() => {
-    setStep("lock");
-  }, []);
-
-  const handleBackToReview = useCallback(() => {
-    setStep("review");
-  }, []);
-
-  const handleLockApprove = useCallback(() => {
     setStep("fill");
   }, []);
 
@@ -495,19 +485,10 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
               }}
             />
           )}
-          {step === "lock" && activePdfId && (
-            <LockStep
-              pdfId={activePdfId}
-              mappedCount={mappedCount}
-              totalFields={totalFields}
-              onApprove={handleLockApprove}
-              onBack={handleBackToReview}
-            />
-          )}
           {step === "fill" && activePdfId && (
             <FillPreviewStep
               pdfId={activePdfId}
-              onBack={() => setStep("lock")}
+              onBack={() => setStep("review")}
               onDone={handleFillDone}
             />
           )}
