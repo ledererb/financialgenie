@@ -1648,25 +1648,73 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         raise ValueError(f"Nem található JSON a válaszban. Válasz (első 300 karakter): {text[:300]}")
 
     def _parse_ai_response(
-        self, ai_result: dict, pdf_path: Path, form_type: str
+        self, ai_result, pdf_path: Path, form_type: str
     ) -> MappingConfig:
-        """AI válasz parse-olása MappingConfig-gá."""
+        """AI válasz parse-olása MappingConfig-gá.
+
+        Handles multiple response formats Claude may return:
+        - ``{"form_name": ..., "fields": [...]}`` — the canonical format
+          requested by SYSTEM_PROMPT.
+        - ``[{...}, {...}]`` — a bare list of field objects (common when
+          the AI ignores the wrapper and returns just the array).
+        - ``{"fields": {...}}`` — a dict where fields is not a list.
+        """
+        # Normalize ai_result to (fields_list, form_name, page_structure)
+        page_structure = {}
+
+        if isinstance(ai_result, list):
+            # Bare list of field objects — treat the whole thing as fields.
+            raw_fields = ai_result
+            form_name = pdf_path.stem
+            logger.info("AI válasz: lista formátum (%d mező)", len(raw_fields))
+        elif isinstance(ai_result, dict):
+            # Dict — may have "fields" key, or may BE a single field.
+            raw_fields_data = ai_result.get("fields", [])
+            if isinstance(raw_fields_data, dict):
+                # Single field wrapped in a dict (edge case).
+                raw_fields = [raw_fields_data]
+            else:
+                raw_fields = raw_fields_data
+            form_name = ai_result.get("form_name", pdf_path.stem)
+            page_structure = ai_result.get("page_structure", {})
+            logger.info("AI válasz: dict formátum (%d mező)", len(raw_fields))
+        else:
+            logger.error(
+                "AI válasz ismeretlen formátum: %s (type=%s)",
+                str(ai_result)[:200],
+                type(ai_result).__name__,
+            )
+            raw_fields = []
+            form_name = pdf_path.stem
+
         fields = []
-        for f_data in ai_result.get("fields", []):
+        for f_data in raw_fields:
+            if not isinstance(f_data, dict):
+                logger.warning("Mezőadat nem dict: %s — kihagyva", str(f_data)[:100])
+                continue
+            pdf_name = f_data.get("pdf_field_name") or f_data.get("f") or f_data.get("name")
+            if not pdf_name:
+                continue
             fields.append(RecognizedField(
-                pdf_field_name=f_data["pdf_field_name"],
-                label=f_data.get("label", ""),
-                field_type=FieldType(f_data.get("field_type", "text")),
-                canonical_field=f_data.get("canonical_field"),
-                confidence=MappingConfidence(f_data.get("confidence", "medium")),
-                page_number=f_data.get("page_number", 1),
+                pdf_field_name=pdf_name,
+                label=f_data.get("label", f_data.get("l", "")),
+                field_type=FieldType(f_data.get("field_type", f_data.get("t", "text"))),
+                canonical_field=f_data.get("canonical_field") or f_data.get("c"),
+                confidence=MappingConfidence(
+                    f_data.get("confidence", f_data.get("conf", "medium"))
+                ),
+                page_number=f_data.get("page_number", f_data.get("p", 1)),
                 coordinates=f_data.get("coordinates"),
                 notes=f_data.get("notes"),
-                # PLAN §3.3 — checkbox_group normalizálása (teljes/rövidített/
-                # alias kulcsok → kanonikus 4-kulcsos alak). Korábban itt eldobódott.
                 checkbox_group=_normalize_checkbox_group(f_data.get("checkbox_group")),
                 fill_rule=f_data.get("fill_rule"),
             ))
+
+        if not fields:
+            logger.warning(
+                "AI válasz parse: 0 mező kinyerve (ai_result type=%s)",
+                type(ai_result).__name__,
+            )
 
         # PLAN §3.5 — checkbox-csoport konzisztencia ellenőrzés
         group_errors = _validate_checkbox_groups(fields)
@@ -1675,10 +1723,10 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
 
         return MappingConfig(
             bank_name="OTP Bank",
-            form_name=ai_result.get("form_name", pdf_path.stem),
+            form_name=form_name,
             form_type=form_type,
             fields=fields,
-            page_structure=ai_result.get("page_structure", {}),
+            page_structure=page_structure,
         )
 
     def _heuristic_map_fields(

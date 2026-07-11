@@ -11,6 +11,7 @@ interface BankSelectorProps {
   onSelectBank: (bankId: string) => void;
   onSelectProduct: (productId: string) => void;
   onSelectDocument: (docId: string) => void;
+  onOpenDocument: (docId: string) => void;
   onAddProduct: (bankId: string) => void;
   onDeleteBank: (bankId: string, name: string) => void;
   onDeleteProduct: (productId: string, name: string) => void;
@@ -26,6 +27,7 @@ function BankSelectorImpl({
   onSelectBank,
   onSelectProduct,
   onSelectDocument,
+  onOpenDocument,
   onAddProduct,
   onDeleteBank,
   onDeleteProduct,
@@ -267,6 +269,7 @@ function BankSelectorImpl({
                 selectedDocumentId={selectedDocumentId}
                 onSelectProduct={onSelectProduct}
                 onSelectDocument={onSelectDocument}
+                onOpenDocument={onOpenDocument}
                 onDeleteProduct={onDeleteProduct}
                 onDeleteDocument={onDeleteDocument}
               />

@@ -1,0 +1,609 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "sza_esz",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Összefésült mapping: heurisztikus + AI (37 leképezve).",
+  "page_structure": {
+    "1": "per_participant"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "SZA_ESZ_szerep___Igen",
+      "label": "Fedezet tulajdonosa (zálogkötelezett)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Mortgagor__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerepe: Fedezet tulajdonosa / zálogkötelezett",
+      "checkbox_group": {
+        "group_id": "egyeb_szereplo_szerep",
+        "group_label": "Az adatlapon szereplő személy szerepe",
+        "option_value": "Zálogkötelezett",
+        "option_label": "Fedezet tulajdonosa (zálogkötelezett)"
+      },
+      "fill_rule": {
+        "match_value": "Zálogkötelezett"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szerep___no",
+      "label": "Fedezet haszonélvezője / Özvegyi jog jogosultja",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Usufructuary__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szerepe: Fedezet haszonélvezője / özvegyi jog jogosultja",
+      "checkbox_group": {
+        "group_id": "egyeb_szereplo_szerep",
+        "group_label": "Az adatlapon szereplő személy szerepe",
+        "option_value": "Haszonélvező",
+        "option_label": "Fedezet haszonélvezője / Özvegyi jog jogosultja"
+      },
+      "fill_rule": {
+        "match_value": "Haszonélvező"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_név",
+      "label": "Név",
+      "field_type": "text",
+      "canonical_field": "Contact.Name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Teljes név (vezetéknév + keresztnév együtt)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szül_név",
+      "label": "Születési név",
+      "field_type": "text",
+      "canonical_field": "Contact.Szuletesi_nev__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Születési (anyakönyvi) név",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szül_hely",
+      "label": "Születési hely",
+      "field_type": "text",
+      "canonical_field": "Contact.Place_of_Birth__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szül_év",
+      "label": "Születési idő – év",
+      "field_type": "text",
+      "canonical_field": "Contact.Birthdate_year",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Születési dátum – csak az év rész (pl. 1980)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szül_hó",
+      "label": "Születési idő – hónap",
+      "field_type": "text",
+      "canonical_field": "Contact.Birthdate_month",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Születési dátum – csak a hónap rész (pl. 01)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_szül_nap",
+      "label": "Születési idő – nap",
+      "field_type": "text",
+      "canonical_field": "Contact.Birthdate_day",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Születési dátum – csak a nap rész (pl. 01)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állampolgárság___Igen",
+      "label": "Állampolgárság: Magyar",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Citizenship__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "allampolgarsag",
+        "group_label": "Állampolgársága",
+        "option_value": "Magyar",
+        "option_label": "Magyar"
+      },
+      "fill_rule": {
+        "match_value": "Magyar"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állampolgárság___no",
+      "label": "Állampolgárság: Egyéb",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Citizenship__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "allampolgarsag",
+        "group_label": "Állampolgársága",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állampolgárság_egyéb",
+      "label": "Állampolgárság – egyéb (szabad szöveges)",
+      "field_type": "text",
+      "canonical_field": "Contact.Citizenship__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ha az állampolgárság nem magyar, ide kerül a konkrét ország megnevezése",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_anyja",
+      "label": "Anyja születési neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Mother_s_Name__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_neme___Igen",
+      "label": "Neme: Nő",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Salutation",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nem mező – Nő opció; Salesforce-ban Salutation vagy egyedi mező lehet",
+      "checkbox_group": {
+        "group_id": "neme",
+        "group_label": "Neme",
+        "option_value": "Nő",
+        "option_label": "Nő"
+      },
+      "fill_rule": {
+        "match_value": "Nő"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_neme___no",
+      "label": "Neme: Férfi",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Salutation",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nem mező – Férfi opció",
+      "checkbox_group": {
+        "group_id": "neme",
+        "group_label": "Neme",
+        "option_value": "Férfi",
+        "option_label": "Férfi"
+      },
+      "fill_rule": {
+        "match_value": "Férfi"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_kieg",
+      "label": "Kiegészítő adat: Írástudatlan",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Description",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nincs dedikált Salesforce mező; leképezhető a Contact.Description-re vagy egyedi mezőre",
+      "checkbox_group": {
+        "group_id": "kiegeszito_adat",
+        "group_label": "Kiegészítő adat",
+        "option_value": "Írástudatlan",
+        "option_label": "Írástudatlan"
+      },
+      "fill_rule": {
+        "match_value": "Írástudatlan"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_kieg2",
+      "label": "Kiegészítő adat: Látássérült/olvasni nem tudó",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Description",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nincs dedikált Salesforce mező; leképezhető a Contact.Description-re vagy egyedi mezőre",
+      "checkbox_group": {
+        "group_id": "kiegeszito_adat",
+        "group_label": "Kiegészítő adat",
+        "option_value": "Látássérült/olvasni nem tudó",
+        "option_label": "Látássérült/olvasni nem tudó"
+      },
+      "fill_rule": {
+        "match_value": "Látássérült/olvasni nem tudó"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító___1,2",
+      "label": "Személyazonosító dokumentum: Személyi igazolvány",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.ID_Card_Number__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Dokumentum típusa – Személyi igazolvány; a típus jelölője, nem a szám maga",
+      "checkbox_group": {
+        "group_id": "szemelyi_dok_tipus",
+        "group_label": "Személyazonosító dokumentum",
+        "option_value": "Személyi igazolvány",
+        "option_label": "Személyi igazolvány"
+      },
+      "fill_rule": {
+        "match_value": "Személyi igazolvány"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító___2,3",
+      "label": "Személyazonosító dokumentum: Jogosítvány",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.ID_Card_Number__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Dokumentum típusa – Jogosítvány",
+      "checkbox_group": {
+        "group_id": "szemelyi_dok_tipus",
+        "group_label": "Személyazonosító dokumentum",
+        "option_value": "Jogosítvány",
+        "option_label": "Jogosítvány"
+      },
+      "fill_rule": {
+        "match_value": "Jogosítvány"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító___3,4",
+      "label": "Személyazonosító dokumentum: Útlevél",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.ID_Card_Number__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Dokumentum típusa – Útlevél",
+      "checkbox_group": {
+        "group_id": "szemelyi_dok_tipus",
+        "group_label": "Személyazonosító dokumentum",
+        "option_value": "Útlevél",
+        "option_label": "Útlevél"
+      },
+      "fill_rule": {
+        "match_value": "Útlevél"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító___4,5",
+      "label": "Személyazonosító dokumentum: Egyéb",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.ID_Card_Number__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Dokumentum típusa – Egyéb; a szabad szöveges értéket a SZA_ESZ_személyazonosító_egyéb mező tartalmazza",
+      "checkbox_group": {
+        "group_id": "szemelyi_dok_tipus",
+        "group_label": "Személyazonosító dokumentum",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító_egyéb",
+      "label": "Személyazonosító dokumentum – egyéb megnevezése",
+      "field_type": "text",
+      "canonical_field": "Contact.Description",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szabad szöveges mező az egyéb dokumentumtípus megnevezéséhez; nincs pontosan illeszkedő Salesforce mező",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító_szám",
+      "label": "Személyazonosító dokumentum száma",
+      "field_type": "text",
+      "canonical_field": "Contact.ID_Card_Number__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "A kiválasztott személyazonosító okmány száma",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_személyazonosító_szám_régi",
+      "label": "Személyi azonosító szám (régi személyi szám)",
+      "field_type": "text",
+      "canonical_field": "Contact.Tax_ID__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Régi személyi szám – legközelebb a Tax_ID__c vagy a Last_4_nr_of_ID__c mezőhöz áll; pontosan illeszkedő mező nincs",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím___Igen",
+      "label": "Állandó lakcím országa: Magyarország",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Permanent_address__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ország jelölő – Magyarország opció",
+      "checkbox_group": {
+        "group_id": "allando_cim_orszag",
+        "group_label": "Állandó lakcím – Ország",
+        "option_value": "Magyarország",
+        "option_label": "Magyarország"
+      },
+      "fill_rule": {
+        "match_value": "Magyarország"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím___no",
+      "label": "Állandó lakcím országa: Egyéb",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Permanent_address__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ország jelölő – Egyéb opció",
+      "checkbox_group": {
+        "group_id": "allando_cim_orszag",
+        "group_label": "Állandó lakcím – Ország",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím_egyéb",
+      "label": "Állandó lakcím – ország (egyéb, szabad szöveges)",
+      "field_type": "text",
+      "canonical_field": "Contact.OtherCountry",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ha az állandó lakcím országa nem Magyarország, ide kerül az ország neve",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím_isz",
+      "label": "Állandó lakcím – irányítószám",
+      "field_type": "text",
+      "canonical_field": "Contact.ZIP__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím_település",
+      "label": "Állandó lakcím – település",
+      "field_type": "text",
+      "canonical_field": "Contact.OtherCity",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Állandó lakcím település; OtherCity használható ha a fő cím a levelezési cím",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_állandó_cím_utca",
+      "label": "Állandó lakcím – utca, házszám, lépcsőház, emelet, ajtó",
+      "field_type": "text",
+      "canonical_field": "Contact.OtherStreet",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_levelezés_cím___Igen",
+      "label": "Levelezési cím: megegyezik az állandó lakcímmel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.MailingStreet",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ha be van jelölve, a levelezési cím = állandó lakcím; Salesforce-ban a Mailing* mezőket az állandó cím értékeivel kell feltölteni",
+      "checkbox_group": {
+        "group_id": "levelezesi_cim_tipus",
+        "group_label": "Levelezési cím",
+        "option_value": "Megegyezik az állandó lakcímmel",
+        "option_label": "Megegyezik az állandó lakcímmel"
+      },
+      "fill_rule": {
+        "match_value": "Megegyezik az állandó lakcímmel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_levelezés_cím___no",
+      "label": "Levelezési cím: eltér az állandó lakcímtől",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.MailingStreet",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ha be van jelölve, az alábbi levelezési cím mezők aktívak",
+      "checkbox_group": {
+        "group_id": "levelezesi_cim_tipus",
+        "group_label": "Levelezési cím",
+        "option_value": "Eltér az állandó lakcímtől",
+        "option_label": "Eltér az állandó lakcímtől, mégpedig:"
+      },
+      "fill_rule": {
+        "match_value": "Eltér az állandó lakcímtől"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_levelezés_cím_isz",
+      "label": "Levelezési cím – irányítószám",
+      "field_type": "text",
+      "canonical_field": "Contact.MailingPostalCode",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_levelezés_cím_település",
+      "label": "Levelezési cím – település",
+      "field_type": "text",
+      "canonical_field": "Contact.MailingCity",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_levelezés_cím_utca",
+      "label": "Levelezési cím – utca, házszám, lépcsőház, emelet, ajtó",
+      "field_type": "text",
+      "canonical_field": "Contact.MailingStreet",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_email",
+      "label": "E-mail-cím",
+      "field_type": "text",
+      "canonical_field": "Contact.Email",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_mobil",
+      "label": "Telefonszáma",
+      "field_type": "text",
+      "canonical_field": "Contact.MobilePhone",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "SZA_ESZ_kelt",
+      "label": "Kelt (aláírás dátuma)",
+      "field_type": "date",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az adatlap aláírásának helye és dátuma",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    }
+  ],
+  "character_groups": [],
+  "points": [],
+  "rule_sets": []
+}

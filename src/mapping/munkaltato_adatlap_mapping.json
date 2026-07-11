@@ -1,0 +1,725 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "munkaltato_adatlap",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Összefésült mapping: heurisztikus + AI (41 leképezve).",
+  "page_structure": {
+    "1": "per_participant",
+    "2": "per_participant"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "MA_IG_munáltató_neve",
+      "label": "Munkáltató neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name_of_employer__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Munkavállaló esetén töltendő – a munkáltató cég neve",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_adósz",
+      "label": "Munkáltató adószáma",
+      "field_type": "text",
+      "canonical_field": "Contact.Employee_registration_c__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Munkáltató adószáma – nincs dedikált Salesforce mező, legközelebbi: Employee_registration_c__c. Low confidence alternatíva: Contact.Tax_ID__c (de az inkább a kontakt saját adóazonosítója)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___1,2",
+      "label": "Munkáltató cégformája – Egyéni vállalkozó",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Egyéni vállalkozó",
+        "option_label": "Egyéni vállalkozó"
+      },
+      "fill_rule": {
+        "match_value": "Egyéni vállalkozó"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___2,3",
+      "label": "Munkáltató cégformája – Őstermelő",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Őstermelő",
+        "option_label": "Őstermelő"
+      },
+      "fill_rule": {
+        "match_value": "Őstermelő"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___3,4",
+      "label": "Munkáltató cégformája – Közkereseti társaság vagy betéti társaság",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Közkereseti társaság vagy betéti társaság",
+        "option_label": "Közkereseti társaság vagy betéti társaság"
+      },
+      "fill_rule": {
+        "match_value": "Közkereseti társaság vagy betéti társaság"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___4,5",
+      "label": "Munkáltató cégformája – Korlátolt felelősségű társaság",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Korlátolt felelősségű társaság",
+        "option_label": "Korlátolt felelősségű társaság"
+      },
+      "fill_rule": {
+        "match_value": "Korlátolt felelősségű társaság"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___5,6",
+      "label": "Munkáltató cégformája – Részvénytársaság",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Részvénytársaság",
+        "option_label": "Részvénytársaság"
+      },
+      "fill_rule": {
+        "match_value": "Részvénytársaság"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___6,7",
+      "label": "Munkáltató cégformája – Non-profit szervezet vagy Kht.",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Non-profit szervezet vagy Kht.",
+        "option_label": "Non-profit szervezet vagy Kht."
+      },
+      "fill_rule": {
+        "match_value": "Non-profit szervezet vagy Kht."
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___7,8",
+      "label": "Munkáltató cégformája – Központi vagy helyi közigazgatási szerv",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Központi vagy helyi közigazgatási szerv",
+        "option_label": "Központi vagy helyi közigazgatási szerv"
+      },
+      "fill_rule": {
+        "match_value": "Központi vagy helyi közigazgatási szerv"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___8,9",
+      "label": "Munkáltató cégformája – Állami vagy helyi önkormányzati költségvetési szerv",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Állami vagy helyi önkormányzati költségvetési szerv",
+        "option_label": "Állami vagy helyi önkormányzati költségvetési szerv"
+      },
+      "fill_rule": {
+        "match_value": "Állami vagy helyi önkormányzati költségvetési szerv"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma___9,10",
+      "label": "Munkáltató cégformája – Egyéb (szabad szöveges)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employer_company_type",
+        "group_label": "Munkáltató cégformája",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munáltató_cégforma_egyéb",
+      "label": "Munkáltató cégformája – Egyéb (szöveg)",
+      "field_type": "text",
+      "canonical_field": "Contact.Employer_s_company_type__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szabadszöveges egyéb cégforma megadása; csak akkor töltendő, ha az 'Egyéb' checkbox ki van jelölve",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___1,2",
+      "label": "Foglalkozási szektor – Ipar",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Ipar",
+        "option_label": "Ipar"
+      },
+      "fill_rule": {
+        "match_value": "Ipar"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___2,3",
+      "label": "Foglalkozási szektor – Kereskedelem",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Kereskedelem",
+        "option_label": "Kereskedelem"
+      },
+      "fill_rule": {
+        "match_value": "Kereskedelem"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___3,4",
+      "label": "Foglalkozási szektor – Mezőgazdaság",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Mezőgazdaság",
+        "option_label": "Mezőgazdaság"
+      },
+      "fill_rule": {
+        "match_value": "Mezőgazdaság"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___4,5",
+      "label": "Foglalkozási szektor – Közlekedés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Közlekedés",
+        "option_label": "Közlekedés"
+      },
+      "fill_rule": {
+        "match_value": "Közlekedés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___5,6",
+      "label": "Foglalkozási szektor – Távközlés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Távközlés",
+        "option_label": "Távközlés"
+      },
+      "fill_rule": {
+        "match_value": "Távközlés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___6,7",
+      "label": "Foglalkozási szektor – Informatika",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Informatika",
+        "option_label": "Informatika"
+      },
+      "fill_rule": {
+        "match_value": "Informatika"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___7,8",
+      "label": "Foglalkozási szektor – Idegenforgalom",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Idegenforgalom",
+        "option_label": "Idegenforgalom"
+      },
+      "fill_rule": {
+        "match_value": "Idegenforgalom"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___8,9",
+      "label": "Foglalkozási szektor – Egészségügy",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Egészségügy",
+        "option_label": "Egészségügy"
+      },
+      "fill_rule": {
+        "match_value": "Egészségügy"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___9,10",
+      "label": "Foglalkozási szektor – Oktatás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Oktatás",
+        "option_label": "Oktatás"
+      },
+      "fill_rule": {
+        "match_value": "Oktatás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___10,11",
+      "label": "Foglalkozási szektor – Pénzügy",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Pénzügy",
+        "option_label": "Pénzügy"
+      },
+      "fill_rule": {
+        "match_value": "Pénzügy"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___11,12",
+      "label": "Foglalkozási szektor – Biztosítás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Biztosítás",
+        "option_label": "Biztosítás"
+      },
+      "fill_rule": {
+        "match_value": "Biztosítás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___12,13",
+      "label": "Foglalkozási szektor – Jog",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Jog",
+        "option_label": "Jog"
+      },
+      "fill_rule": {
+        "match_value": "Jog"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___13,14",
+      "label": "Foglalkozási szektor – Államigazgatás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Államigazgatás",
+        "option_label": "Államigazgatás"
+      },
+      "fill_rule": {
+        "match_value": "Államigazgatás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_foglalkoztatás___14,15",
+      "label": "Foglalkozási szektor – Egyéb",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Industry__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_sector",
+        "group_label": "Foglalkozási szektor",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkavállaló_neve",
+      "label": "Munkavállaló neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "A hiteligénylő (adós/adóstárs) teljes neve munkavállaló esetén",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony___Igen",
+      "label": "Jelenlegi munkaviszony típusa – Határozatlan",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employment_Type_c__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_type",
+        "group_label": "Jelenlegi munkaviszony típusa",
+        "option_value": "Határozatlan",
+        "option_label": "Határozatlan"
+      },
+      "fill_rule": {
+        "match_value": "Határozatlan"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony___no",
+      "label": "Jelenlegi munkaviszony típusa – Határozott",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Employment_Type_c__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "employment_type",
+        "group_label": "Jelenlegi munkaviszony típusa",
+        "option_value": "Határozott",
+        "option_label": "Határozott"
+      },
+      "fill_rule": {
+        "match_value": "Határozott"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony_kezdet_év",
+      "label": "Jelenlegi munkaviszony kezdete – év",
+      "field_type": "text",
+      "canonical_field": "Contact.Current_employment_started__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Csak az évet tartalmazza (pl. 2018); a teljes dátum összerakása a hónap mezővel együtt szükséges",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony_kezdet_hó",
+      "label": "Jelenlegi munkaviszony kezdete – hónap",
+      "field_type": "text",
+      "canonical_field": "Contact.Current_employment_started__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Csak a hónapot tartalmazza (pl. 03); kombinálni kell az év mezővel",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony_vég_év",
+      "label": "Határozott munkaviszony vége – év",
+      "field_type": "text",
+      "canonical_field": "Contact.Contract_end_date__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Csak az évet tartalmazza; kombinálni kell a hónap mezővel",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_munkaviszony_vég_hó",
+      "label": "Határozott munkaviszony vége – hónap",
+      "field_type": "text",
+      "canonical_field": "Contact.Contract_end_date__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Csak a hónapot tartalmazza; kombinálni kell az év mezővel",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_bünt",
+      "label": "Büntetőjogi felelősségem tudatában kijelentem (nyilatkozat checkbox)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Continuous_TB_2_years__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nyilatkozat arról, hogy nem áll felmondás/próbaidő alatt és nem fizetés nélküli szabadságon. Nincs pontos Salesforce megfelelő; a legközelebbi kapcsolódó mező a TB jogviszonyhoz kötött. Alternatíva: Contact.Description mezőbe szövegként rögzíteni.",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Jelölőnégyzet 1209",
+      "label": "Nem áll felmondás vagy próbaidő alatt (belső aljelölőnégyzet)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Description",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Valószínűleg a büntetőjogi nyilatkozat részeként külön alcheckbox; nincs dedikált SF mező",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_adós_neve",
+      "label": "Adós/Adóstárs neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Vállalkozó esetén töltendő – az igénylő teljes neve",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_vállalkozás_neve",
+      "label": "Vállalkozás neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name_of_employer__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Vállalkozó esetén a vállalkozás neve; a Name_of_employer__c mező a munkáltató/vállalkozás nevét tárolja",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_vállalkozás_adószám",
+      "label": "Vállalkozás adószáma",
+      "field_type": "text",
+      "canonical_field": "Contact.Tax_ID__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Vállalkozás adószáma; a Tax_ID__c általában a személyes adóazonosítóé, de vállalkozó esetén ez lehet azonos. Alternatíva: Contact.Employee_registration_c__c",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_vállalkozás_év",
+      "label": "Vállalkozás alapítási dátuma – év",
+      "field_type": "text",
+      "canonical_field": "Contact.Current_employment_started__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Vállalkozás alapítási éve; a Current_employment_started__c tárolja a vállalkozás kezdetét is",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_vállalkozás_hó",
+      "label": "Vállalkozás alapítási dátuma – hónap",
+      "field_type": "text",
+      "canonical_field": "Contact.Current_employment_started__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Vállalkozás alapítási hónapja; kombinálni kell az év mezővel",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "MA_IG_kelt",
+      "label": "Kelt (aláírás helye és dátuma)",
+      "field_type": "text",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Az adatlap aláírásának dátuma és helye; az aláírás mező nem kerül digitálisan rögzítésre",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    }
+  ],
+  "character_groups": [],
+  "points": [],
+  "rule_sets": []
+}

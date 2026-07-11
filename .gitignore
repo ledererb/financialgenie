@@ -39,6 +39,10 @@ catalog/catalog.db-shm
 htmlcov/
 .coverage
 
+# Playwright test results
+frontend/test-results/
+frontend/playwright-report/
+
 # Agents / tooling
 .agents/
 .zcode/

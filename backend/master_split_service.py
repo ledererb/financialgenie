@@ -106,22 +106,25 @@ def extract_page_range(
 
 
 def _master_using_product_ids(catalog_service, bank_id: str) -> list[str]:
-    """Return product IDs under *bank_id* whose ProductType has non-empty
-    PRODUCT_SECTIONS (i.e. they reference master pages).
+    """Return product IDs under *bank_id* that use the master PDF.
 
-    These are the products that receive base-section split documents.
+    The BASE_SECTIONS (fedlap, személyi adatlap, ingatlan adatlap, etc.) are
+    shared by ALL credit products — every loan application needs them. So
+    every product under the bank receives the base-section split documents,
+    except products that are clearly standalone (like "Előzetes értékbecslés"
+    which has its own dedicated form, not part of the master application pack).
     """
     bank = catalog_service.get_bank(bank_id)
     if not bank:
         return []
-    # Collect ProductType enum values that have non-empty section ranges.
-    master_types = {
-        pt.value for pt, ranges in PRODUCT_SECTIONS.items() if ranges
-    }
     result = []
     for prod in bank.get("products", []):
-        if prod["slug"] in master_types:
-            result.append(prod["id"])
+        slug = prod.get("slug") or prod.get("id") or ""
+        # Skip products that are standalone (not part of the master pack).
+        standalone_slugs = {"elozetes_ertekbecsles_megrendeles"}
+        if slug in standalone_slugs:
+            continue
+        result.append(prod["id"])
     return result
 
 

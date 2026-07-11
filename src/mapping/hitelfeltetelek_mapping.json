@@ -1,0 +1,2008 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "hitelfeltetelek",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Összefésült mapping: heurisztikus + AI (68 leképezve).",
+  "page_structure": {
+    "1": "global",
+    "2": "global",
+    "3": "global",
+    "4": "global",
+    "5": "global",
+    "6": "global"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "KTKA_cél___1,2",
+      "label": "Új ingatlan vásárlás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanvásárlási cél – Új ingatlan vásárlás",
+      "checkbox_group": {
+        "group_id": "loan_purpose_purchase",
+        "group_label": "Ingatlanvásárlási célok",
+        "option_value": "Új ingatlan vásárlás",
+        "option_label": "Új ingatlan vásárlás"
+      },
+      "fill_rule": {
+        "match_value": "Új ingatlan vásárlás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_cél___2,3",
+      "label": "Használt ingatlan vásárlás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanvásárlási cél – Használt ingatlan vásárlás",
+      "checkbox_group": {
+        "group_id": "loan_purpose_purchase",
+        "group_label": "Ingatlanvásárlási célok",
+        "option_value": "Használt ingatlan vásárlás",
+        "option_label": "Használt ingatlan vásárlás"
+      },
+      "fill_rule": {
+        "match_value": "Használt ingatlan vásárlás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_cél___3,4",
+      "label": "Nem lakáscélú ingatlanvásárlás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanvásárlási cél – Nem lakáscélú ingatlanvásárlás",
+      "checkbox_group": {
+        "group_id": "loan_purpose_purchase",
+        "group_label": "Ingatlanvásárlási célok",
+        "option_value": "Nem lakáscélú ingatlanvásárlás",
+        "option_label": "Nem lakáscélú ingatlanvásárlás"
+      },
+      "fill_rule": {
+        "match_value": "Nem lakáscélú ingatlanvásárlás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_cél___4,5",
+      "label": "Telekvásárlás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanvásárlási cél – Telekvásárlás",
+      "checkbox_group": {
+        "group_id": "loan_purpose_purchase",
+        "group_label": "Ingatlanvásárlási célok",
+        "option_value": "Telekvásárlás",
+        "option_label": "Telekvásárlás"
+      },
+      "fill_rule": {
+        "match_value": "Telekvásárlás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_használt_ing___1,2",
+      "label": "Használt ingatlan vásárlással egybekötött – Korszerűsítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Hitelcél preferált kistelepülésen – Használt ingatlan vásárlással egybekötött korszerűsítés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_used_building",
+        "group_label": "Használt ingatlan vásárlással egybekötött",
+        "option_value": "Korszerűsítés (használt vásárlással)",
+        "option_label": "Korszerűsítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés (használt vásárlással)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_használt_ing___2,3",
+      "label": "Használt ingatlan vásárlással egybekötött – Bővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Hitelcél preferált kistelepülésen – Használt ingatlan vásárlással egybekötött bővítés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_used_building",
+        "group_label": "Használt ingatlan vásárlással egybekötött",
+        "option_value": "Bővítés (használt vásárlással)",
+        "option_label": "Bővítés"
+      },
+      "fill_rule": {
+        "match_value": "Bővítés (használt vásárlással)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_használt_ing___3,4",
+      "label": "Használt ingatlan vásárlással egybekötött – Korszerűsítés és bővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Hitelcél preferált kistelepülésen – Korszerűsítés és bővítés (használt vásárlással)",
+      "checkbox_group": {
+        "group_id": "loan_purpose_used_building",
+        "group_label": "Használt ingatlan vásárlással egybekötött",
+        "option_value": "Korszerűsítés és bővítés (használt vásárlással)",
+        "option_label": "Korszerűsítés és bővítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés és bővítés (használt vásárlással)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_meglévő_ing___1,2",
+      "label": "Meglévő ingatlan – Korszerűsítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Meglévő ingatlan korszerűsítése",
+      "checkbox_group": {
+        "group_id": "loan_purpose_existing_building",
+        "group_label": "Meglévő ingatlan",
+        "option_value": "Korszerűsítés (meglévő)",
+        "option_label": "Korszerűsítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés (meglévő)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_meglévő_ing___2,3",
+      "label": "Meglévő ingatlan – Bővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Meglévő ingatlan bővítése",
+      "checkbox_group": {
+        "group_id": "loan_purpose_existing_building",
+        "group_label": "Meglévő ingatlan",
+        "option_value": "Bővítés (meglévő)",
+        "option_label": "Bővítés"
+      },
+      "fill_rule": {
+        "match_value": "Bővítés (meglévő)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_meglévő_ing___3,4",
+      "label": "Meglévő ingatlan – Korszerűsítés és bővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Meglévő ingatlan korszerűsítése és bővítése",
+      "checkbox_group": {
+        "group_id": "loan_purpose_existing_building",
+        "group_label": "Meglévő ingatlan",
+        "option_value": "Korszerűsítés és bővítés (meglévő)",
+        "option_label": "Korszerűsítés és bővítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés és bővítés (meglévő)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_új_egylakás___Igen",
+      "label": "Új egylakásos lakóépület – Vásárlás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Új egylakásos lakóépület vásárlása",
+      "checkbox_group": {
+        "group_id": "loan_purpose_new_single_home",
+        "group_label": "Új egylakásos lakóépület",
+        "option_value": "Vásárlás (új egylakásos)",
+        "option_label": "Vásárlás"
+      },
+      "fill_rule": {
+        "match_value": "Vásárlás (új egylakásos)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_új_egylakás___no",
+      "label": "Új egylakásos lakóépület – Építés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Új egylakásos lakóépület építése",
+      "checkbox_group": {
+        "group_id": "loan_purpose_new_single_home",
+        "group_label": "Új egylakásos lakóépület",
+        "option_value": "Építés (új egylakásos)",
+        "option_label": "Építés"
+      },
+      "fill_rule": {
+        "match_value": "Építés (új egylakásos)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___1,2",
+      "label": "Ingatlanépítési cél – Új ingatlan építés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Új ingatlan építés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Új ingatlan építés",
+        "option_label": "Új ingatlan építés"
+      },
+      "fill_rule": {
+        "match_value": "Új ingatlan építés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___2,3",
+      "label": "Ingatlanépítési cél – Nem lakáscélú ingatlanépítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Nem lakáscélú ingatlanépítés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Nem lakáscélú ingatlanépítés",
+        "option_label": "Nem lakáscélú ingatlanépítés"
+      },
+      "fill_rule": {
+        "match_value": "Nem lakáscélú ingatlanépítés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___3,4",
+      "label": "Ingatlanépítési cél – Korszerűsítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Korszerűsítés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Korszerűsítés (építés)",
+        "option_label": "Korszerűsítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés (építés)"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___4,5",
+      "label": "Ingatlanépítési cél – Lakóingatlan bővítése legalább 1 lakószobával",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Lakóingatlan bővítése legalább 1 lakószobával",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Lakóingatlan bővítése legalább 1 lakószobával",
+        "option_label": "Lakóingatlan bővítése legalább 1 lakószobával"
+      },
+      "fill_rule": {
+        "match_value": "Lakóingatlan bővítése legalább 1 lakószobával"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___5,6",
+      "label": "Ingatlanépítési cél – Lakóingatlan 1 lakószobánál kisebb bővítése",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Lakóingatlan 1 lakószobánál kisebb bővítése",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Lakóingatlan 1 lakószobánál kisebb bővítése",
+        "option_label": "Lakóingatlan 1 lakó-szobánál kisebb bővítése"
+      },
+      "fill_rule": {
+        "match_value": "Lakóingatlan 1 lakószobánál kisebb bővítése"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___6,7",
+      "label": "Ingatlanépítési cél – Nem lakáscélú ingatlanbővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Nem lakáscélú ingatlanbővítés",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Nem lakáscélú ingatlanbővítés",
+        "option_label": "Nem lakáscélú ingatlanbővítés"
+      },
+      "fill_rule": {
+        "match_value": "Nem lakáscélú ingatlanbővítés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_építés___708",
+      "label": "Ingatlanépítési cél – Felújítás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Ingatlanépítési célok – Felújítás",
+      "checkbox_group": {
+        "group_id": "loan_purpose_construction",
+        "group_label": "Ingatlanépítési célok",
+        "option_value": "Felújítás",
+        "option_label": "Felújítás"
+      },
+      "fill_rule": {
+        "match_value": "Felújítás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hitelkiváltás___Igen",
+      "label": "Hitelkiváltás – Lakáscélú hitel kiváltása",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Hitelkiváltás – Lakáscélú hitel kiváltása",
+      "checkbox_group": {
+        "group_id": "loan_purpose_refinance",
+        "group_label": "Hitelkiváltás",
+        "option_value": "Lakáscélú hitel kiváltása",
+        "option_label": "Lakáscélú hitel kiváltása"
+      },
+      "fill_rule": {
+        "match_value": "Lakáscélú hitel kiváltása"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hitelkiváltás___no",
+      "label": "Hitelkiváltás – Szabad felhasználású jelzálog hitel kiváltása",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Hitelkiváltás – Szabad felhasználású jelzálog hitel kiváltása",
+      "checkbox_group": {
+        "group_id": "loan_purpose_refinance",
+        "group_label": "Hitelkiváltás",
+        "option_value": "Szabad felhasználású jelzálog hitel kiváltása",
+        "option_label": "Szabad felhasználású jelzálog hitel kiváltása"
+      },
+      "fill_rule": {
+        "match_value": "Szabad felhasználású jelzálog hitel kiváltása"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_szabadfelh",
+      "label": "Szabad felhasználás – Szabad felhasználású jelzálog hitel igénylése",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szabad felhasználású jelzálog hitel igénylése",
+      "checkbox_group": null,
+      "fill_rule": {
+        "match_value": "Szabad felhasználású jelzálog hitel igénylése"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kölcsön_összeg",
+      "label": "Igényelt kölcsön összege (Ft)",
+      "field_type": "number",
+      "canonical_field": "Contact.Loan_amount__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az igényelt fő kölcsön összege forintban",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kölcsön_futamidő",
+      "label": "Kölcsön futamideje (év)",
+      "field_type": "number",
+      "canonical_field": "Contact.Loan_period__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az igényelt fő kölcsön futamideje évben",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___1,2",
+      "label": "OTP Évnyerő Otthon Start Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Kamattámogatott lakáshitelek – OTP Évnyerő Otthon Start Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Évnyerő Otthon Start Lakáshitel",
+        "option_label": "OTP Évnyerő Otthon Start Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Otthon Start Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___2,3",
+      "label": "OTP Otthon Start Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Kamattámogatott lakáshitelek – OTP Otthon Start Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Otthon Start Lakáshitel",
+        "option_label": "OTP Otthon Start Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Otthon Start Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___3,4",
+      "label": "OTP Évnyerő CSOK Plusz Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Kamattámogatott lakáshitelek – OTP Évnyerő CSOK Plusz Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Évnyerő CSOK Plusz Lakáshitel",
+        "option_label": "OTP Évnyerő CSOK Plusz Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő CSOK Plusz Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___4,5",
+      "label": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Falusi CSOK hitelek – OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen",
+        "option_label": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___5,6",
+      "label": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Falusi CSOK hitelek – OTP Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen",
+        "option_label": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fill_rule": {
+        "match_value": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___6,7",
+      "label": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Otthonfelújítási hitelek – OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel",
+        "option_label": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___7,8",
+      "label": "OTP Vidéki Otthonfelújítási Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Otthonfelújítási hitelek – OTP Vidéki Otthonfelújítási Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Vidéki Otthonfelújítási Lakáshitel",
+        "option_label": "OTP Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___8,9",
+      "label": "OTP 1x1 Évnyerő Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – OTP 1x1 Évnyerő Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP 1x1 Évnyerő Lakáshitel",
+        "option_label": "OTP 1x1 Évnyerő Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP 1x1 Évnyerő Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___9,10",
+      "label": "OTP 1x1 Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – OTP 1x1 Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP 1x1 Lakáshitel",
+        "option_label": "OTP 1x1 Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP 1x1 Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___10,11",
+      "label": "OTP Zöld Évnyerő Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – OTP Zöld Évnyerő Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Zöld Évnyerő Lakáshitel",
+        "option_label": "OTP Zöld Évnyerő Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Zöld Évnyerő Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___11,12",
+      "label": "OTP Zöld Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – OTP Zöld Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "OTP Zöld Lakáshitel",
+        "option_label": "OTP Zöld Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Zöld Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___12,13",
+      "label": "Végig FIX Évnyerő Lakáshitel Egyszeri kamatcsökkentéssel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – Végig FIX Évnyerő Lakáshitel Egyszeri kamatcsökkentéssel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "Végig FIX Évnyerő Lakáshitel Egyszeri kamatcsökkentéssel",
+        "option_label": "Végig FIX Évnyerő Lakáshitel Egyszeri kamatcsökkentéssel"
+      },
+      "fill_rule": {
+        "match_value": "Végig FIX Évnyerő Lakáshitel Egyszeri kamatcsökkentéssel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___13,14",
+      "label": "Végig FIX Lakáshitel Egyszeri kamatcsökkentéssel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Piaci Forint Lakáshitelek – Végig FIX Lakáshitel Egyszeri kamatcsökkentéssel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "Végig FIX Lakáshitel Egyszeri kamatcsökkentéssel",
+        "option_label": "Végig FIX Lakáshitel Egyszeri kamatcsökkentéssel"
+      },
+      "fill_rule": {
+        "match_value": "Végig FIX Lakáshitel Egyszeri kamatcsökkentéssel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_támogatott_hitelek___14,15",
+      "label": "Végig FIX Forint Jelzáloghitel Egyszeri kamatcsökkentéssel (szabadfelhasználású)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Szabadfelhasználású jelzálog hitel – Végig FIX Forint Jelzáloghitel Egyszeri kamatcsökkentéssel",
+      "checkbox_group": {
+        "group_id": "loan_product_type",
+        "group_label": "Kamattámogatott lakáshitelek / Termék típusa",
+        "option_value": "Végig FIX Forint Jelzáloghitel Egyszeri kamatcsökkentéssel",
+        "option_label": "Végig FIX Forint Jelzáloghitel Egyszeri kamatcsökkentéssel"
+      },
+      "fill_rule": {
+        "match_value": "Végig FIX Forint Jelzáloghitel Egyszeri kamatcsökkentéssel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_groupama___Igen",
+      "label": "Igényel törlesztési biztosítást Groupama Biztosítótól? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Insurance__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Groupama törlesztési biztosítás igénylése – Igen",
+      "checkbox_group": {
+        "group_id": "groupama_insurance",
+        "group_label": "Igényel törlesztési biztosítást Groupama Biztosítótól?",
+        "option_value": "Igen",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "Igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_groupama___no",
+      "label": "Igényel törlesztési biztosítást Groupama Biztosítótól? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Insurance__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Groupama törlesztési biztosítás igénylése – Nem",
+      "checkbox_group": {
+        "group_id": "groupama_insurance",
+        "group_label": "Igényel törlesztési biztosítást Groupama Biztosítótól?",
+        "option_value": "Nem",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "Nem"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___1,2",
+      "label": "Díjkedvezmény – OTP Díjkedvezményes akció",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – OTP Díjkedvezményes akció; nincs közvetlen Salesforce mező, megjegyzésbe kerülhet",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "OTP Díjkedvezményes akció",
+        "option_label": "OTP Díjkedvezményes akció"
+      },
+      "fill_rule": {
+        "match_value": "OTP Díjkedvezményes akció"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___2,3",
+      "label": "Díjkedvezmény – OTP Zöld Díjkedvezményes akció",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – OTP Zöld Díjkedvezményes akció",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "OTP Zöld Díjkedvezményes akció",
+        "option_label": "OTP Zöld Díjkedvezményes akció"
+      },
+      "fill_rule": {
+        "match_value": "OTP Zöld Díjkedvezményes akció"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___3,4",
+      "label": "Díjkedvezmény – Munkáltatói ingatlanhitel díjkedvezmények",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Munkáltatói ingatlanhitel díjkedvezmények",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Munkáltatói ingatlanhitel díjkedvezmények",
+        "option_label": "Munkáltatói ingatlanhitel díjkedvezmények"
+      },
+      "fill_rule": {
+        "match_value": "Munkáltatói ingatlanhitel díjkedvezmények"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___4,5",
+      "label": "Díjkedvezmény – OTP Munkavállalói számlacsomag ajánlat esetén igénybe vehető kedvezmény",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – OTP Munkavállalói számlacsomag ajánlat esetén kedvezmény",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "OTP Munkavállalói számlacsomag ajánlat kedvezmény",
+        "option_label": "OTP Munkavállalói számlacsomag ajánlat esetén igénybe vehető kedvezmény"
+      },
+      "fill_rule": {
+        "match_value": "OTP Munkavállalói számlacsomag ajánlat kedvezmény"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___5,6",
+      "label": "Díjkedvezmény – Munkáltatói Platina vagy Gyémánt számlacsomag esetén kedvezmény",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Munkáltatói Platina vagy Gyémánt számlacsomag esetén kedvezmény",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Munkáltatói Platina vagy Gyémánt számlacsomag kedvezmény",
+        "option_label": "Munkáltatói Platina vagy Gyémánt számlacsomag esetén igénybe vehető kedvezmény"
+      },
+      "fill_rule": {
+        "match_value": "Munkáltatói Platina vagy Gyémánt számlacsomag kedvezmény"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___6,7",
+      "label": "Díjkedvezmény – Munkáltatói Arany számlacsomag esetén igénybe vehető díjkedvezmény",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Munkáltatói Arany számlacsomag kedvezmény",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Munkáltatói Arany számlacsomag díjkedvezmény",
+        "option_label": "Munkáltatói Arany számlacsomag esetén igénybe vehető díjkedvezmény"
+      },
+      "fill_rule": {
+        "match_value": "Munkáltatói Arany számlacsomag díjkedvezmény"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___7,8",
+      "label": "Díjkedvezmény – Munkavállalói díjkedvezmény",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Munkavállalói díjkedvezmény",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Munkavállalói díjkedvezmény",
+        "option_label": "Munkavállalói díjkedvezmény"
+      },
+      "fill_rule": {
+        "match_value": "Munkavállalói díjkedvezmény"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___8,9",
+      "label": "Díjkedvezmény – Diákhiteles ügyfelek díjkedvezménye",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Diákhiteles ügyfelek díjkedvezménye",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Diákhiteles ügyfelek díjkedvezménye",
+        "option_label": "Diákhiteles ügyfelek díjkedvezménye"
+      },
+      "fill_rule": {
+        "match_value": "Diákhiteles ügyfelek díjkedvezménye"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___9,10",
+      "label": "Díjkedvezmény – OTP hitelkiváltási akció kamatstoppal érintett kölcsönök kiváltására",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – OTP hitelkiváltási akció kamatstoppal",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "OTP hitelkiváltási akció kamatstoppal",
+        "option_label": "OTP hitelkiváltási akció kamatstoppal érintett kölcsönök kiváltására"
+      },
+      "fill_rule": {
+        "match_value": "OTP hitelkiváltási akció kamatstoppal"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény___10,11",
+      "label": "Díjkedvezmény – Egyéb (szövegmező)",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "2/1. Díjkedvezmény, akció – Egyéb díjkedvezmény jelölőnégyzet",
+      "checkbox_group": {
+        "group_id": "dijkedvezmeny_1",
+        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
+        "option_value": "Egyéb díjkedvezmény",
+        "option_label": "Egyéb díjkedvezmény, akció"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb díjkedvezmény"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_díjkedvezmény_egyéb",
+      "label": "Egyéb díjkedvezmény, akció – szöveg (1. kölcsön)",
+      "field_type": "text",
+      "canonical_field": "Opportunity.remark__c",
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Szabadszöveges egyéb díjkedvezmény megadása az 1. kölcsönnél",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_összeg",
+      "label": "További kölcsön – Igényelt kölcsön összege (Ft)",
+      "field_type": "number",
+      "canonical_field": "Contact.X2_Loan_amount__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön összege forintban",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_futmaidő",
+      "label": "További kölcsön – Kölcsön futamideje (év)",
+      "field_type": "number",
+      "canonical_field": "Contact.X2_Term_in_year__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön futamideje évben",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___1,2",
+      "label": "További kölcsön – OTP Évnyerő Otthon Start Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön kamattámogatott hitel terméke – OTP Évnyerő Otthon Start Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Évnyerő Otthon Start Lakáshitel",
+        "option_label": "OTP Évnyerő Otthon Start Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Otthon Start Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___2,3",
+      "label": "További kölcsön – OTP Otthon Start Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – OTP Otthon Start Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Otthon Start Lakáshitel",
+        "option_label": "OTP Otthon Start Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Otthon Start Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___3,4",
+      "label": "További kölcsön – OTP Évnyerő CSOK Plusz Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – OTP Évnyerő CSOK Plusz Lakáshitel",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Évnyerő CSOK Plusz Lakáshitel",
+        "option_label": "OTP Évnyerő CSOK Plusz Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő CSOK Plusz Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___4,5",
+      "label": "További kölcsön – OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Falusi CSOK",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen",
+        "option_label": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___5,6",
+      "label": "További kölcsön – OTP Otthonteremtési Lakáshitel preferált kistelepülésen",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Falusi CSOK (másik variáns)",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen",
+        "option_label": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fill_rule": {
+        "match_value": "OTP Otthonteremtési Lakáshitel preferált kistelepülésen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___6,7",
+      "label": "További kölcsön – OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Otthonfelújítási hitelek",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel",
+        "option_label": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Évnyerő Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___7,8",
+      "label": "További kölcsön – OTP Vidéki Otthonfelújítási Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Otthonfelújítási hitelek (másik variáns)",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Vidéki Otthonfelújítási Lakáshitel",
+        "option_label": "OTP Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Vidéki Otthonfelújítási Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___8,9",
+      "label": "További kölcsön – OTP 1x1 Évnyerő Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Piaci Forint Lakáshitelek",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP 1x1 Évnyerő Lakáshitel",
+        "option_label": "OTP 1x1 Évnyerő Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP 1x1 Évnyerő Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___9,10",
+      "label": "További kölcsön – OTP 1x1 Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Piaci Forint Lakáshitelek",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP 1x1 Lakáshitel",
+        "option_label": "OTP 1x1 Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP 1x1 Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___10,11",
+      "label": "További kölcsön – OTP Zöld Évnyerő Lakáshitel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.X2_What_type_of_loan__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "3. További kölcsön – Piaci Forint Lakáshitelek",
+      "checkbox_group": {
+        "group_id": "loan_product_type_2",
+        "group_label": "Kamattámogatott lakáshitelek (2. kölcsön)",
+        "option_value": "OTP Zöld Évnyerő Lakáshitel",
+        "option_label": "OTP Zöld Évnyerő Lakáshitel"
+      },
+      "fill_rule": {
+        "match_value": "OTP Zöld Évnyerő Lakáshitel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___11,12",
+      "label": "Ktka További Támogatott   11,12",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___12,13",
+      "label": "Ktka További Támogatott   12,13",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___13,14",
+      "label": "Ktka További Támogatott   13,14",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_támogatott___14,15",
+      "label": "Ktka További Támogatott   14,15",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_groupama___igen",
+      "label": "Ktka További Groupama   Igen",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_groupama___no",
+      "label": "Ktka További Groupama   No",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___1,5",
+      "label": "Ktka További Díjkedvezmény   1,5",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___2,3",
+      "label": "Ktka További Díjkedvezmény   2,3",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___3,4",
+      "label": "Ktka További Díjkedvezmény   3,4",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___4,5",
+      "label": "Ktka További Díjkedvezmény   4,5",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___5,6",
+      "label": "Ktka További Díjkedvezmény   5,6",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___6,7",
+      "label": "Ktka További Díjkedvezmény   6,7",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___7,8",
+      "label": "Ktka További Díjkedvezmény   7,8",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___8,9",
+      "label": "Ktka További Díjkedvezmény   8,9",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___9,10",
+      "label": "Ktka További Díjkedvezmény   9,10",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény___10,11",
+      "label": "Ktka További Díjkedvezmény   10,11",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_további_díjkedvezmény_egyéb",
+      "label": "Ktka További Díjkedvezmény Egyéb",
+      "field_type": "number",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_törlesztés_szla",
+      "label": "Ktka Törlesztés Szla",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_törlesztés2",
+      "label": "Ktka Törlesztés2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kamatkedvezmény",
+      "label": "Ktka Kamatkedvezmény",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kamatkedvezmény2",
+      "label": "Ktka Kamatkedvezmény2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kamatkedvezmény22",
+      "label": "Ktka Kamatkedvezmény22",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_kamatkedvezmény_szla",
+      "label": "Ktka Kamatkedvezmény Szla",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség___Igen",
+      "label": "Ktka Hűség   Igen",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség___no",
+      "label": "Ktka Hűség   No",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség3___Igen",
+      "label": "Ktka Hűség3   Igen",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség3___no",
+      "label": "Ktka Hűség3   No",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség3_szla",
+      "label": "Ktka Hűség3 Szla",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "KTKA_hűség_telefon",
+      "label": "Ktka Hűség Telefon",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Szövegmező 1017",
+      "label": "Szövegmező 1017",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Vásárolt_ingatlan_ár",
+      "label": "Lahi Ktka Vásárolt Ingatlan Ár",
+      "field_type": "number",
+      "canonical_field": "Lead.Purchase_price__c",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Önerő_kp",
+      "label": "Lahi Ktka Önerő Kp",
+      "field_type": "text",
+      "canonical_field": "Lead.Tervezett_onero__c",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Igényelt_kölcsön.0.0",
+      "label": "Lahi Ktka Igényelt Kölcsön.0.0",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_CSOK",
+      "label": "Lahi Ktka Csok",
+      "field_type": "text",
+      "canonical_field": "Lead.Tervezett_CSOK_Plusz__c",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Afa",
+      "label": "Lahi Ktka Afa",
+      "field_type": "text",
+      "canonical_field": "Contact.State_Support__c",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Lakástakarék",
+      "label": "Lahi Ktka Lakástakarék",
+      "field_type": "text",
+      "canonical_field": "loan.housing_savings",
+      "confidence": "high",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Épités_felújitás.0",
+      "label": "Lahi Ktka Épités Felújitás.0",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_TámogatásokÉpítés",
+      "label": "Lahi Ktka Támogatásoképítés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_TámogatásokÉpítés-1",
+      "label": "Lahi Ktka Támogatásoképítés-1",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_TámogatásokÉpítés-2",
+      "label": "Lahi Ktka Támogatásoképítés-2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Önerő_kpÉpítés",
+      "label": "Lahi Ktka Önerő Kpépítés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Igényelt_kölcsönÉpítés",
+      "label": "Lahi Ktka Igényelt Kölcsönépítés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_CSOK_Építés",
+      "label": "Lahi Ktka Csok Építés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Áfa_Építés",
+      "label": "Lahi Ktka Áfa Építés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Önerő_megtakaritásÉpítés",
+      "label": "Lahi Ktka Önerő Megtakaritásépítés",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Épités_felújitásHitelkivltás",
+      "label": "Lahi Ktka Épités Felújitáshitelkivltás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Igényelt_kölcsönHitelkiváltás",
+      "label": "Lahi Ktka Igényelt Kölcsönhitelkiváltás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Hitelkiváltás_Felújítás",
+      "label": "Lahi Ktka Hitelkiváltás Felújítás",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kölcsön_tipusa_OTP___Yes",
+      "label": "Lahi Ktka Kölcsön Tipusa Otp   Yes",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kölcsön_tipusa_OTP___no",
+      "label": "Lahi Ktka Kölcsön Tipusa Otp   No",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.0",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.0",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.1",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.1",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.2",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.3",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.3",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": " LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.3",
+      "label": " Lahi Ktka Kiváltandó Kölcsön Szlaszám.3",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.4",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.4",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.5",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.5",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám.6",
+      "label": "Lahi Ktka Kiváltandó Kölcsön Szlaszám.6",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "LAHI_KTKA_kelt",
+      "label": "Lahi Ktka Kelt",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 6,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    }
+  ],
+  "character_groups": [],
+  "points": [],
+  "rule_sets": []
+}

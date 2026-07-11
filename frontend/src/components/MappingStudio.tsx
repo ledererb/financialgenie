@@ -106,6 +106,21 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
     setStep("review");
   }, []);
 
+  // Open a catalog document from the sidebar tree. Resolves the PDF file_path
+  // from the catalog and opens it in the review step (skipping analysis if a
+  // mapping already exists — the AnalysisStep handles that auto-skip).
+  const handleOpenDocument = useCallback(
+    (docId: string) => {
+      if (!catalog) return;
+      const doc = catalog.documents.find((d) => d.id === docId);
+      if (doc?.file_path) {
+        setActivePdfId(doc.file_path);
+        setStep("review");
+      }
+    },
+    [catalog],
+  );
+
   const handleFillDone = useCallback(() => {
     setActivePdfId(null);
     setEditingPage(null);
@@ -294,6 +309,7 @@ export default function MappingStudio({ onOpenAdmin }: MappingStudioProps) {
               onDeleteBank={handleDeleteBank}
               onDeleteProduct={handleDeleteProduct}
               onDeleteDocument={handleDeleteDocument}
+              onOpenDocument={handleOpenDocument}
             />
           </div>
         </aside>

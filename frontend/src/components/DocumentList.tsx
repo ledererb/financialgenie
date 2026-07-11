@@ -5,6 +5,7 @@ interface DocumentListProps {
   documents: CatalogDocument[];
   selectedDocumentId: string | null;
   onSelectDocument: (docId: string) => void;
+  onOpenDocument: (docId: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
 }
 
@@ -12,6 +13,7 @@ function DocumentListImpl({
   documents,
   selectedDocumentId,
   onSelectDocument,
+  onOpenDocument,
   onDeleteDocument,
 }: DocumentListProps) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -42,7 +44,10 @@ function DocumentListImpl({
           <div key={doc.id}>
             <div
               className="tree-leaf"
-              onClick={() => onSelectDocument(doc.id)}
+              onClick={() => {
+                onSelectDocument(doc.id);
+                onOpenDocument(doc.id);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",

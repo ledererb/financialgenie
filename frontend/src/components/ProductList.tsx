@@ -9,6 +9,7 @@ interface ProductListProps {
   selectedDocumentId: string | null;
   onSelectProduct: (productId: string) => void;
   onSelectDocument: (docId: string) => void;
+  onOpenDocument: (docId: string) => void;
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
 }
@@ -20,6 +21,7 @@ function ProductListImpl({
   selectedDocumentId,
   onSelectProduct,
   onSelectDocument,
+  onOpenDocument,
   onDeleteProduct,
   onDeleteDocument,
 }: ProductListProps) {
@@ -196,6 +198,7 @@ function ProductListImpl({
             documents={documents}
             selectedDocumentId={selectedDocumentId}
             onSelectDocument={onSelectDocument}
+            onOpenDocument={onOpenDocument}
             onDeleteDocument={onDeleteDocument}
           />
         </div>

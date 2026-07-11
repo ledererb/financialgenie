@@ -11,9 +11,10 @@ interface ProjectBrowserProps {
   onDeleteBank: (bankId: string, name: string) => void;
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
+  onOpenDocument: (docId: string) => void;
 }
 
-export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDeleteProduct, onDeleteDocument }: ProjectBrowserProps) {
+export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDeleteProduct, onDeleteDocument, onOpenDocument }: ProjectBrowserProps) {
   const catalog = useStore((s) => s.catalog);
   const catalogLoading = useStore((s) => s.catalogLoading);
   const loadCatalog = useStore((s) => s.loadCatalog);
@@ -134,6 +135,7 @@ export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDelete
                 onSelectBank={selectBank}
                 onSelectProduct={selectProduct}
                 onSelectDocument={selectDocument}
+                onOpenDocument={onOpenDocument}
                 onAddProduct={onAddProduct}
                 onDeleteBank={onDeleteBank}
                 onDeleteProduct={onDeleteProduct}

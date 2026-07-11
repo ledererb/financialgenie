@@ -1,0 +1,248 @@
+{
+  "bank_name": "OTP Bank",
+  "form_name": "Igazolas_CSOK_AFA_kamattamogatasi_kerelem_atvetelerol_20250901",
+  "form_type": "flat",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Text-anchor felismerés: 13 mező, 1 leképezve.",
+  "page_structure": {},
+  "fields": [
+    {
+      "pdf_field_name": "flat_1_1",
+      "label": "mező_1",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 177.0,
+        "y": 113.9,
+        "width": 120.0,
+        "height": 11.1
+      },
+      "notes": "Igazolom, hogy (igénylők)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_2",
+      "label": "mező_2",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 320.4,
+        "y": 113.9,
+        "width": 139.8,
+        "height": 11.1
+      },
+      "notes": "hogy (igénylők)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_3",
+      "label": "mező_3",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 70.8,
+        "y": 131.2,
+        "width": 249.9,
+        "height": 11.1
+      },
+      "notes": "(igénylők) szerinti kamattámogatásos kölcsön és/vagy támogatás",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_4",
+      "label": "régió",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 70.8,
+        "y": 165.6,
+        "width": 112.7,
+        "height": 11.1
+      },
+      "notes": "kamattámogatásos kölcsön és/vagy támogatás Kötelezettséget vállalok arra, hogy az általam átvett kérelme(ke)t",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_5",
+      "label": "régió",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 212.7,
+        "y": 165.6,
+        "width": 120.0,
+        "height": 11.1
+      },
+      "notes": "kamattámogatásos kölcsön és/vagy támogatás Kötelezettséget vállalok arra, hogy az általam átvett kérelme(ke)t",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_6",
+      "label": "mező_6",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 83.7,
+        "y": 252.6,
+        "width": 8,
+        "height": 11.1
+      },
+      "notes": ", az átvétel napjától számított 2 CSOK Plusz Lakáshitel 3",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_7",
+      "label": "mező_7",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 83.7,
+        "y": 270.0,
+        "width": 8,
+        "height": 11.1
+      },
+      "notes": "3 Otthon Start Lakáshitel",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_8",
+      "label": "mező_8",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 85.3,
+        "y": 293.4,
+        "width": 8,
+        "height": 11.1
+      },
+      "notes": "4 Új Falusi CSOK támogatás",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_9",
+      "label": "mező_9",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 83.7,
+        "y": 314.2,
+        "width": 8,
+        "height": 11.1
+      },
+      "notes": "5 Otthonteremtési Lakáshitel (Új Falusi CSOK hitel)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_10",
+      "label": "mező_10",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 83.7,
+        "y": 338.0,
+        "width": 8,
+        "height": 11.1
+      },
+      "notes": "5 Adóvisszatérítési támogatás (Új Falusi ÁFA) 5",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_11",
+      "label": "Kelt",
+      "field_type": "text",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": {
+        "x": 93.5,
+        "y": 469.1,
+        "width": 122.7,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_12",
+      "label": "mező_12",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 318.7,
+        "y": 503.6,
+        "width": 162.7,
+        "height": 11.1
+      },
+      "notes": "",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "flat_1_13",
+      "label": "mező_13",
+      "field_type": "text",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": {
+        "x": 70.8,
+        "y": 595.6,
+        "width": 145.4,
+        "height": 11.1
+      },
+      "notes": "(kamat(támogatást igénylő aláírása)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    }
+  ],
+  "character_groups": [],
+  "points": [],
+  "rule_sets": []
+}
