@@ -195,9 +195,13 @@ def main():
                         break
                 product_ids = [product_slugs.get(prod_name, product_slug)] if prod_name else [product_slug]
 
-            # file_path: relative to project root, lowercase "otp/" prefix
+            # file_path: relative to project root.
+            # Force lowercase "otp/" prefix so it matches the Docker mount
+            # (./otp:/app/otp) on case-sensitive Linux filesystems.
             rel_path = pdf_path.relative_to(project_root)
             file_path = str(rel_path)
+            if file_path.startswith("OTP/"):
+                file_path = "otp/" + file_path[4:]
 
             if file_path in existing_paths:
                 print(f"  SKIP (exists): {stem}")
