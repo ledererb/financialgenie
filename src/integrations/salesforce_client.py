@@ -260,13 +260,34 @@ class SalesforceClient:
                 # the driver is escaping these values.
                 if contact_ids:
                     contact_fields = (
-                        "Id, Name, FirstName, LastName, Szuletesi_nev__c, Mother_s_Name__c, "
-                        "Place_of_Birth__c, Date_of_birth__c, ID_Card_Number__c, Tax_ID__c, "
-                        "Address_Card_Number__c, Permanent_address__c, Phone, Email, "
-                        "Name_of_employer__c, Average_monthly_net_income__c, Term_in_year_c__c, "
-                        "Highest_Educational_Qualification__c, Marital_Status__c, Dependents_count__c, "
-                        "Citizenship__c, Income_type__c, MailingPostalCode, "
-                        "Current_employment_started__c, ZIP__c"
+                        "Id, Name, FirstName, LastName, Salutation, Szuletesi_nev__c, "
+                        "Mother_s_Name__c, Place_of_Birth__c, Date_of_birth__c, Birthdate, "
+                        "ID_Card_Number__c, Address_Card_Number__c, Tax_ID__c, "
+                        "Permanent_address__c, Phone, MobilePhone, Email, "
+                        "Name_of_employer__c, Occupation__c, Average_monthly_net_income__c, "
+                        "Other_monthly_income__c, Term_in_year_c__c, Interest_Period__c, "
+                        "Highest_Educational_Qualification__c, Marital_Status__c, "
+                        "Dependents_count__c, Citizenship__c, Income_type__c, "
+                        "Foglalkozas_tipusa__c, Employment_Type_c__c, Relation__c, "
+                        "Legal_Title_of_permanent_residence__c, Jovairas_vallalasa__c, "
+                        "Loan_Purpose__c, Current_debt_Credit_limit__c, "
+                        "Current_employment_started__c, Date_of_notification_for_residence__c, "
+                        "Date_of_signature__c, Description, "
+                        "MailingCity, MailingPostalCode, MailingStreet, "
+                        "OtherCity, OtherStreet, OtherCountry, ZIP__c, "
+                        "Account_holding_bank__c, Cafeteria_bonus__c, "
+                        "Continuous_TB_2_years__c, Contract_end_date__c, Contract_start_date__c, "
+                        "Date_of_handover__c, Date_of_transfer__c, "
+                        "Description_of_loan_purpose_comments__c, Divident__c, "
+                        "Employee_registration_c__c, Employer_s_company_type__c, "
+                        "Income_from_self_owned_company__c, Industry__c, "
+                        "Monthly_Payment_details__c, Monthly_installment_payment__c, "
+                        "Mortgagor__c, Numer_and_Age_of_Children__c, "
+                        "Other_income__c, Other_monthly_deductions__c, Own_resources__c, "
+                        "Property_50pct_ownership_details__c, Property_encumbrances__c, "
+                        "Property_value__c, Self_employment_details__c, State_Support__c, "
+                        "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
+                        "What_type_of_loan__c, Loan_amount__c, Loan_period__c"
                     )
                     id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
@@ -328,7 +349,60 @@ class SalesforceClient:
                         "dependents_count": c.get("Dependents_count__c") or 4,
                         "education": c.get("Highest_Educational_Qualification__c") or "Felsofoku",
                         "income_type": c.get("Income_type__c") or "Munkabér (belföldről)",
-                        "is_active": True
+                        "is_active": True,
+                        # Extra Contact mezők (SOQL-ból, lehetnek üresek)
+                        "salutation": c.get("Salutation") or "",
+                        "occupation": c.get("Occupation__c") or "",
+                        "foglalkozas_tipusa": c.get("Foglalkozas_tipusa__c") or "",
+                        "employment_type": c.get("Employment_Type_c__c") or "",
+                        "relation": c.get("Relation__c") or "",
+                        "legal_title": c.get("Legal_Title_of_permanent_residence__c") or "",
+                        "jovairas_vallalasa": c.get("Jovairas_vallalasa__c") or "",
+                        "loan_purpose": c.get("Loan_Purpose__c") or "",
+                        "interest_period": c.get("Interest_Period__c") or "",
+                        "other_monthly_income": c.get("Other_monthly_income__c") or 0,
+                        "current_debt_credit_limit": c.get("Current_debt_Credit_limit__c") or "",
+                        "date_of_notification_for_residence": c.get("Date_of_notification_for_residence__c") or "",
+                        "date_of_signature": c.get("Date_of_signature__c") or "",
+                        "description": c.get("Description") or "",
+                        "mailing_city": c.get("MailingCity") or "",
+                        "mailing_postal_code": c.get("MailingPostalCode") or "",
+                        "mailing_street": c.get("MailingStreet") or "",
+                        "other_city": c.get("OtherCity") or "",
+                        "other_street": c.get("OtherStreet") or "",
+                        "other_country": c.get("OtherCountry") or "",
+                        "mobile_phone": c.get("MobilePhone") or "",
+                        # ÜresSF mezők — továbbítjuk, a mapping tudja, hogy üresek
+                        "account_holding_bank": c.get("Account_holding_bank__c") or "",
+                        "cafeteria_bonus": c.get("Cafeteria_bonus__c") or 0,
+                        "continuous_tb_2_years": c.get("Continuous_TB_2_years__c") or "",
+                        "contract_end_date": c.get("Contract_end_date__c") or "",
+                        "contract_start_date": c.get("Contract_start_date__c") or "",
+                        "date_of_handover": c.get("Date_of_handover__c") or "",
+                        "date_of_transfer": c.get("Date_of_transfer__c") or "",
+                        "description_of_loan_purpose": c.get("Description_of_loan_purpose_comments__c") or "",
+                        "divident": c.get("Divident__c") or 0,
+                        "employee_registration": c.get("Employee_registration_c__c") or "",
+                        "employer_company_type": c.get("Employer_s_company_type__c") or "",
+                        "income_from_self_owned": c.get("Income_from_self_owned_company__c") or 0,
+                        "industry": c.get("Industry__c") or "",
+                        "monthly_payment_details": c.get("Monthly_Payment_details__c") or "",
+                        "monthly_installment_payment": c.get("Monthly_installment_payment__c") or 0,
+                        "mortgagor": c.get("Mortgagor__c") or "",
+                        "numer_and_age_of_children": c.get("Numer_and_Age_of_Children__c") or "",
+                        "other_income": c.get("Other_income__c") or 0,
+                        "other_monthly_deductions": c.get("Other_monthly_deductions__c") or 0,
+                        "own_resources": c.get("Own_resources__c") or 0,
+                        "property_50pct_ownership_details": c.get("Property_50pct_ownership_details__c") or "",
+                        "property_encumbrances": c.get("Property_encumbrances__c") or "",
+                        "property_value": c.get("Property_value__c") or "",
+                        "self_employment_details": c.get("Self_employment_details__c") or "",
+                        "state_support": c.get("State_Support__c") or "",
+                        "town_or_possibly_exact_address": c.get("Town_or_possibly_the_exact_address__c") or "",
+                        "usufructuary": c.get("Usufructuary__c") or "",
+                        "what_type_of_loan": c.get("What_type_of_loan__c") or "",
+                        "contact_loan_amount": c.get("Loan_amount__c") or "",
+                        "contact_loan_period": c.get("Loan_period__c") or "",
                     }
                     participants_records.append(participant_record)
 
@@ -350,7 +424,9 @@ class SalesforceClient:
                             "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
                             "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                            "Ingatlan_emelet__c"
+                            "Ingatlan_emelet__c, Ingatlan_energetika__c, Ingatlan_terhek__c, "
+                            "Ingatlan_szerepe__c, Ingatlan_jellege__c, Ingatlan_megjegyzes__c, "
+                            "Ingatlan_osztatlan__c, Ingatlan_neve__c, Ingatlan_hasznalatbaveteli__c"
                         )
                         prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
@@ -382,11 +458,14 @@ class SalesforceClient:
                                 "area_sqm": p.get("Ingatlan_alapterulet__c") or 65.0,
                                 "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c") or 45000000,
                                 "purchase_price": p.get("Purchase_price__c") or 0,
-                                "form_type": p.get("Form_Type__c", "") or "",
+                                "form_type": p.get("Ingatlan_jellege__c", "") or "",
                                 "energetika": p.get("Ingatlan_energetika__c", "") or "",
                                 "terhek": p.get("Ingatlan_terhek__c", "") or "",
                                 "ingatlan_szerepe": p.get("Ingatlan_szerepe__c", "") or "",
-                                "epites_eve": str(p.get("Epites_eve__c", "") or ""),
+                                "epites_eve": str(p.get("Ingatlan_hasznalatbaveteli__c", "") or ""),
+                                "ingatlan_megjegyzes": p.get("Ingatlan_megjegyzes__c", "") or "",
+                                "ingatlan_neve": p.get("Ingatlan_neve__c", "") or "",
+                                "ingatlan_osztatlan": p.get("Ingatlan_osztatlan__c", "") or "",
                                 "address": {
                                     "zip_code": zip_str or "1123",
                                     "city": p.get("Ingatlan_telepules__c") or "Budapest",
