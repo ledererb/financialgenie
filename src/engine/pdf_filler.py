@@ -625,12 +625,15 @@ class AcroFormFiller(BaseFiller):
 
         # Collect existing /Annots per page as sets of object IDs
         existing_annot_ids = []
+        all_annot_ids = set()
         for p in pages:
             annots = p.get("/Annots", [])
             ids = set()
             for a in annots:
                 try:
-                    ids.add(a.objgen)
+                    oid = a.objgen
+                    ids.add(oid)
+                    all_annot_ids.add(oid)
                 except Exception:
                     pass
             existing_annot_ids.append(ids)
@@ -657,6 +660,17 @@ class AcroFormFiller(BaseFiller):
                     p_ref = kid.get("/P")
                 except Exception:
                     p_ref = None
+
+                # Skip widgets that are already in some page's /Annots —
+                # they're correctly placed, no need to re-attach (and
+                # Rect-based page guessing would be wrong when all pages
+                # are the same size).
+                try:
+                    kid_id = kid.objgen
+                except Exception:
+                    kid_id = None
+                if kid_id is not None and kid_id in all_annot_ids:
+                    continue
 
                 # Check if widget is already in some page's /Annots
                 already_attached = p_ref is not None
