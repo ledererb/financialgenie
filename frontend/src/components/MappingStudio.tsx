@@ -89,6 +89,16 @@ export default function MappingStudio() {
     setStep("fill");
   }, []);
 
+  const handleRemap = useCallback(() => {
+    if (!activePdfId) return;
+    // Delete the mapping, then go back to analysis step which will re-run recognition
+    fetch(`/api/mapping?pdf_id=${encodeURIComponent(activePdfId)}`, { method: "DELETE" })
+      .then(() => {
+        setStep("analysis");
+      })
+      .catch(() => {});
+  }, [activePdfId]);
+
   const handleOpenExisting = useCallback((pdfId: string) => {
     setActivePdfId(pdfId);
     setStep("review");
@@ -484,6 +494,7 @@ export default function MappingStudio() {
               onOpenPoints={handleOpenPoints}
               onBack={() => setStep("upload")}
               onApprove={handleApprove}
+              onRemap={handleRemap}
               onStatsReady={(mapped, total) => {
                 setMappedCount(mapped);
                 setTotalFields(total);

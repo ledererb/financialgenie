@@ -13,6 +13,7 @@ interface ReviewDashboardProps {
   onOpenPoints: () => void;
   onBack: () => void;
   onApprove: () => void;
+  onRemap: () => void;
   onStatsReady?: (mapped: number, total: number) => void;
 }
 
@@ -40,6 +41,7 @@ export default function ReviewDashboard({
   onOpenPoints,
   onBack,
   onApprove,
+  onRemap,
   onStatsReady,
 }: ReviewDashboardProps) {
   const [mapping, setMapping] = useState<MappingConfig | null>(null);
@@ -224,8 +226,19 @@ export default function ReviewDashboard({
         </span>
         <button
           className="btn btn-ghost btn-sm"
-          onClick={onOpenPoints}
+          onClick={() => {
+            if (confirm("Törli a jelenlegi mapping-et és újra lefuttatja az AI felismerést. Biztos?")) {
+              onRemap();
+            }
+          }}
+          title="Mapping törlése és újra felismerés"
           style={{ marginLeft: "auto" }}
+        >
+          🔄 Újramappelés
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={onOpenPoints}
           title="Sorszámozott nyomtatványpontok és checkbox blokkok szerkesztése"
         >
           ☑ Pontok &amp; Blokkok

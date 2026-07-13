@@ -590,6 +590,18 @@ class RecognizeRequest(BaseModel):
     mode: str = "auto"  # auto|acroform|flat
 
 
+@app.delete("/api/mapping")
+def delete_mapping(pdf_id: str = Query(...)):
+    """Delete the mapping JSON for a PDF (so it can be re-recognized from scratch)."""
+    from config import mapping_path_for
+    mapping_file = mapping_path_for(pdf_id)
+    if mapping_file.exists():
+        mapping_file.unlink()
+        log.info("Deleted mapping for remap: %s", mapping_file.name)
+        return {"ok": True, "deleted": True}
+    return {"ok": True, "deleted": False}
+
+
 @app.post("/api/mapping/recognize")
 def recognize(body: RecognizeRequest, pdf_id: str = Query(...)):
     p = _get_pdf(pdf_id)
