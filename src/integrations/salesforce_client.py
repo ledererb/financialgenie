@@ -397,14 +397,14 @@ class SalesforceClient:
                         "own_resources": c.get("Own_resources__c") or 0,
                         "property_50pct_ownership_details": c.get("Property_50pct_ownership_details__c") or "",
                         "property_encumbrances": c.get("Property_encumbrances__c") or "",
-                        "property_value": c.get("Property_value__c") or "",
+                        "property_value": str(c.get("Property_value__c")) if c.get("Property_value__c") is not None else "",
                         "self_employment_details": c.get("Self_employment_details__c") or "",
                         "state_support": c.get("State_Support__c") or "",
                         "town_or_possibly_exact_address": c.get("Town_or_possibly_the_exact_address__c") or "",
                         "usufructuary": c.get("Usufructuary__c") or "",
                         "what_type_of_loan": c.get("What_type_of_loan__c") or "",
-                        "contact_loan_amount": c.get("Loan_amount__c") or "",
-                        "contact_loan_period": c.get("Loan_period__c") or "",
+                        "contact_loan_amount": c.get("Loan_amount__c"),
+                        "contact_loan_period": c.get("Loan_period__c"),
                     }
                     participants_records.append(participant_record)
 

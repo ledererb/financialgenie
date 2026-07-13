@@ -129,8 +129,8 @@ class Participant(BaseModel):
     town_or_possibly_exact_address: Optional[str] = Field(None, description="Város vagy pontos cím")
     usufructuary: Optional[str] = Field(None, description="Haszonélvező")
     what_type_of_loan: Optional[str] = Field(None, description="Hitel típusa")
-    contact_loan_amount: Optional[str] = Field(None, description="Hitelösszeg (Contact)")
-    contact_loan_period: Optional[str] = Field(None, description="Hitel futamideje (Contact)")
+    contact_loan_amount: Optional[float] = Field(None, description="Hitelösszeg (Contact)")
+    contact_loan_period: Optional[float] = Field(None, description="Hitel futamideje (Contact)")
 
     @property
     def is_borrower(self) -> bool:

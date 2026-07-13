@@ -257,14 +257,14 @@ class DataNormalizer:
             own_resources=self._safe_float(p_data.get("own_resources")),
             property_50pct_ownership_details=p_data.get("property_50pct_ownership_details") or "",
             property_encumbrances=p_data.get("property_encumbrances") or "",
-            property_value=p_data.get("property_value") or "",
+            property_value=str(p_data.get("property_value")) if p_data.get("property_value") else "",
             self_employment_details=p_data.get("self_employment_details") or "",
             state_support=p_data.get("state_support") or "",
             town_or_possibly_exact_address=p_data.get("town_or_possibly_exact_address") or "",
             usufructuary=p_data.get("usufructuary") or "",
             what_type_of_loan=p_data.get("what_type_of_loan") or "",
-            contact_loan_amount=p_data.get("contact_loan_amount") or "",
-            contact_loan_period=p_data.get("contact_loan_period") or "",
+            contact_loan_amount=self._safe_float(p_data.get("contact_loan_amount")),
+            contact_loan_period=self._safe_float(p_data.get("contact_loan_period")),
         )
 
     def _normalize_property(self, prop_data: dict) -> Optional[Property]:
