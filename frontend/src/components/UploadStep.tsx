@@ -1,21 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { uploadPdf, listPdfs, deletePdf } from "@/api/client";
-import type { PdfSummary, CatalogDocument } from "@/types";
+import { useState, useRef, useCallback } from "react";
+import { uploadPdf } from "@/api/client";
 import { useStore } from "@/store";
-import ProductAssociationDialog from "./ProductAssociationDialog";
 import SplitProgressIndicator from "./SplitProgressIndicator";
 
 interface UploadStepProps {
   onComplete: (pdfId: string) => void;
   onOpenExisting: (pdfId: string) => void;
   onOpenSectionEditor: (file: File) => void;
-}
-
-interface UploadedDoc {
-  docId: string;
-  title: string;
-  hash: string;
-  duplicate: boolean;
 }
 
 function formatBytes(bytes: number): string {
@@ -59,53 +50,22 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [pdfs, setPdfs] = useState<PdfSummary[]>([]);
-  const [pdfsLoading, setPdfsLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState<PdfSummary | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
-  const [associationDoc, setAssociationDoc] = useState<CatalogDocument | null>(null);
   const [splitting, setSplitting] = useState(false);
   const [splitId, setSplitId] = useState<string | null>(null);
   const [dismissedMaster, setDismissedMaster] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Store state (Phase 3 context awareness) ---
+  // --- Store state ---
   const selectedBankId = useStore((s) => s.selectedBankId);
   const selectedProductId = useStore((s) => s.selectedProductId);
   const catalog = useStore((s) => s.catalog);
   const loadCatalog = useStore((s) => s.loadCatalog);
   const registerDocument = useStore((s) => s.registerDocument);
-  const associateDocumentWithProduct = useStore((s) => s.associateDocumentWithProduct);
   const uploadedHashes = useStore((s) => s.uploadedHashes);
   const addUploadedHash = useStore((s) => s.addUploadedHash);
   const startMasterSplit = useStore((s) => s.startMasterSplit);
 
   const hasSelection = !!(selectedBankId && selectedProductId);
-
-  // Look up catalog documents for the selected product (for association display)
-  const selectedProductDocs: CatalogDocument[] = (catalog?.documents ?? []).filter(
-    (d) => selectedProductId && d.product_ids.includes(selectedProductId),
-  );
-
-  // Load existing PDFs on mount
-  useEffect(() => {
-    let cancelled = false;
-    setPdfsLoading(true);
-    listPdfs()
-      .then((data) => {
-        if (!cancelled) setPdfs(data);
-      })
-      .catch(() => {
-        /* silent */
-      })
-      .finally(() => {
-        if (!cancelled) setPdfsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleFile = useCallback((f: File) => {
     if (f.type !== "application/pdf") {
@@ -173,16 +133,9 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
       const title = file.name.replace(/\.pdf$/i, "");
 
       if (isDuplicate) {
-        // Dedup: file already uploaded this session — just associate with the new product
-        const existingDoc = uploadedDocs.find((d) => d.hash === fileHash);
-        if (existingDoc && !existingDoc.duplicate) {
-          await associateDocumentWithProduct(existingDoc.docId, [
-            ...new Set([...(catalog?.documents.find((d) => d.id === existingDoc.docId)?.product_ids ?? []), selectedProductId]),
-          ]);
-        }
-        setError(`Ez a fájl már létezik: ${file.name} — termék társítva.`);
+        setError(`Ez a fájl már fel lett töltve: ${file.name}`);
       } else {
-        const doc = await registerDocument({
+        await registerDocument({
           id: docId,
           title,
           file_path: res.path || res.pdf_id,
@@ -191,10 +144,6 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
           source: `upload:${file.name}`,
           sha256: fileHash,
         });
-        setUploadedDocs((prev) => [
-          ...prev,
-          { docId: doc.id, title, hash: fileHash, duplicate: false },
-        ]);
       }
 
       await loadCatalog();
@@ -205,7 +154,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
       setUploading(false);
       setProgress(0);
     }
-  }, [file, selectedProductId, uploadedHashes, addUploadedHash, uploadedDocs, catalog, associateDocumentWithProduct, registerDocument, loadCatalog, onComplete]);
+  }, [file, selectedProductId, uploadedHashes, addUploadedHash, registerDocument, loadCatalog, onComplete]);
 
   const handleClearFile = useCallback(() => {
     setFile(null);
@@ -235,23 +184,6 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
     setDismissedMaster(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await deletePdf(deleteTarget.pdf_id);
-      setPdfs((prev) => prev.filter((p) => p.pdf_id !== deleteTarget.pdf_id));
-      // The backend now also removes any catalog document pointing to this
-      // file, so refresh the catalog to clear orphaned entries.
-      await loadCatalog();
-    } catch (e) {
-      setError(`Törlés sikertelen: ${(e as Error).message}`);
-    } finally {
-      setDeleting(false);
-      setDeleteTarget(null);
-    }
-  }, [deleteTarget, loadCatalog]);
 
   // --- No bank/product selected: show message instead of drop zone ---
   if (!hasSelection) {
@@ -287,40 +219,6 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
             A dokumentum feltöltés előtt ki kell választani egy bankot és egy terméket.
           </p>
         </div>
-
-        {/* Keep existing PDF list accessible even without selection */}
-        {pdfs.length > 0 && (
-          <div style={{ marginTop: "var(--space-xl)" }}>
-            <h3
-              style={{
-                fontSize: "0.8rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--text-secondary)",
-                marginBottom: "var(--space-md)",
-              }}
-            >
-              Meglévő PDF-ek
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
-              {pdfs.map((pdf) => (
-                <div key={pdf.pdf_id} className="mapping-row" style={{ cursor: "pointer" }}>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flex: 1 }}
-                    onClick={() => onOpenExisting(pdf.pdf_id)}
-                  >
-                    <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)" }}>
-                      {pdf.name}
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
-                      {formatBytes(pdf.size_bytes)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -563,255 +461,6 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               <>Feltöltés</>
             )}
           </button>
-        </div>
-      )}
-
-      {/* Product Association section — documents in the selected product */}
-      {selectedProductDocs.length > 0 && (
-        <div style={{ marginBottom: "var(--space-xl)" }}>
-          <h3
-            style={{
-              fontSize: "0.8rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--text-secondary)",
-              marginBottom: "var(--space-md)",
-            }}
-          >
-            Feltöltött dokumentumok ({selectedProductDocs.length})
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-            {selectedProductDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className="mapping-row"
-                style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-xs)" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", width: "100%" }}>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--text-tertiary)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)" }}>
-                    {doc.title}
-                  </span>
-                </div>
-                {/* Product association badges */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center", paddingLeft: 26 }}>
-                  {doc.product_ids.map((pid) => (
-                    <span
-                      key={pid}
-                      className="badge badge-blue"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => setAssociationDoc(doc)}
-                      title="Kattintson a termékek szerkesztéséhez"
-                    >
-                      {productName(catalog, pid)}
-                    </span>
-                  ))}
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ padding: "2px 8px", fontSize: "0.75rem" }}
-                    onClick={() => setAssociationDoc(doc)}
-                  >
-                    ✎ Szerkesztés
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent mappings list */}
-      {pdfs.length > 0 && (
-        <div>
-          <h3
-            style={{
-              fontSize: "0.8rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--text-secondary)",
-              marginBottom: "var(--space-md)",
-            }}
-          >
-            Meglévő PDF-ek
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
-            {pdfs.map((pdf) => (
-              <div
-                key={pdf.pdf_id}
-                className="mapping-row"
-                style={{ cursor: "pointer" }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flex: 1 }}
-                  onClick={() => onOpenExisting(pdf.pdf_id)}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--text-tertiary)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)" }}>
-                    {pdf.name}
-                  </span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
-                    {formatBytes(pdf.size_bytes)}
-                  </span>
-                  <span className="badge badge-blue">Megnyitás</span>
-                </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  title="PDF törlése"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteTarget(pdf);
-                  }}
-                  style={{
-                    padding: "4px 8px",
-                    color: "var(--text-tertiary)",
-                    transition: "color 0.15s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
-                >
-                  Törlés
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {pdfsLoading && (
-        <p style={{ textAlign: "center", color: "var(--text-tertiary)", fontSize: "0.8rem" }}>
-          Meglévő PDF-ek betöltése…
-        </p>
-      )}
-
-      {/* Product Association Dialog */}
-      {associationDoc && (
-        <ProductAssociationDialog
-          docId={associationDoc.id}
-          docTitle={associationDoc.title}
-          currentProductIds={associationDoc.product_ids}
-          onClose={() => setAssociationDoc(null)}
-        />
-      )}
-
-      {/* Delete confirmation modal */}
-      {deleteTarget && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            backdropFilter: "blur(4px)",
-          }}
-          onClick={() => !deleting && setDeleteTarget(null)}
-        >
-          <div
-            className="animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "var(--bg-secondary)",
-              borderRadius: "var(--radius-lg)",
-              border: "1px solid var(--border-subtle)",
-              padding: "24px",
-              maxWidth: 420,
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "var(--accent-red-glow)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.2rem",
-              }}>
-                ×
-              </div>
-              <div>
-                <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-                  PDF törlése?
-                </h3>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "4px 0 0" }}>
-                  A mapping konfiguráció is törlésre kerül.
-                </p>
-              </div>
-            </div>
-
-            <div style={{
-              padding: "12px 16px",
-              background: "var(--bg-primary)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-subtle)",
-              marginBottom: "20px",
-            }}>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 500, margin: 0 }}>
-                {deleteTarget.name}
-              </p>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", margin: "4px 0 0" }}>
-                {formatBytes(deleteTarget.size_bytes)}
-              </p>
-            </div>
-
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-                style={{ padding: "8px 16px", fontSize: "0.85rem" }}
-              >
-                Mégse
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                style={{
-                  padding: "8px 16px",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  border: "none",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--accent-red)",
-                  color: "white",
-                  cursor: deleting ? "wait" : "pointer",
-                  opacity: deleting ? 0.6 : 1,
-                  transition: "opacity 0.15s, background 0.15s",
-                }}
-              >
-                {deleting ? "Törlés…" : "Törlés"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
