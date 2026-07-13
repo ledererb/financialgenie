@@ -615,6 +615,22 @@ class AcroFormFiller(BaseFiller):
         if "/Fields" not in acroform:
             return 0
 
+        # Count total widgets already in page /Annots lists. If pages already
+        # have their widgets correctly placed (like CIB PDFs), skip the orphan
+        # fix entirely — it would only cause duplication on same-size pages.
+        total_page_annots = sum(len(all_annot_ids) for all_annot_ids in [existing_annot_ids])
+        total_page_widgets = 0
+        for p in pages:
+            for a in p.get("/Annots", []):
+                try:
+                    if str(a.get("/Subtype", "")) == "/Widget":
+                        total_page_widgets += 1
+                except Exception:
+                    pass
+        if total_page_widgets > 0:
+            # Pages already have widgets — don't re-attach orphans
+            return 0
+
         # Build page mediabox list for spatial matching
         pages = list(pdf.pages)
         page_rects = []
