@@ -389,7 +389,7 @@ def _patch_page_numbers_from_mupdf(
 
     if unmatched:
         try:
-            coord_patched = _patch_by_coordinates(pdf_path, unmatched, render_scale)
+            coord_patched = _patch_by_coordinates(pdf_path, unmatched, render_scale, multi_widget_map)
             if coord_patched:
                 log.info("Coordinate-based patch: %d additional fields", coord_patched)
         except Exception as e:
@@ -400,75 +400,115 @@ def _patch_by_coordinates(
     pdf_path: Path,
     fields: list[dict],
     render_scale: float,
+    multi_widget_map: dict[str, list] | None = None,
 ) -> int:
-    """Coordinate-based page number patching (legacy fallback).
+    """Coordinate-based page number patching (fallback).
 
-    Used only for fields not resolvable by name — deeply nested hierarchies
-    where the field's /T name differs from what PyMuPDF reports.
+    For fields not resolvable by name (e.g. hierarchical PDFs where pikepdf
+    and PyMuPDF report different names), we match by Rect proximity: the
+    pikepdf /Rect (converted to px) is compared against ALL PyMuPDF widget
+    positions to find the closest match.
     """
-    doc = fitz.open(str(pdf_path))
+    # Build a flat list of all PyMuPDF widgets with their positions
+    all_widgets: list[dict] = []
+    try:
+        doc = fitz.open(str(pdf_path))
+        for i, page in enumerate(doc):
+            for w in page.widgets():
+                if w.field_name:
+                    r = w.rect
+                    all_widgets.append({
+                        "page": i + 1,
+                        "x": round(r.x0 * render_scale, 2),
+                        "y": round(r.y0 * render_scale, 2),
+                        "width": round(r.width * render_scale, 2),
+                        "height": round(r.height * render_scale, 2),
+                        "name": w.field_name,
+                        "type": w.field_type,  # 2=checkbox, 7=text
+                    })
+        doc.close()
+    except Exception as e:
+        log.warning("Coordinate patch: PyMuPDF widget scan failed: %s", e)
+        return 0
+
+    if not all_widgets:
+        return 0
+
+    # Also try name-based lookup from multi_widget_map first
     name_to_geos: dict[str, list[dict]] = {}
-    for i, page in enumerate(doc):
-        for w in page.widgets():
-            if w.field_name:
-                r = w.rect
-                geo = {
-                    "page": i + 1,
-                    "x": round(r.x0 * render_scale, 2),
-                    "y": round(r.y0 * render_scale, 2),
-                    "width": round(r.width * render_scale, 2),
-                    "height": round(r.height * render_scale, 2),
-                }
-                name_to_geos.setdefault(w.field_name, []).append(geo)
-    doc.close()
+    if multi_widget_map:
+        for name, widgets in multi_widget_map.items():
+            name_to_geos[name] = [
+                {"page": w[0], "x": w[1], "y": w[2], "width": w[3], "height": w[4]}
+                for w in widgets
+            ]
 
     patched = 0
+    matched_widget_indices: set[int] = set()
     matched_indices: dict[str, set[int]] = {}
+
     for f in fields:
         name = f.get("pdf_field_name", "")
         base_name = name.split("___")[0]
+
+        # Try name-based lookup from multi_widget_map
         geos = name_to_geos.get(base_name)
-        if not geos:
-            continue
+        if geos:
+            rect = f.get("rect")
+            if rect:
+                best_geo_idx = -1
+                best_diff = float("inf")
+                already_matched = matched_indices.setdefault(base_name, set())
 
+                for idx, geo in enumerate(geos):
+                    if idx in already_matched:
+                        continue
+                    diff_x = abs(rect["x"] - geo["x"])
+                    diff_w = abs(rect["width"] - geo["width"])
+                    if diff_x < 10.0 and diff_w < 10.0:
+                        total_diff = diff_x + diff_w
+                        if total_diff < best_diff:
+                            best_diff = total_diff
+                            best_geo_idx = idx
+
+                if best_geo_idx != -1:
+                    geo = geos[best_geo_idx]
+                    already_matched.add(best_geo_idx)
+                    f["page_number"] = geo["page"]
+                    f["rect"] = {"x": geo["x"], "y": geo["y"], "width": geo["width"], "height": geo["height"]}
+                    patched += 1
+                    continue
+
+        # Rect proximity matching against ALL widgets
         rect = f.get("rect")
-        if not rect:
+        if not rect or (rect.get("width", 0) == 0 and rect.get("height", 0) == 0):
             continue
 
-        best_geo_idx = -1
-        best_diff = float("inf")
-        already_matched = matched_indices.setdefault(base_name, set())
+        # Determine expected field type (checkbox=2 in PyMuPDF)
+        ftype = f.get("field_type", "")
+        expected_py_type = 2 if ftype == "checkbox" else 7
 
-        for idx, geo in enumerate(geos):
-            if idx in already_matched:
+        best_idx = -1
+        best_dist = float("inf")
+        for idx, w in enumerate(all_widgets):
+            if idx in matched_widget_indices:
                 continue
-            diff_x = abs(rect["x"] - geo["x"])
-            diff_w = abs(rect["width"] - geo["width"])
-            if diff_x < 10.0 and diff_w < 10.0:  # relaxed threshold for fallback
-                total_diff = diff_x + diff_w
-                if total_diff < best_diff:
-                    best_diff = total_diff
-                    best_geo_idx = idx
+            # Prefer same type
+            if w["type"] != expected_py_type:
+                continue
+            dist = abs(rect["x"] - w["x"]) + abs(rect["width"] - w["width"])
+            # Also factor in y if it's reasonable (not a parent rect)
+            if dist < best_dist:
+                best_dist = dist
+                best_idx = idx
 
-        if best_geo_idx != -1:
-            geo = geos[best_geo_idx]
-            already_matched.add(best_geo_idx)
-        else:
-            fallback_idx = next(
-                (i for i in range(len(geos)) if i not in already_matched),
-                len(geos) - 1,
-            )
-            geo = geos[fallback_idx]
-            already_matched.add(fallback_idx)
+        if best_idx != -1 and best_dist < 100:  # reasonable threshold
+            w = all_widgets[best_idx]
+            matched_widget_indices.add(best_idx)
+            f["page_number"] = w["page"]
+            f["rect"] = {"x": w["x"], "y": w["y"], "width": w["width"], "height": w["height"]}
+            patched += 1
 
-        f["page_number"] = geo["page"]
-        f["rect"] = {
-            "x": geo["x"],
-            "y": geo["y"],
-            "width": geo["width"],
-            "height": geo["height"],
-        }
-        patched += 1
     return patched
 
 
