@@ -127,6 +127,7 @@ interface EditorState {
   deleteBank: (bankId: string) => Promise<void>;
   deleteCatalogDocument: (docId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<string[]>;
+  setPerApplicant: (docId: string, value: boolean) => Promise<void>;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -504,5 +505,33 @@ export const useStore = create<EditorState>((set, get) => ({
     await get().loadCatalog();
     // Return orphaned document IDs so the UI can warn the user.
     return (data.orphaned_documents as string[]) ?? [];
+  },
+
+  setPerApplicant: async (docId: string, value: boolean) => {
+    const res = await fetch(
+      `/api/catalog/documents/${encodeURIComponent(docId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ per_applicant: value }),
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || body.error || `${res.status} ${res.statusText}`);
+    }
+    // Optimistic: update the local catalog state immediately
+    const cat = get().catalog;
+    if (cat) {
+      set({
+        catalog: {
+          ...cat,
+          documents: cat.documents.map((d) =>
+            d.id === docId ? { ...d, per_applicant: value } : d,
+          ),
+        },
+      });
+    }
+    await get().loadCatalog();
   },
 }));

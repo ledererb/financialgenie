@@ -353,3 +353,13 @@ export async function listDeals(): Promise<
   return data.deals;
 }
 
+export async function updateDocument(
+  docId: string,
+  patch: { per_applicant?: boolean },
+): Promise<void> {
+  await http(`/api/catalog/documents/${enc(docId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+

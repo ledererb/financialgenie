@@ -811,6 +811,18 @@ def delete_catalog_document(doc_id: str):
         raise HTTPException(500, str(e))
 
 
+@app.patch("/api/catalog/documents/{doc_id}")
+def update_catalog_document(doc_id: str, body: dict):
+    """Update document metadata (currently: per_applicant flag)."""
+    try:
+        if "per_applicant" in body:
+            catalog_service.set_per_applicant(doc_id, bool(body["per_applicant"]))
+        return {"ok": True}
+    except Exception as e:
+        log.exception("update_catalog_document failed")
+        raise HTTPException(500, str(e))
+
+
 # ======================================================================
 # Catalog service endpoints (Phase 4 — Automatic master PDF split)
 # ======================================================================

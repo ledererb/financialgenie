@@ -17,6 +17,7 @@ export default function AdminCatalogPage() {
   const catalog = useStore((s) => s.catalog);
   const deleteBank = useStore((s) => s.deleteBank);
   const deleteCatalogDocument = useStore((s) => s.deleteCatalogDocument);
+  const setPerApplicant = useStore((s) => s.setPerApplicant);
 
   const [tab, setTab] = useState<AdminTab>("banks");
   const [search, setSearch] = useState("");
@@ -305,13 +306,19 @@ export default function AdminCatalogPage() {
                     </td>
                     <td style={tdStyle}>{doc.page_count}</td>
                     <td style={tdStyle}>
-                      {doc.per_applicant ? (
-                        <span style={{ ...badgeStyle, background: "var(--accent-green-glow)", color: "var(--accent-green)" }}>
-                          Igen
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--text-tertiary)" }}>—</span>
-                      )}
+                      <button
+                        onClick={() => setPerApplicant(doc.id, !doc.per_applicant)}
+                        title={doc.per_applicant ? "Adósonként kitöltendő — kattints a kikapcsoláshoz" : "Kattints az adósonkénti kitöltés bekapcsolásához"}
+                        style={{
+                          ...badgeStyle,
+                          cursor: "pointer",
+                          border: "none",
+                          background: doc.per_applicant ? "var(--accent-green-glow)" : "var(--bg-tertiary)",
+                          color: doc.per_applicant ? "var(--accent-green)" : "var(--text-tertiary)",
+                        }}
+                      >
+                        {doc.per_applicant ? "👤 Igen" : "—"}
+                      </button>
                     </td>
                     <td style={{ ...tdStyle, maxWidth: 240 }}>
                       {doc.product_ids.length > 0 ? (

@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { CatalogDocument } from "@/types";
+import { useStore } from "@/store";
 
 interface DocumentListProps {
   documents: CatalogDocument[];
@@ -126,8 +127,12 @@ function DocumentListImpl({
                 {doc.per_applicant && (
                   <span
                     className="badge badge-amber"
-                    title="👤 Igénylőnként kitöltendő — minden adós/adóstárs számára külön példány kell."
-                    style={{ fontSize: "0.6rem", padding: "1px 6px" }}
+                    title="👤 Igénylőnként kitöltendő — kattints a kikapcsoláshoz"
+                    style={{ fontSize: "0.6rem", padding: "1px 6px", cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      useStore.getState().setPerApplicant(doc.id, false).catch(() => {});
+                    }}
                   >
                     👤
                   </span>
