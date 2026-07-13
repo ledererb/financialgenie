@@ -24,6 +24,10 @@ services:
       - ./output:/app/output
       # Mapping JSON-ok (szerkeszthető a Mapping Stúdióból)
       - ./src/mapping:/app/src/mapping
+      # Katalógus adatbázis (perzisztens — bank/termék/dokumentum hierarchia)
+      - ./catalog:/app/catalog
+      # Dokumentum katalógus (master split PDF-ek)
+      - ./documents:/app/documents
     expose:
       - "8765"
     healthcheck:
