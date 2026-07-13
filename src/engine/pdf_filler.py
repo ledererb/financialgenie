@@ -624,6 +624,22 @@ class AcroFormFiller(BaseFiller):
             page_rects.append((float(mbox[0]), float(mbox[1]),
                                float(mbox[2]), float(mbox[3])))
 
+        # Collect existing widget Rects per page to prevent duplication.
+        # Key: (page_idx, rounded_rect_tuple) → True
+        # If a widget with the same Rect is already on a page, skip it.
+        existing_widget_rects: set = set()
+        for idx, p in enumerate(pages):
+            for a in p.get("/Annots", []):
+                try:
+                    if str(a.get("/Subtype", "")) == "/Widget":
+                        r = a.get("/Rect")
+                        if r and len(r) >= 4:
+                            rect_key = (idx, round(float(r[0]), 1), round(float(r[1]), 1),
+                                        round(float(r[2]), 1), round(float(r[3]), 1))
+                            existing_widget_rects.add(rect_key)
+                except Exception:
+                    pass
+
         # Collect existing /Annots per page as sets of object IDs
         existing_annot_ids = []
         all_annot_ids = set()
@@ -695,6 +711,20 @@ class AcroFormFiller(BaseFiller):
                     if cx is not None:
                         for idx, (x0, y0, x1, y1) in enumerate(page_rects):
                             if x0 <= cx <= x1 and y0 <= cy <= y1:
+                                # Skip if a widget with the same Rect is
+                                # already on this page (prevents CIB-style
+                                # duplication where /Kids and /Annots are
+                                # different objects for the same field).
+                                try:
+                                    rect_key = (idx, round(float(rect[0]), 1),
+                                                round(float(rect[1]), 1),
+                                                round(float(rect[2]), 1),
+                                                round(float(rect[3]), 1))
+                                except Exception:
+                                    rect_key = None
+                                if rect_key and rect_key in existing_widget_rects:
+                                    continue
+
                                 target_page = pages[idx]
                                 try:
                                     kid_id = kid.objgen
@@ -708,6 +738,8 @@ class AcroFormFiller(BaseFiller):
                                         target_page[pikepdf.Name("/Annots")] = annots
                                     annots.append(kid)
                                     existing_annot_ids[idx].add(kid_id)
+                                    if rect_key:
+                                        existing_widget_rects.add(rect_key)
                                     fixed += 1
 
         for field in acroform["/Fields"]:
