@@ -617,20 +617,6 @@ class AcroFormFiller(BaseFiller):
 
         pages = list(pdf.pages)
 
-        # Count total widgets already in page /Annots lists. If pages already
-        # have their widgets correctly placed (like CIB PDFs), skip the orphan
-        # fix entirely — it would only cause duplication on same-size pages.
-        total_page_widgets = 0
-        for p in pages:
-            for a in p.get("/Annots", []):
-                try:
-                    if str(a.get("/Subtype", "")) == "/Widget":
-                        total_page_widgets += 1
-                except Exception:
-                    pass
-        if total_page_widgets > 0:
-            return 0
-
         # Build page mediabox list for spatial matching
         page_rects = []
         for p in pages:
@@ -690,7 +676,12 @@ class AcroFormFiller(BaseFiller):
                 # Check if widget is already in some page's /Annots
                 already_attached = p_ref is not None
                 if not already_attached:
-                    # Find which page this widget belongs to by /Rect
+                    # The widget has no /P and isn't in any page's /Annots.
+                    # We need to attach it. On same-size pages we can't
+                    # reliably determine the page from /Rect alone, so we
+                    # attach to ALL pages whose MediaBox contains the widget
+                    # center. The renderer will only display it on the page
+                    # where /AS is not /Off.
                     try:
                         rect = kid.get("/Rect")
                         if rect and len(rect) >= 2:
@@ -701,33 +692,23 @@ class AcroFormFiller(BaseFiller):
                     except Exception:
                         cx, cy = None, None
 
-                    best_page = None
                     if cx is not None:
                         for idx, (x0, y0, x1, y1) in enumerate(page_rects):
                             if x0 <= cx <= x1 and y0 <= cy <= y1:
-                                best_page = idx
-                                break
-
-                    if best_page is None:
-                        # Fallback: page 0
-                        best_page = 0
-
-                    target_page = pages[best_page]
-                    kid[pikepdf.Name("/P")] = target_page.obj
-
-                    # Add to /Annots if not already there
-                    try:
-                        kid_id = kid.objgen
-                    except Exception:
-                        kid_id = None
-                    if kid_id is None or kid_id not in existing_annot_ids[best_page]:
-                        annots = target_page.get("/Annots")
-                        if annots is None:
-                            annots = pikepdf.Array([])
-                            target_page[pikepdf.Name("/Annots")] = annots
-                        annots.append(kid)
-                        existing_annot_ids[best_page].add(kid_id)
-                    fixed += 1
+                                target_page = pages[idx]
+                                try:
+                                    kid_id = kid.objgen
+                                except Exception:
+                                    kid_id = None
+                                if kid_id is None or kid_id not in existing_annot_ids[idx]:
+                                    kid[pikepdf.Name("/P")] = target_page.obj
+                                    annots = target_page.get("/Annots")
+                                    if annots is None:
+                                        annots = pikepdf.Array([])
+                                        target_page[pikepdf.Name("/Annots")] = annots
+                                    annots.append(kid)
+                                    existing_annot_ids[idx].add(kid_id)
+                                    fixed += 1
 
         for field in acroform["/Fields"]:
             _process_field(field)
