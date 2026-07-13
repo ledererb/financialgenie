@@ -774,6 +774,26 @@ def set_document_products(doc_id: str, body: dict):
 # ======================================================================
 # Catalog service endpoints (Phase 6 — Admin delete)
 # ======================================================================
+@app.patch("/api/catalog/banks/{bank_id}")
+def rename_bank(bank_id: str, body: dict):
+    """Rename a bank."""
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(400, "name is required")
+    catalog_service.rename_bank(bank_id, name)
+    return {"ok": True}
+
+
+@app.patch("/api/catalog/products/{product_id}")
+def rename_product(product_id: str, body: dict):
+    """Rename a product."""
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(400, "name is required")
+    catalog_service.rename_product(product_id, name)
+    return {"ok": True}
+
+
 @app.delete("/api/catalog/banks/{bank_id}")
 def delete_bank(bank_id: str):
     """Delete a bank and cascade-remove its products, documents, and files."""
@@ -813,10 +833,14 @@ def delete_catalog_document(doc_id: str):
 
 @app.patch("/api/catalog/documents/{doc_id}")
 def update_catalog_document(doc_id: str, body: dict):
-    """Update document metadata (currently: per_applicant flag)."""
+    """Update document metadata (per_applicant, title, tags)."""
     try:
         if "per_applicant" in body:
             catalog_service.set_per_applicant(doc_id, bool(body["per_applicant"]))
+        if "title" in body:
+            catalog_service.rename_document(doc_id, body["title"])
+        if "tags" in body:
+            catalog_service.update_document_tags(doc_id, body["tags"])
         return {"ok": True}
     except Exception as e:
         log.exception("update_catalog_document failed")

@@ -1,5 +1,6 @@
-import { useState, memo } from "react";
+import { useState, memo, useRef, useEffect } from "react";
 import type { Product, CatalogDocument } from "@/types";
+import { useStore } from "@/store";
 import DocumentList from "./DocumentList";
 import PackageGenerationDialog from "./PackageGenerationDialog";
 
@@ -33,8 +34,24 @@ function ProductListImpl({
   const [expanded, setExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPackageDialog, setShowPackageDialog] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(product.name);
+  const renameProduct = useStore((s) => s.renameProduct);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isProductSelected = product.id === selectedProductId;
   const docCount = documents.length;
+
+  useEffect(() => {
+    if (editingName) inputRef.current?.focus();
+  }, [editingName]);
+
+  const handleRenameSave = async () => {
+    const trimmed = nameValue.trim();
+    if (trimmed && trimmed !== product.name) {
+      try { await renameProduct(product.id, trimmed); } catch {}
+    }
+    setEditingName(false);
+  };
 
   return (
     <div>
@@ -96,22 +113,54 @@ function ProductListImpl({
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
         </svg>
 
-        <span
-          style={{
-            flex: 1,
-            fontSize: "0.82rem",
-            fontWeight: isProductSelected ? 600 : 500,
-            color: isProductSelected
-              ? "var(--text-primary)"
-              : "var(--text-secondary)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-          title={product.name}
-        >
-          {product.name}
-        </span>
+        {editingName ? (
+          <input
+            ref={inputRef}
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleRenameSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRenameSave();
+              if (e.key === "Escape") { setEditingName(false); setNameValue(product.name); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              flex: 1, fontSize: "0.82rem", fontWeight: 500,
+              padding: "2px 6px", border: "1px solid var(--accent-blue)",
+              borderRadius: "var(--radius-sm)", background: "var(--bg-primary)",
+              color: "var(--text-primary)",
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              flex: 1, fontSize: "0.82rem",
+              fontWeight: isProductSelected ? 600 : 500,
+              color: isProductSelected ? "var(--text-primary)" : "var(--text-secondary)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}
+            title={product.name}
+          >
+            {product.name}
+          </span>
+        )}
+
+        {/* Edit name button */}
+        {!editingName && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(product.name); }}
+            title="Termék átnevezése"
+            style={{
+              background: "none", border: "none",
+              color: "var(--text-tertiary)", cursor: "pointer",
+              padding: "0 2px", fontSize: "0.7rem", lineHeight: 1, flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+          >
+            ✏
+          </button>
+        )}
 
         {/* Document count badge */}
         <span

@@ -18,6 +18,9 @@ function DocumentListImpl({
   onDeleteDocument,
 }: DocumentListProps) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const renameDocument = useStore((s) => s.renameDocument);
 
   if (documents.length === 0) {
     return (
@@ -82,22 +85,47 @@ function DocumentListImpl({
                 <polyline points="14 2 14 8 20 8" />
               </svg>
 
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: "0.78rem",
-                  color: isSelected
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
-                  fontWeight: isSelected ? 500 : 400,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                title={doc.title}
-              >
-                {doc.title}
-              </span>
+              {editingId === doc.id ? (
+                <input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={async () => {
+                    const v = editValue.trim();
+                    if (v && v !== doc.title) {
+                      try { await renameDocument(doc.id, v); } catch {}
+                    }
+                    setEditingId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    flex: 1, fontSize: "0.78rem", padding: "2px 6px",
+                    border: "1px solid var(--accent-blue)",
+                    borderRadius: "var(--radius-sm)", background: "var(--bg-primary)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+              ) : (
+                <span
+                  style={{
+                    flex: 1,
+                    fontSize: "0.78rem",
+                    color: isSelected
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                    fontWeight: isSelected ? 500 : 400,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={doc.title}
+                >
+                  {doc.title}
+                </span>
+              )}
 
               {/* Badges */}
               <div style={{ display: "flex", gap: "3px", flexShrink: 0, alignItems: "center" }}>
@@ -136,6 +164,26 @@ function DocumentListImpl({
                   >
                     👤
                   </span>
+                )}
+                {/* Rename button */}
+                {editingId !== doc.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingId(doc.id);
+                      setEditValue(doc.title);
+                    }}
+                    title="Dokumentum átnevezése"
+                    style={{
+                      background: "none", border: "none",
+                      color: "var(--text-tertiary)", cursor: "pointer",
+                      padding: "0 2px", fontSize: "0.7rem", lineHeight: 1,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+                  >
+                    ✏
+                  </button>
                 )}
                 {/* Delete button */}
                 <button

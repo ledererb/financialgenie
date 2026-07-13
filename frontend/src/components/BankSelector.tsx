@@ -1,5 +1,6 @@
-import { useState, memo } from "react";
+import { useState, memo, useRef, useEffect } from "react";
 import type { Bank, CatalogDocument } from "@/types";
+import { useStore } from "@/store";
 import ProductList from "./ProductList";
 
 interface BankSelectorProps {
@@ -35,7 +36,25 @@ function BankSelectorImpl({
 }: BankSelectorProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(bank.name);
+  const renameBank = useStore((s) => s.renameBank);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isBankSelected = bank.id === selectedBankId;
+
+  useEffect(() => {
+    if (editingName) inputRef.current?.focus();
+  }, [editingName]);
+
+  const handleRenameSave = async () => {
+    const trimmed = nameValue.trim();
+    if (trimmed && trimmed !== bank.name) {
+      try {
+        await renameBank(bank.id, trimmed);
+      } catch {}
+    }
+    setEditingName(false);
+  };
 
   // Auto-expand if this bank or any of its products is selected
   const hasSelectedChild =
@@ -119,22 +138,63 @@ function BankSelectorImpl({
           <path d="M9 21v-8h6v8" />
         </svg>
 
-        <span
-          style={{
-            flex: 1,
-            fontSize: "0.88rem",
-            fontWeight: 600,
-            color: isBankSelected
-              ? "var(--text-primary)"
-              : "var(--text-secondary)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-          title={bank.name}
-        >
-          {bank.name}
-        </span>
+        {editingName ? (
+          <input
+            ref={inputRef}
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleRenameSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRenameSave();
+              if (e.key === "Escape") { setEditingName(false); setNameValue(bank.name); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              flex: 1,
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              padding: "2px 6px",
+              border: "1px solid var(--accent-blue)",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--bg-primary)",
+              color: "var(--text-primary)",
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              flex: 1,
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              color: isBankSelected
+                ? "var(--text-primary)"
+                : "var(--text-secondary)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={bank.name}
+          >
+            {bank.name}
+          </span>
+        )}
+
+        {/* Edit name button */}
+        {!editingName && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(bank.name); }}
+            title="Bank átnevezése"
+            style={{
+              background: "none", border: "none",
+              color: "var(--text-tertiary)", cursor: "pointer",
+              padding: "0 2px", fontSize: "0.75rem", lineHeight: 1, flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+          >
+            ✏
+          </button>
+        )}
 
         {/* Product count badge */}
         <span

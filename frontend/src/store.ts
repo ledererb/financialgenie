@@ -128,6 +128,10 @@ interface EditorState {
   deleteCatalogDocument: (docId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<string[]>;
   setPerApplicant: (docId: string, value: boolean) => Promise<void>;
+  renameBank: (bankId: string, name: string) => Promise<void>;
+  renameProduct: (productId: string, name: string) => Promise<void>;
+  renameDocument: (docId: string, title: string) => Promise<void>;
+  setDocumentTags: (docId: string, tags: string[]) => Promise<void>;
 }
 
 export const useStore = create<EditorState>((set, get) => ({
@@ -532,6 +536,42 @@ export const useStore = create<EditorState>((set, get) => ({
         },
       });
     }
+    await get().loadCatalog();
+  },
+
+  renameBank: async (bankId: string, name: string) => {
+    const res = await fetch(
+      `/api/catalog/banks/${encodeURIComponent(bankId)}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) },
+    );
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `${res.status}`);
+    await get().loadCatalog();
+  },
+
+  renameProduct: async (productId: string, name: string) => {
+    const res = await fetch(
+      `/api/catalog/products/${encodeURIComponent(productId)}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) },
+    );
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `${res.status}`);
+    await get().loadCatalog();
+  },
+
+  renameDocument: async (docId: string, title: string) => {
+    const res = await fetch(
+      `/api/catalog/documents/${encodeURIComponent(docId)}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title }) },
+    );
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `${res.status}`);
+    await get().loadCatalog();
+  },
+
+  setDocumentTags: async (docId: string, tags: string[]) => {
+    const res = await fetch(
+      `/api/catalog/documents/${encodeURIComponent(docId)}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tags }) },
+    );
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `${res.status}`);
     await get().loadCatalog();
   },
 }));

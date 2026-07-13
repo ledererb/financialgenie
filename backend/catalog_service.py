@@ -355,6 +355,44 @@ class CatalogService:
         )
         conn.commit()
 
+    def rename_bank(self, bank_id: str, name: str) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE banks SET name = ? WHERE id = ?",
+            (name.strip(), bank_id),
+        )
+        conn.commit()
+
+    def rename_product(self, product_id: str, name: str) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE products SET name = ? WHERE id = ?",
+            (name.strip(), product_id),
+        )
+        conn.commit()
+
+    def rename_document(self, doc_id: str, title: str) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE documents SET title = ? WHERE id = ?",
+            (title.strip(), doc_id),
+        )
+        conn.commit()
+
+    def update_document_tags(self, doc_id: str, tags: list[str]) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "DELETE FROM document_tags WHERE document_id = ?", (doc_id,)
+        )
+        for tag in tags:
+            tag = tag.strip()
+            if tag:
+                conn.execute(
+                    "INSERT OR IGNORE INTO document_tags (document_id, tag) VALUES (?, ?)",
+                    (doc_id, tag),
+                )
+        conn.commit()
+
     def delete_bank(self, bank_id: str) -> None:
         """Delete a bank, its products, exclusive documents, and on-disk files.
 
