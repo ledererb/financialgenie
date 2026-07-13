@@ -175,14 +175,15 @@ function DocumentListImpl({
                     }}
                     title="Dokumentum átnevezése"
                     style={{
-                      background: "none", border: "none",
-                      color: "var(--text-tertiary)", cursor: "pointer",
-                      padding: "0 2px", fontSize: "0.7rem", lineHeight: 1,
+                      background: "var(--bg-hover)", border: "1px solid var(--border-subtle)",
+                      color: "var(--text-secondary)", cursor: "pointer",
+                      padding: "2px 6px", fontSize: "0.65rem", lineHeight: 1,
+                      borderRadius: "var(--radius-sm)",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
                   >
-                    ✏
+                    ✏︎
                   </button>
                 )}
                 {/* Delete button */}
