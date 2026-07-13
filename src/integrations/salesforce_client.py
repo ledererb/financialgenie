@@ -281,13 +281,15 @@ class SalesforceClient:
                         "Description_of_loan_purpose_comments__c, Divident__c, "
                         "Employee_registration_c__c, Employer_s_company_type__c, "
                         "Income_from_self_owned_company__c, Industry__c, "
-                        "Monthly_Payment_details__c, Monthly_installment_payment__c, "
+                        "Monthly_Payment_details__c, "
                         "Mortgagor__c, Numer_and_Age_of_Children__c, "
-                        "Other_income__c, Other_monthly_deductions__c, Own_resources__c, "
+                        "Other_income__c, Other_monthly_deductions__c, "
                         "Property_50pct_ownership_details__c, Property_encumbrances__c, "
                         "Property_value__c, Self_employment_details__c, State_Support__c, "
                         "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
-                        "What_type_of_loan__c, Loan_amount__c, Loan_period__c"
+                        "What_type_of_loan__c, Loan_amount__c, Loan_period__c, "
+                        "Affordable_monthly_installments__c, Interest_rate__c, "
+                        "Residence_Status__c"
                     )
                     id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
