@@ -28,6 +28,8 @@ export default function MappingStudio() {
   const [sectionEditorFile, setSectionEditorFile] = useState<File | null>(null);
   const [mappedCount, setMappedCount] = useState(0);
   const [totalFields, setTotalFields] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
 
   // Catalog / gate state
   const catalog = useStore((s) => s.catalog);
@@ -260,26 +262,52 @@ export default function MappingStudio() {
         {/* Sidebar — ProjectBrowser tree */}
         <aside
           style={{
-            width: 280,
+            width: sidebarCollapsed ? 0 : 420,
             flexShrink: 0,
-            borderRight: "1px solid var(--border-subtle)",
+            borderRight: sidebarCollapsed ? "none" : "1px solid var(--border-subtle)",
             background: "var(--bg-secondary)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            transition: "width 0.2s ease",
           }}
         >
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            <ProjectBrowser
-              onAddBank={handleAddBank}
-              onAddProduct={handleAddProduct}
-              onDeleteBank={handleDeleteBank}
-              onDeleteProduct={handleDeleteProduct}
-              onDeleteDocument={handleDeleteDocument}
-              onOpenDocument={handleOpenDocument}
-            />
-          </div>
+          {!sidebarCollapsed && (
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <ProjectBrowser
+                onAddBank={handleAddBank}
+                onAddProduct={handleAddProduct}
+                onDeleteBank={handleDeleteBank}
+                onDeleteProduct={handleDeleteProduct}
+                onDeleteDocument={handleDeleteDocument}
+                onOpenDocument={handleOpenDocument}
+              />
+            </div>
+          )}
         </aside>
+
+        {/* Sidebar collapse/expand toggle */}
+        <button
+          onClick={() => setSidebarCollapsed((prev) => !prev)}
+          title={sidebarCollapsed ? "Oldalsáv megnyitása" : "Oldalsáv elrejtése"}
+          style={{
+            width: 20,
+            flexShrink: 0,
+            border: "none",
+            borderRight: "1px solid var(--border-subtle)",
+            background: "var(--bg-secondary)",
+            color: "var(--text-tertiary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "0.7rem",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+        >
+          {sidebarCollapsed ? "▶" : "◀"}
+        </button>
 
         {/* Main content area */}
         <div
