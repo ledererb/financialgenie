@@ -252,6 +252,12 @@ class DataNormalizer:
             number_of_rooms=self._safe_int(
                 prop_data.get("Rooms__c") or prop_data.get("number_of_rooms")
             ),
+            purchase_price=self._safe_int(prop_data.get("purchase_price")),
+            form_type=prop_data.get("form_type") or "",
+            energetika=prop_data.get("energetika") or "",
+            terhek=prop_data.get("terhek") or "",
+            ingatlan_szerepe=prop_data.get("ingatlan_szerepe") or "",
+            epites_eve=str(prop_data.get("epites_eve") or ""),
         )
 
     @staticmethod

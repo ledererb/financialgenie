@@ -544,6 +544,12 @@ class FormFillerPipeline:
                 "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
                 "Lead.Ingatlan_jellege__c": prop.property_type.value,
                 "Lead.Estimated__c": fmt_money(prop.estimated_value),
+                "Lead.Ingatlan_emelet__c": getattr(prop, "address", None).floor if getattr(prop, "address", None) else "",
+                "Lead.Form_Type__c": getattr(prop, "form_type", "") or "",
+                "Lead.Ingatlan_energetika__c": getattr(prop, "energetika", "") or "",
+                "Lead.Ingatlan_terhek__c": getattr(prop, "terhek", "") or "",
+                "Lead.Ingatlan_szerepe__c": getattr(prop, "ingatlan_szerepe", "") or "",
+                "Lead.Term_in_year__c": str(getattr(prop, "epites_eve", "") or ""),
             }
             if i == 0:
                 prop_data = pd
@@ -925,6 +931,7 @@ class FormFillerPipeline:
             "Contact.ID_Card_Number__c": p.personal_id or "",
             "Contact.Tax_ID__c": p.tax_id or "",
             "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
+            "Contact.Phone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
             "Contact.Email": p.email or "",
             "Contact.Name_of_employer__c": p.employer or "",
             "Contact.Average_monthly_net_income__c": fmt_money(p.monthly_income),

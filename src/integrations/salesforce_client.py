@@ -350,7 +350,8 @@ class SalesforceClient:
                             "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
                             "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
                             "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                            "Ingatlan_emelet__c"
+                            "Ingatlan_emelet__c, Ingatlan_energetika__c, Ingatlan_terhek__c, "
+                            "Ingatlan_szerepe__c, Form_Type__c, Epites_eve__c"
                         )
                         prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
@@ -381,6 +382,12 @@ class SalesforceClient:
                                 "parcel_number": p.get("Ingatlan_hrsz__c") or "12345/6/A",
                                 "area_sqm": p.get("Ingatlan_alapterulet__c") or 65.0,
                                 "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c") or 45000000,
+                                "purchase_price": p.get("Purchase_price__c") or 0,
+                                "form_type": p.get("Form_Type__c") or "",
+                                "energetika": p.get("Ingatlan_energetika__c") or "",
+                                "terhek": p.get("Ingatlan_terhek__c") or "",
+                                "ingatlan_szerepe": p.get("Ingatlan_szerepe__c") or "",
+                                "epites_eve": p.get("Epites_eve__c") or "",
                                 "address": {
                                     "zip_code": zip_str or "1123",
                                     "city": p.get("Ingatlan_telepules__c") or "Budapest",

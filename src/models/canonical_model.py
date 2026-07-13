@@ -100,7 +100,7 @@ class PropertyType(str, Enum):
 class Property(BaseModel):
     """
     Fedezeti ingatlan adatai.
-    
+
     Az OTP nyomtatványon az ingatlanrész ingatlanonként ismétlődik.
     """
     address: Address = Field(..., description="Ingatlan címe")
@@ -110,6 +110,13 @@ class Property(BaseModel):
     estimated_value: Optional[int] = Field(None, description="Becsült érték (Ft)")
     year_built: Optional[int] = Field(None, description="Építés éve")
     number_of_rooms: Optional[int] = Field(None, description="Szobák száma")
+    # Extra Property mezők (CIB és más bank nyomtatványok)
+    purchase_price: Optional[int] = Field(None, description="Vételár (Ft)")
+    form_type: Optional[str] = Field(None, description="Építmény típusa")
+    energetika: Optional[str] = Field(None, description="Energetikai besorolás")
+    terhek: Optional[str] = Field(None, description="Teherjog")
+    ingatlan_szerepe: Optional[str] = Field(None, description="Ingatlan szerepe")
+    epites_eve: Optional[str] = Field(None, description="Építés éve (szöveg)")
 
 
 class LoanDetails(BaseModel):
