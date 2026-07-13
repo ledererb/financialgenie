@@ -618,7 +618,6 @@ class AcroFormFiller(BaseFiller):
         # Count total widgets already in page /Annots lists. If pages already
         # have their widgets correctly placed (like CIB PDFs), skip the orphan
         # fix entirely — it would only cause duplication on same-size pages.
-        total_page_annots = sum(len(all_annot_ids) for all_annot_ids in [existing_annot_ids])
         total_page_widgets = 0
         for p in pages:
             for a in p.get("/Annots", []):
