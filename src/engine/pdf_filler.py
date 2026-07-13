@@ -334,6 +334,12 @@ class AcroFormFiller(BaseFiller):
         # sees ALL widgets regardless of their position in the AcroForm tree.
         if result.success:
             self._mupdf_fill_missing(output_path, mapping, field_data, result)
+            # Sync checkbox /AS values from pikepdf to PyMuPDF after orphan fix.
+            # The orphan widget fix adds widgets to page /Annots via pikepdf,
+            # but PyMuPDF doesn't pick up the /AS values on save. This pass
+            # reads the field /V from the saved PDF and sets each widget's
+            # field_value accordingly so the renderer displays the checkmark.
+            self._sync_checkbox_values(output_path, result)
 
         return result
 
@@ -497,6 +503,56 @@ class AcroFormFiller(BaseFiller):
                     "error": f"Hiba a mező kitöltésekor: {exc}",
                 })
                 logger.warning("Mező kitöltési hiba: %s – %s", pdf_name, exc)
+
+    @staticmethod
+    def _sync_checkbox_values(output_path: Path, result: FillingResult) -> None:
+        """Sync checkbox/radio field values from the saved PDF to PyMuPDF widgets.
+
+        After pikepdf saves the PDF (with /V and /AS set on AcroForm fields),
+        PyMuPDF's widget iterator may not read the correct field_value for
+        radio groups and checkboxes — especially after the orphan widget fix
+        adds widgets to page /Annots. This method opens the PDF with PyMuPDF,
+        reads each widget's expected state from its /AS (via pikepdf), and
+        sets the PyMuPDF field_value accordingly so the renderer displays it.
+        """
+        import fitz
+        import pikepdf
+
+        try:
+            # Read field /V and widget /AS values from pikepdf
+            pdf = pikepdf.open(str(output_path))
+            field_values: dict[str, str] = {}
+            for field in pdf.Root.get("/AcroForm", {}).get("/Fields", []):
+                name = str(field.get("/T", ""))
+                v = field.get("/V")
+                if v is not None and str(v) != "/Off" and str(v) != "/":
+                    field_values[name] = str(v).lstrip("/")
+            pdf.close()
+
+            if not field_values:
+                return
+
+            # Open with PyMuPDF and set widget values
+            doc = fitz.open(str(output_path))
+            needs_save = False
+            for page in doc:
+                for w in page.widgets():
+                    fn = w.field_name or ""
+                    if fn in field_values and w.field_type in (2, 5):
+                        val = field_values[fn]
+                        if w.field_value != val:
+                            try:
+                                w.field_value = val
+                                w.update()
+                                needs_save = True
+                            except Exception:
+                                pass
+            if needs_save:
+                doc.saveIncr()
+                logger.info("Checkbox értékek szinkronizálva: %d mező", len(field_values))
+            doc.close()
+        except Exception as e:
+            logger.debug("Checkbox sync skipped: %s", e)
 
     def _mupdf_fill_missing(
         self,
