@@ -1153,12 +1153,13 @@ def generate_package(body: dict):
                 })
                 continue
 
-            # Determine how many copies to produce
+            # Determine how many copies to produce.
+            # per_applicant documents get one copy per active participant:
+            # the borrower + each co-borrower (1-3).
             if per_applicant and has_co_borrower:
-                copies = [
-                    ("adós", None),
-                    ("adóstárs", "co_borrower"),
-                ]
+                copies = [(None, None)]  # adós
+                for i in range(len(deal.co_borrowers)):
+                    copies.append((f"adóstárs {i+1}", i))
             else:
                 copies = [(None, None)]
 

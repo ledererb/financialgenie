@@ -252,7 +252,7 @@ class FormFillerPipeline:
         template_pdf: Path,
         mapping_config: MappingConfig = None,
         force_recreate_mapping: bool = False,
-        participant_override: str | None = None,
+        participant_override: int | None = None,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
@@ -260,12 +260,11 @@ class FormFillerPipeline:
         Args:
             deal_id: Salesforce ügylet azonosító
             template_pdf: A kitöltendő PDF sablon
-            mapping_config: Mező-leképezés konfiguráció (opcionális, automatikusan feloldódik)
-            force_recreate_mapping: Mapping kényszerített újragenerálása (AI automatikus futtatása)
-            participant_override: Ha "co_borrower", a -társ nélküli (sima) mezők
-                is a co_borrower (adóstárs) adatait kapják. Per-applicant
-                dokumentumoknál használjuk, hogy a társigénylő lapból egy
-                második példány is készüljön az adóstárs adataival.
+            mapping_config: Mező-leképezés konfiguráció (opcionális)
+            force_recreate_mapping: Mapping kényszerített újragenerálása
+            participant_override: Ha meg van adva (0, 1, 2), a sima mezők
+                az adott indexű adóstárs adatait kapják (co_borrowers[i]).
+                None = adós adatai.
 
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
@@ -424,7 +423,7 @@ class FormFillerPipeline:
         report = checker.check(deal, required_fields)
         return report
 
-    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: str | None = None) -> dict:
+    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None) -> dict:
         """
         Kanonikus adatokból mező-értékpárok összeállítása.
         A mapping alapján a PDF mezőnevekre képezi le az értékeket.
@@ -473,11 +472,19 @@ class FormFillerPipeline:
             else:
                 co_borrower_data = p_data
 
-        # Per-applicant override: ha a dokumentumot a co_borrower
-        # adataival kell kitölteni (pl. társigénylő lap 2. példánya),
-        # akkor a "sima" (nem -társ) mezők is a co_borrower adatait
+        # Per-applicant override: ha a dokumentumot az adott adóstárs
+        # adataival kell kitölteni (pl. társigénylő lap N. példánya),
+        # akkor a "sima" (nem -társ) mezők is a megfelelő adóstárs adatait
         # kapják — a borrower_data-t felülírjuk a co_borrower adataival.
-        if participant_override == "co_borrower" and co_borrower_data:
+        if participant_override is not None and participant_override < len(co_borrowers):
+            override_participant = co_borrowers[participant_override]
+            borrower_data = dict(self._participant_to_dict(override_participant))
+            if override_participant.address:
+                borrower_data.update(self._address_to_dict(override_participant.address, "address"))
+            if override_participant.mailing_address:
+                borrower_data.update(self._address_to_dict(override_participant.mailing_address, "mailing_address"))
+            elif override_participant.address:
+                borrower_data.update(self._address_to_dict(override_participant.address, "mailing_address"))
             borrower_data = dict(co_borrower_data)
 
         # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
