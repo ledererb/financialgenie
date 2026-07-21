@@ -281,6 +281,35 @@ export default function PackageGenerationDialog({
               </div>
             )}
 
+            {/* Salesforce upload results */}
+            {result.sf_uploads && result.sf_uploads.length > 0 && (
+              <div
+                style={{
+                  marginBottom: "var(--space-md)",
+                  padding: "10px 12px",
+                  background: "var(--bg-tertiary)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
+                  ☁️ Salesforce feltöltés ({result.sf_uploads.filter(u => u.success).length}/{result.sf_uploads.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {result.sf_uploads.map((u, i) => (
+                    <div key={i} style={{ display: "flex", gap: "6px", fontSize: "0.75rem" }}>
+                      <span style={{ color: u.success ? "var(--success)" : "var(--danger)" }}>
+                        {u.success ? "✓" : "✗"}
+                      </span>
+                      <span style={{ color: "var(--text-tertiary)", flex: 1 }}>
+                        {u.file}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Download + close */}
             <div style={{ display: "flex", gap: "8px" }}>
               <button

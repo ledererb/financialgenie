@@ -1094,9 +1094,10 @@ def generate_package(body: dict):
     returns a download URL. Per-applicant documents produce one copy
     per active participant (borrower + co-borrower).
 
-    Body: { bank_id: str, product_id: str, deal_id: str }
-    Returns: { success, package_url, documents[], total_documents, errors[] }
+    Body: { bank_id: str, product_id: str, deal_id: str, upload_to_sf?: bool }
+    Returns: { success, package_url, documents[], total_documents, errors[], sf_uploads }
     """
+    upload_to_sf = body.get("upload_to_sf", True)
     import zipfile
     from datetime import datetime
 
@@ -1220,12 +1221,35 @@ def generate_package(body: dict):
 
         package_url = f"/api/pdf/download?path={urllib.parse.quote(str(zip_path))}"
 
+        # Upload filled PDFs to Salesforce as ContentVersion records
+        sf_uploads = []
+        if upload_to_sf and not sf_client._mock_mode:
+            for zip_name, abs_path in output_files:
+                if abs_path and Path(abs_path).exists():
+                    try:
+                        ok = sf_client.attach_pdf(
+                            deal_id=deal_id,
+                            pdf_path=Path(abs_path),
+                            filename=zip_name,
+                        )
+                        sf_uploads.append({
+                            "file": zip_name,
+                            "success": ok,
+                        })
+                    except Exception as e:
+                        sf_uploads.append({
+                            "file": zip_name,
+                            "success": False,
+                            "error": str(e)[:200],
+                        })
+
         return {
             "success": True,
             "package_url": package_url,
             "documents": results,
             "total_documents": len([r for r in results if r["success"]]),
             "errors": errors,
+            "sf_uploads": sf_uploads,
         }
 
     except HTTPException:

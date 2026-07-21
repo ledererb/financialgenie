@@ -208,6 +208,7 @@ export interface PackageResult {
   documents: PackageDocument[];
   total_documents: number;
   errors: { document: string; error: string }[];
+  sf_uploads?: { file: string; success: boolean; error?: string }[];
 }
 
 export type AdminTab = "banks" | "documents";
