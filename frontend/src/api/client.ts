@@ -337,10 +337,16 @@ export async function generatePackage(
   bankId: string,
   productId: string,
   dealId: string,
+  uploadToSf?: boolean,
 ): Promise<PackageResult> {
   return http<PackageResult>("/api/catalog/generate-package", {
     method: "POST",
-    body: JSON.stringify({ bank_id: bankId, product_id: productId, deal_id: dealId }),
+    body: JSON.stringify({
+      bank_id: bankId,
+      product_id: productId,
+      deal_id: dealId,
+      ...(uploadToSf !== undefined ? { upload_to_sf: uploadToSf } : {}),
+    }),
   });
 }
 

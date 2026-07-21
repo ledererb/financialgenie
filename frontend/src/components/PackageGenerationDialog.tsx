@@ -29,6 +29,7 @@ export default function PackageGenerationDialog({
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<PackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadToSf, setUploadToSf] = useState(true);
 
   useEffect(() => {
     listDeals()
@@ -46,14 +47,14 @@ export default function PackageGenerationDialog({
     setResult(null);
     setError(null);
     try {
-      const res = await generatePackage(bankId, productId, selectedDealId);
+      const res = await generatePackage(bankId, productId, selectedDealId, uploadToSf);
       setResult(res);
     } catch (e) {
       setError((e as Error).message || "Csomag generálás sikertelen.");
     } finally {
       setGenerating(false);
     }
-  }, [bankId, productId, selectedDealId]);
+  }, [bankId, productId, selectedDealId, uploadToSf]);
 
   const handleDownload = useCallback(() => {
     if (result?.package_url) {
@@ -176,6 +177,30 @@ export default function PackageGenerationDialog({
           >
             {error}
           </div>
+        )}
+
+        {/* SF upload toggle */}
+        {!result && (
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "var(--space-md)",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={uploadToSf}
+              onChange={(e) => setUploadToSf(e.target.checked)}
+              disabled={generating}
+              style={{ cursor: "pointer" }}
+            />
+            ☁️ Feltöltés Salesforce-ba a generálás után
+          </label>
         )}
 
         {/* Generate button */}
