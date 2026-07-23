@@ -189,12 +189,13 @@ def _mechanical_validation(
                     ))
                     report.mismatch_fields += 1
             elif expected_str.lower() in ("nem", "no", "false", "0"):
-                # Checkbox "nem" elvárás: jó ha nincs bepipálva (Off)
+                # Checkbox "nem" elvárás: jó ha a MEZŐ nincs bepipálva (Off).
+                # A suffix mezőnek (___suffix) kell Off-nak lennie, nem a base
+                # name-nek — a base name lehet hogy értékkel van (ha egy másik
+                # opció van bepipálva).
                 pk_ok = not actual_pk or actual_pk in ("/Off", "Off", "", "/")
                 mu_ok = not actual_mu or actual_mu in ("Off", "", "/Off")
-                base_pk_ok = not base_pk or base_pk in ("/Off", "Off", "", "/")
-                base_mu_ok = not base_mu or base_mu in ("Off", "", "/Off")
-                if (pk_ok and mu_ok) and (base_pk_ok and base_mu_ok):
+                if pk_ok and mu_ok:
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,
