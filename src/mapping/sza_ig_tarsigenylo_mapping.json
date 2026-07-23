@@ -346,7 +346,7 @@
       "pdf_field_name": "SZA_IG_személyiszám-társ",
       "label": "Személyi azonosító szám (régi személyi szám)",
       "field_type": "text",
-      "canonical_field": "Contact.Employee_registration_c__c",
+      "canonical_field": "Contact.ID_Card_Number__c",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
@@ -446,11 +446,11 @@
       "checkbox_group": {
         "group_id": "csaladi_allapot",
         "group_label": "Családi állapot",
-        "option_value": "Házas/bejegyzett élettárs",
+        "option_value": "házas",
         "option_label": "Házas/bejegyzett élettárs"
       },
       "fill_rule": {
-        "match_value": "Házas/bejegyzett élettárs"
+        "match_value": "házas"
       },
       "fragment": null
     },
@@ -466,11 +466,11 @@
       "checkbox_group": {
         "group_id": "csaladi_allapot",
         "group_label": "Családi állapot",
-        "option_value": "Élettárs",
+        "option_value": "élettársi",
         "option_label": "Élettárs"
       },
       "fill_rule": {
-        "match_value": "Élettárs"
+        "match_value": "élettársi"
       },
       "fragment": null
     },
@@ -486,11 +486,11 @@
       "checkbox_group": {
         "group_id": "csaladi_allapot",
         "group_label": "Családi állapot",
-        "option_value": "Özvegy",
+        "option_value": "özvegy",
         "option_label": "Özvegy"
       },
       "fill_rule": {
-        "match_value": "Özvegy"
+        "match_value": "özvegy"
       },
       "fragment": null
     },
@@ -506,11 +506,11 @@
       "checkbox_group": {
         "group_id": "csaladi_allapot",
         "group_label": "Családi állapot",
-        "option_value": "Elvált",
+        "option_value": "elvált",
         "option_label": "Elvált"
       },
       "fill_rule": {
-        "match_value": "Elvált"
+        "match_value": "elvált"
       },
       "fragment": null
     },
@@ -526,11 +526,11 @@
       "checkbox_group": {
         "group_id": "csaladi_allapot",
         "group_label": "Családi állapot",
-        "option_value": "Egyedülálló",
+        "option_value": "egyedülálló",
         "option_label": "Egyedülálló"
       },
       "fill_rule": {
-        "match_value": "Egyedülálló"
+        "match_value": "egyedülálló"
       },
       "fragment": null
     },
@@ -551,7 +551,7 @@
       "pdf_field_name": "SZA_IG_eltartottak-társ",
       "label": "Ebből gyermekek száma (fő)",
       "field_type": "number",
-      "canonical_field": "Contact.Numer_and_Age_of_Children__c",
+      "canonical_field": "Contact.Dependents_count__c",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
@@ -892,7 +892,7 @@
         "option_label": "Felsőfokú"
       },
       "fill_rule": {
-        "match_value": "Felsőfokú"
+        "match_value": "Felsofoku"
       },
       "fragment": null
     },
@@ -972,7 +972,7 @@
         "option_label": "Szellemi munkát végző alkalmazott"
       },
       "fill_rule": {
-        "match_value": "Szellemi munkát végző alkalmazott"
+        "match_value": "Szellemi alkalmazott"
       },
       "fragment": null
     },
@@ -992,7 +992,7 @@
         "option_label": "Fizikai munkát végző alkalmazott"
       },
       "fill_rule": {
-        "match_value": "Fizikai munkát végző alkalmazott"
+        "match_value": "Fizikai alkalmazott"
       },
       "fragment": null
     },
