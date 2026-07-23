@@ -2,6 +2,7 @@ import { useState, memo, useRef, useEffect } from "react";
 import type { Product, CatalogDocument } from "@/types";
 import { useStore } from "@/store";
 import DocumentList from "./DocumentList";
+import UploadStep from "./UploadStep";
 
 interface ProductListProps {
   product: Product;
@@ -35,8 +36,11 @@ function ProductListImpl({
   const [expanded, setExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [nameValue, setNameValue] = useState(product.name);
   const renameProduct = useStore((s) => s.renameProduct);
+  const selectProduct = useStore((s) => s.selectProduct);
+  const selectBank = useStore((s) => s.selectBank);
   const inputRef = useRef<HTMLInputElement>(null);
   const isProductSelected = product.id === selectedProductId;
   const docCount = documents.length;
@@ -171,6 +175,31 @@ function ProductListImpl({
           {docCount} {docCount === 1 ? "dok." : "dok."}
         </span>
 
+        {/* Upload document button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            selectBank(bankId);
+            selectProduct(product.id);
+            setShowUpload(true);
+          }}
+          title="Dokumentum feltöltése ehhez a termékhez"
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-tertiary)",
+            cursor: "pointer",
+            padding: "0 2px",
+            fontSize: "0.8rem",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+        >
+          + Dokumentum
+        </button>
+
         {/* Generate package button */}
         <button
           onClick={(e) => {
@@ -283,6 +312,49 @@ function ProductListImpl({
             onOpenDocument={onOpenDocument}
             onDeleteDocument={onDeleteDocument}
           />
+        </div>
+      )}
+
+      {/* Upload overlay */}
+      {showUpload && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--bg-primary)",
+            zIndex: 300,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-sm)",
+              padding: "8px 16px",
+              borderBottom: "1px solid var(--border-subtle)",
+              background: "var(--bg-secondary)",
+              flexShrink: 0,
+            }}
+          >
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowUpload(false)}
+            >
+              Vissza
+            </button>
+            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+              Dokumentum feltoltese: {bankName} / {product.name}
+            </span>
+          </div>
+          <div style={{ flex: 1, overflow: "auto" }}>
+            <UploadStep
+              onComplete={() => setShowUpload(false)}
+              onOpenExisting={() => setShowUpload(false)}
+              onOpenSectionEditor={() => {}}
+            />
+          </div>
         </div>
       )}
     </div>
