@@ -317,7 +317,7 @@ export default function AdminCatalogPage() {
                           color: doc.per_applicant ? "var(--accent-green)" : "var(--text-tertiary)",
                         }}
                       >
-                        {doc.per_applicant ? "👤 Igen" : "—"}
+                        {doc.per_applicant ? "Igen" : "—"}
                       </button>
                     </td>
                     <td style={{ ...tdStyle, maxWidth: 240 }}>

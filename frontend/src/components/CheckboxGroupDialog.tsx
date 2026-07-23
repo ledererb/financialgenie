@@ -237,7 +237,7 @@ export default function CheckboxGroupDialog({ fields, onApply, onClose }: Checkb
                       <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>
                         {f.pdf_field_name}
                         {existingGid && (
-                          <span style={{ marginLeft: "6px", color: "var(--accent-purple)" }}>⊕ {existingGid}</span>
+                          <span style={{ marginLeft: "6px", color: "var(--accent-purple)" }}>+ {existingGid}</span>
                         )}
                       </div>
                     </div>

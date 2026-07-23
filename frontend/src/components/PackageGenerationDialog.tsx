@@ -110,7 +110,7 @@ export default function PackageGenerationDialog({
             margin: "0 0 var(--space-md) 0",
           }}
         >
-          📦 Dokumentumcsomag generálása
+          Dokumentumcsomag generálása
         </h3>
 
         <div style={{ marginBottom: "var(--space-md)", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
@@ -199,7 +199,7 @@ export default function PackageGenerationDialog({
               disabled={generating}
               style={{ cursor: "pointer" }}
             />
-            ☁️ Feltöltés Salesforce-ba a generálás után
+            Feltöltés Salesforce-ba a generálás után
           </label>
         )}
 
@@ -221,7 +221,7 @@ export default function PackageGenerationDialog({
               opacity: generating || !selectedDealId ? 0.6 : 1,
             }}
           >
-            {generating ? "⏳ Generálás folyamatban…" : "📦 Csomag generálása"}
+            {generating ? "Generalas folyamatban…" : "Csomag generalasa"}
           </button>
         )}
 
@@ -257,7 +257,7 @@ export default function PackageGenerationDialog({
                     }}
                   >
                     <span style={{ color: doc.success ? "var(--success)" : "var(--danger)" }}>
-                      {doc.success ? "✓" : "✗"}
+                      {doc.success ? "+" : "x"}
                     </span>
                     <span style={{ flex: 1 }}>
                       {doc.title}
@@ -272,7 +272,7 @@ export default function PackageGenerationDialog({
                             color: "var(--warning)",
                           }}
                         >
-                          👤 adósonként
+                          adosonkent
                         </span>
                       )}
                     </span>
@@ -318,13 +318,13 @@ export default function PackageGenerationDialog({
                 }}
               >
                 <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
-                  ☁️ Salesforce feltöltés ({result.sf_uploads.filter(u => u.success).length}/{result.sf_uploads.length})
+                  Salesforce feltöltés ({result.sf_uploads.filter(u => u.success).length}/{result.sf_uploads.length})
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {result.sf_uploads.map((u, i) => (
                     <div key={i} style={{ display: "flex", gap: "6px", fontSize: "0.75rem" }}>
                       <span style={{ color: u.success ? "var(--success)" : "var(--danger)" }}>
-                        {u.success ? "✓" : "✗"}
+                        {u.success ? "+" : "x"}
                       </span>
                       <span style={{ color: "var(--text-tertiary)", flex: 1 }}>
                         {u.file}
@@ -351,7 +351,7 @@ export default function PackageGenerationDialog({
                   cursor: "pointer",
                 }}
               >
-                💾 ZIP letöltése
+                ZIP letöltése
               </button>
               <button
                 onClick={onClose}
@@ -366,7 +366,7 @@ export default function PackageGenerationDialog({
                   cursor: "pointer",
                 }}
               >
-                ✓ Befejezés
+                Befejezes
               </button>
             </div>
           </div>

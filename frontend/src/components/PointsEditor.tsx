@@ -358,7 +358,7 @@ function RuleParamsForm({
                 placeholder="Válassz checkbox mezőket"
               />
               <button type="button" onClick={() => removeRole(role)} style={iconBtnStyle} title="Sor törlése">
-                ✕
+                X
               </button>
             </div>
           ))}
@@ -725,7 +725,7 @@ function PointCard({
                       {b.members.length} mező
                     </span>
                     <button type="button" onClick={() => removeBlock(idx)} style={iconBtnStyle} title="Blokk törlése">
-                      ✕
+                      X
                     </button>
                   </div>
                   <FieldMultiSelect
@@ -762,7 +762,7 @@ function PointCard({
                 cursor: "pointer",
               }}
             >
-              🗑 Pont törlése
+              Pont torlese
             </button>
           </div>
         </div>
@@ -1015,7 +1015,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
             onClick={handleAutoGenerateFromGroups}
             title="Checkbox-csoportokból automatikusan pontokat generál (rule_type 3)"
           >
-            ⚡ Auto csoportokból
+            Auto csoportokbol
           </button>
           <button className="btn btn-primary btn-sm" onClick={handleAddPoint}>
             + Új pont

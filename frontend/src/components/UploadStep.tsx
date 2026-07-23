@@ -337,7 +337,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               }}
               style={{ marginLeft: "var(--space-sm)" }}
             >
-              ✕
+              X
             </button>
           </div>
         )}
@@ -413,7 +413,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               onClick={handleSplit}
               disabled={splitting}
             >
-              {splitting ? "Indítás…" : "⚡ Automatikus darabolás"}
+              {splitting ? "Indítás…" : "Automatikus darabolas"}
             </button>
             <button
               className="btn btn-sm"
@@ -421,7 +421,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               onClick={() => file && onOpenSectionEditor(file)}
               disabled={splitting}
             >
-              ✎ Manuális szerkesztő
+              Manualis szerkeszto
             </button>
             <button
               className="btn btn-ghost btn-sm"

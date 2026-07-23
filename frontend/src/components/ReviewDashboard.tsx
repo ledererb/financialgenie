@@ -234,14 +234,14 @@ export default function ReviewDashboard({
           title="Mapping törlése és újra felismerés"
           style={{ marginLeft: "auto" }}
         >
-          🔄 Újramappelés
+          Ujramappelés
         </button>
         <button
           className="btn btn-ghost btn-sm"
           onClick={onOpenPoints}
           title="Sorszámozott nyomtatványpontok és checkbox blokkok szerkesztése"
         >
-          ☑ Pontok &amp; Blokkok
+          Pontok &amp; Blokkok
           {mapping && (mapping.points?.length ?? 0) > 0 && (
             <span
               style={{
@@ -289,7 +289,7 @@ export default function ReviewDashboard({
                 {stats.mapped}
               </div>
               <div className="stat-label">
-                Leképezett <span className="badge badge-green">✓</span>
+                Leképezett <span className="badge badge-green">OK</span>
               </div>
             </div>
 
@@ -298,7 +298,7 @@ export default function ReviewDashboard({
                 {stats.unmapped}
               </div>
               <div className="stat-label">
-                Nem mappelt <span className="badge badge-red">✗</span>
+                Nem mappelt <span className="badge badge-red">x</span>
               </div>
             </div>
 

@@ -346,7 +346,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
               style={{ background: "var(--accent-green)" }}
               title="Befejezés — visszatérés a főoldalra"
             >
-              ✓ Befejezés
+              Befejezes
             </button>
           </div>
 

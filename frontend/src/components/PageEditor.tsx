@@ -164,7 +164,7 @@ function CanonicalFieldSearch({
             title="Törlés"
             style={{ padding: "2px 6px", fontSize: "0.7rem", flexShrink: 0 }}
           >
-            ✕
+            X
           </button>
         )}
       </div>
@@ -838,7 +838,7 @@ export default function PageEditor({
               transition: "all 0.2s",
             }}
           >
-            {drawMode ? "✏️ Rajzolás aktív" : "✏️ Mező rajzolása"}
+            {drawMode ? "Rajzolas aktív" : "Mezo rajzolasa"}
           </button>
         )}
         <button
@@ -847,7 +847,7 @@ export default function PageEditor({
           disabled={previewLoading}
           style={{ marginLeft: isFlat ? undefined : "auto" }}
         >
-          {previewLoading ? "Generálás..." : "👀 Oldal előnézete"}
+          {previewLoading ? "Generálás..." : "Oldal előnézete"}
         </button>
 
         {/* Overlay labels toggle */}
@@ -861,7 +861,7 @@ export default function PageEditor({
             fontSize: "0.75rem",
           }}
         >
-          {showOverlayLabels ? "🏷 Címkék ON" : "🏷 Címkék"}
+          {showOverlayLabels ? "Cimkek ON" : "Cimkek"}
         </button>
 
         {/* Data overlay toggle */}
@@ -875,7 +875,7 @@ export default function PageEditor({
             fontSize: "0.75rem",
           }}
         >
-          {showData ? "📊 Adatok ON" : "📊 Adatok"}
+          {showData ? "Adatok ON" : "Adatok"}
         </button>
 
         {/* Checkbox grouping — only if there are checkbox fields on this page */}
@@ -886,7 +886,7 @@ export default function PageEditor({
             title="Checkbox mezők csoportosítása"
             style={{ fontSize: "0.75rem" }}
           >
-            ⊕ Csoportosítás
+            Csoportositas
           </button>
         )}
 
@@ -1028,7 +1028,7 @@ export default function PageEditor({
                         cursor: "pointer",
                       }}
                     >
-                      ✓ Létrehozás
+                      Letrehozas
                     </button>
                     <button
                       onClick={() => setPendingRect(null)}
@@ -1043,7 +1043,7 @@ export default function PageEditor({
                         cursor: "pointer",
                       }}
                     >
-                      ✕ Mégse
+                      Megse
                     </button>
                   </div>
                 </div>
@@ -1106,7 +1106,7 @@ export default function PageEditor({
                           zIndex: 5,
                         }}
                       >
-                        {isAlwaysChecked && "📌 "}{labelText}
+                        {isAlwaysChecked && "FIX "}{labelText}
                       </span>
                     )}
 
@@ -1366,7 +1366,7 @@ export default function PageEditor({
                         {!mf.canonical_field
                           ? "nem mappelt"
                           : !validCanonicalPaths.has(mf.canonical_field)
-                            ? `⚠ ${mf.canonical_field}`
+                            ? `! ${mf.canonical_field}`
                             : mf.canonical_field}
                       </span>
                     )}
@@ -1405,7 +1405,7 @@ export default function PageEditor({
                             color: "var(--text-primary)",
                           }}
                         >
-                          <span>📌 Mindig pipál</span>
+                          <span>Mindig pipál</span>
                           <input
                             type="checkbox"
                             checked={mf.fill_rule?.type === "static"}
@@ -1439,7 +1439,7 @@ export default function PageEditor({
                           gap: 4,
                         }}
                       >
-                        {showAdvanced ? "▲ Haladó elrejtése" : "▼ Haladó beállítások"}
+                        {showAdvanced ? "Halado elrejtese" : "Halado beallitasok"}
                       </button>
 
                       {showAdvanced && (
@@ -1576,7 +1576,7 @@ export default function PageEditor({
                           marginTop: 4,
                         }}
                       >
-                        🗑 Mező törlése
+                        Mezo torlese
                       </button>
                     </div>
                   )}
@@ -1731,7 +1731,7 @@ export default function PageEditor({
                         }}
                         title="Csoport törlése"
                       >
-                        ✕
+                        X
                       </button>
                     </div>
                     <input

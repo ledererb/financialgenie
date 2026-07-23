@@ -178,7 +178,7 @@ export default function SectionEditor({ bankId, initialFile, onClose }: SectionE
             {bank?.name} — jelölj ki oldalakat és rendeld termékekhez
           </p>
         </div>
-        <button className="btn btn-ghost" onClick={onClose}>✕ Bezárás</button>
+        <button className="btn btn-ghost" onClick={onClose}>Bezaras</button>
       </header>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -291,7 +291,7 @@ export default function SectionEditor({ bankId, initialFile, onClose }: SectionE
                           justifyContent: "center",
                           fontSize: "0.7rem",
                           fontWeight: 700,
-                        }}>✓</div>
+                        }}>+</div>
                       )}
                     </div>
                   );
@@ -430,7 +430,7 @@ export default function SectionEditor({ bankId, initialFile, onClose }: SectionE
               disabled={extracting || selectedPages.size === 0 || !sectionTitle.trim()}
               style={{ width: "100%" }}
             >
-              {extracting ? "Extractálás…" : "⚡ Szekció létrehozása"}
+              {extracting ? "Extractálás…" : "Szekcio letrehozasa"}
             </button>
 
             {createdSections.length > 0 && (
@@ -516,7 +516,7 @@ export default function SectionEditor({ bankId, initialFile, onClose }: SectionE
                             flexShrink: 0,
                           }}
                         >
-                          ✕
+                          X
                         </button>
                       </div>
                       {doc.product_ids.length > 0 && (

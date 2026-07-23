@@ -199,7 +199,7 @@ function BankSelectorImpl({
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
           >
-            ✏︎
+            Szerkeszt
           </button>
         )}
 
@@ -248,7 +248,7 @@ function BankSelectorImpl({
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
         >
-          ✕
+          X
         </button>
       </div>
 

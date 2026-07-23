@@ -132,7 +132,7 @@ function DocumentListImpl({
                 {hasNoProducts && (
                   <span
                     className="badge"
-                    title="⚠︎ Ez a dokumentum nincs egyetlen termékhez sem rendelve. Kattints a mellette lévő ✎ gombra a termékek szerkesztéséhez."
+                    title="Ez a dokumentum nincs egyetlen termékhez sem rendelve. Kattints a mellette lévő Szerkeszt gombra a termékek szerkesztéséhez."
                     style={{
                       fontSize: "0.6rem",
                       padding: "1px 6px",
@@ -140,29 +140,29 @@ function DocumentListImpl({
                       color: "var(--accent-red)",
                     }}
                   >
-                    ⚠︎
+                    !
                   </span>
                 )}
                 {isShared && (
                   <span
                     className="badge badge-purple"
-                    title={`⊕ Megosztott dokumentum: ${doc.product_ids.length} termékhez tartozik.`}
+                    title={`Megosztott dokumentum: ${doc.product_ids.length} termékhez tartozik.`}
                     style={{ fontSize: "0.6rem", padding: "1px 6px" }}
                   >
-                    ⊕ {doc.product_ids.length}×
+                    {doc.product_ids.length}x
                   </span>
                 )}
                 {doc.per_applicant && (
                   <span
                     className="badge badge-amber"
-                    title="👤 Igénylőnként kitöltendő — kattints a kikapcsoláshoz"
+                    title="Igenylonkent kitoltendo — kattints a kikapcsoláshoz"
                     style={{ fontSize: "0.6rem", padding: "1px 6px", cursor: "pointer" }}
                     onClick={(e) => {
                       e.stopPropagation();
                       useStore.getState().setPerApplicant(doc.id, false).catch(() => {});
                     }}
                   >
-                    👤
+                    A
                   </span>
                 )}
                 {/* Rename button */}
@@ -183,7 +183,7 @@ function DocumentListImpl({
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
                   >
-                    ✏︎
+                    Szerkeszt
                   </button>
                 )}
                 {/* Delete button */}
@@ -203,7 +203,7 @@ function DocumentListImpl({
                     lineHeight: 1,
                   }}
                 >
-                  ✕
+                  X
                 </button>
               </div>
             </div>

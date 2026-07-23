@@ -316,7 +316,7 @@ export default function MappingStudio() {
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
         >
-          {sidebarCollapsed ? "▶" : "◀"}
+          {sidebarCollapsed ? ">" : "<"}
         </button>
 
         {/* Main content area */}
