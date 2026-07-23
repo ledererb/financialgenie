@@ -582,6 +582,11 @@ class FormFillerPipeline:
             }
             if i == 0:
                 prop_data = pd
+            else:
+                # Második+ ingatlan: _N suffix azonos kanonikus kulcsokra
+                suffix = f"_{i+1}"
+                for k, v in pd.items():
+                    prop_data[f"{k}{suffix}"] = v
 
         # H4: a hitelből származó Lead.* mezők (önerő, vételár, CSÖK) a
         # prop_data-ba kerülnek, mert a Lead.* routing onnan olvas.
