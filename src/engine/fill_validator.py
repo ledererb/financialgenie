@@ -132,8 +132,13 @@ def _mechanical_validation(
             report.empty_fields += 1
             continue
 
+        # For checkbox options (___suffix), the base name is what gets filled
+        base_name = pdf_name.split("___")[0] if "___" in pdf_name else pdf_name
+
         actual_pk = pikepdf_values.get(pdf_name, "")
         actual_mu = mupdf_values.get(pdf_name, "")
+        base_pk = pikepdf_values.get(base_name, "") if base_name != pdf_name else actual_pk
+        base_mu = mupdf_values.get(base_name, "") if base_name != pdf_name else actual_mu
 
         # Checkbox/radio mezőknél az elvárt érték "igen" = be van pipálva
         is_checkbox_expected = expected_str.lower() in ("igen", "yes", "true", "1")
@@ -151,12 +156,8 @@ def _mechanical_validation(
             report.mismatch_fields += 1
             continue
 
-        # For checkbox options (___suffix), also check the base name
-        base_name = pdf_name.split("___")[0] if "___" in pdf_name else None
-        base_pk = pikepdf_values.get(base_name, "") if base_name else ""
-        base_mu = mupdf_values.get(base_name, "") if base_name else ""
-
-        if pdf_name in filled_set or actual_pk or actual_mu or base_pk or base_mu:
+        # For checkbox options (___suffix), the base name is what gets filled
+        if base_name in filled_set or actual_pk or actual_mu or base_pk or base_mu:
             # Van érték a PDF-ben — ellenőrizzük az egyezést
             if is_checkbox_expected:
                 # Checkbox: "igen" elvárás → /V nem /Off, /AS nem /Off
