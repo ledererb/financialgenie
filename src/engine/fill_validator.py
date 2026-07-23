@@ -216,8 +216,10 @@ def _mechanical_validation(
                     ))
                     report.mismatch_fields += 1
             else:
-                # Szövegmező: string egyezés
-                if actual_pk == expected_str or actual_mu == expected_str:
+                # Szövegmező: string egyezés (normalizált perjel és case)
+                def _norm(s: str) -> str:
+                    return s.strip().lower().lstrip("/")
+                if _norm(actual_pk) == _norm(expected_str) or _norm(actual_mu) == _norm(expected_str):
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,
