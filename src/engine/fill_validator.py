@@ -151,18 +151,30 @@ def _mechanical_validation(
             report.mismatch_fields += 1
             continue
 
-        if pdf_name in filled_set or actual_pk or actual_mu:
+        # For checkbox options (___suffix), also check the base name
+        base_name = pdf_name.split("___")[0] if "___" in pdf_name else None
+        base_pk = pikepdf_values.get(base_name, "") if base_name else ""
+        base_mu = mupdf_values.get(base_name, "") if base_name else ""
+
+        if pdf_name in filled_set or actual_pk or actual_mu or base_pk or base_mu:
             # Van érték a PDF-ben — ellenőrizzük az egyezést
             if is_checkbox_expected:
                 # Checkbox: "igen" elvárás → /V nem /Off, /AS nem /Off
-                pk_ok = actual_pk and actual_pk not in ("/Off", "Off", "", "/")
-                mu_ok = actual_mu and actual_mu not in ("Off", "", "/Off")
+                # A suffix mező saját értéke, VAGY a base name értéke
+                pk_ok = (
+                    (actual_pk and actual_pk not in ("/Off", "Off", "", "/")) or
+                    (base_pk and base_pk not in ("/Off", "Off", "", "/"))
+                )
+                mu_ok = (
+                    (actual_mu and actual_mu not in ("Off", "", "/Off")) or
+                    (base_mu and base_mu not in ("Off", "", "/Off"))
+                )
                 if pk_ok or mu_ok:
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,
-                        actual_pikepdf=actual_pk,
-                        actual_mupdf=actual_mu,
+                        actual_pikepdf=actual_pk or base_pk,
+                        actual_mupdf=actual_mu or base_mu,
                         status="ok",
                     ))
                     report.ok_fields += 1
@@ -170,10 +182,35 @@ def _mechanical_validation(
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,
-                        actual_pikepdf=actual_pk,
-                        actual_mupdf=actual_mu,
+                        actual_pikepdf=actual_pk or base_pk,
+                        actual_mupdf=actual_mu or base_mu,
                         status="mismatch",
-                        detail=f"Elvárt: bepipálva, tényleges: nem pipálva (V={actual_pk}, w={actual_mu})",
+                        detail=f"Elvárt: bepipálva, tényleges: nem pipálva",
+                    ))
+                    report.mismatch_fields += 1
+            elif expected_str.lower() in ("nem", "no", "false", "0"):
+                # Checkbox "nem" elvárás: jó ha nincs bepipálva (Off)
+                pk_ok = not actual_pk or actual_pk in ("/Off", "Off", "", "/")
+                mu_ok = not actual_mu or actual_mu in ("Off", "", "/Off")
+                base_pk_ok = not base_pk or base_pk in ("/Off", "Off", "", "/")
+                base_mu_ok = not base_mu or base_mu in ("Off", "", "/Off")
+                if (pk_ok and mu_ok) and (base_pk_ok and base_mu_ok):
+                    report.field_results.append(FieldValidation(
+                        pdf_field_name=pdf_name,
+                        expected=expected_str,
+                        actual_pikepdf=actual_pk or base_pk,
+                        actual_mupdf=actual_mu or base_mu,
+                        status="ok",
+                    ))
+                    report.ok_fields += 1
+                else:
+                    report.field_results.append(FieldValidation(
+                        pdf_field_name=pdf_name,
+                        expected=expected_str,
+                        actual_pikepdf=actual_pk or base_pk,
+                        actual_mupdf=actual_mu or base_mu,
+                        status="mismatch",
+                        detail=f"Elvárt: nem pipálva, de be van pipálva",
                     ))
                     report.mismatch_fields += 1
             else:
@@ -201,8 +238,8 @@ def _mechanical_validation(
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,
-                        actual_pikepdf="",
-                        actual_mupdf="",
+                        actual_pikepdf=actual_pk,
+                        actual_mupdf=actual_mu,
                         status="missing",
                         detail="Elvárt érték, de üres a PDF-ben",
                     ))
