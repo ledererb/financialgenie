@@ -2,7 +2,6 @@ import { useState, memo, useRef, useEffect } from "react";
 import type { Product, CatalogDocument } from "@/types";
 import { useStore } from "@/store";
 import DocumentList from "./DocumentList";
-import PackageGenerationDialog from "./PackageGenerationDialog";
 
 interface ProductListProps {
   product: Product;
@@ -16,6 +15,7 @@ interface ProductListProps {
   onOpenDocument: (docId: string) => void;
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
+  onGenerate: (bankId: string, bankName: string, productId: string, productName: string) => void;
 }
 
 function ProductListImpl({
@@ -30,10 +30,10 @@ function ProductListImpl({
   onOpenDocument,
   onDeleteProduct,
   onDeleteDocument,
+  onGenerate,
 }: ProductListProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showPackageDialog, setShowPackageDialog] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(product.name);
   const renameProduct = useStore((s) => s.renameProduct);
@@ -175,7 +175,7 @@ function ProductListImpl({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setShowPackageDialog(true);
+            onGenerate(bankId, bankName, product.id, product.name);
           }}
           title="Dokumentumcsomag generálása"
           disabled={docCount === 0}
@@ -284,16 +284,6 @@ function ProductListImpl({
             onDeleteDocument={onDeleteDocument}
           />
         </div>
-      )}
-
-      {showPackageDialog && (
-        <PackageGenerationDialog
-          bankId={bankId}
-          bankName={bankName}
-          productId={product.id}
-          productName={product.name}
-          onClose={() => setShowPackageDialog(false)}
-        />
       )}
     </div>
   );

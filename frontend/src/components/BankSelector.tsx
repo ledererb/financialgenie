@@ -6,6 +6,8 @@ import ProductList from "./ProductList";
 interface BankSelectorProps {
   bank: Bank;
   documents: CatalogDocument[];
+  bankId: string;
+  bankName: string;
   selectedBankId: string | null;
   selectedProductId: string | null;
   selectedDocumentId: string | null;
@@ -17,11 +19,14 @@ interface BankSelectorProps {
   onDeleteBank: (bankId: string, name: string) => void;
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
+  onGenerate: (bankId: string, bankName: string, productId: string, productName: string) => void;
 }
 
 function BankSelectorImpl({
   bank,
   documents,
+  bankId,
+  bankName,
   selectedBankId,
   selectedProductId,
   selectedDocumentId,
@@ -33,6 +38,7 @@ function BankSelectorImpl({
   onDeleteBank,
   onDeleteProduct,
   onDeleteDocument,
+  onGenerate,
 }: BankSelectorProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
@@ -335,6 +341,7 @@ function BankSelectorImpl({
                 onOpenDocument={onOpenDocument}
                 onDeleteProduct={onDeleteProduct}
                 onDeleteDocument={onDeleteDocument}
+                onGenerate={onGenerate}
               />
             ))
           )}

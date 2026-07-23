@@ -128,7 +128,11 @@ export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDelete
               <BankSelector
                 key={bank.id}
                 bank={bank}
-                documents={catalog!.documents}
+                documents={catalog!.documents.filter((d) =>
+                  d.product_ids.some((pid) => bank.products.some((p) => p.id === pid))
+                )}
+                bankId={bank.id}
+                bankName={bank.name}
                 selectedBankId={selectedBankId}
                 selectedProductId={selectedProductId}
                 selectedDocumentId={selectedDocumentId}
@@ -140,6 +144,7 @@ export function ProjectBrowser({ onAddBank, onAddProduct, onDeleteBank, onDelete
                 onDeleteBank={onDeleteBank}
                 onDeleteProduct={onDeleteProduct}
                 onDeleteDocument={onDeleteDocument}
+                onGenerate={() => {}}
               />
             ))}
           </div>
