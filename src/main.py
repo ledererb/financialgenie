@@ -475,6 +475,16 @@ class FormFillerPipeline:
             else:
                 co_borrower_data = p_data
 
+        # Kezes (guarantor) és haszonélvező (beneficiary) mezők hozzáadása.
+        # A mapping Contact.Mortgagor__c és Contact.Usufructuary__c canonical
+        # mezőkhöz "Igen"-t vár ha létezik a szereplő.
+        guarantors = deal.guarantors if hasattr(deal, "guarantors") else []
+        beneficiaries = deal.beneficiaries if hasattr(deal, "beneficiaries") else []
+        if guarantors:
+            borrower_data["Contact.Mortgagor__c"] = "Igen"
+        if beneficiaries:
+            borrower_data["Contact.Usufructuary__c"] = "Igen"
+
         # Per-applicant override: ha a dokumentumot az adott adóstárs
         # adataival kell kitölteni (pl. társigénylő lap N. példánya),
         # akkor a "sima" (nem -társ) mezők is a megfelelő adóstárs adatait
