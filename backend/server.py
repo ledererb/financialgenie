@@ -1312,6 +1312,107 @@ def fill_pdf(body: dict):
         raise HTTPException(500, f"Fill error: {str(e)}")
 
 
+@app.post("/api/pdf/validate")
+def validate_pdf(body: dict):
+    """
+    Fill a PDF with deal data, then validate it mechanically + AI review.
+
+    Body: { pdf_id: str, deal_id: str, ai_review?: bool }
+    Returns: { success, validation: { score, fields[], ai_issues[], ai_summary } }
+    """
+    pdf_id = body.get("pdf_id")
+    deal_id = body.get("deal_id")
+    run_ai = body.get("ai_review", True)
+
+    if not pdf_id or not deal_id:
+        raise HTTPException(400, "pdf_id and deal_id are required")
+
+    pdf_path = _get_pdf(pdf_id)
+
+    try:
+        from main import FormFillerPipeline
+        from integrations.salesforce_client import SalesforceClient
+        sf_creds = _get_sf_creds()
+        if sf_creds:
+            sf_client = SalesforceClient(**sf_creds)
+        else:
+            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+
+        pipeline = FormFillerPipeline(sf_client=sf_client, output_dir=PROJECT_ROOT / "output")
+        result = pipeline.run_for_deal(
+            deal_id=deal_id,
+            template_pdf=pdf_path,
+            mapping_config=None,
+            force_recreate_mapping=False,
+        )
+
+        if not result["success"]:
+            issues = ", ".join(result.get("issues", []))
+            raise HTTPException(500, f"Fill failed: {issues}")
+
+        # Validation: expected vs actual
+        from engine.fill_validator import validate_filled_pdf
+
+        # Get SF context for AI review
+        sf_context = None
+        try:
+            deal_raw = sf_client.get_deal(deal_id)
+            if deal_raw:
+                deal = pipeline.normalizer.normalize_deal(deal_raw)
+                if deal.borrowers:
+                    b = pipeline._participant_to_dict(deal.borrowers[0])
+                    sf_context = {k: v for k, v in b.items() if v}
+        except Exception:
+            pass
+
+        # Rebuild field_data (same as run_for_deal does internally)
+        mapping = pipeline._resolve_mapping(pdf_path, force_recreate=False)
+        field_data = pipeline._prepare_field_data(
+            pipeline.normalizer.normalize_deal(sf_client.get_deal(deal_id)),
+            mapping,
+        )
+
+        validation = validate_filled_pdf(
+            pdf_path=Path(result["output_path"]),
+            field_data=field_data,
+            filled_fields=result.get("filled_fields", []),
+            skipped_fields=result.get("skipped_fields", []),
+            run_ai_review=run_ai,
+            sf_context=sf_context,
+        )
+
+        return {
+            "success": True,
+            "output_path": result["output_path"],
+            "validation": {
+                "total_fields": validation.total_fields,
+                "ok_fields": validation.ok_fields,
+                "mismatch_fields": validation.mismatch_fields,
+                "missing_fields": validation.missing_fields,
+                "empty_fields": validation.empty_fields,
+                "score": round(validation.score, 1),
+                "fields": [
+                    {
+                        "pdf_field_name": f.pdf_field_name,
+                        "expected": f.expected,
+                        "actual_pikepdf": f.actual_pikepdf,
+                        "actual_mupdf": f.actual_mupdf,
+                        "status": f.status,
+                        "detail": f.detail,
+                    }
+                    for f in validation.field_results
+                ],
+                "ai_issues": validation.ai_issues,
+                "ai_summary": validation.ai_summary,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Validation failed")
+        raise HTTPException(500, f"Validation error: {str(e)}")
+
+
 @app.get("/api/pdf/fill/pages")
 def fill_pdf_pages(path: str = Query(...), count: int = Query(default=10, ge=1, le=50)):
     """Render the first `count` pages of a filled PDF as base64 PNGs for preview."""

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useStore } from "@/store";
 import { generatePackage, listDeals } from "@/api/client";
 import type { PackageResult } from "@/types";
+import ValidationView from "./ValidationView";
 
 interface GenerateViewProps {
   preselectBankId?: string | null;
@@ -33,6 +34,7 @@ export default function GenerateView({
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<PackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
     listDeals()
@@ -344,6 +346,22 @@ export default function GenerateView({
               {/* Actions */}
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
+                  onClick={() => setShowValidation(true)}
+                  style={{
+                    flex: 1,
+                    padding: "10px 16px",
+                    background: "var(--accent-blue)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  Ellenőrzés
+                </button>
+                <button
                   onClick={handleDownload}
                   style={{
                     flex: 1,
@@ -379,6 +397,26 @@ export default function GenerateView({
           )}
         </div>
       </div>
+
+      {/* Validation overlay */}
+      {showValidation && result && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--bg-primary)",
+            zIndex: 300,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <ValidationView
+            pdfId={selectedProductDocs[0]?.file_path || ""}
+            dealId={selectedDealId}
+            onClose={() => setShowValidation(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
