@@ -13,7 +13,6 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
   const catalog = useStore((s) => s.catalog);
   const catalogLoading = useStore((s) => s.catalogLoading);
   const loadCatalog = useStore((s) => s.loadCatalog);
-  const quickStartOTP = useStore((s) => s.quickStartOTP);
   const selectedBankId = useStore((s) => s.selectedBankId);
   const selectedProductId = useStore((s) => s.selectedProductId);
   const selectedDocumentId = useStore((s) => s.selectedDocumentId);
@@ -26,22 +25,12 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
 
   const [showBankDialog, setShowBankDialog] = useState(false);
   const [productDialogBankId, setProductDialogBankId] = useState<string | null>(null);
-  const [quickStarting, setQuickStarting] = useState(false);
 
   useEffect(() => {
     if (!catalog) loadCatalog();
   }, [catalog, loadCatalog]);
 
   const hasBanks = catalog && catalog.banks.length > 0;
-
-  const handleQuickStart = async () => {
-    setQuickStarting(true);
-    try {
-      await quickStartOTP();
-    } finally {
-      setQuickStarting(false);
-    }
-  };
 
   const handleAddProduct = useCallback((bankId: string) => {
     setProductDialogBankId(bankId);
@@ -94,15 +83,6 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
           {catalog ? `${catalog.banks.length} bank · ${catalog.documents.length} dokumentum` : ""}
         </span>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          {hasBanks && (
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={handleQuickStart}
-              disabled={quickStarting}
-            >
-              {quickStarting ? "Betöltés..." : "Quick Start (OTP)"}
-            </button>
-          )}
           <button
             className="btn btn-primary btn-sm"
             onClick={() => setShowBankDialog(true)}
