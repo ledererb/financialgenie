@@ -317,7 +317,10 @@ class FormFillerPipeline:
 
         # 4. Mezőadatok összeállítása
         logger.info("📋 4. Mezőadatok összeállítása")
-        field_data = self._prepare_field_data(deal, mapping_config, participant_override=participant_override)
+        field_data = self._prepare_field_data(
+            deal, mapping_config, participant_override=participant_override,
+            raw_opportunity=raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
+        )
         logger.info(f"   {len(field_data)} mező kitöltve")
 
         # 5. PDF kitöltés
@@ -423,7 +426,7 @@ class FormFillerPipeline:
         report = checker.check(deal, required_fields)
         return report
 
-    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None) -> dict:
+    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None, raw_opportunity: dict | None = None) -> dict:
         """
         Kanonikus adatokból mező-értékpárok összeállítása.
         A mapping alapján a PDF mezőnevekre képezi le az értékeket.
@@ -538,6 +541,15 @@ class FormFillerPipeline:
             "loan.product_type": loan.product_type or "",
             "loan.refinance_account": loan.refinance_account or "",
         }
+
+        # FIX: raw Opportunity mezők a loan_data-ba — minden nem-None
+        # Opportunity field hozzáadása, hogy az Opportunity.* mapping
+        # canonical mezők (pl. Opportunity.gylet_kezel_je__c) értéket
+        # kapjanak. Ez a fedlap mapping-hez szükséges.
+        if raw_opportunity:
+            for k, v in raw_opportunity.items():
+                if v is not None and v != "" and not k.startswith("attributes"):
+                    loan_data.setdefault(f"Opportunity.{k}", str(v))
 
         # Ingatlan adatok → Lead fields
         prop_data = {}
