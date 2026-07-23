@@ -319,7 +319,7 @@ class FormFillerPipeline:
         logger.info("📋 4. Mezőadatok összeállítása")
         field_data = self._prepare_field_data(
             deal, mapping_config, participant_override=participant_override,
-            raw_opportunity=raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
+            raw_opportunity=raw_data.get("_opportunity") or raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
         )
         logger.info(f"   {len(field_data)} mező kitöltve")
 

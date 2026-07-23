@@ -508,7 +508,8 @@ class SalesforceClient:
                     },
                     "Properties__r": {
                         "records": properties_records
-                    }
+                    },
+                    "_opportunity": opp,
                 }
                 logger.info(f"Ügylet sikeresen lekérve a Salesforce-ból: {deal_id}")
                 return normalized_sf_data
