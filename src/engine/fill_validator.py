@@ -146,7 +146,7 @@ def _mechanical_validation(
         is_checkbox_expected = expected_str.lower() in ("igen", "yes", "true", "1")
         is_checkbox_export = (
             not is_checkbox_expected
-            and expected_str.lower() not in ("nem", "no", "false", "0")
+            and expected_str.lower() not in ("nem", "false", "0")
             and "/" not in expected_str
             and expected_str not in ("", "/")
         )
