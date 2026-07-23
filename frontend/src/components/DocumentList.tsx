@@ -8,11 +8,13 @@ interface DocumentListProps {
   onSelectDocument: (docId: string) => void;
   onOpenDocument: (docId: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
+  onUpload?: () => void;
 }
 
 function DocumentListImpl({
   documents,
   selectedDocumentId,
+  onUpload,
   onSelectDocument,
   onOpenDocument,
   onDeleteDocument,
@@ -262,6 +264,27 @@ function DocumentListImpl({
           </div>
         );
       })}
+
+      {onUpload && (
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpload();
+          }}
+          style={{
+            marginTop: "4px",
+            padding: "4px 10px",
+            fontSize: "0.7rem",
+            color: "var(--text-secondary)",
+            border: "1px dashed var(--border-default)",
+            borderRadius: "var(--radius-sm)",
+            width: "fit-content",
+          }}
+        >
+          + Dokumentum feltoltese
+        </button>
+      )}
     </div>
   );
 }

@@ -177,6 +177,7 @@ function ProductListImpl({
 
         {/* Upload document button */}
         <button
+          className="btn btn-ghost btn-sm"
           onClick={(e) => {
             e.stopPropagation();
             selectBank(bankId);
@@ -185,17 +186,12 @@ function ProductListImpl({
           }}
           title="Dokumentum feltöltése ehhez a termékhez"
           style={{
-            background: "none",
-            border: "none",
-            color: "var(--text-tertiary)",
-            cursor: "pointer",
-            padding: "0 2px",
-            fontSize: "0.8rem",
-            lineHeight: 1,
+            padding: "3px 8px",
+            fontSize: "0.7rem",
             flexShrink: 0,
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-sm)",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-blue)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
         >
           + Dokumentum
         </button>
@@ -311,6 +307,11 @@ function ProductListImpl({
             onSelectDocument={onSelectDocument}
             onOpenDocument={onOpenDocument}
             onDeleteDocument={onDeleteDocument}
+            onUpload={() => {
+              selectBank(bankId);
+              selectProduct(product.id);
+              setShowUpload(true);
+            }}
           />
         </div>
       )}
