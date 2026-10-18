@@ -93,6 +93,33 @@ _VALUE_TRANSLATIONS: dict[str, dict[str, str]] = {
         "ms": "Nő", "ms.": "Nő", "mrs": "Nő", "mrs.": "Nő",
         "miss": "Nő", "holgy": "Nő", "asszony": "Nő",
     },
+    "Contact.Employer_s_company_type__c": {
+        "kft": "Korlátolt felelősségű társaság",
+        "kft.": "Korlátolt felelősségű társaság",
+        "korlatolt felelossegu tarsasag": "Korlátolt felelősségű társaság",
+        "zrt": "Részvénytársaság",
+        "zrt.": "Részvénytársaság",
+        "nyrt": "Részvénytársaság",
+        "nyrt.": "Részvénytársaság",
+        "reszvenytarsasag": "Részvénytársaság",
+        "bt": "Közkereseti társaság vagy betéti társaság",
+        "bt.": "Közkereseti társaság vagy betéti társaság",
+        "kkt": "Közkereseti társaság vagy betéti társaság",
+        "kkt.": "Közkereseti társaság vagy betéti társaság",
+        "beteti tarsasag": "Közkereseti társaság vagy betéti társaság",
+        "kozkereseti tarsasag": "Közkereseti társaság vagy betéti társaság",
+    },
+    "Contact.Foglalkozas_tipusa__c": {
+        "alkalmazott vezeto": "Vezető alkalmazott (felső vagy középvezető)",
+        "vezeto alkalmazott": "Vezető alkalmazott (felső vagy középvezető)",
+        "vezeto allasu": "Vezető alkalmazott (felső vagy középvezető)",
+        "vezeto": "Vezető alkalmazott (felső vagy középvezető)",
+        "alkalmazott": "Szellemi munkát végző alkalmazott",
+        "szellemi alkalmazott": "Szellemi munkát végző alkalmazott",
+        "szellemi munkat vegzo alkalmazott": "Szellemi munkát végző alkalmazott",
+        "fizikai alkalmazott": "Fizikai munkát végző alkalmazott",
+        "fizikai munkat vegzo alkalmazott": "Fizikai munkát végző alkalmazott",
+    },
 }
 
 # Konstrukciótípus → a nyomtatvány "Választott konstrukció típusa" opciófelirata
@@ -121,15 +148,28 @@ def _translate_value(canonical: str, value: str) -> str:
     return table.get(_fold_text(value), value)
 
 
+def _date_parts(value: str) -> tuple[str, str, str]:
+    """Dátum-szövegből (YYYY-MM-DD / YYYY.MM.DD / YYYY.MM / YYYY) (év, hónap, nap)."""
+    if not value:
+        return "", "", ""
+    s = str(value).strip()
+    m3 = re.match(r"^(\d{4})[-./](\d{1,2})[-./](\d{1,2})", s)
+    if m3:
+        return m3.group(1), m3.group(2).zfill(2), m3.group(3).zfill(2)
+    m2 = re.match(r"^(\d{4})[-./](\d{1,2})", s)
+    if m2:
+        return m2.group(1), m2.group(2).zfill(2), ""
+    m1 = re.match(r"^(\d{4})$", s)
+    if m1:
+        return m1.group(1), "", ""
+    return "", "", ""
+
+
 def _date_year_month(value: str) -> tuple[str, str]:
     """Dátum-szövegből (YYYY-MM-DD / YYYY.MM.DD / YYYY.MM) (év, hónap) pár.
     Nem dátum jellegű inputra ("", "")."""
-    if not value:
-        return "", ""
-    m = re.match(r"^\s*(\d{4})[-./](\d{1,2})", str(value))
-    if not m:
-        return "", ""
-    return m.group(1), m.group(2).zfill(2)
+    y, m, _ = _date_parts(value)
+    return y, m
 
 
 def _classify_construction(loan, deal=None) -> str:
@@ -761,6 +801,16 @@ class FormFillerPipeline:
         # (borrower_data-ba töltött) adatait kapják.
         effective_co_data = borrower_data if participant_override is not None else co_borrower_data
 
+        # Karakter-csoport (digit box) tagmezők — ezeket a 1-karakteres
+        # mezőket CSAK az expand_character_groups töltheti, különben a
+        # teljes felbontatlan string (pl. "2020-03-01", "Havi torleszto...")
+        # belekerülne az egyes számjegy-dobozokba.
+        char_group_members: set[str] = set()
+        for grp in (getattr(mapping, "character_groups", None) or []):
+            members = grp.get("member_fields", []) if isinstance(grp, dict) else getattr(grp, "member_fields", [])
+            if members:
+                char_group_members.update(members)
+
         # === Mapping alkalmazása – SF-kulcs alapú routing ===
         for f in mapping.fields:
             if not f.canonical_field:
@@ -768,6 +818,9 @@ class FormFillerPipeline:
 
             pdf_name = f.pdf_field_name
             canonical = f.canonical_field
+
+            if pdf_name in char_group_members:
+                continue
 
             # Contact.Relation__c → checkbox, szöveggel nem töltjük
             if canonical == "Contact.Relation__c":
@@ -813,6 +866,7 @@ class FormFillerPipeline:
         # Group checkbox fields by (group_id, canonical, is_co_field), then tick
         # only the one whose match_value matches the SF picklist value.
         groups: dict[tuple, list] = {}
+        matched_standard_canonicals: set[tuple[str, bool]] = set()
         for f in mapping.fields:
             cbg = getattr(f, 'checkbox_group', None)
             if isinstance(f, dict):
@@ -833,7 +887,7 @@ class FormFillerPipeline:
 
         for (gid, canonical, is_co_fn), group_items in groups.items():
             sf_value = None
-            if canonical.startswith('Contact.'):
+            if canonical.startswith(('Contact.', 'participant.')):
                 canon_tars = canonical.endswith('-társ')
                 lookup_key = canonical[:-len('-társ')] if canon_tars else canonical
                 if is_co_fn or canon_tars:
@@ -859,17 +913,26 @@ class FormFillerPipeline:
             def _opt_matches(option: str, value: str) -> bool:
                 """Picklist-opció egyezés: pontos (kisbetűs), vagy az opció
                 '/'-előtti szegmense egyezik az értékkel (pl. SF 'házas' ≈
-                opció 'Házas/bejegyzett élettárs'). Ékezet-független."""
+                opció 'Házas/bejegyzett élettárs'). Ékezet- és kötőjel-független."""
                 import unicodedata
                 def _norm(s: str) -> str:
-                    return "".join(
+                    folded = "".join(
                         c for c in unicodedata.normalize("NFD", s.strip().lower())
                         if unicodedata.category(c) != "Mn"
                     )
+                    return re.sub(r"[^a-z0-9/]+", " ", folded).strip()
                 opt, val = _norm(option), _norm(value)
                 if not opt or not val:
                     return False
-                if opt == val:
+                _ROLE_SYNONYMS = {
+                    "adostars": "tarsigenylo",
+                    "tarsigenylo": "adostars",
+                    "ados": "igenylo",
+                    "igenylo": "ados",
+                }
+                if opt == val or _ROLE_SYNONYMS.get(opt) == val:
+                    return True
+                if opt == "szemelyi igazolvany" and re.fullmatch(r"\d{6}[a-z]{2}", val.replace(" ", "")):
                     return True
                 if opt.split("/", 1)[0].strip() == val:
                     return True
@@ -887,6 +950,12 @@ class FormFillerPipeline:
                     if score > best_score:
                         best_score = score
                         best_item = (f_item, cbg_item)
+            if best_item is not None:
+                matched_cbg = best_item[1]
+                matched_mv = (matched_cbg.get('match_value') or matched_cbg.get('option_value', '')) if isinstance(matched_cbg, dict) else ''
+                if "egyeb" not in _fold_text(matched_mv):
+                    base_canon = canonical[:-len('-társ')] if canonical.endswith('-társ') else canonical
+                    matched_standard_canonicals.add((base_canon, is_co_fn or canonical.endswith('-társ')))
             for f_item, cbg_item in group_items:
                 pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
                 if best_item is not None and f_item is best_item[0]:
@@ -913,10 +982,18 @@ class FormFillerPipeline:
             pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
             canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
             canonical_value = None
+            is_co = False
+            lookup_key = canonical
             if canonical:
                 canon_tars = canonical.endswith("-társ")
                 lookup_key = canonical[:-len("-társ")] if canon_tars else canonical
-                if canon_tars:
+                is_co = (
+                    canon_tars
+                    or "-társ" in pdf_name
+                    or "társigénylő" in pdf_name.lower()
+                    or "tarsigenylő" in pdf_name.lower()
+                )
+                if is_co:
                     canonical_value = effective_co_data.get(lookup_key) if effective_co_data else None
                 else:
                     canonical_value = all_data.get(lookup_key) or borrower_data.get(lookup_key) or (effective_co_data.get(lookup_key) if effective_co_data else None)
@@ -927,6 +1004,15 @@ class FormFillerPipeline:
                     if "___" in pdf_name and value == "igen":
                         base_name, export_val = pdf_name.split("___", 1)
                         field_data[base_name] = export_val
+                    if (
+                        value == "igen"
+                        and canonical
+                        and isinstance(fill_rule, dict)
+                        and fill_rule.get("match_value")
+                        and not fill_rule.get("type")
+                        and "egyeb" not in _fold_text(str(fill_rule.get("match_value", "")))
+                    ):
+                        matched_standard_canonicals.add((lookup_key, is_co))
             except Exception as e:
                 logger.debug(f"fill_rule error on {pdf_name}: {e}")
 
@@ -980,6 +1066,10 @@ class FormFillerPipeline:
                         ),
                         None,
                     )
+                    if matched_block is not None and canonical_field and "egyeb" not in _fold_text(matched_block):
+                        canon_tars = canonical_field.endswith("-társ")
+                        base_canon = canonical_field[:-len("-társ")] if canon_tars else canonical_field
+                        matched_standard_canonicals.add((base_canon, canon_tars))
                     if matched_block is None:
                         logger.info(
                             "auto_group pont %s: a canonical érték %r nem illik "
@@ -1008,6 +1098,44 @@ class FormFillerPipeline:
                             field_data[pdf_field], tick_value,
                         )
                     field_data[pdf_field] = tick_value
+
+        # Ha egy picklisthez tartozó checkbox-csoportban egy standard (nem "Egyéb")
+        # opció illeszkedett, akkor az ugyanarra a canonical_field-re mappelt
+        # "Egyéb: _____" kiegészítő szövegmezőt ne töltsük ki a standard értékkel
+        # (pl. Állampolgárság = "Magyar" pipálva → az "Egyéb állampolgárság" szövegmező üres marad).
+        if matched_standard_canonicals:
+            _EGYEB_PICKLIST_CANONICALS = {
+                "Contact.Citizenship__c",
+                "Contact.Employer_s_company_type__c",
+                "Contact.Foglalkozas_tipusa__c",
+                "Contact.Legal_Title_of_permanent_residence__c",
+                "Contact.Marital_Status__c",
+                "Contact.Highest_Educational_Qualification__c",
+            }
+            for f in mapping.fields:
+                canonical = f.canonical_field if hasattr(f, "canonical_field") else f.get("canonical_field")
+                if not canonical:
+                    continue
+                pdf_name = f.pdf_field_name if hasattr(f, "pdf_field_name") else f.get("pdf_field_name", "")
+                if (
+                    "___" in pdf_name
+                    or getattr(f, "checkbox_group", None)
+                    or getattr(f, "fill_rule", None)
+                    or pdf_name in char_group_members
+                ):
+                    continue
+                canon_tars = canonical.endswith("-társ")
+                base_canon = canonical[:-len("-társ")] if canon_tars else canonical
+                is_co = (
+                    canon_tars
+                    or "-társ" in pdf_name
+                    or "társigénylő" in pdf_name.lower()
+                    or "tarsigenylő" in pdf_name.lower()
+                )
+                if (base_canon, is_co) in matched_standard_canonicals:
+                    ctx_snip = (getattr(f, "context_snippet", "") or "") if hasattr(f, "context_snippet") else (f.get("context_snippet", "") if isinstance(f, dict) else "")
+                    if "egyeb" in _fold_text(pdf_name) or "egyeb" in _fold_text(ctx_snip) or base_canon in _EGYEB_PICKLIST_CANONICALS:
+                        field_data.pop(pdf_name, None)
 
         # === C8: Apply per-field fragment transforms (date / digit splitting) ===
         for f in mapping.fields:
@@ -1180,17 +1308,28 @@ class FormFillerPipeline:
            cseréljük, hogy a "Választott konstrukció típusa" checkbox
            bepipálható legyen.
         """
-        # 1) Nem (Salutation fordítás + név-alapú fallback)
+        # 1) Nem (Salutation fordítás + név-alapú fallback) és egyéb értékfordítások
         for data in (borrower_data, co_borrower_data):
             if not data:
                 continue
             raw_sal = (data.get("Contact.Salutation") or "").strip()
             translated = _translate_value("Contact.Salutation", raw_sal) if raw_sal else ""
+            guess = guess_gender(data.get("Contact.Name") or "")
             if translated in ("Férfi", "Nő"):
-                data["Contact.Salutation"] = translated
+                if guess and guess != translated:
+                    data["Contact.Salutation"] = guess
+                    msg = (
+                        f"{data.get('Contact.Name') or 'A szereplő'} neme név "
+                        f"alapján javítva ({guess}) — a Salesforce Salutation mező "
+                        f"({raw_sal} → {translated}) ellentmond a keresztnévnek."
+                    )
+                    logger.warning(msg)
+                    if notices is not None and msg not in notices:
+                        notices.append(msg)
+                else:
+                    data["Contact.Salutation"] = translated
             else:
                 # Üres VAGY nem-gender Salutation (pl. "Dr.") → név-fallback
-                guess = guess_gender(data.get("Contact.Name") or "")
                 if guess:
                     data["Contact.Salutation"] = guess
                     sal_note = (
@@ -1206,6 +1345,20 @@ class FormFillerPipeline:
                     logger.warning(msg)
                     if notices is not None and msg not in notices:
                         notices.append(msg)
+
+            # Cégforma fordítása (pl. "Kft." → "Korlátolt felelősségű társaság")
+            raw_comp = (data.get("Contact.Employer_s_company_type__c") or "").strip()
+            if raw_comp:
+                data["Contact.Employer_s_company_type__c"] = _translate_value(
+                    "Contact.Employer_s_company_type__c", raw_comp
+                )
+
+            # Foglalkozás típusa fordítása (pl. "Alkalmazott vezető" → "Vezető alkalmazott (felső vagy középvezető)")
+            raw_occ = (data.get("Contact.Foglalkozas_tipusa__c") or "").strip()
+            if raw_occ:
+                data["Contact.Foglalkozas_tipusa__c"] = _translate_value(
+                    "Contact.Foglalkozas_tipusa__c", raw_occ
+                )
 
         # 2) Konstrukció-gate
         loan = deal.loan
@@ -1251,6 +1404,7 @@ class FormFillerPipeline:
 
     def _participant_to_dict(self, p) -> dict:
         """Participant → kanonikus dict. Csak SF-ből származó adatok kerülnek ide."""
+        _pid_clean = re.sub(r"[\s\-]", "", str(p.personal_id or ""))
         d = {
             "Contact.Name": p.name,
             "Contact.Szuletesi_nev__c": p.birth_name or "",
@@ -1263,8 +1417,10 @@ class FormFillerPipeline:
             # SF-ben a személyazonosító igazolvány száma (pl. 234567IJ) a
             # Contact.ID_Card_Number__c mezőben van (p.personal_id), míg a
             # lakcímkártya száma a Contact.Address_Card_Number__c-ben (p.id_card_number).
+            # A régi 11 jegyű személyi azonosító szám (Contact.Personal_ID__c) csak akkor
+            # töltendő, ha valóban 11 számjegyű személyi számról van szó (ne duplikálja a szem.ig. számot).
             "Contact.ID_Card_Number__c": p.personal_id or getattr(p, "id_card_number", "") or "",
-            "Contact.Personal_ID__c": p.personal_id or "",
+            "Contact.Personal_ID__c": _pid_clean if re.fullmatch(r"\d{11}", _pid_clean) else "",
             "Contact.Address_Card_Number__c": getattr(p, "id_card_number", "") or "",
             "Contact.Tax_ID__c": p.tax_id or "",
             "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
@@ -1273,6 +1429,7 @@ class FormFillerPipeline:
             "Contact.Name_of_employer__c": p.employer or "",
             "Contact.Average_monthly_net_income__c": fmt_money(p.monthly_income),
             "Contact.Relation__c": p.role.value,
+            "participant.role": p.role.value,
             # SF-ből töltjük — ha nincs adat, üresen hagyjuk
             "Contact.Citizenship__c": getattr(p, "citizenship", "") or "",
             "Contact.Marital_Status__c": getattr(p, "marital_status", "") or "",
@@ -1281,18 +1438,28 @@ class FormFillerPipeline:
             "Contact.Dependents_count__c": str(p.dependents_count) if getattr(p, "dependents_count", None) is not None else "",
         }
 
+        emp_type_val = getattr(p, "employment_type", "") or ""
+        contract_end_val = getattr(p, "contract_end_date", "") or ""
+        # Határozatlan idejű munkaviszony esetén a "Határozott munkaviszony vége" mező üresen marad
+        if "hatarozatlan" in _fold_text(emp_type_val):
+            contract_end_val = ""
+
+        contract_start_val = getattr(p, "contract_start_date", "") or getattr(p, "current_employment_started", "") or ""
+        curr_emp_start_val = getattr(p, "current_employment_started", "") or contract_start_val
+
         # Extra Contact mezők (SOQL-ból jönnek, lehetnek üresek)
         extra_mappings = {
             "Contact.Salutation": getattr(p, "salutation", "") or "",
             "Contact.Occupation__c": getattr(p, "occupation", "") or "",
             "Contact.Foglalkozas_tipusa__c": getattr(p, "foglalkozas_tipusa", "") or "",
-            "Contact.Employment_Type_c__c": getattr(p, "employment_type", "") or "",
+            "Contact.Employment_Type_c__c": emp_type_val,
             "Contact.Legal_Title_of_permanent_residence__c": getattr(p, "legal_title", "") or "",
             "Contact.Jovairas_vallalasa__c": getattr(p, "jovairas_vallalasa", "") or "",
             "Contact.Loan_Purpose__c": getattr(p, "loan_purpose", "") or "",
             "Contact.Interest_Period__c": getattr(p, "interest_period", "") or "",
             "Contact.Other_monthly_income__c": fmt_money(getattr(p, "other_monthly_income", None)) if getattr(p, "other_monthly_income", None) else "",
             "Contact.Current_debt_Credit_limit__c": getattr(p, "current_debt_credit_limit", "") or "",
+            "Contact.Current_employment_started__c": curr_emp_start_val,
             "Contact.Date_of_notification_for_residence__c": getattr(p, "date_of_notification_for_residence", "") or "",
             "Contact.Date_of_signature__c": getattr(p, "date_of_signature", "") or "",
             "Contact.Description": getattr(p, "description", "") or "",
@@ -1305,8 +1472,8 @@ class FormFillerPipeline:
             "Contact.Account_holding_bank__c": getattr(p, "account_holding_bank", "") or "",
             "Contact.Cafeteria_bonus__c": fmt_money(getattr(p, "cafeteria_bonus", None)) if getattr(p, "cafeteria_bonus", None) else "",
             "Contact.Continuous_TB_2_years__c": getattr(p, "continuous_tb_2_years", "") or "",
-            "Contact.Contract_end_date__c": getattr(p, "contract_end_date", "") or "",
-            "Contact.Contract_start_date__c": getattr(p, "contract_start_date", "") or "",
+            "Contact.Contract_end_date__c": contract_end_val,
+            "Contact.Contract_start_date__c": contract_start_val,
             "Contact.Date_of_handover__c": getattr(p, "date_of_handover", "") or "",
             "Contact.Date_of_transfer__c": getattr(p, "date_of_transfer", "") or "",
             "Contact.Description_of_loan_purpose_comments__c": getattr(p, "description_of_loan_purpose", "") or "",
@@ -1330,16 +1497,30 @@ class FormFillerPipeline:
             "Contact.Town_or_possibly_the_exact_address__c": getattr(p, "town_or_possibly_exact_address", "") or "",
             "Contact.Usufructuary__c": getattr(p, "usufructuary", "") or "",
             "Contact.What_type_of_loan__c": getattr(p, "what_type_of_loan", "") or "",
+            "Contact.Ownership_in_employer__c": getattr(p, "ownership_in_employer", "") or "",
+            "Contact.Preferalt_bank__c": getattr(p, "preferalt_bank", "") or "",
+            "Contact.Residence_Status__c": getattr(p, "residence_status", "") or "",
         }
         d.update(extra_mappings)
 
-        # "Mióta lakik" év/hónap fragmentek — a nyomtatvány digit-box
-        # csoportjai a ``#ev`` / ``#ho`` szuffixes kulcsokra hivatkoznak.
-        res_yyyy, res_mm = _date_year_month(
-            d.get("Contact.Date_of_notification_for_residence__c", "")
+        # Dátum-fragmentek (#ev / #ho / #nap) minden releváns dátummezőhöz
+        for date_canon in (
+            "Contact.Date_of_notification_for_residence__c",
+            "Contact.Current_employment_started__c",
+            "Contact.Contract_start_date__c",
+            "Contact.Contract_end_date__c",
+        ):
+            dy, dm, dd = _date_parts(d.get(date_canon, ""))
+            d[f"{date_canon}#ev"] = dy
+            d[f"{date_canon}#ho"] = dm
+            d[f"{date_canon}#nap"] = dd
+
+        # Gyermekek száma fragment (pl. "1, 5 éves" → "1")
+        children_raw = d.get("Contact.Numer_and_Age_of_Children__c", "")
+        m_ch = re.match(r"^\s*(\d+)", str(children_raw))
+        d["Contact.Numer_and_Age_of_Children__c#count"] = (
+            m_ch.group(1) if m_ch else d.get("Contact.Dependents_count__c", "")
         )
-        d["Contact.Date_of_notification_for_residence__c#ev"] = res_yyyy
-        d["Contact.Date_of_notification_for_residence__c#ho"] = res_mm
         return d
 
 

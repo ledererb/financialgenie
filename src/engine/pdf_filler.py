@@ -108,21 +108,28 @@ def expand_character_groups(
 
         direction = (group.get("direction") or "left_to_right").lower()
         canon_low = str(canonical).lower()
+        _numeric_kws = (
+            "hitel_sszeg", "loan_amount", "income", "divident",
+            "bonus", "deduction", "credit_limit", "payment",
+            "onero", "purchase_price", "csok", "support",
+            "savings", "estimated", "dependents_count",
+            "children", "term_in_year", "alapterulet", "terhek",
+            "encumbrances", "own_resources", "loan_period",
+        )
+        is_numeric_canon = any(kw in canon_low for kw in _numeric_kws)
+        if is_numeric_canon and not value.isdigit():
+            import re as _re
+            m_num = _re.match(r"^\s*(\d[\d\s]*)", str(raw))
+            if m_num:
+                value = m_num.group(1).replace(" ", "")
+            else:
+                # Szöveges leírás (pl. "Nincs teher", "Nincs korabbi hitel")
+                # nem írható karakterenként a numerikus Ft / darabszám dobozokba!
+                continue
+
         is_right_aligned_numeric = (
             direction in ("rtl", "right_to_left")
-            or (
-                value.isdigit()
-                and any(
-                    kw in canon_low
-                    for kw in (
-                        "hitel_sszeg", "loan_amount", "income", "divident",
-                        "bonus", "deduction", "credit_limit", "payment",
-                        "onero", "purchase_price", "csok", "support",
-                        "savings", "estimated", "dependents_count",
-                        "children", "term_in_year", "alapterulet",
-                    )
-                )
-            )
+            or (value.isdigit() and is_numeric_canon)
         )
         if is_right_aligned_numeric and len(value) < len(members):
             padded = value.rjust(len(members))
@@ -362,6 +369,9 @@ class AcroFormFiller(BaseFiller):
             # reads the field /V from the saved PDF and sets each widget's
             # field_value accordingly so the renderer displays the checkmark.
             self._sync_checkbox_values(output_path, result)
+            # Generate visual appearance streams (/AP/N) for text & comb fields
+            # with proper Hungarian Ő/Ű/ő/ű glyph encoding.
+            self._sync_text_appearances(output_path)
 
         return result
 
@@ -437,6 +447,19 @@ class AcroFormFiller(BaseFiller):
                                 pdf_field_name,
                                 canonical_name,
                             )
+                        # Ha a sablon PDF-ben véletlenül benne maradt egy tesztérték
+                        # (pl. fedlap.pdf-ben "1223213" vagy "s"), ürítsük a szövegmezőt.
+                        ft_check = str(field_obj.get("/FT", ""))
+                        if ft_check == "/Tx":
+                            if "/V" in field_obj:
+                                del field_obj["/V"]
+                            if "/AP" in field_obj:
+                                del field_obj["/AP"]
+                            for w in widgets:
+                                if "/V" in w:
+                                    del w["/V"]
+                                if "/AP" in w:
+                                    del w["/AP"]
                         result.skipped_fields.append(pdf_field_name)
                         continue
 
@@ -504,15 +527,38 @@ class AcroFormFiller(BaseFiller):
                                     self._set_widget_as(w, "/Off")
                     else:
                         # Szöveg / dropdown / lista: String érték
-                        field_obj[pikepdf.Name("/V")] = pikepdf.String(str(value))
+                        str_val = str(value)
 
-                        # Külön kezelés Comb mezők (pl. születési idő dobozos) igazításához
+                        # Külön kezelés Comb mezőkhöz (dobozolt mezők, pl. összegek, dátumok, adószám)
                         try:
                             ff = int(field_obj.get("/Ff", 0))
+                            if not ff and widgets:
+                                for w in widgets:
+                                    if "/Ff" in w:
+                                        ff = int(w.get("/Ff", 0))
+                                        break
                             if ff & (1 << 24):  # Comb flag (Ff bit 25, 1-based = 1<<24)
-                                field_obj[pikepdf.Name("/Q")] = 1  # Középre igazítás (Center)
+                                max_len = int(field_obj.get("/MaxLen", 0))
+                                if not max_len and widgets:
+                                    for w in widgets:
+                                        if "/MaxLen" in w:
+                                            max_len = int(w.get("/MaxLen", 0))
+                                            break
+                                orig_q = int(field_obj.get("/Q", 0))
+                                compact = str_val.replace(" ", "")
+                                # Ha ezres tagolású pénzösszeg (pl. "450 000") vagy jobbra igazított
+                                # (/Q == 2) numerikus Comb mező: szóközök törlése és balról szóközökkel
+                                # feltöltés MaxLen hosszra, hogy a számjegyek pontosan az előnyomott
+                                # ezres pontok (.) helyiértékeire essenek!
+                                if compact.isdigit() and max_len > 0 and (" " in str_val or orig_q == 2):
+                                    str_val = compact.rjust(max_len, " ")
+                                    field_obj[pikepdf.Name("/Q")] = 0
+                                    for w in widgets:
+                                        w[pikepdf.Name("/Q")] = 0
                         except Exception:
                             pass
+
+                        field_obj[pikepdf.Name("/V")] = pikepdf.String(str_val)
 
                         # Szövegmezőknél a NeedAppearances flag elegendő — a
                         # renderer maga generálja a megjelenést. (Csak /Tx
@@ -542,67 +588,184 @@ class AcroFormFiller(BaseFiller):
                 logger.warning("Mező kitöltési hiba: %s – %s", pdf_name, exc)
 
     @staticmethod
-    def _sync_checkbox_values(output_path: Path, result: FillingResult) -> None:
-        """Sync checkbox/radio field values from the saved PDF to PyMuPDF widgets.
+    def _sync_text_appearances(output_path: Path) -> None:
+        """Generate visual `/AP/N` streams for filled text widgets with native
+        Hungarian `Ő`, `Ű`, `ő`, `ű` glyph support.
 
-        After pikepdf saves the PDF (with /V and /AS set on AcroForm fields),
-        PyMuPDF's widget iterator may not read the correct field_value for
-        radio groups and checkboxes — especially after the orphan widget fix
-        adds widgets to page /Annots. This method opens the PDF with PyMuPDF,
-        reads each widget's expected state from its /AS (via pikepdf), and
-        sets the PyMuPDF field_value accordingly so the renderer displays it.
+        Standard Type1 `/Helv` in AcroForm uses `/WinAnsiEncoding`, which lacks
+        `U+0150` (`Ő`), `U+0170` (`Ű`), `U+0151` (`ő`), `U+0171` (`ű`), causing
+        MuPDF (`widget.update()`) to replace them with middle dots (`·`).
+        By mapping them to byte slots 213 (`Õ`), 219 (`Û`), 245 (`õ`), 251 (`û`)
+        during `widget.update()` and attaching a `/Differences` array with
+        `/Ohungarumlaut`, `/Uhungarumlaut`, `/ohungarumlaut`, `/uhungarumlaut`
+        to the `/Helv` font resource (while restoring true Unicode `/V`), both
+        visual rendering and programmatic `/V` inspection work natively.
         """
         import fitz
         import pikepdf
 
+        _HU_TO_WINANSI = str.maketrans({"Ő": "Õ", "Ű": "Û", "ő": "õ", "ű": "û"})
+
         try:
-            # Read field /V and widget /AS values from pikepdf
-            pdf = pikepdf.open(str(output_path))
-            field_values: dict[str, str] = {}
-            for field in pdf.Root.get("/AcroForm", {}).get("/Fields", []):
-                name = str(field.get("/T", ""))
-                v = field.get("/V")
-                if v is not None and str(v) != "/Off" and str(v) != "/":
-                    field_values[name] = str(v).lstrip("/")
-            pdf.close()
+            # 1. Collect true /V strings from pikepdf before MuPDF touches them
+            true_values: dict[str, str] = {}
+            with pikepdf.open(str(output_path)) as pdf:
+                acro = pdf.Root.get("/AcroForm", {})
 
-            if not field_values:
-                return
+                def _collect(fields, prefix=""):
+                    for f in fields:
+                        try:
+                            name = str(f.get("/T", "")) if "/T" in f else ""
+                        except Exception:
+                            name = ""
+                        full = f"{prefix}.{name}" if prefix and name else (name or prefix)
+                        ft = str(f.get("/FT", ""))
+                        if ft == "/Tx" and "/V" in f and full:
+                            true_values[full] = str(f["/V"])
+                        if "/Kids" in f:
+                            _collect(f["/Kids"], full)
 
-            # Open with PyMuPDF and set widget values
+                _collect(acro.get("/Fields", []))
+
+            # 2. Generate /AP/N appearance streams via PyMuPDF using mapped bytes
             doc = fitz.open(str(output_path))
-            needs_save = False
+            any_updated = False
             for page in doc:
                 for w in page.widgets():
+                    if w.field_type != fitz.PDF_WIDGET_TYPE_TEXT:
+                        continue
                     fn = w.field_name or ""
-                    if fn in field_values and w.field_type in (2, 5):
-                        val = field_values[fn]
+                    val = true_values.get(fn, w.field_value or "")
+                    if not val:
+                        continue
+                    true_values.setdefault(fn, val)
+                    mapped_val = val.translate(_HU_TO_WINANSI)
+                    w.field_value = mapped_val
+                    w.update()
+                    any_updated = True
+            if any_updated:
+                doc.saveIncr()
+            doc.close()
+
+            if not any_updated:
+                return
+
+            # 3. Patch /Encoding /Differences on Type1 fonts and restore true Unicode /V
+            with pikepdf.open(str(output_path), allow_overwriting_input=True) as pdf:
+                hu_enc = pdf.make_indirect(pikepdf.Dictionary({
+                    "/Type": pikepdf.Name("/Encoding"),
+                    "/BaseEncoding": pikepdf.Name("/WinAnsiEncoding"),
+                    "/Differences": pikepdf.Array([
+                        213, pikepdf.Name("/Ohungarumlaut"),
+                        219, pikepdf.Name("/Uhungarumlaut"),
+                        245, pikepdf.Name("/ohungarumlaut"),
+                        251, pikepdf.Name("/uhungarumlaut"),
+                    ]),
+                }))
+
+                acro = pdf.Root.get("/AcroForm")
+                if acro:
+                    if "/NeedAppearances" in acro:
+                        del acro["/NeedAppearances"]
+                    dr_fonts = acro.get("/DR", {}).get("/Font", {})
+                    for fname in list(dr_fonts.keys()):
                         try:
-                            # Azonos nevű, de eltérő export-értékű widgeteknél
-                            # (pl. "Check Box 17" Yes/no két példányban) az
-                            # értéket CSAK annak a widgetnek szabad átadni,
-                            # amelyiknek ez a saját on-state-e — különben a
-                            # fitz a truthy értéket a widget SAJÁT on-state-ére
-                            # fordítja és a csoport rossz állapotra billen
-                            # (pl. "Magyar" helyett "Egyéb" pipálódik).
-                            states = w.button_states() or {}
-                            on_states = [s for s in (states.get("normal") or []) if s != "Off"]
-                            if on_states and val not in on_states:
-                                if w.field_value not in (False, "Off"):
-                                    w.field_value = False
-                                    w.update()
-                                    needs_save = True
+                            fobj = dr_fonts[fname]
+                            if str(fobj.get("/Subtype", "")) == "/Type1":
+                                fobj[pikepdf.Name("/Encoding")] = hu_enc
+                        except Exception:
+                            pass
+
+                    def _restore_v(fields, prefix=""):
+                        for f in fields:
+                            try:
+                                name = str(f.get("/T", "")) if "/T" in f else ""
+                            except Exception:
+                                name = ""
+                            full = f"{prefix}.{name}" if prefix and name else (name or prefix)
+                            if full in true_values and str(f.get("/FT", "")) == "/Tx":
+                                f[pikepdf.Name("/V")] = pikepdf.String(true_values[full])
+                            if "/Kids" in f:
+                                _restore_v(f["/Kids"], full)
+
+                    _restore_v(acro.get("/Fields", []))
+
+                for page in pdf.pages:
+                    for annot in page.obj.get("/Annots", []):
+                        try:
+                            ap_n = annot.get("/AP", {}).get("/N")
+                            if ap_n and "/Resources" in ap_n and "/Font" in ap_n["/Resources"]:
+                                fonts = ap_n["/Resources"]["/Font"]
+                                for fname in list(fonts.keys()):
+                                    fobj = fonts[fname]
+                                    if str(fobj.get("/Subtype", "")) == "/Type1":
+                                        fobj[pikepdf.Name("/Encoding")] = hu_enc
+                            t_name = str(annot.get("/T", "")) if "/T" in annot else ""
+                            if not t_name and "/Parent" in annot and "/T" in annot["/Parent"]:
+                                t_name = str(annot["/Parent"]["/T"])
+                            if t_name in true_values:
+                                if "/V" in annot:
+                                    annot[pikepdf.Name("/V")] = pikepdf.String(true_values[t_name])
+                                if "/Parent" in annot and "/V" in annot["/Parent"]:
+                                    annot["/Parent"][pikepdf.Name("/V")] = pikepdf.String(true_values[t_name])
+                        except Exception:
+                            pass
+
+                pdf.save(str(output_path))
+        except Exception as exc:
+            logger.debug("Text appearance sync skipped: %s", exc)
+
+    @staticmethod
+    def _sync_checkbox_values(output_path: Path, result: FillingResult) -> None:
+        """Sync checkbox/radio widget `/AS` and `/V` values on page `/Annots` via pikepdf.
+
+        PyMuPDF's ``w.update()`` has a known limitation on checkbox groups whose
+        checked export state is not ``/Yes`` (e.g. OTP's ``/1,2``, ``/2,3``, ``/4,5``,
+        ``/no``): calling ``w.update()`` compares ``field_value`` against ``w.on_state()``
+        (which defaults to ``"Yes"``), resetting both ``/V`` and ``/AS`` to ``/Off``.
+        Furthermore, in many OTP templates, child widgets ``Kid 1..N`` carry a local
+        ``/V: /Off`` entry on the widget dictionary that overrides ``/Parent["/V"]`` in
+        MuPDF unless the child's ``/V`` is synced to its ``/AS``.
+
+        Doing this pass directly in ``pikepdf`` preserves all custom export states
+        (``/1,2``, ``/4,5``, ``/Yes``, ``/no``) for both visual rendering and
+        ``PyMuPDF`` widget inspection.
+        """
+        import pikepdf
+
+        try:
+            with pikepdf.open(str(output_path), allow_overwriting_input=True) as pdf:
+                field_values: dict[str, str] = {}
+                for field in pdf.Root.get("/AcroForm", {}).get("/Fields", []):
+                    name = str(field.get("/T", ""))
+                    ft = str(field.get("/FT", ""))
+                    v = field.get("/V")
+                    if ft == "/Btn" and name and v is not None and str(v) not in ("/Off", "/"):
+                        field_values[name] = str(v)
+                        for kid in field.get("/Kids", []):
+                            AcroFormFiller._set_widget_as(kid, str(v))
+
+                if not field_values:
+                    return
+
+                needs_save = False
+                for page in pdf.pages:
+                    for annot in page.obj.get("/Annots", []):
+                        try:
+                            if str(annot.get("/Subtype", "")) != "/Widget":
                                 continue
-                            if w.field_value != val:
-                                w.field_value = val
-                                w.update()
+                            t_name = str(annot.get("/T", "")) if "/T" in annot else ""
+                            if not t_name and "/Parent" in annot and "/T" in annot["/Parent"]:
+                                t_name = str(annot["/Parent"]["/T"])
+                            if t_name in field_values:
+                                AcroFormFiller._set_widget_as(annot, field_values[t_name])
                                 needs_save = True
                         except Exception:
                             pass
-            if needs_save:
-                doc.saveIncr()
-                logger.info("Checkbox értékek szinkronizálva: %d mező", len(field_values))
-            doc.close()
+
+                if needs_save:
+                    pdf.save(str(output_path))
+                    logger.info("Checkbox értékek szinkronizálva: %d mező", len(field_values))
         except Exception as e:
             logger.debug("Checkbox sync skipped: %s", e)
 
@@ -836,32 +999,37 @@ class AcroFormFiller(BaseFiller):
         For radio buttons, each child widget has its own /AP/N appearance
         stream with specific state names (e.g. ``/1,2``, ``/5,6``). We must
         set ``/AS`` to ``state`` if the widget actually has that appearance
-        state, otherwise ``/Off``.
-
-        Args:
-            widget: The widget annotation dictionary (/Kids entry that is a
-                /Widget).
-            state: The target appearance state name, slash-prefixed (e.g.
-                ``"/Yes"``, ``"/5,6"``).
+        state, otherwise ``/Off``. Also syncs child-level ``/V`` when present
+        so local ``/V: /Off`` entries on child widgets do not override the
+        parent field's ``/V`` in MuPDF.
         """
         import pikepdf
 
         try:
             ap = widget.get("/AP")
             if not ap:
-                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                actual = pikepdf.Name(state)
+                widget[pikepdf.Name("/AS")] = actual
+                if "/Parent" in widget and "/V" in widget:
+                    widget[pikepdf.Name("/V")] = actual
                 return
             n_dict = ap.get("/N")
             if n_dict is None:
-                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                actual = pikepdf.Name(state)
+                widget[pikepdf.Name("/AS")] = actual
+                if "/Parent" in widget and "/V" in widget:
+                    widget[pikepdf.Name("/V")] = actual
                 return
             available_states = [str(k) for k in n_dict.keys()]
             if state in available_states:
-                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                actual = pikepdf.Name(state)
             elif "/Off" in available_states:
-                widget[pikepdf.Name("/AS")] = pikepdf.Name("/Off")
+                actual = pikepdf.Name("/Off")
             else:
-                widget[pikepdf.Name("/AS")] = pikepdf.Name(state)
+                actual = pikepdf.Name(state)
+            widget[pikepdf.Name("/AS")] = actual
+            if "/Parent" in widget and "/V" in widget:
+                widget[pikepdf.Name("/V")] = actual
         except Exception as e:
             logger.debug("Failed to set /AS on widget: %s", e)
 

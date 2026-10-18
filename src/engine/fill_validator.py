@@ -297,10 +297,19 @@ def _mechanical_validation(
                     ))
                     report.mismatch_fields += 1
             else:
-                # Szövegmező: string egyezés (normalizált perjel és case)
+                # Szövegmező: string egyezés (normalizált perjel, case, és
+                # numerikus Comb mezőknél az ezres szóköz / bal oldali kitöltés)
                 def _norm(s: str) -> str:
                     return s.strip().lower().lstrip("/")
-                if _norm(actual_pk) == _norm(expected_str) or _norm(actual_mu) == _norm(expected_str):
+
+                def _norm_num(s: str) -> str:
+                    return _norm(s).replace(" ", "")
+
+                exp_num = _norm_num(expected_str)
+                is_num_match = exp_num.isdigit() and (
+                    _norm_num(actual_pk) == exp_num or _norm_num(actual_mu) == exp_num
+                )
+                if _norm(actual_pk) == _norm(expected_str) or _norm(actual_mu) == _norm(expected_str) or is_num_match:
                     report.field_results.append(FieldValidation(
                         pdf_field_name=pdf_name,
                         expected=expected_str,

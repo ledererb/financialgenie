@@ -132,6 +132,10 @@ class Participant(BaseModel):
     what_type_of_loan: Optional[str] = Field(None, description="Hitel típusa")
     contact_loan_amount: Optional[float] = Field(None, description="Hitelösszeg (Contact)")
     contact_loan_period: Optional[float] = Field(None, description="Hitel futamideje (Contact)")
+    current_employment_started: Optional[str] = Field(None, description="Jelenlegi munkaviszony kezdete")
+    ownership_in_employer: Optional[str] = Field(None, description="Tulajdonrész a munkáltatóban")
+    preferalt_bank: Optional[str] = Field(None, description="Preferált bank")
+    residence_status: Optional[str] = Field(None, description="Tartózkodási státusz")
 
     @property
     def is_borrower(self) -> bool:

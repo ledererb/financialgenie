@@ -453,7 +453,7 @@ class SalesforceClient:
                         "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
                         "What_type_of_loan__c, Loan_amount__c, Loan_period__c, "
                         "Affordable_monthly_installments__c, Interest_rate__c, "
-                        "Residence_Status__c"
+                        "Residence_Status__c, Ownership_in_employer__c, Preferalt_bank__c"
                     )
                     id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
@@ -555,6 +555,7 @@ class SalesforceClient:
                         "interest_period": c.get("Interest_Period__c") or "",
                         "other_monthly_income": c.get("Other_monthly_income__c") or 0,
                         "current_debt_credit_limit": c.get("Current_debt_Credit_limit__c") or "",
+                        "current_employment_started": c.get("Current_employment_started__c") or "",
                         "date_of_notification_for_residence": c.get("Date_of_notification_for_residence__c") or "",
                         "date_of_signature": c.get("Date_of_signature__c") or "",
                         "description": c.get("Description") or "",
@@ -600,6 +601,9 @@ class SalesforceClient:
                         "what_type_of_loan": c.get("What_type_of_loan__c") or "",
                         "contact_loan_amount": c.get("Loan_amount__c"),
                         "contact_loan_period": c.get("Loan_period__c"),
+                        "ownership_in_employer": c.get("Ownership_in_employer__c") or "",
+                        "preferalt_bank": c.get("Preferalt_bank__c") or "",
+                        "residence_status": c.get("Residence_Status__c") or "",
                     }
                     participant_record["income_bearing"] = income_flags.get(role_label)
                     participants_records.append(participant_record)

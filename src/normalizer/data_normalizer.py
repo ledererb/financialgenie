@@ -300,6 +300,15 @@ class DataNormalizer:
             what_type_of_loan=p_data.get("what_type_of_loan") or "",
             contact_loan_amount=self._safe_float(p_data.get("contact_loan_amount")),
             contact_loan_period=self._safe_float(p_data.get("contact_loan_period")),
+            current_employment_started=(
+                p_data.get("current_employment_started")
+                or p_data.get("Current_employment_started__c")
+                or p_data.get("contract_start_date")
+                or ""
+            ),
+            ownership_in_employer=p_data.get("ownership_in_employer") or p_data.get("Ownership_in_employer__c") or "",
+            preferalt_bank=p_data.get("preferalt_bank") or p_data.get("Preferalt_bank__c") or "",
+            residence_status=p_data.get("residence_status") or p_data.get("Residence_Status__c") or "",
         )
 
     def _normalize_property(self, prop_data: dict) -> Optional[Property]:

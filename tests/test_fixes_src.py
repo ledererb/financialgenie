@@ -126,3 +126,72 @@ class TestM6FilledFields:
         assert isinstance(skipped, list)
         # The mapped field carries a value → it must appear in filled.
         assert "borrower_name" in filled, filled
+
+
+# ── Visual & Salesforce Coverage Audit Fixes ───────────────────────────────
+class TestVisualAndSalesforceCoverageFixes:
+    def test_non_numeric_free_text_skipped_in_money_character_group(self):
+        from src.engine.pdf_filler import expand_character_groups
+        grp = {
+            "group_id": "g_teher",
+            "canonical_field": "Lead.Ingatlan_terhek__c",
+            "member_fields": ["b1", "b2", "b3", "b4"],
+            "direction": "right_to_left",
+            "separator": "",
+        }
+        # Free text ("Nincs teher") must NOT be scattered letter-by-letter into Ft digit boxes
+        assert expand_character_groups({"Lead.Ingatlan_terhek__c": "Nincs teher"}, [grp]) == {}
+        # Numeric value ("450 000") IS distributed right-to-left
+        out = expand_character_groups({"Lead.Ingatlan_terhek__c": "2 500"}, [grp])
+        assert out == {"b1": "2", "b2": "5", "b3": "0", "b4": "0"}
+
+    def test_indefinite_employment_clears_contract_end_date(self):
+        from src.main import FormFillerPipeline
+        from src.models.canonical_model import Participant, ParticipantRole
+
+        p = Participant(
+            role=ParticipantRole.BORROWER,
+            name="Teszt János",
+            employment_type="Határozatlan",
+            contract_end_date="2028-12-31",
+            current_employment_started="2016-04-01",
+            personal_id="123456AB",
+        )
+        pipeline = FormFillerPipeline.__new__(FormFillerPipeline)
+        d = pipeline._participant_to_dict(p)
+        assert d["Contact.Contract_end_date__c"] == ""
+        assert d["Contact.Contract_end_date__c#ev"] == ""
+        assert d["Contact.Current_employment_started__c#ev"] == "2016"
+        assert d["Contact.Current_employment_started__c#ho"] == "04"
+        # 8-char ID card number ("123456AB") must not populate 11-digit old Personal_ID__c
+        assert d["Contact.ID_Card_Number__c"] == "123456AB"
+        assert d["Contact.Personal_ID__c"] == ""
+
+    def test_salutation_mismatch_with_female_first_name_resolved(self):
+        from src.main import FormFillerPipeline
+        from src.models.canonical_model import DealData, LoanDetails
+
+        pipeline = FormFillerPipeline.__new__(FormFillerPipeline)
+        borrower_data = {
+            "Contact.Name": "János Teszt_Ados",
+            "Contact.Salutation": "Mr.",
+            "Contact.Employer_s_company_type__c": "Kft.",
+            "Contact.Foglalkozas_tipusa__c": "Alkalmazott vezető",
+        }
+        co_data = {
+            "Contact.Name": "Mária Teszt_Adostars",
+            "Contact.Salutation": "Mr.",
+            "Contact.Employer_s_company_type__c": "Zrt.",
+            "Contact.Foglalkozas_tipusa__c": "Alkalmazott",
+        }
+        deal = DealData(deal_id="D1", loan=LoanDetails(product_type="Piaci lakáshitel"))
+        notices = []
+        pipeline._enrich_derived_values(borrower_data, co_data, {}, deal, notices)
+        assert borrower_data["Contact.Salutation"] == "Férfi"
+        assert co_data["Contact.Salutation"] == "Nő"
+        assert borrower_data["Contact.Employer_s_company_type__c"] == "Korlátolt felelősségű társaság"
+        assert co_data["Contact.Employer_s_company_type__c"] == "Részvénytársaság"
+        assert borrower_data["Contact.Foglalkozas_tipusa__c"] == "Vezető alkalmazott (felső vagy középvezető)"
+        assert co_data["Contact.Foglalkozas_tipusa__c"] == "Szellemi munkát végző alkalmazott"
+        assert any("Mária Teszt_Adostars" in n for n in notices)
+

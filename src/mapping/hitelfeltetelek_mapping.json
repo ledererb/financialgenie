@@ -466,7 +466,7 @@
       "pdf_field_name": "KTKA_kölcsön_futamidő",
       "label": "Kölcsön futamideje (év)",
       "field_type": "number",
-      "canonical_field": "Contact.Loan_period__c",
+      "canonical_field": "Contact.Term_in_year_c",
       "confidence": "high",
       "page_number": 1,
       "coordinates": null,
