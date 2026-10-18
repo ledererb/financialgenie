@@ -39,9 +39,10 @@ class ValidationReport:
 
     @property
     def score(self) -> float:
-        if self.total_fields == 0:
-            return 0.0
-        return self.ok_fields / self.total_fields * 100
+        evaluated = self.ok_fields + self.mismatch_fields + self.missing_fields
+        if evaluated == 0:
+            return 100.0
+        return self.ok_fields / evaluated * 100
 
 
 def validate_filled_pdf(
