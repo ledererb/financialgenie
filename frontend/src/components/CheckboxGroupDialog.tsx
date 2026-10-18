@@ -3,11 +3,13 @@ import type { MappingField } from "@/types";
 
 interface CheckboxGroupDialogProps {
   fields: MappingField[];
+  /** Vizuális pick-mode-ból érkező előkijelölés (canvas-on kipattintott mezők). */
+  initialSelected?: string[];
   onApply: (updates: { fieldName: string; checkboxGroup: NonNullable<MappingField["checkbox_group"]> }[]) => Promise<void>;
   onClose: () => void;
 }
 
-export default function CheckboxGroupDialog({ fields, onApply, onClose }: CheckboxGroupDialogProps) {
+export default function CheckboxGroupDialog({ fields, initialSelected, onApply, onClose }: CheckboxGroupDialogProps) {
   const checkboxFields = useMemo(
     () => fields.filter((f) => f.field_type === "checkbox"),
     [fields],
@@ -16,6 +18,11 @@ export default function CheckboxGroupDialog({ fields, onApply, onClose }: Checkb
   // Pre-select fields that already share a checkbox_group, plus all unmapped
   // checkboxes. The user can toggle individual ones.
   const [selected, setSelected] = useState<Set<string>>(() => {
+    // Canvas pick-mode előkijelölés felülírja az alapértelmezettet
+    if (initialSelected && initialSelected.length > 0) {
+      const valid = new Set(checkboxFields.map((f) => f.pdf_field_name));
+      return new Set(initialSelected.filter((n) => valid.has(n)));
+    }
     const initial = new Set<string>();
     for (const f of checkboxFields) {
       if (f.checkbox_group?.group_id) initial.add(f.pdf_field_name);
@@ -128,6 +135,22 @@ export default function CheckboxGroupDialog({ fields, onApply, onClose }: Checkb
         <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 16px" }}>
           Checkbox csoportosítás
         </h3>
+
+        {initialSelected && initialSelected.length > 0 && (
+          <div
+            style={{
+              marginBottom: "12px",
+              padding: "6px 10px",
+              background: "rgba(168,85,247,0.12)",
+              border: "1px solid var(--accent-purple)",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "0.75rem",
+              color: "var(--text-secondary)",
+            }}
+          >
+            {initialSelected.length} mező kijelölve a PDF-vásznon — a lista ezekre van előre szűrve.
+          </div>
+        )}
 
         {checkboxFields.length === 0 ? (
           <p style={{ color: "var(--text-tertiary)", fontSize: "0.85rem" }}>

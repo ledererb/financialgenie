@@ -99,6 +99,12 @@ def expand_character_groups(
         value = str(raw)
         if separator:
             value = value.replace(separator, "")
+        # Számjegy-dobozokba ezres tagolás (szóköz) nem kell: ha az érték
+        # szóközök nélkül tisztán számjegy, a szóközöket eldobjuk — különben
+        # a tagolt "130 000 000" nem fér el a dobozokban / elcsúszik.
+        compact = value.replace(" ", "")
+        if compact and compact.isdigit():
+            value = compact
         # Distribute one character per member box (truncate / pad).
         for idx, member in enumerate(members):
             expanded[member] = value[idx] if idx < len(value) else ""
@@ -437,6 +443,21 @@ class AcroFormFiller(BaseFiller):
                         if isinstance(value, str) and value not in ("igen", "nem", "true", "false", "True", "False", "1", "0", ""):
                             # Radio button specifikus érték (pl. "1,2")
                             target_state = f"/{value}"
+                            # Érvényesség-ellenőrzés: azonos nevű, de KÜLÖN
+                            # AcroForm field-ként szereplő widgeteknél (pl.
+                            # "Check Box 17" Yes és no példányai) az export
+                            # érték csak az egyiknek érvényes on-state-e. Ha
+                            # ennek a fieldnek nincs ilyen állapota, ne írjunk
+                            # érvénytelen /V-t (a renderer hibásan értelmezi).
+                            valid_states = set()
+                            for w in as_targets:
+                                try:
+                                    ap_n = w.get("/AP", {}).get("/N", {})
+                                    valid_states.update(str(k) for k in ap_n.keys() if str(k) != "/Off")
+                                except Exception:
+                                    pass
+                            if valid_states and target_state not in valid_states:
+                                continue
                             field_obj[pikepdf.Name("/V")] = pikepdf.Name(target_state)
                             # FIX: minden child widget /AS (appearance state)
                             # beállítása — a kiválasztott widgetre az export
@@ -540,13 +561,28 @@ class AcroFormFiller(BaseFiller):
                     fn = w.field_name or ""
                     if fn in field_values and w.field_type in (2, 5):
                         val = field_values[fn]
-                        if w.field_value != val:
-                            try:
+                        try:
+                            # Azonos nevű, de eltérő export-értékű widgeteknél
+                            # (pl. "Check Box 17" Yes/no két példányban) az
+                            # értéket CSAK annak a widgetnek szabad átadni,
+                            # amelyiknek ez a saját on-state-e — különben a
+                            # fitz a truthy értéket a widget SAJÁT on-state-ére
+                            # fordítja és a csoport rossz állapotra billen
+                            # (pl. "Magyar" helyett "Egyéb" pipálódik).
+                            states = w.button_states() or {}
+                            on_states = [s for s in (states.get("normal") or []) if s != "Off"]
+                            if on_states and val not in on_states:
+                                if w.field_value not in (False, "Off"):
+                                    w.field_value = False
+                                    w.update()
+                                    needs_save = True
+                                continue
+                            if w.field_value != val:
                                 w.field_value = val
                                 w.update()
                                 needs_save = True
-                            except Exception:
-                                pass
+                        except Exception:
+                            pass
             if needs_save:
                 doc.saveIncr()
                 logger.info("Checkbox értékek szinkronizálva: %d mező", len(field_values))

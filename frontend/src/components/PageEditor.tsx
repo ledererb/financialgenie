@@ -85,6 +85,7 @@ function CanonicalFieldSearch({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [objFilter, setObjFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -107,12 +108,16 @@ function CanonicalFieldSearch({
   }, [onClear]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return fields;
-    const q = query.toLowerCase();
-    return fields.filter(
-      (c) => c.path.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q),
-    );
-  }, [fields, query]);
+    const q = query.trim().toLowerCase();
+    return fields.filter((c) => {
+      if (objFilter) {
+        const obj = c.path.split(".")[0];
+        if (obj !== objFilter) return false;
+      }
+      if (!q) return true;
+      return c.path.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q);
+    });
+  }, [fields, query, objFilter]);
 
   // Group by SF object prefix
   const groups = useMemo(() => {
@@ -184,6 +189,44 @@ function CanonicalFieldSearch({
           boxShadow: "var(--shadow-lg)",
           zIndex: 50,
         }}>
+          {/* Objektum-szűrő chipsek — a 145 elemű Contact blokk ne takarja
+              el a többi objektum mezőit */}
+          {(() => {
+            const objCounts = new Map<string, number>();
+            for (const c of fields) {
+              const obj = c.path.split(".")[0];
+              objCounts.set(obj, (objCounts.get(obj) || 0) + 1);
+            }
+            const chips = ["", ...Array.from(objCounts.keys()).sort()];
+            return (
+              <div style={{
+                display: "flex", flexWrap: "wrap", gap: "4px",
+                padding: "6px 8px", borderBottom: "1px solid var(--border-subtle)",
+                position: "sticky", top: 0, background: "var(--bg-secondary)", zIndex: 2,
+              }}>
+                {chips.map((obj) => {
+                  const active = objFilter === obj || (obj === "" && !objFilter);
+                  const label = obj === "" ? "Összes" : obj;
+                  const count = obj === "" ? fields.length : objCounts.get(obj) || 0;
+                  return (
+                    <button
+                      key={obj || "all"}
+                      onClick={(e) => { e.stopPropagation(); setObjFilter(obj === "" ? null : obj); }}
+                      style={{
+                        padding: "2px 8px", fontSize: "0.68rem", cursor: "pointer",
+                        borderRadius: "10px", border: `1px solid ${active ? "var(--accent-blue)" : "var(--border-default)"}`,
+                        background: active ? "var(--accent-blue-glow)" : "var(--bg-tertiary)",
+                        color: active ? "var(--accent-blue)" : "var(--text-secondary)",
+                        fontWeight: active ? 700 : 400,
+                      }}
+                    >
+                      {label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
           {filtered.length === 0 ? (
             <div style={{ padding: "8px 12px", fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
               Nincs találat
@@ -283,6 +326,9 @@ export default function PageEditor({
   const [loadedPage, setLoadedPage] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
+  // Vizuális checkbox-csoportosítás ("A" megközelítés): pick-mode a vásznon
+  const [groupPickMode, setGroupPickMode] = useState(false);
+  const [pickedFields, setPickedFields] = useState<Set<string>>(new Set());
   const [showOverlayLabels, setShowOverlayLabels] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showData, setShowData] = useState(true);
@@ -880,14 +926,31 @@ export default function PageEditor({
 
         {/* Checkbox grouping — only if there are checkbox fields on this page */}
         {pageFields.some((f) => f.field_type === "checkbox") && (
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setShowGroupDialog(true)}
-            title="Checkbox mezők csoportosítása"
-            style={{ fontSize: "0.75rem" }}
-          >
-            Csoportositas
-          </button>
+          <>
+            <button
+              className={`btn btn-sm ${groupPickMode ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => {
+                setGroupPickMode(!groupPickMode);
+                if (groupPickMode) setPickedFields(new Set());
+              }}
+              title="Vizuális kijelölés mód: kattints a checkboxokra a PDF-en"
+              style={{
+                fontSize: "0.75rem",
+                background: groupPickMode ? "var(--accent-purple)" : undefined,
+                color: groupPickMode ? "#fff" : undefined,
+              }}
+            >
+              {groupPickMode ? `Kijeloles (${pickedFields.size})` : "Kijeloles"}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowGroupDialog(true)}
+              title="Checkbox mezők csoportosítása listából"
+              style={{ fontSize: "0.75rem" }}
+            >
+              Csoportositas
+            </button>
+          </>
         )}
 
         {saving && (
@@ -1050,6 +1113,68 @@ export default function PageEditor({
               </div>
             )}
 
+            {/* Pick-mode floating action bar */}
+            {groupPickMode && (
+              <div
+                style={{
+                  position: "sticky",
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  zIndex: 1500,
+                  pointerEvents: "none",
+                }}
+              >
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 14px",
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--accent-purple)",
+                    borderRadius: "var(--radius-md)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                    fontSize: "0.8rem",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  <span>
+                    <strong style={{ color: "var(--accent-purple)" }}>{pickedFields.size}</strong>{" "}
+                    checkbox kijelolve
+                  </span>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={pickedFields.size === 0}
+                    onClick={() => setShowGroupDialog(true)}
+                    style={{ fontSize: "0.75rem" }}
+                  >
+                    Csoportositas
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setPickedFields(new Set())}
+                    style={{ fontSize: "0.75rem" }}
+                  >
+                    Torles
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setGroupPickMode(false);
+                      setPickedFields(new Set());
+                    }}
+                    style={{ fontSize: "0.75rem" }}
+                  >
+                    Kilepes
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* field overlays – only when the right page is loaded */}
             {loadedPage === pageNumber &&
               pageFields.map((mf) => {
@@ -1070,6 +1195,18 @@ export default function PageEditor({
                       validCanonicalPaths,
                     )}
                     onClick={() => {
+                      if (groupPickMode) {
+                        // Pick-mode: csak checkbox mezők választhatók;
+                        // kattintásra be/ki kerülnek a kijelölésbe.
+                        if (mf.field_type !== "checkbox") return;
+                        setPickedFields((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(mf.pdf_field_name)) next.delete(mf.pdf_field_name);
+                          else next.add(mf.pdf_field_name);
+                          return next;
+                        });
+                        return;
+                      }
                       setSelectedField(mf.pdf_field_name);
                       setEditingField(null);
                     }}
@@ -1079,6 +1216,21 @@ export default function PageEditor({
                       width: rect.width * scale,
                       height: rect.height * scale,
                       borderRadius: "var(--radius-sm)",
+                      ...(groupPickMode && mf.field_type === "checkbox"
+                        ? {
+                            cursor: "copy",
+                            ...(pickedFields.has(mf.pdf_field_name)
+                              ? {
+                                  border: "2px solid var(--accent-purple)",
+                                  background: "rgba(168,85,247,0.35)",
+                                  boxShadow: "0 0 8px rgba(168,85,247,0.6)",
+                                  zIndex: 20,
+                                }
+                              : {}),
+                          }
+                        : groupPickMode
+                          ? { cursor: "not-allowed", opacity: 0.5 }
+                          : {}),
                     }}
                     title={`${mf.pdf_field_name}${mf.canonical_field ? ` → ${mf.canonical_field}` : ""}`}
                   >
@@ -1872,7 +2024,12 @@ export default function PageEditor({
       {showGroupDialog && (
         <CheckboxGroupDialog
           fields={pageFields}
-          onApply={handleBulkCheckboxGroup}
+          initialSelected={Array.from(pickedFields)}
+          onApply={async (updates) => {
+            await handleBulkCheckboxGroup(updates);
+            setPickedFields(new Set());
+            setGroupPickMode(false);
+          }}
           onClose={() => setShowGroupDialog(false)}
         />
       )}

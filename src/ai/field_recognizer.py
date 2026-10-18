@@ -256,6 +256,23 @@ CANONICAL_FIELDS = {
     # ════════════════════════════════════════════════════════════
     # Opportunity — ALL fields
     # ════════════════════════════════════════════════════════════
+    "Account.Id": "Account ID",
+    "Account.Name": "Account neve",
+    "Account.AccountNumber": "Account szám",
+    "Account.Phone": "Telefonszám",
+    "Account.Fax": "Fax",
+    "Account.Website": "Weboldal",
+    "Account.Industry": "Tevékenységi kör",
+    "Account.Description": "Leírás",
+    "Account.BillingStreet": "Számlázási cím (utca)",
+    "Account.BillingCity": "Számlázási cím (város)",
+    "Account.BillingState": "Számlázási cím (állam/megye)",
+    "Account.BillingPostalCode": "Számlázási cím (irányítószám)",
+    "Account.BillingCountry": "Számlázási cím (ország)",
+    "Account.ShippingStreet": "Szállítási/levél cím (utca)",
+    "Account.ShippingCity": "Szállítási/levél cím (város)",
+    "Account.ShippingPostalCode": "Szállítási/levél cím (irányítószám)",
+    "Account.ShippingCountry": "Szállítási/levél cím (ország)",
     "Opportunity.AccountId": "Account ID",
     "Opportunity.Account__c": "Tippadó neve",
     "Opportunity.Amount": "Amount",
@@ -512,6 +529,176 @@ def _group_meta(f: RecognizedField) -> Optional[dict]:
     if isinstance(f, dict):
         return f.get("checkbox_group")
     return getattr(f, "checkbox_group", None)
+
+
+def _char_group_stem(label: str) -> str | None:
+    """Comb-doboz label-törzs kinyerése: a '(N. jegy)' / '(N. karakter)' jellegű
+    sorszámlevágás utáni közös törzs. None, ha a label generikus fallback
+    (pl. 'Text Field 316') vagy nem jegy-sorozat."""
+    import re as _re
+    if not label:
+        return None
+    stem = _re.sub(r"\s*\(\s*\d+\.\s*(?:jegy|karakter|számjegy)\s*\)\s*$", "", label, flags=_re.IGNORECASE).strip()
+    if stem == label.strip():
+        return None  # nem volt jegy-suffix
+    return stem or None
+
+
+#: Label-törzs kulcsszó → canonical mező (comb dobozokhoz, ha az AI nem adott
+#: canonicalt az egyes jegyeknek). Csak CANONICAL_FIELDS-ben létező kulcsok.
+_CHAR_STEM_CANONICAL_RULES = [
+    ("hónap", "Contact.Birthdate_month"),          # "nap"-ot is tartalmaz → előbb!
+    ("adóazonosító", "Contact.Tax_ID__c"),
+    ("személyazonosító", "Contact.ID_Card_Number__c"),
+    ("okmány száma", "Contact.ID_Card_Number__c"),
+    ("igazolvány száma", "Contact.ID_Card_Number__c"),
+    ("dokumentum száma", "Contact.ID_Card_Number__c"),
+    ("irányítószám", "Contact.ZIP__c"),
+    ("születési idő - év", "Contact.Birthdate_year"),
+    ("születési idő - nap", "Contact.Birthdate_day"),
+    ("születési dátum - év", "Contact.Birthdate_year"),
+    ("születési dátum - nap", "Contact.Birthdate_day"),
+    (" - év", "Contact.Birthdate_year"),
+    (" - nap", "Contact.Birthdate_day"),
+]
+
+
+def _stem_to_canonical(stem: str) -> str | None:
+    low = stem.lower()
+    for keyword, canonical in _CHAR_STEM_CANONICAL_RULES:
+        if keyword in low and canonical in CANONICAL_FIELDS:
+            return canonical
+    return None
+
+
+def _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members_all):
+    """Egy karakterdoboz-sor lezárása és character_grouppá alakítása.
+
+    Két út:
+      1. A sor label-törzs ('(N. jegy)' nélküli közös rész) alapján szétválik
+         azonos törzsű részsorokra; ≥2 tag + feloldható canonical → csoport.
+      2. Törzs nélküli (generikus label) sor: ≥4 tag + mind azonos canonical → csoport.
+    """
+    import re as _re
+    if len(run) < 2:
+        return
+
+    # Részsorokra bontás label-törzs szerint (x-sorrend megmarad)
+    segments: list[tuple[str | None, list[str]]] = []
+    for name in run:
+        stem = _char_group_stem(label_by_name.get(name, ""))
+        if segments and segments[-1][0] == stem:
+            segments[-1][1].append(name)
+        else:
+            segments.append((stem, [name]))
+
+    for stem, members in segments:
+        canon_set = {canonical_by_name.get(n) for n in members}
+        canon_set.discard(None)
+        canonical = next(iter(canon_set)) if len(canon_set) == 1 else None
+        if canonical is None and stem:
+            canonical = _stem_to_canonical(stem)
+        if not canonical:
+            continue
+        # Guard: törzs nélküli (generikus label) szegmensben több KÜLÖNBÖZŐ
+        # valódi label → nem comb sor, hanem pl. táblázat-oszlopok, amiket az
+        # AI véletlenül ugyanarra a canonicalra mappelt (hamis pozitív).
+        if stem is None:
+            real_labels = {
+                label_by_name.get(n, "").strip()
+                for n in members
+                if label_by_name.get(n, "").strip()
+                and label_by_name.get(n, "").strip() != n.replace("_", " ").title()
+            }
+            if len(real_labels) > 1:
+                continue
+        # Küszöb: törzzsel ≥2 tag, törzs nélkül ≥4 tag
+        if len(members) < (2 if stem else 4):
+            continue
+        slug = _re.sub(r"[^a-z0-9]+", "_", canonical.lower()).strip("_")
+        groups.append({
+            "group_id": f"chargroup_{slug}_p{page}_{len(groups)}",
+            "canonical_field": canonical,
+            "member_fields": list(members),
+            "direction": "left_to_right",
+            "separator": "",
+        })
+        members_all.update(members)
+
+
+def _detect_character_groups(pdf_fields, recognized_fields):
+    """Egy sorban álló, egységes méretű karakterdobozok (comb mezők) felismerése.
+
+    A banki nyomtatványokon az azonosítók, irányítószámok, dátumok gyakran
+    külön egykarakteres dobozokból állnak. Ha ilyen dobozok sorát nem
+    csoportosítjuk, a teljes érték minden dobozba bekerülne — ehelyett
+    character_groupot generálunk, így a filler karakterenként osztja szét
+    (expand_character_groups, pdf_filler.py). A felismerés geometriai
+    (egy sor, egységes dobozméret, kis hézag), a canonical a tagmezők
+    canonicaljából vagy a label-törzs kulcsszavaiból származik.
+
+    Visszaad: (character_groups lista, tagmező-nevek halmaza).
+    """
+    rect_by_name = {}
+    for f in pdf_fields:
+        name = f.get("name")
+        rect = f.get("rect")
+        if name and rect and f.get("type") == "text":
+            rect_by_name[name] = (f.get("page", 1), rect)
+
+    canonical_by_name = {}
+    label_by_name = {}
+    for f in recognized_fields:
+        label_by_name[f.pdf_field_name] = getattr(f, "label", "") or ""
+        if f.canonical_field:
+            canonical_by_name[f.pdf_field_name] = f.canonical_field
+
+    by_page = {}
+    for name, (page, rect) in rect_by_name.items():
+        by_page.setdefault(page, []).append((name, rect))
+
+    groups = []
+    members_all = set()
+
+    for page, items in by_page.items():
+        # Sorokra bontás y-közép szerint (10 px tűrés)
+        rows = []
+        for name, rect in sorted(items, key=lambda it: (it[1][1], it[1][0])):
+            cy = rect[1] + rect[3] / 2
+            for row in rows:
+                ry = row[0][1][1] + row[0][1][3] / 2
+                if abs(cy - ry) <= 10:
+                    row.append((name, rect))
+                    break
+            else:
+                rows.append([(name, rect)])
+
+        for row in rows:
+            row.sort(key=lambda it: it[1][0])
+            run = []
+            prev_rect = None
+            for name, rect in row:
+                w, h = rect[2], rect[3]
+                is_box = 12 <= w <= 70 and 12 <= h <= 80
+                if is_box:
+                    if run and prev_rect is not None:
+                        pw, ph = prev_rect[2], prev_rect[3]
+                        gap = rect[0] - (prev_rect[0] + pw)
+                        same_size = (abs(w - pw) <= max(6.0, 0.35 * pw)
+                                     and abs(h - ph) <= max(6.0, 0.35 * ph))
+                        adjacent = -2.0 <= gap <= max(w, pw)
+                        if not (same_size and adjacent):
+                            _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members_all)
+                            run = []
+                    run.append(name)
+                    prev_rect = rect
+                else:
+                    _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members_all)
+                    run = []
+                    prev_rect = None
+            _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members_all)
+
+    return groups, members_all
 
 
 def _normalize_checkbox_group(cg_raw) -> Optional[dict]:
@@ -822,11 +1009,20 @@ Fontos szabályok:
                     if 0 <= page_idx < len(doc):
                         page = doc[page_idx]
                         # Draw red numbered boxes for fields with bounding boxes
+                        # rect is [x, y, width, height] in RENDERED PIXELS
+                        # (150 dpi, top-left origin) — convert to PDF points
+                        # for drawing on the page.
+                        px_to_pt = 72.0 / 150.0
                         box_count = 0
                         for i, f in enumerate(sub_fields, 1):
                             if "rect" in f:
-                                r = f["rect"]  # [x0, y0, x1, y1] in PDF points
-                                rect = fitz.Rect(r[0], r[1], r[2], r[3])
+                                r = f["rect"]  # [x, y, w, h] rendered pixels
+                                rect = fitz.Rect(
+                                    r[0] * px_to_pt,
+                                    r[1] * px_to_pt,
+                                    (r[0] + r[2]) * px_to_pt,
+                                    (r[1] + r[3]) * px_to_pt,
+                                )
                                 # Red rectangle outline
                                 page.draw_rect(rect, color=(1, 0, 0), width=1.5)
                                 # Number label above the box
@@ -916,8 +1112,10 @@ RULES:
 - Checkbox fields: if the label is a yes/no question or a selection option, map to the nearest matching SF field.
 - When multiple people (adós/adóstárs) share the same field structure, they ALL map to the same Contact.* fields.
 
-Output format: [{{"f": "field_name", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
+Output format: [{{"f": "field_name", "l": "human readable Hungarian label from the printed text next to the field", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
 For checkbox groups add: "g": "group_id", "gl": "group_label", "ov": "option_value", "ol": "option_label"
+The "l" label is REQUIRED for every field — read the printed label next to the RED BOX on the image
+(e.g. "Személyazonosító igazolvány száma", "Anyja neve"). Never just repeat the field name.
 
 Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
@@ -1002,9 +1200,10 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                     except ValueError:
                                         f_type = FieldType.TEXT
                                     
+                                    ai_label = (item.get("l") or "").strip()
                                     all_fields.append(RecognizedField(
                                         pdf_field_name=field_name,
-                                        label=field_name.replace("_", " ").title(),
+                                        label=ai_label or field_name.replace("_", " ").title(),
                                         field_type=f_type,
                                         canonical_field=canonical,
                                         confidence=MappingConfidence.MEDIUM,
@@ -1049,11 +1248,22 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
         for e in group_errors:
             logger.warning("⚠️ checkbox_group: %s", e)
 
+        # M5-auto: karakterdoboz-csoportok geometriai felismerése
+        # (egy sorban lévő, azonos canonicalra mappelt kis dobozok →
+        #  character_groups, hogy a filler karakterenként ossza szét)
+        char_groups, char_members = _detect_character_groups(pdf_fields, all_fields)
+        if char_members:
+            for f in all_fields:
+                if f.pdf_field_name in char_members:
+                    f.canonical_field = None
+            logger.info(f"🧩 {len(char_groups)} karakterdoboz-csoport felismerve ({len(char_members)} tagmező)")
+
         return MappingConfig(
             bank_name="OTP Bank",
             form_name=pdf_path.stem,
             form_type="acroform",
             fields=all_fields,
+            character_groups=char_groups,
             notes=f"AI batch felismerés ({len(page_groups)} oldal, {batch_count} API hívás).",
         )
 

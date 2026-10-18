@@ -154,6 +154,9 @@ class DataNormalizer:
             properties=properties,
             created_at=self._parse_date(sf_data.get("CreatedDate")),
             notes=sf_data.get("Description"),
+            account_id=sf_data.get("AccountId"),
+            account_pool_extra=sf_data.get("_account_pool_extra") or [],
+            account=sf_data.get("_account") or {},
         )
 
     def _normalize_participant(self, p_data: dict) -> Optional[Participant]:
@@ -187,6 +190,7 @@ class DataNormalizer:
         return Participant(
             role=role,
             name=name,
+            income_bearing=p_data.get("income_bearing"),
             birth_name=p_data.get("Birth_Name__c") or p_data.get("birth_name"),
             mother_name=p_data.get("Mother_Name__c") or p_data.get("mother_name"),
             birth_place=p_data.get("Birth_Place__c") or p_data.get("birth_place"),

@@ -44,6 +44,7 @@ from src.engine.document_assembler import (
 from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement, fmt_money, expand_character_groups
 from src.engine.completeness_checker import CompletenessChecker, CompletenessStatus
 from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
+from src.utils.gender import guess_gender
 from src.ai.field_recognizer import (
     FieldRecognizer,
     MappingConfig,
@@ -57,6 +58,105 @@ from src.ai.legal_classifier import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Jövedelem-jellegű kanonikus mezők — ezek kerülnek kizárásra a kitöltésből,
+# ha egy szereplő az SF OpportunityContactRole-ban "jövedelem nélkül bevont"
+# jelöléssel szerepel (Participant.income_bearing is False).
+_INCOME_CANONICAL_KEYS = frozenset({
+    "Contact.Average_monthly_net_income__c",
+    "Contact.Other_monthly_income__c",
+    "Contact.Other_income__c",
+    "Contact.Income_type__c",
+    "Contact.Cafeteria_bonus__c",
+    "Contact.Divident__c",
+    "Contact.Income_from_self_owned_company__c",
+    "Contact.Self_employment_details__c",
+    "Contact.Jovairas_vallalasa__c",
+})
+
+
+# === Érték-fordítás, dátum-fragmentek, konstrukció-osztályozás (pipeline) ===
+# A mapping-ben deklarált canonical kulcsok egy része NEM nyers CRM-érték,
+# hanem származtatott/fordított érték. Három eszköz:
+#   1) _VALUE_TRANSLATIONS: canonical → {forrásérték → célérték} szótár
+#      (pl. SF Salutation "Mr." → a nyomtatvány "Férfi" opciója).
+#   2) Dátum-fragment kulcsok: ``<canonical>#ev`` / ``#ho`` (digit-boxok).
+#   3) Konstrukció-gate: ``<canonical>#piaci`` / ``#tamogatott`` kulcsok,
+#      amelyek csak akkor kapnak értéket, ha a hitel konstrukciótípusa
+#      alapján az adott szekció (3.1 államilag kamattámogatott / 3.2 piaci)
+#      tényleg kitöltendő.
+
+_VALUE_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "Contact.Salutation": {
+        "mr": "Férfi", "mr.": "Férfi", "ur": "Férfi",
+        "ms": "Nő", "ms.": "Nő", "mrs": "Nő", "mrs.": "Nő",
+        "miss": "Nő", "holgy": "Nő", "asszony": "Nő",
+    },
+}
+
+# Konstrukciótípus → a nyomtatvány "Választott konstrukció típusa" opciófelirata
+_CONSTRUCTION_OPTION_LABELS: dict[str, str] = {
+    "tamogatott": "Államilag kamattámogatott forint lakáshitel(ek)",
+    "piaci": "Piaci kamatozású forint lakáshitel(ek)",
+    "mindketto": "Államilag kamattámogatott és Piaci kamatozású forint lakáshitel együttes igénylése",
+}
+
+
+def _fold_text(s: str) -> str:
+    """Ékezet-mentes, kisbetűs, trimmelt szöveg (egyeztetéshez)."""
+    import unicodedata
+    return "".join(
+        c for c in unicodedata.normalize("NFD", (s or "").strip().lower())
+        if unicodedata.category(c) != "Mn"
+    )
+
+
+def _translate_value(canonical: str, value: str) -> str:
+    """Canonical-szintű értékfordítás (pl. Salutation → nem). Ismeretlen
+    értékre az eredetit adja vissza."""
+    table = _VALUE_TRANSLATIONS.get(canonical)
+    if not table or not value:
+        return value
+    return table.get(_fold_text(value), value)
+
+
+def _date_year_month(value: str) -> tuple[str, str]:
+    """Dátum-szövegből (YYYY-MM-DD / YYYY.MM.DD / YYYY.MM) (év, hónap) pár.
+    Nem dátum jellegű inputra ("", "")."""
+    if not value:
+        return "", ""
+    m = re.match(r"^\s*(\d{4})[-./](\d{1,2})", str(value))
+    if not m:
+        return "", ""
+    return m.group(1), m.group(2).zfill(2)
+
+
+def _classify_construction(loan) -> str:
+    """Hitel konstrukciótípusának besorolása.
+
+    Forrás: LoanDetails.product_type (SF Product_Type__c), fallbackként a
+    product_name kulcsszavai. Visszatérés: "tamogatott" | "piaci" |
+    "mindketto" | "" (nem állapítható meg).
+    """
+    pt = _fold_text(getattr(loan, "product_type", "") or "")
+    pn = _fold_text(getattr(loan, "product_name", "") or "")
+    text = f"{pt} {pn}".strip()
+    if not text:
+        return ""
+    sub_kw = ("csok", "falusi", "babavaro", "kamattamogat")
+    has_sub = any(k in text for k in sub_kw)
+    has_mkt = "piaci" in text
+    if has_sub and has_mkt:
+        return "mindketto"
+    if has_sub:
+        return "tamogatott"
+    if has_mkt:
+        return "piaci"
+    # Terméknév-fallback: sima lakás-/jelzáloghitel → piaci konstrukció
+    if any(k in pn for k in ("lakashitel", "jelzalog", "hitel")):
+        return "piaci"
+    return ""
 
 
 def _apply_fragment(value, fragment):
@@ -317,10 +417,13 @@ class FormFillerPipeline:
 
         # 4. Mezőadatok összeállítása
         logger.info("📋 4. Mezőadatok összeállítása")
+        notices: list = []
         field_data = self._prepare_field_data(
             deal, mapping_config, participant_override=participant_override,
             raw_opportunity=raw_data.get("_opportunity") or raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
+            notices=notices,
         )
+        result["notices"] = notices
         logger.info(f"   {len(field_data)} mező kitöltve")
 
         # 5. PDF kitöltés
@@ -426,7 +529,7 @@ class FormFillerPipeline:
         report = checker.check(deal, required_fields)
         return report
 
-    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None, raw_opportunity: dict | None = None) -> dict:
+    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None, raw_opportunity: dict | None = None, notices: list | None = None) -> dict:
         """
         Kanonikus adatokból mező-értékpárok összeállítása.
         A mapping alapján a PDF mezőnevekre képezi le az értékeket.
@@ -455,6 +558,18 @@ class FormFillerPipeline:
         borrower = borrowers[0] if borrowers else None
         co_borrower = co_borrowers[0] if co_borrowers else None
 
+        # Account kontakt-pool: az ügyfélhez tartozik, de nem ügylet-szereplő
+        # (minden hívási útvonalon fusson — validate, generate, field_values)
+        if notices is not None and getattr(deal, "account_pool_extra", None):
+            extra = deal.account_pool_extra
+            msg = (
+                f"Az Accounton {len(extra)} további kontakt szerepel, aki nem "
+                f"résztvevője az ügyletnek: {', '.join(extra[:5])}"
+                + (" …" if len(extra) > 5 else "")
+            )
+            if msg not in notices:
+                notices.append(msg)
+
         for participant, target in (
             (borrower, "borrower"),
             (co_borrower, "co_borrower"),
@@ -469,6 +584,9 @@ class FormFillerPipeline:
                 p_data.update(self._address_to_dict(participant.mailing_address, "mailing_address"))
             elif participant.address:
                 p_data.update(self._address_to_dict(participant.address, "mailing_address"))
+
+            # Jövedelem nélkül bevont szereplő: jövedelem-mezők ürítése
+            p_data = self._apply_income_exclusion(participant, p_data, notices)
 
             if target == "borrower":
                 borrower_data = p_data
@@ -491,14 +609,17 @@ class FormFillerPipeline:
         # kapják — a borrower_data-t felülírjuk a co_borrower adataival.
         if participant_override is not None and participant_override < len(co_borrowers):
             override_participant = co_borrowers[participant_override]
-            borrower_data = dict(self._participant_to_dict(override_participant))
+            borrower_data = self._apply_income_exclusion(
+                override_participant,
+                dict(self._participant_to_dict(override_participant)),
+                notices,
+            )
             if override_participant.address:
                 borrower_data.update(self._address_to_dict(override_participant.address, "address"))
             if override_participant.mailing_address:
                 borrower_data.update(self._address_to_dict(override_participant.mailing_address, "mailing_address"))
             elif override_participant.address:
                 borrower_data.update(self._address_to_dict(override_participant.address, "mailing_address"))
-            borrower_data = dict(co_borrower_data)
 
         # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
         loan = deal.loan
@@ -522,6 +643,12 @@ class FormFillerPipeline:
         contact_loan_data = {
             "Contact.Loan_amount__c": loan_amount_fmt,
             "Contact.Loan_period__c": str(loan.loan_term_months) if loan.loan_term_months else "",
+            # Futamidő években (pl. p14 "Kölcsön futamideje (év)" digit-boxok)
+            "Contact.Term_in_year_c": (
+                str(loan.loan_term_months // 12)
+                if loan.loan_term_months and loan.loan_term_months % 12 == 0
+                else ""
+            ),
             "Contact.Interest_Period__c": loan.interest_period or "",
             "Contact.Loan_Purpose__c": loan_purpose,
             # H4: Contact.* mezők, amik a hitelből származnak.
@@ -596,6 +723,19 @@ class FormFillerPipeline:
         prop_data.setdefault("Lead.Purchase_price__c", _money_or_blank(loan.purchase_price))
         prop_data.setdefault("Lead.Tervezett_CSOK_Plusz__c", _money_or_blank(loan.csok_amount))
 
+        # Account.* névtér — az ügyfél Account rekordjának nyers mezői.
+        # Csak skalár értékek; None/üres értékek kiszűrve.
+        account_data: dict = {}
+        for k, v in (getattr(deal, "account", None) or {}).items():
+            if v is None or v == "" or isinstance(v, (dict, list)):
+                continue
+            account_data[f"Account.{k}"] = str(v)
+
+        # === Származtatott értékek: nem, konstrukció-gate, fordítások ===
+        self._enrich_derived_values(
+            borrower_data, co_borrower_data, loan_data, deal, notices
+        )
+
         # === Mapping alkalmazása – SF-kulcs alapú routing ===
         for f in mapping.fields:
             if not f.canonical_field:
@@ -615,20 +755,29 @@ class FormFillerPipeline:
                 continue
 
             if canonical.startswith("Contact."):
-                # OTP convention: -társ suffix = társigénylő
+                # OTP convention: -társ suffix = társigénylő (mezőnévben VAGY
+                # a canonical végén — generikus mezőneveknél, pl. "Text Field
+                # 439", csak a canonical-szuffix jelzi a 2. igénylő szekciót)
+                canon_tars = canonical.endswith("-társ")
                 is_co_borrower = (
+                    canon_tars or
                     "-társ" in pdf_name or
                     "társigénylő" in pdf_name.lower() or
                     "tarsigenylő" in pdf_name.lower() or
                     "SZA_IG_" in pdf_name and "-társ" in pdf_name
                 )
+                lookup_key = canonical[:-len("-társ")] if canon_tars else canonical
                 source = co_borrower_data if is_co_borrower else borrower_data
-                if canonical in source and source[canonical]:
-                    field_data[pdf_name] = source[canonical]
+                if lookup_key in source and source[lookup_key]:
+                    field_data[pdf_name] = source[lookup_key]
 
             elif canonical.startswith("Lead."):
                 if canonical in prop_data and prop_data[canonical]:
                     field_data[pdf_name] = prop_data[canonical]
+
+            elif canonical.startswith("Account."):
+                if canonical in account_data and account_data[canonical]:
+                    field_data[pdf_name] = account_data[canonical]
 
             elif canonical.startswith("Opportunity."):
                 if canonical in loan_data and loan_data[canonical]:
@@ -674,15 +823,20 @@ class FormFillerPipeline:
                     'coborrower' in (fi.pdf_field_name if hasattr(fi, 'pdf_field_name') else fi.get('pdf_field_name', '')).lower()
                     for fi, _ in group_items
                 )
-                if all_co and co_borrower_data:
-                    sf_value = co_borrower_data.get(canonical, '')
+                # Canonical-végi "-társ" szuffix (generikus mezőnevek, 2. igénylő szekció)
+                canon_tars = canonical.endswith('-társ')
+                lookup_key = canonical[:-len('-társ')] if canon_tars else canonical
+                if (all_co or canon_tars) and co_borrower_data:
+                    sf_value = co_borrower_data.get(lookup_key, '')
                 else:
-                    sf_value = borrower_data.get(canonical, '')
+                    sf_value = borrower_data.get(lookup_key, '')
                     # Fallback: if borrower doesn't have it, try co_borrower
                     if not sf_value and co_borrower_data:
-                        sf_value = co_borrower_data.get(canonical, '')
+                        sf_value = co_borrower_data.get(lookup_key, '')
             elif canonical.startswith('Lead.'):
                 sf_value = prop_data.get(canonical, '')
+            elif canonical.startswith('Account.'):
+                sf_value = account_data.get(canonical, '')
             elif canonical.startswith('Opportunity.'):
                 sf_value = loan_data.get(canonical, '')
             elif canonical.startswith('loan.'):
@@ -692,10 +846,48 @@ class FormFillerPipeline:
                 continue
 
             sf_value_lower = str(sf_value).strip().lower()
+
+            def _opt_matches(option: str, value: str) -> bool:
+                """Picklist-opció egyezés: pontos (kisbetűs), vagy az opció
+                '/'-előtti szegmense egyezik az értékkel (pl. SF 'házas' ≈
+                opció 'Házas/bejegyzett élettárs'). Ékezet-független."""
+                import unicodedata
+                def _norm(s: str) -> str:
+                    return "".join(
+                        c for c in unicodedata.normalize("NFD", s.strip().lower())
+                        if unicodedata.category(c) != "Mn"
+                    )
+                opt, val = _norm(option), _norm(value)
+                if not opt or not val:
+                    return False
+                if opt == val:
+                    return True
+                if opt.split("/", 1)[0].strip() == val:
+                    return True
+                # Prefix-egyezés mindkét irányba (AI-címke csonkolás /
+                # teljes opciófelirat), min. 3 karakter felett.
+                if len(opt) >= 3 and len(val) >= 3:
+                    return opt.startswith(val) or val.startswith(opt)
+                return False
+
+            # Argmax-illesztés: a csoportból a LEGJOBBAN egyező opciót
+            # pipáljuk (több részleges egyezés esetén a hosszabb közös
+            # prefix nyer — pl. "Államilag kamattámogatott forint..." vs
+            # "Államilag kamattámogatott ÉS Piaci..." nem pipálódhat mindkettő).
+            best_item = None
+            best_score = -1
             for f_item, cbg_item in group_items:
                 pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
-                match_val = cbg_item.get('match_value', '') if isinstance(cbg_item, dict) else ''
-                if match_val.strip().lower() == sf_value_lower:
+                # Legacy 'match_value' és új (AI recognizer) 'option_value' séma is
+                match_val = (cbg_item.get('match_value') or cbg_item.get('option_value', '')) if isinstance(cbg_item, dict) else ''
+                if _opt_matches(match_val, sf_value_lower):
+                    score = min(len(_fold_text(match_val)), len(_fold_text(sf_value_lower)))
+                    if score > best_score:
+                        best_score = score
+                        best_item = (f_item, cbg_item)
+            for f_item, cbg_item in group_items:
+                pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
+                if best_item is not None and f_item is best_item[0]:
                     if "___" in pdf_name:
                         base_name, export_val = pdf_name.split("___", 1)
                         field_data[base_name] = export_val
@@ -714,7 +906,7 @@ class FormFillerPipeline:
         #   {"type": "per_participant", "value": "igen"}
         #   {"type": "conditional", "sf_field": "...", "match": "...", "value": "igen"}
         #   {"type": "role_based", "roles": ["adós", "adóstárs"], "value": "igen"}
-        all_data = {**borrower_data, **loan_data, **prop_data}
+        all_data = {**borrower_data, **loan_data, **prop_data, **account_data}
 
         for f in mapping.fields:
             fill_rule = getattr(f, 'fill_rule', None)
@@ -764,7 +956,13 @@ class FormFillerPipeline:
                 products=getattr(deal, "products", []) or [],
                 loan_purpose=loan.loan_purpose,
                 product_name=loan.product_name,
-                canonical_values={**borrower_data, **co_borrower_data, **loan_data, **prop_data},
+                canonical_values={
+                    **borrower_data, **co_borrower_data, **loan_data, **prop_data,
+                    # "-társ" szuffixes canonicalok (2. igénylő szekció,
+                    # generikus mezőnevek) az adóstárs értékeire mutatnak
+                    **{f"{k}-társ": v for k, v in co_borrower_data.items()
+                       if isinstance(k, str) and k.startswith("Contact.")},
+                },
             )
             for p_def in points:
                 rt = p_def.get("rule_type")
@@ -863,22 +1061,33 @@ class FormFillerPipeline:
                     members = getattr(grp, 'member_fields', []) or []
                 if not members or not canonical:
                     continue
+                # Canonical-végi "-társ" szuffix → adóstárs adatforrás,
+                # a lookuphoz a szuffixet le kell vágni
+                canon_tars = canonical.endswith('-társ')
+                if canon_tars:
+                    canonical = canonical[:-len('-társ')]
                 if canonical.startswith('Contact.'):
                     all_co = all(
                         ('társ' in str(m).lower()) or ('coborrower' in str(m).lower())
                         for m in members
                     )
-                    if all_co and co_borrower_data:
+                    if (all_co or canon_tars) and co_borrower_data:
                         src = co_borrower_data
                     else:
                         src = borrower_data if borrower_data else (co_borrower_data or {})
                 elif canonical.startswith('Lead.'):
                     src = prop_data
+                elif canonical.startswith('Account.'):
+                    src = account_data
                 elif canonical.startswith(('Opportunity.', 'loan.')):
                     src = loan_data
                 else:
                     src = all_data
-                field_data.update(expand_character_groups(src, [grp]))
+                if isinstance(grp, dict):
+                    grp_eff = {**grp, 'canonical_field': canonical}
+                else:
+                    grp_eff = grp  # objektum: a canonical már eleve tiszta
+                field_data.update(expand_character_groups(src, [grp_eff]))
 
         return field_data
 
@@ -951,6 +1160,117 @@ class FormFillerPipeline:
 
         return None
 
+    def _apply_income_exclusion(self, participant, p_data: dict, notices: list | None) -> dict:
+        """Jövedelem nélkül bevont szereplő (income_bearing=False) jövedelem-
+        jellegű mezőit üríti, hogy azok ne kerüljenek a nyomtatványra.
+        None (jelöletlen szerep) esetén nem nyúl az adatokhoz — ilyenkor
+        nem veszítünk adatot, minden kitöltődik."""
+        if getattr(participant, "income_bearing", None) is not False:
+            return p_data
+        stripped = sorted(k for k in _INCOME_CANONICAL_KEYS if p_data.get(k))
+        for k in stripped:
+            p_data[k] = ""
+        if stripped:
+            role_val = getattr(getattr(participant, "role", None), "value", "") or "résztvevő"
+            msg = (
+                f"{getattr(participant, 'name', '?')} ({role_val}) a Salesforce-ban "
+                f"'jövedelem nélkül bevont' szerepben szerepel — "
+                f"{len(stripped)} jövedelem-jellegű mező üresen marad a nyomtatványon."
+            )
+            logger.warning("   ⚠️ %s [%s]", msg, ", ".join(stripped))
+            if notices is not None:
+                notices.append(msg)
+        return p_data
+
+    def _enrich_derived_values(
+        self,
+        borrower_data: dict,
+        co_borrower_data: dict,
+        loan_data: dict,
+        deal,
+        notices: list | None = None,
+    ) -> None:
+        """Származtatott/fordított kanonikus értékek előállítása.
+
+        1) Contact.Salutation: SF megszólítás → nyomtatvány nem-opció
+           ("Férfi"/"Nő"). Ha a Salutation üres, magyar keresztnév-tábla
+           alapján becslünk — ezt mindig notice-szal jelezzük, mert nem
+           CRM-adat.
+        2) Konstrukció-gate: a ``#piaci`` / ``#tamogatott`` szuffixes
+           canonical kulcsok csak a hitel típusának megfelelő szekcióhoz
+           kapnak értéket (3.1 államilag kamattámogatott / 3.2 piaci).
+           A ``loan.product_type`` értéket a konstrukció-opció feliratára
+           cseréljük, hogy a "Választott konstrukció típusa" checkbox
+           bepipálható legyen.
+        """
+        # 1) Nem (Salutation fordítás + név-alapú fallback)
+        for data in (borrower_data, co_borrower_data):
+            if not data:
+                continue
+            raw_sal = (data.get("Contact.Salutation") or "").strip()
+            translated = _translate_value("Contact.Salutation", raw_sal) if raw_sal else ""
+            if translated in ("Férfi", "Nő"):
+                data["Contact.Salutation"] = translated
+            else:
+                # Üres VAGY nem-gender Salutation (pl. "Dr.") → név-fallback
+                guess = guess_gender(data.get("Contact.Name") or "")
+                if guess:
+                    data["Contact.Salutation"] = guess
+                    sal_note = (
+                        f"a Salesforce Salutation mező üres"
+                        if not raw_sal
+                        else f"a Salesforce Salutation értéke ({raw_sal}) nem hordoz nemet"
+                    )
+                    msg = (
+                        f"{data.get('Contact.Name') or 'A szereplő'} neme név "
+                        f"alapján becsülve ({guess}) — {sal_note}, "
+                        f"ellenőrizd a nyomtatványon."
+                    )
+                    logger.warning(msg)
+                    if notices is not None and msg not in notices:
+                        notices.append(msg)
+
+        # 2) Konstrukció-gate
+        loan = deal.loan
+        construction = _classify_construction(loan)
+        if not construction:
+            msg = (
+                "A hitel konstrukciótípusa nem állapítható meg "
+                "(Product_Type__c és terméknév alapján sem) — a 3.1/3.2 "
+                "konstrukciós szekciók és a konstrukciótípus-checkbox "
+                "üresen marad."
+            )
+            logger.warning(msg)
+            if notices is not None and msg not in notices:
+                notices.append(msg)
+            return
+
+        loan_data["loan.product_type"] = _CONSTRUCTION_OPTION_LABELS[construction]
+        gates = []
+        if construction in ("tamogatott", "mindketto"):
+            gates.append("tamogatott")
+        if construction in ("piaci", "mindketto"):
+            gates.append("piaci")
+
+        amount = loan_data.get("Opportunity.Hitel_sszeg__c", "")
+        purpose = loan_data.get("Opportunity.Hitelc_l__c", "")
+        insurance = loan_data.get("Opportunity.Insurance__c", "")
+        term_years = borrower_data.get("Contact.Term_in_year_c", "")
+        for gate in gates:
+            if amount:
+                loan_data[f"Opportunity.Hitel_sszeg__c#{gate}"] = amount
+            if insurance:
+                loan_data[f"Opportunity.Insurance__c#{gate}"] = insurance
+            if purpose:
+                loan_data[f"Opportunity.Hitelc_l__c#{gate}"] = purpose
+                for data in (borrower_data, co_borrower_data):
+                    if data:
+                        data[f"Contact.Loan_Purpose__c#{gate}"] = purpose
+            if term_years:
+                for data in (borrower_data, co_borrower_data):
+                    if data:
+                        data[f"Contact.Term_in_year_c#{gate}"] = term_years
+
     def _participant_to_dict(self, p) -> dict:
         """Participant → kanonikus dict. Csak SF-ből származó adatok kerülnek ide."""
         d = {
@@ -962,7 +1282,10 @@ class FormFillerPipeline:
             "Contact.Birthdate_year": p.birth_date.strftime("%Y") if p.birth_date else "",
             "Contact.Birthdate_month": p.birth_date.strftime("%m") if p.birth_date else "",
             "Contact.Birthdate_day": p.birth_date.strftime("%d") if p.birth_date else "",
-            "Contact.ID_Card_Number__c": p.personal_id or "",
+            # Okmány száma (pl. AD123456) — a "Személyazonosító dokumentum
+            # száma" rovatok ezt várják; a személyi szám (234567IJ) külön kulcs.
+            "Contact.ID_Card_Number__c": getattr(p, "id_card_number", "") or "",
+            "Contact.Personal_ID__c": p.personal_id or "",
             "Contact.Tax_ID__c": p.tax_id or "",
             "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
             "Contact.Phone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
@@ -1029,6 +1352,14 @@ class FormFillerPipeline:
             "Contact.What_type_of_loan__c": getattr(p, "what_type_of_loan", "") or "",
         }
         d.update(extra_mappings)
+
+        # "Mióta lakik" év/hónap fragmentek — a nyomtatvány digit-box
+        # csoportjai a ``#ev`` / ``#ho`` szuffixes kulcsokra hivatkoznak.
+        res_yyyy, res_mm = _date_year_month(
+            d.get("Contact.Date_of_notification_for_residence__c", "")
+        )
+        d["Contact.Date_of_notification_for_residence__c#ev"] = res_yyyy
+        d["Contact.Date_of_notification_for_residence__c#ho"] = res_mm
         return d
 
 

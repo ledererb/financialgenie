@@ -111,6 +111,37 @@ def _read_mupdf_widget_values(pdf_path: Path) -> dict[str, str]:
     return values
 
 
+def _read_field_types(pdf_path: Path) -> dict[str, str]:
+    """Visszaolvassa a mezőtípusokat (/FT) pikepdf-ből: name → "/Btn"|"/Tx"|"/Ch".
+
+    A validátor csak /Btn (checkbox/radio) mezőknél alkalmazhatja a
+    pipa-szemantikát — egy szövegmező "0" értéke NEM jelent "nem pipálva"
+    elvárást. A /FT örökölhető: ha a mezőn nincs, a szülőé az irányadó.
+    """
+    import pikepdf
+
+    types: dict[str, str] = {}
+    try:
+        pdf = pikepdf.open(str(pdf_path))
+        acroform = pdf.Root.get("/AcroForm", {})
+
+        def _walk(fields, inherited_ft=""):
+            for fld in fields:
+                ft = str(fld.get("/FT", inherited_ft))
+                name = str(fld.get("/T", ""))
+                if name and ft:
+                    types[name] = ft
+                kids = fld.get("/Kids", [])
+                if kids:
+                    _walk(kids, ft)
+
+        _walk(acroform.get("/Fields", []))
+        pdf.close()
+    except Exception as e:
+        logger.warning("pikepdf type read failed: %s", e)
+    return types
+
+
 def _mechanical_validation(
     report: ValidationReport,
     pdf_path: Path,
@@ -122,6 +153,7 @@ def _mechanical_validation(
 
     pikepdf_values = _read_pikepdf_values(pdf_path)
     mupdf_values = _read_mupdf_widget_values(pdf_path)
+    field_types = _read_field_types(pdf_path)
 
     filled_set = set(filled_fields)
     skipped_set = set(skipped_fields)
@@ -142,10 +174,18 @@ def _mechanical_validation(
 
         # Checkbox/radio mezőknél az elvárt érték "igen" = be van pipálva.
         # Az "no", "1,2", "5,6" stb. export értékek is checkbox exportként
-        # kezelendők (a base name-hez tartoznak).
-        is_checkbox_expected = expected_str.lower() in ("igen", "yes", "true", "1")
+        # kezelendők (a base name-hez tartoznak). A pipa-szemantika CSAK /Btn
+        # típusú mezőkre vonatkozik — szövegmező "0"/"nem" értéke string
+        # összehasonlításra kerül (különben "Elvárt: nem pipálva" fals hiba).
+        base_name_chk = pdf_name.split("___")[0] if "___" in pdf_name else pdf_name
+        is_btn = (
+            field_types.get(pdf_name) == "/Btn"
+            or field_types.get(base_name_chk) == "/Btn"
+        )
+        is_checkbox_expected = is_btn and expected_str.lower() in ("igen", "yes", "true", "1")
         is_checkbox_export = (
-            not is_checkbox_expected
+            is_btn
+            and not is_checkbox_expected
             and expected_str.lower() not in ("nem", "false", "0")
             and "/" not in expected_str
             and expected_str not in ("", "/")
@@ -223,7 +263,7 @@ def _mechanical_validation(
                         detail=f"Elvárt: {expected_str}, tényleges: {actual_pk or base_pk}",
                     ))
                     report.mismatch_fields += 1
-            elif expected_str.lower() in ("nem", "no", "false", "0"):
+            elif is_btn and expected_str.lower() in ("nem", "no", "false", "0"):
                 # Checkbox "nem" elvárás: jó ha a MEZŐ nincs bepipálva (Off).
                 # A suffix mezőnek (___suffix) kell Off-nak lennie, nem a base
                 # name-nek — a base name lehet hogy értékkel van (ha egy másik

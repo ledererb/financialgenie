@@ -1138,6 +1138,7 @@ def generate_package(body: dict):
 
         results = []
         errors = []
+        notices = []  # jövedelem-kizárás stb. felhasználói tájékoztatások
         output_files = []  # (filename_in_zip, absolute_path)
 
         for doc in docs:
@@ -1188,6 +1189,10 @@ def generate_package(body: dict):
                         zip_name = f"{safe_title} ({suffix}).pdf"
                     else:
                         zip_name = f"{safe_title}.pdf"
+
+                    for n in result.get("notices", []):
+                        if n not in notices:
+                            notices.append(n)
 
                     output_files.append((zip_name, result["output_path"]))
                     results.append({
@@ -1249,6 +1254,7 @@ def generate_package(body: dict):
             "documents": results,
             "total_documents": len([r for r in results if r["success"]]),
             "errors": errors,
+            "notices": notices,
             "sf_uploads": sf_uploads,
         }
 
@@ -1367,9 +1373,11 @@ def validate_pdf(body: dict):
 
         # Rebuild field_data (same as run_for_deal does internally)
         mapping = pipeline._resolve_mapping(pdf_path, force_recreate=False)
+        notices: list = []
         field_data = pipeline._prepare_field_data(
             pipeline.normalizer.normalize_deal(sf_client.get_deal(deal_id)),
             mapping,
+            notices=notices,
         )
 
         validation = validate_filled_pdf(
@@ -1384,6 +1392,7 @@ def validate_pdf(body: dict):
         return {
             "success": True,
             "output_path": result["output_path"],
+            "notices": notices,
             "validation": {
                 "total_fields": validation.total_fields,
                 "ok_fields": validation.ok_fields,
@@ -1483,9 +1492,10 @@ def field_values(pdf_id: str = Query(...)):
         deal = pipeline.normalizer.normalize_deal(raw_data)
 
         # Resolve field values via the pipeline's _prepare_field_data
-        field_data = pipeline._prepare_field_data(deal, mapping_config)
+        notices: list = []
+        field_data = pipeline._prepare_field_data(deal, mapping_config, notices=notices)
 
-        return {"values": field_data, "deal_id": deal_id}
+        return {"values": field_data, "deal_id": deal_id, "notices": notices}
     except Exception as e:
         log.exception("field_values failed")
         raise HTTPException(500, f"Field values error: {str(e)}")

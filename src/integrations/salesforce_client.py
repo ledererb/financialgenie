@@ -37,6 +37,30 @@ class MockSalesforceState:
     attachments: list = field(default_factory=list)     # SalesforceAttachment lista
 
 
+# Account-pool enrichment: ezeket az SF Contact mezőket pótoljuk, ha a
+# szereplő rekordjában üresek, de egy azonos nevű (duplikált) rekordban
+# ki vannak töltve.
+_POOL_ENRICH_FIELDS = (
+    "Salutation", "Marital_Status__c", "Citizenship__c",
+    "Highest_Educational_Qualification__c", "Income_type__c",
+    "Foglalkozas_tipusa__c", "Employment_Type_c__c",
+    "Legal_Title_of_permanent_residence__c",
+    "Date_of_notification_for_residence__c",
+    "Name_of_employer__c", "Occupation__c",
+    "Phone", "MobilePhone", "Email",
+    "Mother_s_Name__c", "Szuletesi_nev__c", "Place_of_Birth__c",
+)
+
+
+def _fold_name(s: str) -> str:
+    """Ékezet-mentes, kisbetűs név (duplikát-egyeztetéshez)."""
+    import unicodedata
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", (s or "").strip().lower())
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
 class SalesforceClient:
     """
     Salesforce integráció – olvasás és visszaírás.
@@ -213,6 +237,145 @@ class SalesforceClient:
                 prev = cur
         return total
 
+    def _resolve_participant_roles(self, opp: dict, deal_id: str) -> tuple[dict, dict]:
+        """Résztvevő-szerepek feloldása OCR-first, custom lookup fallbackkel.
+
+        A valós ügyleteknél a szerep-hozzárendelést a standard
+        OpportunityContactRole (OCR) objektum tartja (pl. "Adós-jovedelemmel",
+        "Adóstárs1-jövedelem nélkül bevont", "Adóstárs 2"), míg a custom
+        lookup mezők (First_Co_debtor__c stb.) üresek. Ezért az OCR az
+        elsődleges forrás; a lookupok a zálogkötelezett/haszonélvező szerepekre
+        és OCR=0 esetén (fallback) maradnak.
+
+        Returns:
+            (roles_map, income_flags) — roles_map: {szerep_címke: contact_id}
+            adós → adóstárs_1..N → kezes → haszonélvező sorrendben;
+            income_flags: {szerep_címke: True/False/None} ("jovedelemmel" /
+            "jövedelem nélkül" jelölés alapján, None = nem jelölt).
+        """
+        import re
+
+        lookup_map = {
+            "adós": opp.get("Opportunity_Contact_Name__c"),
+            "adóstárs_1": opp.get("First_Co_debtor__c"),
+            "adóstárs_2": opp.get("Second_Co_debtor__c"),
+            "adóstárs_3": opp.get("Third_Co_debtor__c"),
+            "kezes": opp.get("Mortgagor__c"),
+            "haszonélvező": opp.get("Usufructuary__c"),
+        }
+        income_flags: dict = {}
+
+        try:
+            ocr_res = self._sf.query(
+                "SELECT ContactId, Role FROM OpportunityContactRole "
+                f"WHERE OpportunityId = '{deal_id}'"
+            )
+            ocr_records = ocr_res.get("records", [])
+        except Exception as e:
+            logger.warning(f"OCR lekérés sikertelen ({deal_id}): {e}")
+            ocr_records = []
+
+        if not ocr_records:
+            logger.info(f"OCR üres ({deal_id}) — custom lookup fallback")
+            return lookup_map, income_flags
+
+        ocr_map: dict = {}
+        for rec in ocr_records:
+            role_str = (rec.get("Role") or "").strip()
+            cid = rec.get("ContactId")
+            if not cid:
+                continue
+            low = role_str.lower()
+            if low.startswith("adóstárs"):
+                mnum = re.search(r"adóstárs\s*(\d+)", low)
+                idx = int(mnum.group(1)) if mnum else 1
+                label = f"adóstárs_{idx}"
+            elif low.startswith("adós"):
+                label = "adós"
+            else:
+                logger.info(f"Ismeretlen OCR szerep ({deal_id}): {role_str!r} — kihagyva")
+                continue
+            if label in ocr_map and ocr_map[label] != cid:
+                logger.warning(
+                    f"⚠️ OCR szerep-ütközés ({deal_id}): {label} kétszer szerepel "
+                    f"({ocr_map[label]} vs {cid}) — az első marad"
+                )
+                continue
+            ocr_map[label] = cid
+            if "jövedelem nélkül" in low:
+                income_flags[label] = False
+            elif "jovedelemmel" in low or "jövedelemmel" in low:
+                income_flags[label] = True
+            else:
+                income_flags[label] = None
+
+        if "adós" not in ocr_map:
+            logger.warning(f"OCR-ben nincs adós ({deal_id}) — custom lookup fallback")
+            return lookup_map, income_flags
+
+        # Sorrend: adós, adóstárs_1..N, kezes, haszonélvező
+        roles_map: dict = {"adós": ocr_map["adós"]}
+        for i in sorted(
+            int(k.rsplit("_", 1)[1]) for k in ocr_map if k.startswith("adóstárs_")
+        ):
+            roles_map[f"adóstárs_{i}"] = ocr_map[f"adóstárs_{i}"]
+        roles_map["kezes"] = opp.get("Mortgagor__c")
+        roles_map["haszonélvező"] = opp.get("Usufructuary__c")
+
+        # Adathiba-jelzés: ugyanaz a Contact több szerepben (pl. Négyesi)
+        participant_ids = [
+            v for k, v in roles_map.items()
+            if v and k not in ("kezes", "haszonélvező")
+        ]
+        dupes = sorted({i for i in participant_ids if participant_ids.count(i) > 1})
+        if dupes:
+            logger.warning(
+                f"⚠️ Ugyanaz a Contact több szerepben is szerepel ({deal_id}): "
+                f"{dupes} — valószínű SF adathiba, ellenőrizendő!"
+            )
+
+        logger.info(
+            f"Résztvevők OCR-ből ({deal_id}): "
+            + ", ".join(f"{k}={v}" for k, v in roles_map.items() if v)
+        )
+        return roles_map, income_flags
+
+    def _enrich_contacts_from_pool(self, contacts: dict, pool_records: list) -> None:
+        """Duplikált Contact-rekordokból pótolja a szereplők üres mezőit.
+
+        Egyezés: ékezet-független NÉV egyezés, de eltérő Contact Id (a saját
+        rekord önmagának nem donor). Donor: a legtöbb enrichment-jelölt mezővel
+        rendelkező jelölt. Csak ÜRES mezőt töltünk — meglévő értéket sosem
+        írunk felül (read-only szemlélet a meglévő adattal szemben).
+        """
+        by_name: dict[str, list] = {}
+        for rec in pool_records:
+            nm = _fold_name(rec.get("Name") or "")
+            if nm:
+                by_name.setdefault(nm, []).append(rec)
+
+        for cid, contact in contacts.items():
+            nm = _fold_name(contact.get("Name") or "")
+            candidates = [r for r in by_name.get(nm, []) if r.get("Id") != cid]
+            if not candidates:
+                continue
+            donor = max(
+                candidates,
+                key=lambda r: sum(1 for f in _POOL_ENRICH_FIELDS if r.get(f)),
+            )
+            enriched = [
+                f for f in _POOL_ENRICH_FIELDS
+                if not contact.get(f) and donor.get(f)
+            ]
+            for f in enriched:
+                contact[f] = donor[f]
+            if enriched:
+                logger.info(
+                    "Account pool enrichment: %s ← %d mező (%s rekordból): %s",
+                    contact.get("Name"), len(enriched), donor.get("Id"),
+                    ", ".join(enriched),
+                )
+
     def get_deal(self, deal_id: str) -> Optional[dict]:
         """
         Ügylet lekérése azonosító alapján.
@@ -237,18 +400,14 @@ class SalesforceClient:
                 opp = self._sf.Opportunity.get(deal_id)
                 logger.info(f"Opportunity lekérve (SF): {deal_id}")
                 
-                # 2. Szereplők ID-inak kigyűjtése lookup-okból
-                roles_map = {
-                    "adós": opp.get("Opportunity_Contact_Name__c"),
-                    "adóstárs_1": opp.get("First_Co_debtor__c"),
-                    "adóstárs_2": opp.get("Second_Co_debtor__c"),
-                    "adóstárs_3": opp.get("Third_Co_debtor__c"),
-                    "kezes": opp.get("Mortgagor__c"),
-                    "haszonélvező": opp.get("Usufructuary__c")
-                }
-                
-                contact_ids = [cid for cid in roles_map.values() if cid]
+                # 2. Szereplők feloldása — ELSŐDLEGES: OpportunityContactRole
+                #    (a valós ügyletek itt tartják a szerepeket), FALLBACK:
+                #    custom lookup mezők (test dealek, zálogkötelezett).
+                roles_map, income_flags = self._resolve_participant_roles(opp, deal_id)
+
+                contact_ids = list(dict.fromkeys(cid for cid in roles_map.values() if cid))
                 contacts = {}
+                contact_fields = None  # a Contact SOQL mezőlista — az Account pool is ezt használja
                 
                 # 3. Contact adatok lekérdezése
                 # NOTE (FIX M12): the SOQL below is built with f-string
@@ -299,6 +458,43 @@ class SalesforceClient:
                     contact_results = self._sf.query(query_str)
                     for c_rec in contact_results.get("records", []):
                         contacts[c_rec["Id"]] = c_rec
+
+                # 3b. Account kontakt-pool (a "Javasolt új modell" felső szintje):
+                # az Opportunity.AccountId-hoz tartozó ÖSSZES Contact lekérdezése.
+                # Két cél: duplikált Contact-rekordokból enrichment (üres mezők
+                # pótlása), és az ügyletben NEM szereplő account-kontaktok jelzése.
+                account_id = opp.get("AccountId")
+                pool_records: list = []
+                pool_extra_names: list = []
+                if account_id and contact_fields:
+                    try:
+                        pool_query = (
+                            f"SELECT {contact_fields} FROM Contact "
+                            f"WHERE AccountId = '{account_id}'"
+                        )
+                        pool_records = self._sf.query(pool_query).get("records", [])
+                        logger.info(
+                            "Account kontakt-pool: %d Contact (%s)",
+                            len(pool_records), account_id,
+                        )
+                    except Exception as exc:
+                        logger.warning("Account pool lekérés sikertelen: %s", exc)
+                if pool_records:
+                    self._enrich_contacts_from_pool(contacts, pool_records)
+                    pool_extra_names = [
+                        r.get("Name") or r.get("Id")
+                        for r in pool_records
+                        if r.get("Id") not in contact_ids
+                    ]
+
+                # 3c. Account rekord — az ügyfél alapinformációs egysége.
+                # A mapping ``Account.*`` canonical mezői innen töltődnek.
+                account_record: dict = {}
+                if account_id:
+                    try:
+                        account_record = self._sf.Account.get(account_id) or {}
+                    except Exception as exc:
+                        logger.warning("Account rekord lekérése sikertelen (%s): %s", account_id, exc)
 
                 # 4. Résztvevők listájának felépítése
                 participants_records = []
@@ -406,6 +602,7 @@ class SalesforceClient:
                         "contact_loan_amount": c.get("Loan_amount__c"),
                         "contact_loan_period": c.get("Loan_period__c"),
                     }
+                    participant_record["income_bearing"] = income_flags.get(role_label)
                     participants_records.append(participant_record)
 
                 # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
@@ -508,6 +705,12 @@ class SalesforceClient:
                     },
                     "Properties__r": {
                         "records": properties_records
+                    },
+                    "AccountId": account_id,
+                    "_account_pool_extra": pool_extra_names,
+                    "_account": {
+                        k: v for k, v in account_record.items()
+                        if not k.startswith("attributes") and v is not None
                     },
                     "_opportunity": opp,
                 }

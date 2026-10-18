@@ -312,6 +312,30 @@ export default function GenerateView({
                 </div>
               </div>
 
+              {/* Jövedelem-kizárás és egyéb tájékoztatások */}
+              {result.notices && result.notices.length > 0 && (
+                <div
+                  style={{
+                    marginBottom: "var(--space-md)",
+                    padding: "12px 16px",
+                    background: "var(--accent-amber-glow)",
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--accent-amber)",
+                  }}
+                >
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--accent-amber)", marginBottom: "6px" }}>
+                    Figyelmeztetes a kitoltesrol
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {result.notices.map((n, i) => (
+                      <div key={i} style={{ fontSize: "0.8rem", color: "var(--text-primary)" }}>
+                        {n}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* SF upload results */}
               {result.sf_uploads && result.sf_uploads.length > 0 && (
                 <div

@@ -73,6 +73,7 @@ class Participant(BaseModel):
     email: Optional[str] = Field(None, description="E-mail cím")
     employer: Optional[str] = Field(None, description="Munkáltató neve")
     monthly_income: Optional[int] = Field(None, description="Havi nettó jövedelem (Ft)")
+    income_bearing: Optional[bool] = Field(None, description="Jövedelemmel szerepel-e (OCR 'jovedelemmel' / 'jövedelem nélkül bevont' jelölés; None = nem jelölt)")
     marital_status: Optional[str] = Field(None, description="Családi állapot (Contact.Marital_Status__c)")
     citizenship: Optional[str] = Field(None, description="Állampolgárság (Contact.Citizenship__c)")
     dependents_count: Optional[int] = Field(None, description="Eltartottak száma (Contact.Dependents_count__c)")
@@ -210,6 +211,15 @@ class DealData(BaseModel):
     )
     created_at: Optional[date] = Field(None, description="Ügylet létrehozása")
     notes: Optional[str] = Field(None, description="Megjegyzések")
+    account_id: Optional[str] = Field(None, description="Salesforce Account ID (kontakt-pool forrása)")
+    account_pool_extra: List[str] = Field(
+        default_factory=list,
+        description="Accounton lógó, de nem ügylet-szereplő kontaktok nevei",
+    )
+    account: dict = Field(
+        default_factory=dict,
+        description="Account rekord nyers mezői (Account.* canonical forrása)",
+    )
 
     @property
     def active_participants(self) -> List[Participant]:
