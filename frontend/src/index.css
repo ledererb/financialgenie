@@ -13,9 +13,9 @@
   --border-strong: rgba(255, 255, 255, 0.15);
   
   --text-primary: #f0f0f5;
-  --text-secondary: #9ca3b4;
-  --text-tertiary: #6b7280;
-  --text-muted: #4b5563;
+  --text-secondary: #a6aec0;
+  --text-tertiary: #848d9f;
+  --text-muted: #646d7e;
   
   --accent-blue: #3b82f6;
   --accent-blue-hover: #2563eb;
@@ -28,6 +28,16 @@
   --accent-red-glow: rgba(239, 68, 68, 0.15);
   --accent-purple: #a855f7;
   --accent-purple-glow: rgba(168, 85, 247, 0.15);
+
+  /* Aliases for legacy components */
+  --accent: var(--accent-blue);
+  --accent-pressed: var(--accent-blue-hover);
+  --success: var(--accent-green);
+  --danger: var(--accent-red);
+  --danger-bg: var(--accent-red-glow);
+  --warning: var(--accent-amber);
+  --warning-bg: var(--accent-amber-glow);
+  --space-xxl: var(--space-2xl);
 
   /* Spacing */
   --space-xs: 4px;
@@ -224,6 +234,13 @@ body {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
+.btn-accent {
+  background: var(--accent-purple);
+  color: white;
+}
+.btn-accent:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
 .btn-sm {
   padding: 6px 12px;
   font-size: 0.75rem;
@@ -280,6 +297,9 @@ body {
   aspect-ratio: 0.7;
   border-radius: var(--radius-sm);
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
   align-items: center;
   justify-content: center;
   font-size: 0.65rem;
@@ -384,6 +404,8 @@ body {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   transition: background var(--transition-fast);
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 64px;
 }
 .mapping-row:hover {
   background: var(--bg-hover);

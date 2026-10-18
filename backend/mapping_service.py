@@ -124,6 +124,7 @@ class MappingService:
         return {
             "saved_at": datetime.now().isoformat(timespec="seconds"),
             "mtime": mtime,
+            "_mtime": mtime,
             "path": str(path.relative_to(MAPPING_DIR.parent.parent)),
         }
 
@@ -133,9 +134,8 @@ class MappingService:
     def update_field(self, mapping: dict, name: str, update: dict) -> dict:
         for f in mapping.get("fields", []):
             if f.get("pdf_field_name") == name:
-                for k in ("canonical_field", "field_type", "confidence", "notes", "coordinates", "fill_rule", "label", "checkbox_group"):
-                    if k in update:
-                        f[k] = update[k]
+                for k, v in update.items():
+                    f[k] = v
                 return f
         raise KeyError(f"field not found: {name}")
 

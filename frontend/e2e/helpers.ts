@@ -17,19 +17,13 @@ export const TEST_PDF_ID = "samples/Szemelyi_adatlap_Igenylo_4old.pdf";
  */
 export async function navigateToFirstDocument(page: import("@playwright/test").Page): Promise<void> {
   await page.goto("/");
-  await page.waitForSelector("text=Mapping Stúdió", { timeout: 10_000 });
+  await page.waitForSelector("text=Dokumentumtár", { timeout: 10_000 });
 
-  // Products are visible (bank expanded by default). Click the product
-  // that has documents — find it by the "dok." badge.
-  const productBadge = page.locator("text=/\\d+\\s*dok\\./").first();
-  await productBadge.waitFor({ state: "visible", timeout: 15_000 });
-  await productBadge.click();
+  // Wait for document rows in LibraryView and click sza_ig_igenylő
+  const docRow = page.locator("[role='button']", { hasText: /sza_ig_igenyl/i }).first();
+  await docRow.waitFor({ state: "visible", timeout: 15_000 });
+  await docRow.click();
 
-  // Documents (.tree-leaf) appear after the product is clicked
-  await page.waitForSelector(".tree-leaf", { timeout: 5000 });
-  await page.locator(".tree-leaf").first().click();
-
-  // The document click opens the wizard at the review step (or analysis
-  // auto-skip). Wait for the review dashboard heatmap.
+  // Wait for the review dashboard heatmap
   await page.waitForSelector(".heatmap-grid", { timeout: 30_000 });
 }

@@ -50,7 +50,12 @@ async function http<T>(
     let detail = `${res.status} ${res.statusText}`;
     try {
       const body = await res.json();
-      detail = body.detail ?? detail;
+      const raw = body.detail ?? body.error;
+      if (typeof raw === "string") {
+        detail = raw;
+      } else if (raw && typeof raw === "object") {
+        detail = raw.error || raw.message || JSON.stringify(raw);
+      }
     } catch {
       /* ignore */
     }

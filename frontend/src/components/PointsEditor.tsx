@@ -330,9 +330,9 @@ function RuleParamsForm({
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {roles.map((role) => (
+          {roles.map((role, roleIdx) => (
             <div
-              key={role}
+              key={roleIdx}
               style={{
                 display: "grid",
                 gridTemplateColumns: "140px 1fr auto",
@@ -344,10 +344,10 @@ function RuleParamsForm({
                 style={inputStyle}
                 value={role}
                 onChange={(e) => {
-                  const next = { ...roleToTicks };
-                  const members = next[role];
-                  delete next[role];
-                  next[e.target.value] = members;
+                  const next: Record<string, string[]> = {};
+                  for (const [k, v] of Object.entries(roleToTicks)) {
+                    next[k === role ? e.target.value : k] = v;
+                  }
                   onChange({ ...point.params, role_to_ticks: next });
                 }}
               />
@@ -440,7 +440,7 @@ function RuleParamsForm({
           onChange={(e) => onChange({ ...point.params, condition_value: e.target.value })}
         />
         <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 4 }}>
-          Pipa csak akkor, ha az ügylet {rt === 5 ? "termékneve" : "hitelcelcel"} egyezik ezzel az értékkel.
+          Pipa csak akkor, ha az ügylet {rt === 5 ? "termékneve" : "hitelcélja"} egyezik ezzel az értékkel.
         </div>
       </div>
     );
@@ -457,11 +457,11 @@ function RuleParamsForm({
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {point.blocks.map((b) => {
+          {point.blocks.map((b, bIdx) => {
             const cur = blockRules[b.block_id]?.value ?? "igen";
             return (
               <div
-                key={b.block_id}
+                key={bIdx}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 120px",
@@ -704,7 +704,7 @@ function PointCard({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {point.blocks.map((b, idx) => (
                 <div
-                  key={`${b.block_id}-${idx}`}
+                  key={idx}
                   style={{
                     border: "1px solid var(--border-subtle)",
                     borderRadius: "var(--radius-sm)",
@@ -762,7 +762,7 @@ function PointCard({
                 cursor: "pointer",
               }}
             >
-              Pont torlese
+              Pont törlése
             </button>
           </div>
         </div>
@@ -780,8 +780,9 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  // debounce auto-save timer
+  // debounce auto-save timer + pending payload ref so unmount/back flushes
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMappingRef = useRef<MappingConfig | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -817,6 +818,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
 
   const persist = useCallback(
     async (nextMapping: MappingConfig) => {
+      pendingMappingRef.current = null;
       setSaving(true);
       try {
         const res = await saveMapping(pdfId, nextMapping, nextMapping._mtime);
@@ -837,6 +839,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
     (nextMapping: MappingConfig) => {
       setMapping(nextMapping);
       setDirty(true);
+      pendingMappingRef.current = nextMapping;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         persist(nextMapping);
@@ -848,8 +851,21 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (pendingMappingRef.current) {
+        const pending = pendingMappingRef.current;
+        pendingMappingRef.current = null;
+        void saveMapping(pdfId, pending, pending._mtime);
+      }
     };
-  }, []);
+  }, [pdfId]);
+
+  const handleBack = useCallback(async () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (pendingMappingRef.current) {
+      await persist(pendingMappingRef.current);
+    }
+    onBack();
+  }, [persist, onBack]);
 
   const mutatePoints = useCallback(
     (next: PointData[]) => {
@@ -969,7 +985,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: "var(--space-md)" }}>
         <span className="badge badge-red">Hiba</span>
         <p style={{ color: "var(--text-secondary)" }}>{error}</p>
-        <button className="btn btn-ghost" onClick={onBack}>← Vissza</button>
+        <button className="btn btn-ghost" onClick={handleBack}>← Vissza</button>
       </div>
     );
   }
@@ -991,7 +1007,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <button className="btn btn-ghost btn-sm" onClick={onBack}>
+        <button className="btn btn-ghost btn-sm" onClick={handleBack}>
           ← Vissza
         </button>
         <h2 style={{ fontSize: "1.1rem", fontWeight: 600 }}>
@@ -1015,7 +1031,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
             onClick={handleAutoGenerateFromGroups}
             title="Checkbox-csoportokból automatikusan pontokat generál (rule_type 3)"
           >
-            Auto csoportokbol
+            Auto csoportokból
           </button>
           <button className="btn btn-primary btn-sm" onClick={handleAddPoint}>
             + Új pont
@@ -1057,7 +1073,7 @@ export default function PointsEditor({ pdfId, onBack }: PointsEditorProps) {
 
         {points.map((p, idx) => (
           <PointCard
-            key={`${p.point_id}-${idx}`}
+            key={idx}
             point={p}
             fieldNames={fieldNames}
             index={idx}

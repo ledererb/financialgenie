@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { uploadPdf } from "@/api/client";
+import { uploadPdf, getPdfInfo } from "@/api/client";
 import { useStore } from "@/store";
 import SplitProgressIndicator from "./SplitProgressIndicator";
 
@@ -44,7 +44,7 @@ function isMasterPdfCandidate(f: File): boolean {
   );
 }
 
-export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEditor }: UploadStepProps) {
+export default function UploadStep({ onComplete, onOpenExisting: _onOpenExisting, onOpenSectionEditor }: UploadStepProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,14 +113,17 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
     setProgress(0);
     setError(null);
 
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
     try {
-      // Simulated progress for UX
-      const progressTimer = setInterval(() => {
+      progressTimer = setInterval(() => {
         setProgress((p) => Math.min(p + 10, 90));
       }, 200);
 
       const res = await uploadPdf(file);
-      clearInterval(progressTimer);
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
       setProgress(100);
 
       const fileHash = res.hash || "";
@@ -128,29 +131,39 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
 
       if (fileHash) addUploadedHash(fileHash);
 
-      // Register the document in the catalog and associate with the selected product
-      const docId = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const title = file.name.replace(/\.pdf$/i, "");
-
       if (isDuplicate) {
         setError(`Ez a fájl már fel lett töltve: ${file.name}`);
-      } else {
-        await registerDocument({
-          id: docId,
-          title,
-          file_path: res.path || res.pdf_id,
-          product_ids: [selectedProductId],
-          page_count: 0,
-          source: `upload:${file.name}`,
-          sha256: fileHash,
-        });
+        return;
       }
 
+      const docId = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const title = file.name.replace(/\.pdf$/i, "");
+      const filePath = res.path || res.pdf_id;
+
+      let pageCount = 0;
+      try {
+        const info = await getPdfInfo(filePath);
+        pageCount = info.total_pages || 0;
+      } catch {
+        /* ignore */
+      }
+
+      await registerDocument({
+        id: docId,
+        title,
+        file_path: filePath,
+        product_ids: [selectedProductId],
+        page_count: pageCount,
+        source: `upload:${file.name}`,
+        sha256: fileHash,
+      });
+
       await loadCatalog();
-      onComplete(res.pdf_id);
+      onComplete(filePath);
     } catch (e) {
       setError((e as Error).message || "A feltöltés sikertelen. Próbáld újra.");
     } finally {
+      if (progressTimer) clearInterval(progressTimer);
       setUploading(false);
       setProgress(0);
     }
@@ -413,7 +426,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               onClick={handleSplit}
               disabled={splitting}
             >
-              {splitting ? "Indítás…" : "Automatikus darabolas"}
+              {splitting ? "Indítás…" : "Automatikus darabolás"}
             </button>
             <button
               className="btn btn-sm"
@@ -421,7 +434,7 @@ export default function UploadStep({ onComplete, onOpenExisting, onOpenSectionEd
               onClick={() => file && onOpenSectionEditor(file)}
               disabled={splitting}
             >
-              Manualis szerkeszto
+              Manuális szerkesztő
             </button>
             <button
               className="btn btn-ghost btn-sm"

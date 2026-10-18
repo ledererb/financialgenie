@@ -3,6 +3,7 @@ import type { Product, CatalogDocument } from "@/types";
 import { useStore } from "@/store";
 import DocumentList from "./DocumentList";
 import UploadStep from "./UploadStep";
+import SectionEditor from "./SectionEditor";
 
 interface ProductListProps {
   product: Product;
@@ -37,6 +38,7 @@ function ProductListImpl({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [sectionFile, setSectionFile] = useState<File | null>(null);
   const [nameValue, setNameValue] = useState(product.name);
   const renameProduct = useStore((s) => s.renameProduct);
   const selectProduct = useStore((s) => s.selectProduct);
@@ -207,7 +209,7 @@ function ProductListImpl({
           style={{
             background: "none",
             border: "none",
-            color: docCount === 0 ? "var(--text-quaternary)" : "var(--text-tertiary)",
+            color: docCount === 0 ? "var(--text-muted)" : "var(--text-tertiary)",
             cursor: docCount === 0 ? "not-allowed" : "pointer",
             padding: "0 2px",
             fontSize: "0.8rem",
@@ -343,19 +345,48 @@ function ProductListImpl({
               className="btn btn-ghost btn-sm"
               onClick={() => setShowUpload(false)}
             >
-              Vissza
+              ← Vissza
             </button>
             <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              Dokumentum feltoltese: {bankName} / {product.name}
+              Dokumentum feltöltése: {bankName} / {product.name}
             </span>
           </div>
-          <div style={{ flex: 1, overflow: "auto" }}>
+          <div style={{ flex: 1, overflow: "auto", padding: "var(--space-xl) 24px" }}>
             <UploadStep
-              onComplete={() => setShowUpload(false)}
-              onOpenExisting={() => setShowUpload(false)}
-              onOpenSectionEditor={() => {}}
+              onComplete={(pdfId) => {
+                setShowUpload(false);
+                onOpenDocument(pdfId);
+              }}
+              onOpenExisting={(pdfId) => {
+                setShowUpload(false);
+                onOpenDocument(pdfId);
+              }}
+              onOpenSectionEditor={(f) => {
+                setShowUpload(false);
+                setSectionFile(f);
+              }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Manual section editor overlay */}
+      {sectionFile && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--bg-primary)",
+            zIndex: 310,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <SectionEditor
+            bankId={bankId}
+            initialFile={sectionFile}
+            onClose={() => setSectionFile(null)}
+          />
         </div>
       )}
     </div>

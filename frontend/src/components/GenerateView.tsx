@@ -30,11 +30,12 @@ export default function GenerateView({
   const [selectedDealId, setSelectedDealId] = useState<string>("");
   const [selectedBankId, setSelectedBankId] = useState<string>(preselectBankId || "");
   const [selectedProductId, setSelectedProductId] = useState<string>(preselectProductId || "");
-  const [uploadToSf, setUploadToSf] = useState(true);
+  const [uploadToSf, setUploadToSf] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<PackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const [validatedDocPath, setValidatedDocPath] = useState<string>("");
 
   useEffect(() => {
     listDeals()
@@ -61,7 +62,7 @@ export default function GenerateView({
       const res = await generatePackage(selectedBankId, selectedProductId, selectedDealId, uploadToSf);
       setResult(res);
     } catch (e) {
-      setError((e as Error).message || "Csomag generalas sikertelen.");
+      setError((e as Error).message || "Csomag generálás sikertelen.");
     } finally {
       setGenerating(false);
     }
@@ -93,7 +94,7 @@ export default function GenerateView({
         }}
       >
         <h2 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>
-          Dokumentumcsomag generalasa
+          Dokumentumcsomag generálása
         </h2>
       </div>
 
@@ -119,7 +120,7 @@ export default function GenerateView({
                 fontSize: "0.85rem", cursor: "pointer",
               }}
             >
-              <option value="">-- Valassz bankot --</option>
+              <option value="">-- Válassz bankot --</option>
               {banks.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -128,7 +129,7 @@ export default function GenerateView({
 
           <div style={{ marginBottom: "var(--space-md)" }}>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
-              Termek
+              Termék
             </label>
             <select
               value={selectedProductId}
@@ -142,7 +143,7 @@ export default function GenerateView({
                 opacity: !selectedBankId ? 0.5 : 1,
               }}
             >
-              <option value="">-- Valassz termesket --</option>
+              <option value="">-- Válassz terméket --</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -152,19 +153,19 @@ export default function GenerateView({
           {/* Doc count info */}
           {selectedProductId && selectedProductDocs.length > 0 && (
             <div style={{ marginBottom: "var(--space-md)", fontSize: "0.8rem", color: "var(--text-tertiary)" }}>
-              {selectedProductDocs.length} dokumentum lesz generalva
+              {selectedProductDocs.length} dokumentum lesz generálva
             </div>
           )}
 
           {/* Deal selector */}
           <div style={{ marginBottom: "var(--space-md)" }}>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
-              Ugylet (Salesforce)
+              Ügylet (Salesforce)
             </label>
             {dealsLoading ? (
-              <div style={{ fontSize: "0.85rem", color: "var(--text-tertiary)" }}>Betoltes...</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-tertiary)" }}>Betöltés...</div>
             ) : deals.length === 0 ? (
-              <div style={{ fontSize: "0.85rem", color: "var(--accent-red)" }}>Nincs elerheto ugylet.</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--accent-red)" }}>Nincs elérhető ügylet.</div>
             ) : (
               <select
                 value={selectedDealId}
@@ -223,7 +224,7 @@ export default function GenerateView({
                 disabled={generating}
                 style={{ cursor: "pointer" }}
               />
-              Feltoltes Salesforce-ba a generalas utan
+              Feltöltés Salesforce-ba a generálás után
             </label>
           )}
 
@@ -245,7 +246,7 @@ export default function GenerateView({
                 opacity: generating || !selectedDealId || !selectedProductId ? 0.5 : 1,
               }}
             >
-              {generating ? "Generalas folyamatban..." : "Csomag generalasa"}
+              {generating ? "Generálás folyamatban..." : "Csomag generálása"}
             </button>
           )}
 
@@ -262,7 +263,7 @@ export default function GenerateView({
                 }}
               >
                 <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "var(--space-sm)" }}>
-                  {result.total_documents} dokumentum sikeresen generalva
+                  {result.total_documents} dokumentum sikeresen generálva
                   {result.errors.length > 0 && (
                     <span style={{ color: "var(--accent-red)" }}> ({result.errors.length} hiba)</span>
                   )}
@@ -298,13 +299,13 @@ export default function GenerateView({
                             fontSize: "0.7rem",
                             color: "var(--accent-amber)",
                           }}>
-                            adosonkent
+                            adósonként
                           </span>
                         )}
                       </span>
                       {doc.success && (
                         <span style={{ color: "var(--text-tertiary)", fontSize: "0.75rem" }}>
-                          {doc.filled_fields || 0} mezo
+                          {doc.filled_fields || 0} mező
                         </span>
                       )}
                     </div>
@@ -324,7 +325,7 @@ export default function GenerateView({
                   }}
                 >
                   <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--accent-amber)", marginBottom: "6px" }}>
-                    Figyelmeztetes a kitoltesrol
+                    Figyelmeztetés a kitöltésről
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     {result.notices.map((n, i) => (
@@ -348,7 +349,7 @@ export default function GenerateView({
                   }}
                 >
                   <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
-                    Salesforce feltoltes ({result.sf_uploads.filter((u) => u.success).length}/{result.sf_uploads.length})
+                    Salesforce feltöltés ({result.sf_uploads.filter((u) => u.success).length}/{result.sf_uploads.length})
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                     {result.sf_uploads.map((u, i) => (
@@ -370,7 +371,10 @@ export default function GenerateView({
               {/* Actions */}
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
-                  onClick={() => setShowValidation(true)}
+                  onClick={() => {
+                    setValidatedDocPath(selectedProductDocs[0]?.file_path || "");
+                    setShowValidation(true);
+                  }}
                   style={{
                     flex: 1,
                     padding: "10px 16px",
@@ -399,7 +403,7 @@ export default function GenerateView({
                     cursor: "pointer",
                   }}
                 >
-                  ZIP letoltese
+                  ZIP letöltése
                 </button>
                 <button
                   onClick={() => { setResult(null); setError(null); }}
@@ -414,7 +418,7 @@ export default function GenerateView({
                     cursor: "pointer",
                   }}
                 >
-                  Uj generalas
+                  Új generálás
                 </button>
               </div>
             </div>
@@ -434,8 +438,42 @@ export default function GenerateView({
             flexDirection: "column",
           }}
         >
+          {selectedProductDocs.length > 1 && (
+            <div
+              style={{
+                padding: "8px 24px",
+                background: "var(--bg-secondary)",
+                borderBottom: "1px solid var(--border-subtle)",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                Ellenőrzött dokumentum:
+              </span>
+              <select
+                value={validatedDocPath || selectedProductDocs[0]?.file_path || ""}
+                onChange={(e) => setValidatedDocPath(e.target.value)}
+                style={{
+                  padding: "4px 8px",
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-sm)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.8rem",
+                }}
+              >
+                {selectedProductDocs.map((d) => (
+                  <option key={d.id} value={d.file_path}>
+                    {d.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <ValidationView
-            pdfId={selectedProductDocs[0]?.file_path || ""}
+            pdfId={validatedDocPath || selectedProductDocs[0]?.file_path || ""}
             dealId={selectedDealId}
             onClose={() => setShowValidation(false)}
           />

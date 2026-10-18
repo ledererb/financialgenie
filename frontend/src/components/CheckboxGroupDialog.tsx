@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { MappingField } from "@/types";
 
 interface CheckboxGroupDialogProps {
@@ -10,6 +10,16 @@ interface CheckboxGroupDialogProps {
 }
 
 export default function CheckboxGroupDialog({ fields, initialSelected, onApply, onClose }: CheckboxGroupDialogProps) {
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !saving) onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, saving]);
+
   const checkboxFields = useMemo(
     () => fields.filter((f) => f.field_type === "checkbox"),
     [fields],
@@ -83,24 +93,29 @@ export default function CheckboxGroupDialog({ fields, initialSelected, onApply, 
   const selectNone = () => setSelected(new Set());
 
   const handleApply = async () => {
-    if (!groupId.trim() || selected.size === 0) return;
-    const updates = [];
-    for (const name of selected) {
-      const f = checkboxFields.find((cf) => cf.pdf_field_name === name);
-      if (!f) continue;
-      const ov = optionValues[name]?.trim() || f.label || name;
-      updates.push({
-        fieldName: name,
-        checkboxGroup: {
-          group_id: groupId.trim(),
-          group_label: groupLabel.trim() || groupId.trim(),
-          option_value: ov,
-          option_label: f.label || ov,
-        },
-      });
+    if (!groupId.trim() || selected.size === 0 || saving) return;
+    setSaving(true);
+    try {
+      const updates = [];
+      for (const name of selected) {
+        const f = checkboxFields.find((cf) => cf.pdf_field_name === name);
+        if (!f) continue;
+        const ov = optionValues[name]?.trim() || f.label || name;
+        updates.push({
+          fieldName: name,
+          checkboxGroup: {
+            group_id: groupId.trim(),
+            group_label: groupLabel.trim() || groupId.trim(),
+            option_value: ov,
+            option_label: f.label || ov,
+          },
+        });
+      }
+      await onApply(updates);
+      onClose();
+    } finally {
+      setSaving(false);
     }
-    await onApply(updates);
-    onClose();
   };
 
   return (
@@ -294,15 +309,15 @@ export default function CheckboxGroupDialog({ fields, initialSelected, onApply, 
 
             {/* Actions */}
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "20px" }}>
-              <button className="btn btn-ghost" onClick={onClose}>
+              <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
                 Mégse
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleApply}
-                disabled={!groupId.trim() || selected.size === 0}
+                disabled={!groupId.trim() || selected.size === 0 || saving}
               >
-                Csoportosítás ({selected.size})
+                {saving ? "Mentés..." : `Csoportosítás (${selected.size})`}
               </button>
             </div>
           </>

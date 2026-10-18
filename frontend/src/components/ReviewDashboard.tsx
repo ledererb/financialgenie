@@ -141,16 +141,21 @@ export default function ReviewDashboard({
     const groups: { canonical: string; fields: MappingField[] }[] = [];
     byCanonical.forEach((fields, canonical) => {
       if (fields.length <= 1) return;
-      const allCheckbox = fields.every(
-        (f) => f.field_type === "checkbox" || f.pdf_field_name.includes("___")
+      const textFields = fields.filter(
+        (f) =>
+          f.field_type !== "checkbox" &&
+          !f.pdf_field_name.includes("___") &&
+          !f.checkbox_group &&
+          !f.fill_rule,
       );
-      if (allCheckbox) groups.push({ canonical, fields });
-      else real.push({ canonical, fields });
+      if (textFields.length <= 1) {
+        groups.push({ canonical, fields });
+      } else {
+        real.push({ canonical, fields: textFields });
+      }
     });
     return { realConflicts: real, checkboxGroups: groups };
   }, [mapping]);
-
-  const [showCheckboxGroups, setShowCheckboxGroups] = useState(false);
 
   // ── render ─────────────────────────────────────────────────────────────
 
@@ -205,7 +210,7 @@ export default function ReviewDashboard({
       <header
         className="glass"
         style={{
-          padding: "16px 28px",
+          padding: "14px 24px",
           borderRadius: 0,
           borderLeft: "none",
           borderRight: "none",
@@ -214,16 +219,23 @@ export default function ReviewDashboard({
           alignItems: "center",
           gap: "var(--space-md)",
           flexShrink: 0,
+          flexWrap: "wrap",
         }}
       >
-        <h2 style={{ fontSize: "1.15rem", fontWeight: 600 }}>
+        <button className="btn btn-ghost btn-sm" onClick={onBack}>
+          ← Vissza
+        </button>
+        <h2 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>
           Mapping áttekintése
         </h2>
         <span
           style={{ fontSize: "0.8rem", color: "var(--text-tertiary)" }}
         >
-          {mapping?.bank_name ?? ""} — {mapping?.form_name ?? pdfId}
+          {mapping?.bank_name ? `${mapping.bank_name} — ` : ""}{mapping?.form_name ?? pdfId}
         </span>
+        {mapping?.approved && (
+          <span className="badge badge-green">Jóváhagyva</span>
+        )}
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => {
@@ -234,7 +246,7 @@ export default function ReviewDashboard({
           title="Mapping törlése és újra felismerés"
           style={{ marginLeft: "auto" }}
         >
-          Ujramappelés
+          Újramappelés
         </button>
         <button
           className="btn btn-ghost btn-sm"
@@ -275,7 +287,7 @@ export default function ReviewDashboard({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
               gap: "var(--space-md)",
             }}
           >
@@ -339,24 +351,30 @@ export default function ReviewDashboard({
             {pageHeatmap.map((entry) => {
               const cls = heatmapClass(entry);
               const isEmpty = entry.total === 0;
-              const isLow = entry.total > 0 && entry.mapped / entry.total < 0.2;
               return (
                 <div
                   key={entry.page}
                   className={cls}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onPageClick(entry.page)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onPageClick(entry.page);
+                    }
+                  }}
                   title={
                     isEmpty
                       ? `${entry.page}. oldal: nincs mező`
                       : `${entry.page}. oldal: ${entry.mapped}/${entry.total} leképezve — kattints a szerkesztéshez`
                   }
                 >
-                  {entry.page}
-                  {isEmpty && (
-                    <span style={{ fontSize: "0.55rem", display: "block", opacity: 0.6 }}>(nincs)</span>
-                  )}
-                  {isLow && (
-                    <span style={{ fontSize: "0.55rem", display: "block" }}>{entry.mapped}/{entry.total}</span>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>{entry.page}</span>
+                  {isEmpty ? (
+                    <span style={{ fontSize: "0.52rem", opacity: 0.6 }}>(nincs)</span>
+                  ) : (
+                    <span style={{ fontSize: "0.55rem", opacity: 0.85 }}>{entry.mapped}/{entry.total}</span>
                   )}
                 </div>
               );
@@ -445,7 +463,7 @@ export default function ReviewDashboard({
                 letterSpacing: "0.05em",
               }}
             >
-              Ellenorizendo mapping-ek ({realConflicts.length})
+              Ellenőrizendő mapping-ek ({realConflicts.length})
             </h3>
             <p
               style={{
@@ -455,8 +473,8 @@ export default function ReviewDashboard({
                 lineHeight: 1.5,
               }}
             >
-              Tobb szoveges PDF mezo is ugyanarra a Salesforce mezore mutat.
-              Valoszinuleg csak az egyik helyes – kattints az oldalszamra a javitashoz.
+              Több szöveges PDF mező is ugyanarra a Salesforce mezőre mutat.
+              Valószínűleg csak az egyik helyes – kattints az oldalszámra a javításhoz.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {realConflicts.map(({ canonical, fields }) => {
@@ -485,7 +503,7 @@ export default function ReviewDashboard({
                         className="badge badge-amber"
                         style={{ flexShrink: 0, fontSize: "0.7rem" }}
                       >
-                        {fields.length} mezo
+                        {fields.length} mező
                       </span>
                       <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
                         {canonical}
@@ -550,7 +568,7 @@ export default function ReviewDashboard({
           </section>
         )}
 
-        {realConflicts.length === 0 && checkboxGroups.length === 0 && (
+        {realConflicts.length === 0 && (
           <section
             className="card"
             style={{
@@ -560,7 +578,7 @@ export default function ReviewDashboard({
               fontSize: "0.85rem",
             }}
           >
-            Nincs mapping utkozes
+            Nincs mapping ütközés
           </section>
         )}
       </div>

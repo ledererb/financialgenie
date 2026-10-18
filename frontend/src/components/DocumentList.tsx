@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import type { CatalogDocument } from "@/types";
 import { useStore } from "@/store";
+import ProductAssociationDialog from "./ProductAssociationDialog";
 
 interface DocumentListProps {
   documents: CatalogDocument[];
@@ -22,6 +23,7 @@ function DocumentListImpl({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [assocDoc, setAssocDoc] = useState<CatalogDocument | null>(null);
   const renameDocument = useStore((s) => s.renameDocument);
 
   if (documents.length === 0) {
@@ -50,9 +52,18 @@ function DocumentListImpl({
           <div key={doc.id}>
             <div
               className="tree-leaf"
+              role="button"
+              tabIndex={0}
               onClick={() => {
                 onSelectDocument(doc.id);
                 onOpenDocument(doc.id);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectDocument(doc.id);
+                  onOpenDocument(doc.id);
+                }
               }}
               style={{
                 display: "flex",
@@ -129,12 +140,12 @@ function DocumentListImpl({
                 </span>
               )}
 
-              {/* Badges */}
-              <div style={{ display: "flex", gap: "3px", flexShrink: 0, alignItems: "center" }}>
+              {/* Badges & action buttons */}
+              <div style={{ display: "flex", gap: "4px", flexShrink: 0, alignItems: "center" }}>
                 {hasNoProducts && (
                   <span
                     className="badge"
-                    title="Ez a dokumentum nincs egyetlen termékhez sem rendelve. Kattints a mellette lévő Szerkeszt gombra a termékek szerkesztéséhez."
+                    title="Ez a dokumentum nincs egyetlen termékhez sem rendelve. Kattints a Termékek gombra a társításhoz."
                     style={{
                       fontSize: "0.6rem",
                       padding: "1px 6px",
@@ -154,22 +165,57 @@ function DocumentListImpl({
                     {doc.product_ids.length}x
                   </span>
                 )}
-                {doc.per_applicant && (
-                  <span
-                    className="badge badge-amber"
-                    title="Igenylonkent kitoltendo — kattints a kikapcsoláshoz"
-                    style={{ fontSize: "0.6rem", padding: "1px 6px", cursor: "pointer" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      useStore.getState().setPerApplicant(doc.id, false).catch(() => {});
-                    }}
-                  >
-                    A
-                  </span>
-                )}
+                {/* Bidirectional per_applicant toggle */}
+                <button
+                  type="button"
+                  className={doc.per_applicant ? "badge badge-amber" : "badge"}
+                  title={
+                    doc.per_applicant
+                      ? "Adósonként kitöltendő (aktív) — kattints a kikapcsoláshoz"
+                      : "Egy példányban kitöltendő — kattints az adósonkénti kitöltés bekapcsolásához"
+                  }
+                  style={{
+                    fontSize: "0.6rem",
+                    padding: "1px 6px",
+                    cursor: "pointer",
+                    border: doc.per_applicant ? "none" : "1px solid var(--border-default)",
+                    background: doc.per_applicant ? "var(--accent-amber-glow)" : "transparent",
+                    color: doc.per_applicant ? "var(--accent-amber)" : "var(--text-tertiary)",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    useStore.getState().setPerApplicant(doc.id, !doc.per_applicant).catch(() => {});
+                  }}
+                >
+                  A
+                </button>
+                {/* Product association button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAssocDoc(doc);
+                  }}
+                  title="Termékek társítása ehhez a dokumentumhoz"
+                  style={{
+                    background: "var(--bg-hover)",
+                    border: "1px solid var(--border-subtle)",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    padding: "2px 6px",
+                    fontSize: "0.65rem",
+                    lineHeight: 1,
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                >
+                  Termékek
+                </button>
                 {/* Rename button */}
                 {editingId !== doc.id && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingId(doc.id);
@@ -185,11 +231,13 @@ function DocumentListImpl({
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
                   >
-                    Szerkeszt
+                    Átnevez
                   </button>
                 )}
                 {/* Delete button */}
                 <button
+                  type="button"
+                  aria-label="Dokumentum törlése"
                   onClick={(e) => {
                     e.stopPropagation();
                     setConfirmDeleteId(doc.id);
@@ -282,8 +330,17 @@ function DocumentListImpl({
             width: "fit-content",
           }}
         >
-          + Dokumentum feltoltese
+          + Dokumentum feltöltése
         </button>
+      )}
+
+      {assocDoc && (
+        <ProductAssociationDialog
+          docId={assocDoc.id}
+          docTitle={assocDoc.title}
+          currentProductIds={assocDoc.product_ids}
+          onClose={() => setAssocDoc(null)}
+        />
       )}
     </div>
   );

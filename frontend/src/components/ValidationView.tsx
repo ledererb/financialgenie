@@ -42,6 +42,14 @@ export default function ValidationView({ pdfId, dealId, onClose }: ValidationVie
   const [activeTab, setActiveTab] = useState<"fields" | "ai">("fields");
 
   useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  useEffect(() => {
     setLoading(true);
     setError(null);
     fetch("/api/pdf/validate", {
@@ -52,7 +60,11 @@ export default function ValidationView({ pdfId, dealId, onClose }: ValidationVie
       .then((r) => r.json())
       .then((res) => {
         if (res.detail) {
-          setError(res.detail);
+          setError(
+            typeof res.detail === "string"
+              ? res.detail
+              : JSON.stringify(res.detail),
+          );
         } else {
           setData(res.validation);
         }

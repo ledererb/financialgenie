@@ -336,6 +336,11 @@ export default function PageEditor({
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterTab, setFilterTab] = useState<"all" | "mapped" | "unmapped">("all");
+  const [roleDrafts, setRoleDrafts] = useState<Record<string, string>>({});
+  const [charGroupDrafts, setCharGroupDrafts] = useState<Record<string, string>>({});
 
   // ── draw mode (flat PDF field creation) ────────────────────────────
   const [drawMode, setDrawMode] = useState(false);
@@ -399,10 +404,14 @@ export default function PageEditor({
     setLoadedPage(null);
   }, [pageNumber]);
 
-  // Keyboard navigation: ←/→ to switch pages (when not typing in an input)
+  // Keyboard navigation: ←/→ to switch pages, Escape to close preview modal
   useEffect(() => {
-    if (!onPageChange || !fieldsRes) return;
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && previewImage) {
+        setPreviewImage(null);
+        return;
+      }
+      if (!onPageChange || !fieldsRes) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "ArrowLeft" && pageNumber > 1) {
@@ -415,7 +424,7 @@ export default function PageEditor({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onPageChange, fieldsRes, pageNumber]);
+  }, [onPageChange, fieldsRes, pageNumber, previewImage]);
 
   // ── derived: fields for this page ─────────────────────────────────────
 
@@ -424,8 +433,29 @@ export default function PageEditor({
     return mapping.fields.filter((f) => f.page_number === pageNumber);
   }, [mapping, pageNumber]);
 
+  const filteredPageFields = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return pageFields.filter((f) => {
+      const isMapped = Boolean(
+        f.canonical_field ||
+        f.fill_rule ||
+        f.checkbox_group?.group_id,
+      );
+      if (filterTab === "mapped" && !isMapped) return false;
+      if (filterTab === "unmapped" && isMapped) return false;
+      if (!q) return true;
+      return (
+        f.pdf_field_name.toLowerCase().includes(q) ||
+        (f.canonical_field ?? "").toLowerCase().includes(q) ||
+        (f.label ?? "").toLowerCase().includes(q) ||
+        (f.checkbox_group?.group_label ?? "").toLowerCase().includes(q) ||
+        (f.checkbox_group?.option_label ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [pageFields, searchQuery, filterTab]);
+
   // PLAN §4.2(a) — checkbox fields bucketed by checkbox_group.group_id.
-  const groupedPageFields = useMemo(() => groupPageFields(pageFields), [pageFields]);
+  const groupedPageFields = useMemo(() => groupPageFields(filteredPageFields), [filteredPageFields]);
 
   const pdfFieldsByName = useMemo(() => {
     if (!fieldsRes) return new Map<string, PdfField>();
@@ -461,19 +491,23 @@ export default function PageEditor({
     [pageNumber],
   );
 
-  // Keep display size in sync on resize
+  // Keep display size in sync on resize or zoom change
   useEffect(() => {
     if (!imageContainerRef.current) return;
-    const observer = new ResizeObserver(() => {
+    const updateSize = () => {
       const img =
         imageContainerRef.current?.querySelector<HTMLImageElement>("img");
-      if (img) {
+      if (img && img.clientWidth > 0) {
         setImageDisplaySize({ w: img.clientWidth, h: img.clientHeight });
       }
-    });
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
     observer.observe(imageContainerRef.current);
+    const img = imageContainerRef.current.querySelector<HTMLImageElement>("img");
+    if (img) observer.observe(img);
     return () => observer.disconnect();
-  }, []);
+  }, [zoom, loadedPage]);
 
   // ── auto-scroll sync (Task 3.1 + 3.6) ────────────────────────────────
 
@@ -507,18 +541,19 @@ export default function PageEditor({
   const handleFieldUpdate = useCallback(
     async (fieldName: string, patch: Partial<MappingField>) => {
       if (!mapping) return;
+      // Optimistic local state update so controlled inputs never drop keystrokes
+      setMapping((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          fields: prev.fields.map((f) =>
+            f.pdf_field_name === fieldName ? { ...f, ...patch } : f,
+          ),
+        };
+      });
       setSaving(true);
       try {
         await updateField(pdfId, fieldName, patch);
-        setMapping((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            fields: prev.fields.map((f) =>
-              f.pdf_field_name === fieldName ? { ...f, ...patch } : f,
-            ),
-          };
-        });
       } catch {
         // silently keep previous state
       } finally {
@@ -558,11 +593,19 @@ export default function PageEditor({
       setSaving(true);
       try {
         const pf = pdfFieldsByName.get(pdfFieldName);
+        const PDF_SCALE = 150 / 72;
         await addField(pdfId, {
           pdf_field_name: pdfFieldName,
           field_type: pf?.field_type ?? "text",
           page_number: pageNumber,
-          coordinates: pf?.rect ?? null,
+          coordinates: pf?.rect
+            ? {
+                x: Math.round(pf.rect.x / PDF_SCALE),
+                y: Math.round(pf.rect.y / PDF_SCALE),
+                width: Math.round(pf.rect.width / PDF_SCALE),
+                height: Math.round(pf.rect.height / PDF_SCALE),
+              }
+            : null,
           confidence: "manual",
         });
         // Refetch
@@ -642,6 +685,15 @@ export default function PageEditor({
 
   const handleUpdateCharGroup = useCallback(
     async (groupId: string, patch: Partial<CharacterGroup>) => {
+      setMapping((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          character_groups: prev.character_groups.map((g) =>
+            g.group_id === groupId ? { ...g, ...patch } : g,
+          ),
+        };
+      });
       setSaving(true);
       try {
         await updateGroup(pdfId, groupId, patch);
@@ -724,12 +776,13 @@ export default function PageEditor({
       setDrawEnd(null);
       return;
     }
-    // Convert display coords to PDF coords
+    // Convert display coords -> 150 DPI natural image coords -> 72 DPI PDF points
+    const PDF_SCALE = 150 / 72;
     setPendingRect({
-      x: Math.round(x / scale),
-      y: Math.round(y / scale),
-      width: Math.round(w / scale),
-      height: Math.round(h / scale),
+      x: Math.round(x / scale / PDF_SCALE),
+      y: Math.round(y / scale / PDF_SCALE),
+      width: Math.round(w / scale / PDF_SCALE),
+      height: Math.round(h / scale / PDF_SCALE),
     });
     setNewFieldName(`flat_field_${Date.now() % 10000}`);
     setNewFieldType("text");
@@ -873,6 +926,47 @@ export default function PageEditor({
         >
           {pageFields.length} mező
         </span>
+
+        {/* Zoom controls */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-sm)",
+            padding: "2px 4px",
+          }}
+        >
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
+            disabled={zoom <= 0.5}
+            title="Kicsinyítés"
+            style={{ padding: "2px 6px", fontSize: "0.75rem", border: "none" }}
+          >
+            −
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setZoom(1)}
+            title="Alapértelmezett méret (100%)"
+            style={{ padding: "2px 6px", fontSize: "0.72rem", border: "none", minWidth: 42 }}
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.25) * 100) / 100))}
+            disabled={zoom >= 2.5}
+            title="Nagyítás"
+            style={{ padding: "2px 6px", fontSize: "0.75rem", border: "none" }}
+          >
+            +
+          </button>
+        </div>
+
         {isFlat && (
           <button
             className={`btn btn-sm ${drawMode ? "btn-accent" : "btn-ghost"}`}
@@ -884,7 +978,7 @@ export default function PageEditor({
               transition: "all 0.2s",
             }}
           >
-            {drawMode ? "Rajzolas aktív" : "Mezo rajzolasa"}
+            {drawMode ? "Rajzolás aktív" : "Mező rajzolása"}
           </button>
         )}
         <button
@@ -907,7 +1001,7 @@ export default function PageEditor({
             fontSize: "0.75rem",
           }}
         >
-          {showOverlayLabels ? "Cimkek ON" : "Cimkek"}
+          {showOverlayLabels ? "Címkék ON" : "Címkék"}
         </button>
 
         {/* Data overlay toggle */}
@@ -940,7 +1034,7 @@ export default function PageEditor({
                 color: groupPickMode ? "#fff" : undefined,
               }}
             >
-              {groupPickMode ? `Kijeloles (${pickedFields.size})` : "Kijeloles"}
+              {groupPickMode ? `Kijelölés (${pickedFields.size})` : "Kijelölés"}
             </button>
             <button
               className="btn btn-ghost btn-sm"
@@ -948,7 +1042,7 @@ export default function PageEditor({
               title="Checkbox mezők csoportosítása listából"
               style={{ fontSize: "0.75rem" }}
             >
-              Csoportositas
+              Csoportosítás
             </button>
           </>
         )}
@@ -978,13 +1072,20 @@ export default function PageEditor({
             overflow: "auto",
             padding: "var(--space-md)",
             display: "flex",
-            justifyContent: "center",
+            justifyContent: zoom > 1 ? "flex-start" : "center",
             alignItems: "flex-start",
             background: "var(--bg-primary)",
           }}
         >
           <div
-            style={{ position: "relative", display: "inline-block", cursor: drawMode ? "crosshair" : undefined }}
+            style={{
+              position: "relative",
+              display: "inline-block",
+              width: zoom === 1 ? undefined : `${zoom * 100}%`,
+              maxWidth: zoom === 1 ? "100%" : "none",
+              flexShrink: zoom === 1 ? 1 : 0,
+              cursor: drawMode ? "crosshair" : undefined,
+            }}
             onMouseDown={handleDrawMouseDown}
             onMouseMove={handleDrawMouseMove}
             onMouseUp={handleDrawMouseUp}
@@ -994,7 +1095,8 @@ export default function PageEditor({
               alt={`${pageNumber}. oldal`}
               onLoad={handleImageLoad}
               style={{
-                maxWidth: "100%",
+                width: zoom === 1 ? undefined : "100%",
+                maxWidth: zoom === 1 ? "100%" : "none",
                 height: "auto",
                 display: "block",
                 borderRadius: "var(--radius-md)",
@@ -1026,10 +1128,10 @@ export default function PageEditor({
               <div
                 style={{
                   position: "absolute",
-                  left: pendingRect.x * scale,
-                  top: pendingRect.y * scale,
-                  width: pendingRect.width * scale,
-                  height: pendingRect.height * scale,
+                  left: pendingRect.x * (150 / 72) * scale,
+                  top: pendingRect.y * (150 / 72) * scale,
+                  width: pendingRect.width * (150 / 72) * scale,
+                  height: pendingRect.height * (150 / 72) * scale,
                   border: "2px solid var(--accent-green)",
                   background: "rgba(34,197,94,0.25)",
                   borderRadius: "var(--radius-sm)",
@@ -1091,7 +1193,7 @@ export default function PageEditor({
                         cursor: "pointer",
                       }}
                     >
-                      Letrehozas
+                      Létrehozás
                     </button>
                     <button
                       onClick={() => setPendingRect(null)}
@@ -1106,7 +1208,7 @@ export default function PageEditor({
                         cursor: "pointer",
                       }}
                     >
-                      Megse
+                      Mégse
                     </button>
                   </div>
                 </div>
@@ -1144,7 +1246,7 @@ export default function PageEditor({
                 >
                   <span>
                     <strong style={{ color: "var(--accent-purple)" }}>{pickedFields.size}</strong>{" "}
-                    checkbox kijelolve
+                    checkbox kijelölve
                   </span>
                   <button
                     className="btn btn-primary btn-sm"
@@ -1152,14 +1254,14 @@ export default function PageEditor({
                     onClick={() => setShowGroupDialog(true)}
                     style={{ fontSize: "0.75rem" }}
                   >
-                    Csoportositas
+                    Csoportosítás
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setPickedFields(new Set())}
                     style={{ fontSize: "0.75rem" }}
                   >
-                    Torles
+                    Törlés
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
@@ -1169,7 +1271,7 @@ export default function PageEditor({
                     }}
                     style={{ fontSize: "0.75rem" }}
                   >
-                    Kilepes
+                    Kilépés
                   </button>
                 </div>
               </div>
@@ -1179,7 +1281,12 @@ export default function PageEditor({
             {loadedPage === pageNumber &&
               pageFields.map((mf) => {
                 const pf = pdfFieldsByName.get(mf.pdf_field_name);
-                const rect = pf?.rect ?? mf.coordinates;
+                const rect = pf?.rect ?? (mf.coordinates ? {
+                  x: mf.coordinates.x * (150 / 72),
+                  y: mf.coordinates.y * (150 / 72),
+                  width: mf.coordinates.width * (150 / 72),
+                  height: mf.coordinates.height * (150 / 72),
+                } : null);
                 if (!rect) return null;
 
                 const labelText = mf.canonical_field ?? mf.label ?? mf.pdf_field_name;
@@ -1251,7 +1358,7 @@ export default function PageEditor({
                             : "rgba(239,68,68,0.85)",
                           color: "white",
                           whiteSpace: "nowrap",
-                          maxWidth: 120,
+                          maxWidth: Math.min(130, Math.max(36, rect.width * scale)),
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           pointerEvents: "none",
@@ -1321,6 +1428,9 @@ export default function PageEditor({
             }}
           >
             <span>Mezők a(z) {pageNumber}. oldalon</span>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>
+              {filteredPageFields.length} / {pageFields.length}
+            </span>
           </div>
 
           {/* ─── Add field dropdown (Task 3.4) ─────────────────────── */}
@@ -1348,7 +1458,7 @@ export default function PageEditor({
               </select>
             ) : (
               <span style={{ flex: 1, fontSize: "0.72rem", color: "var(--text-tertiary)" }}>
-                Minden mezo mappelve
+                Minden mező mappelve
               </span>
             )}
             <button
@@ -1369,6 +1479,58 @@ export default function PageEditor({
             </button>
           </div>
 
+          {/* ─── Search & Filter bar ─────────────────────────────── */}
+          <div
+            style={{
+              padding: "var(--space-xs) var(--space-md)",
+              borderBottom: "1px solid var(--border-subtle)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              flexShrink: 0,
+            }}
+          >
+            <input
+              type="search"
+              placeholder="Mező vagy címke keresése..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                ...inputStyle,
+                padding: "5px 8px",
+                fontSize: "0.75rem",
+              }}
+            />
+            <div style={{ display: "flex", gap: 4 }}>
+              {(
+                [
+                  { id: "all", label: "Mind" },
+                  { id: "mapped", label: "Mappelt" },
+                  { id: "unmapped", label: "Üres" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterTab(tab.id)}
+                  style={{
+                    flex: 1,
+                    padding: "3px 6px",
+                    fontSize: "0.68rem",
+                    fontWeight: 600,
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--border-subtle)",
+                    cursor: "pointer",
+                    background:
+                      filterTab === tab.id ? "var(--accent-blue)" : "var(--bg-tertiary)",
+                    color: filterTab === tab.id ? "#fff" : "var(--text-secondary)",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div
             ref={sidebarRef}
             style={{
@@ -1378,7 +1540,7 @@ export default function PageEditor({
               flexDirection: "column",
             }}
           >
-            {pageFields.length === 0 && (
+            {filteredPageFields.length === 0 && (
               <div
                 style={{
                   padding: "var(--space-lg)",
@@ -1387,7 +1549,9 @@ export default function PageEditor({
                   fontSize: "0.85rem",
                 }}
               >
-                Nincs mező ezen az oldalon.
+                {pageFields.length === 0
+                  ? "Nincs mező ezen az oldalon."
+                  : "Nincs a szűrésnek megfelelő mező."}
               </div>
             )}
 
@@ -1441,13 +1605,24 @@ export default function PageEditor({
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
+                        minWidth: 0,
                       }}
                       title={mf.pdf_field_name}
                     >
                       {mf.checkbox_group?.option_value && (
                         <span
                           className="badge badge-blue"
-                          style={{ fontSize: "0.65rem", padding: "1px 6px", flexShrink: 0 }}
+                          title={mf.checkbox_group.option_label || mf.checkbox_group.option_value}
+                          style={{
+                            fontSize: "0.65rem",
+                            padding: "1px 6px",
+                            flexShrink: 0,
+                            maxWidth: 145,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            display: "inline-block",
+                          }}
                         >
                           {mf.checkbox_group.option_label || mf.checkbox_group.option_value}
                         </span>
@@ -1591,7 +1766,7 @@ export default function PageEditor({
                           gap: 4,
                         }}
                       >
-                        {showAdvanced ? "Halado elrejtese" : "Halado beallitasok"}
+                        {showAdvanced ? "Haladó elrejtése" : "Haladó beállítások"}
                       </button>
 
                       {showAdvanced && (
@@ -1692,10 +1867,33 @@ export default function PageEditor({
                             {mf.fill_rule.type === "role_based" && (
                               <input
                                 placeholder="Szerepek (vesszővel: adós,adóstárs)"
-                                value={(mf.fill_rule.roles ?? []).join(",")}
-                                onChange={(e) => handleFieldUpdate(mf.pdf_field_name, {
-                                  fill_rule: { ...mf.fill_rule!, roles: e.target.value.split(",").map(s => s.trim()).filter(Boolean) },
-                                })}
+                                value={
+                                  roleDrafts[mf.pdf_field_name] ??
+                                  (mf.fill_rule.roles ?? []).join(",")
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setRoleDrafts((prev) => ({
+                                    ...prev,
+                                    [mf.pdf_field_name]: raw,
+                                  }));
+                                  handleFieldUpdate(mf.pdf_field_name, {
+                                    fill_rule: {
+                                      ...mf.fill_rule!,
+                                      roles: raw
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean),
+                                    },
+                                  });
+                                }}
+                                onBlur={() => {
+                                  setRoleDrafts((prev) => {
+                                    const next = { ...prev };
+                                    delete next[mf.pdf_field_name];
+                                    return next;
+                                  });
+                                }}
                                 style={inputStyle}
                               />
                             )}
@@ -1728,7 +1926,7 @@ export default function PageEditor({
                           marginTop: 4,
                         }}
                       >
-                        Mezo torlese
+                        Mező törlése
                       </button>
                     </div>
                   )}
@@ -1888,15 +2086,30 @@ export default function PageEditor({
                     </div>
                     <input
                       placeholder="mezőnevek vesszővel (pl. zip1,zip2,zip3,zip4)"
-                      value={(g.member_fields ?? []).join(",")}
-                      onChange={(e) =>
+                      value={
+                        charGroupDrafts[g.group_id] ??
+                        (g.member_fields ?? []).join(",")
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setCharGroupDrafts((prev) => ({
+                          ...prev,
+                          [g.group_id]: raw,
+                        }));
                         handleUpdateCharGroup(g.group_id, {
-                          member_fields: e.target.value
+                          member_fields: raw
                             .split(",")
                             .map((s) => s.trim())
                             .filter(Boolean),
-                        })
-                      }
+                        });
+                      }}
+                      onBlur={() => {
+                        setCharGroupDrafts((prev) => {
+                          const next = { ...prev };
+                          delete next[g.group_id];
+                          return next;
+                        });
+                      }}
                       style={{ ...inputStyle, fontFamily: "monospace" }}
                     />
                     <select

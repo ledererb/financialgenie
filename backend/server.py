@@ -407,8 +407,14 @@ def canonical_fields():
 
 @app.get("/api/mapping")
 def get_mapping(pdf_id: str = Query(...)):
-    _get_pdf(pdf_id)  # 404 if PDF missing
+    p = _get_pdf(pdf_id)  # 404 if PDF missing
     data = mapping_service.load(pdf_id)
+    if not data.get("_mapping_file"):
+        try:
+            info = pdf_service.pdf_info(p)
+            data["form_type"] = "acroform" if info.get("has_acroform") else "flat"
+        except Exception:
+            pass
     mpath = (PROJECT_ROOT / data["_mapping_file"]) if data.get("_mapping_file") else None
     data["_mtime"] = mpath.stat().st_mtime if mpath and mpath.exists() else None
     return data
@@ -467,7 +473,7 @@ def update_field(body: FieldUpdate, pdf_id: str = Query(...), field: str = Query
     with lock:
         data = mapping_service.load(pdf_id)
         try:
-            updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_none=True))
+            updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_unset=True))
         except KeyError:
             raise HTTPException(404, f"field not found: {field_name}")
         save_res = mapping_service.save(pdf_id, data)
@@ -540,7 +546,7 @@ def update_group(body: GroupUpdate, pdf_id: str = Query(...), group_id: str = Qu
     with lock:
         data = mapping_service.load(pdf_id)
         try:
-            g = mapping_service.update_group(data, group_id, body.model_dump(exclude_none=True))
+            g = mapping_service.update_group(data, group_id, body.model_dump(exclude_unset=True))
         except KeyError:
             raise HTTPException(404, f"group not found: {group_id}")
         except ValueError as e:

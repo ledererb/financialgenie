@@ -3,6 +3,7 @@ import { useStore } from "@/store";
 import BankSelector from "./BankSelector";
 import BankSetupDialog from "./BankSetupDialog";
 import ProductSetupDialog from "./ProductSetupDialog";
+import DocumentList from "./DocumentList";
 
 interface LibraryViewProps {
   onOpenDocument: (docId: string) => void;
@@ -25,38 +26,43 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
 
   const [showBankDialog, setShowBankDialog] = useState(false);
   const [productDialogBankId, setProductDialogBankId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!catalog) loadCatalog();
   }, [catalog, loadCatalog]);
 
   const hasBanks = catalog && catalog.banks.length > 0;
+  const orphanDocs = catalog ? catalog.documents.filter((d) => d.product_ids.length === 0) : [];
 
   const handleAddProduct = useCallback((bankId: string) => {
     setProductDialogBankId(bankId);
   }, []);
 
   const handleDeleteBank = useCallback(async (bankId: string, _name: string) => {
+    setActionError(null);
     try {
       await deleteBank(bankId);
     } catch (e) {
-      console.error("Bank delete error:", e);
+      setActionError((e as Error).message || "A bank törlése sikertelen.");
     }
   }, [deleteBank]);
 
   const handleDeleteProduct = useCallback(async (productId: string, _name: string) => {
+    setActionError(null);
     try {
       await deleteProduct(productId);
     } catch (e) {
-      console.error("Product delete error:", e);
+      setActionError((e as Error).message || "A termék törlése sikertelen.");
     }
   }, [deleteProduct]);
 
   const handleDeleteDocument = useCallback(async (docId: string, _title: string) => {
+    setActionError(null);
     try {
       await deleteCatalogDocument(docId);
     } catch (e) {
-      console.error("Document delete error:", e);
+      setActionError((e as Error).message || "A dokumentum törlése sikertelen.");
     }
   }, [deleteCatalogDocument]);
 
@@ -92,6 +98,31 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
         </div>
       </div>
 
+      {actionError && (
+        <div
+          style={{
+            margin: "12px 24px 0",
+            padding: "8px 12px",
+            background: "var(--accent-red-glow)",
+            border: "1px solid var(--accent-red)",
+            borderRadius: "var(--radius-sm)",
+            color: "var(--accent-red)",
+            fontSize: "0.8rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            style={{ background: "none", border: "none", color: "var(--accent-red)", cursor: "pointer" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Tree */}
       <div style={{ flex: 1, overflow: "auto", padding: "var(--space-md) 24px" }}>
         {catalogLoading && !catalog ? (
@@ -101,36 +132,60 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
         ) : !hasBanks ? (
           <div style={{ textAlign: "center", paddingTop: "var(--space-2xl)" }}>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "var(--space-md)" }}>
-              Meg nincs bank letrehozva.
+              Még nincs bank létrehozva.
             </p>
             <button className="btn btn-primary" onClick={() => setShowBankDialog(true)}>
-              + Bank letrehozasa
+              + Bank létrehozása
             </button>
           </div>
         ) : (
-          catalog.banks.map((bank) => (
-            <BankSelector
-              key={bank.id}
-              bank={bank}
-              documents={catalog.documents.filter((d) =>
-                d.product_ids.some((pid) => bank.products.some((p) => p.id === pid))
-              )}
-              bankId={bank.id}
-              bankName={bank.name}
-              selectedBankId={selectedBankId}
-              selectedProductId={selectedProductId}
-              selectedDocumentId={selectedDocumentId}
-              onSelectBank={selectBank}
-              onSelectProduct={selectProduct}
-              onSelectDocument={selectDocument}
-              onOpenDocument={onOpenDocument}
-              onAddProduct={handleAddProduct}
-              onDeleteBank={handleDeleteBank}
-              onDeleteProduct={handleDeleteProduct}
-              onDeleteDocument={handleDeleteDocument}
-              onGenerate={onGenerate}
-            />
-          ))
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+            {catalog.banks.map((bank) => (
+              <BankSelector
+                key={bank.id}
+                bank={bank}
+                documents={catalog.documents.filter((d) =>
+                  d.product_ids.some((pid) => bank.products.some((p) => p.id === pid))
+                )}
+                bankId={bank.id}
+                bankName={bank.name}
+                selectedBankId={selectedBankId}
+                selectedProductId={selectedProductId}
+                selectedDocumentId={selectedDocumentId}
+                onSelectBank={selectBank}
+                onSelectProduct={selectProduct}
+                onSelectDocument={selectDocument}
+                onOpenDocument={onOpenDocument}
+                onAddProduct={handleAddProduct}
+                onDeleteBank={handleDeleteBank}
+                onDeleteProduct={handleDeleteProduct}
+                onDeleteDocument={handleDeleteDocument}
+                onGenerate={onGenerate}
+              />
+            ))}
+
+            {orphanDocs.length > 0 && (
+              <div
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  border: "1px dashed var(--accent-amber)",
+                  padding: "var(--space-sm) var(--space-md)",
+                  background: "var(--bg-secondary)",
+                }}
+              >
+                <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--accent-amber)", marginBottom: "6px" }}>
+                  Termékhez nem rendelt dokumentumok ({orphanDocs.length})
+                </div>
+                <DocumentList
+                  documents={orphanDocs}
+                  selectedDocumentId={selectedDocumentId}
+                  onSelectDocument={selectDocument}
+                  onOpenDocument={onOpenDocument}
+                  onDeleteDocument={handleDeleteDocument}
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
