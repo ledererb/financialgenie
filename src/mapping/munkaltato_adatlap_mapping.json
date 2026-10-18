@@ -618,23 +618,20 @@
       "pdf_field_name": "MA_IG_bünt",
       "label": "Büntetőjogi felelősségem tudatában kijelentem (nyilatkozat checkbox)",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Continuous_TB_2_years__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nyilatkozat arról, hogy nem áll felmondás/próbaidő alatt és nem fizetés nélküli szabadságon. Nincs pontos Salesforce megfelelő; a legközelebbi kapcsolódó mező a TB jogviszonyhoz kötött. Alternatíva: Contact.Description mezőbe szövegként rögzíteni.",
       "checkbox_group": null,
-      "fill_rule": {
-        "type": "static",
-        "value": "igen"
-      },
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "Jelölőnégyzet 1209",
       "label": "Nem áll felmondás vagy próbaidő alatt (belső aljelölőnégyzet)",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,

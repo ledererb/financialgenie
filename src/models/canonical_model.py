@@ -29,10 +29,10 @@ class ParticipantRole(str, Enum):
 
 class Address(BaseModel):
     """Magyarországi cím struktúra."""
-    zip_code: str = Field(..., description="Irányítószám")
-    city: str = Field(..., description="Település")
-    street: str = Field(..., description="Utca/tér/út")
-    house_number: str = Field(..., description="Házszám")
+    zip_code: str = Field("", description="Irányítószám")
+    city: str = Field("", description="Település")
+    street: str = Field("", description="Utca/tér/út")
+    house_number: str = Field("", description="Házszám")
     floor: Optional[str] = Field(None, description="Emelet")
     door: Optional[str] = Field(None, description="Ajtó")
     district: Optional[str] = Field(None, description="Kerület (Budapest, római szám I-XXIII)")
@@ -156,8 +156,8 @@ class Property(BaseModel):
 
     Az OTP nyomtatványon az ingatlanrész ingatlanonként ismétlődik.
     """
-    address: Address = Field(..., description="Ingatlan címe")
-    parcel_number: str = Field(..., description="Helyrajzi szám")
+    address: Address = Field(default_factory=Address, description="Ingatlan címe")
+    parcel_number: str = Field("", description="Helyrajzi szám")
     area_sqm: Optional[float] = Field(None, description="Terület (m²)")
     property_type: PropertyType = Field(PropertyType.APARTMENT, description="Ingatlan típusa")
     estimated_value: Optional[int] = Field(None, description="Becsült érték (Ft)")
@@ -174,8 +174,8 @@ class Property(BaseModel):
 
 class LoanDetails(BaseModel):
     """Hitelparaméterek."""
-    loan_amount: int = Field(..., description="Hitelösszeg (Ft)")
-    loan_term_months: int = Field(..., description="Futamidő (hónap)")
+    loan_amount: int = Field(0, description="Hitelösszeg (Ft)")
+    loan_term_months: int = Field(240, description="Futamidő (hónap)")
     interest_period: Optional[str] = Field(None, description="Kamatperiódus (pl. 5 év fix)")
     loan_purpose: Optional[str] = Field(None, description="Hitel célja (pl. lakásvásárlás)")
     product_name: Optional[str] = Field(None, description="Termék neve (pl. OTP Lakáshitel)")
@@ -242,6 +242,14 @@ class DealData(BaseModel):
         return [
             p for p in self.active_participants
             if p.role == ParticipantRole.GUARANTOR
+        ]
+
+    @property
+    def beneficiaries(self) -> List[Participant]:
+        """Haszonélvezők listája."""
+        return [
+            p for p in self.active_participants
+            if p.role == ParticipantRole.BENEFICIARY
         ]
 
     def get_participants_by_role(self, role: ParticipantRole) -> List[Participant]:

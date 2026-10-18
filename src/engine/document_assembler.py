@@ -366,35 +366,43 @@ class DocumentAssembler:
             return []
         renamed: list[str] = []
         widgets = list(annots)
+        new_annots: list = []
         for pos, w in enumerate(widgets):
             try:
                 if str(w.get("/Subtype", "")) != "/Widget":
+                    new_annots.append(w)
                     continue
                 base = orig_names[pos] if pos < len(orig_names) else ""
                 if not base:
+                    new_annots.append(w)
                     continue
                 parent = w.get("/Parent")
                 orig_field = parent if parent is not None else w
                 new_name = f"{base}_{instance}"
+
+                # Klónozzuk magát a widget annotációt is, mert a copy_foreign
+                # deduplikálja a widget objektumot az 1. példány oldalával!
+                w_attrs = {k: v for k, v in w.items() if k not in ("/AP", "/Parent", "/P")}
+                new_w = dst_pdf.make_indirect(pikepdf.Dictionary(w_attrs))
+                new_w[pikepdf.Name("/P")] = page
 
                 # Új, független mező-objektum a lényeges attribútumokkal.
                 field_attrs = {"/T": pikepdf.String(new_name)}
                 for key in ("/FT", "/Ff", "/DA", "/DV", "/DS", "/MaxLen", "/Q", "/Tu"):
                     if key in orig_field:
                         field_attrs[key] = orig_field[key]
-                field_attrs["/Kids"] = pikepdf.Array([w])
+                field_attrs["/Kids"] = pikepdf.Array([new_w])
                 new_field = dst_pdf.make_indirect(pikepdf.Dictionary(field_attrs))
 
-                # Widget az új mezőre mutasson; /AP törlése, hogy a viewer
-                # újra renderelje.
-                w[pikepdf.Name("/Parent")] = new_field
-                if "/AP" in w:
-                    del w["/AP"]
+                new_w[pikepdf.Name("/Parent")] = new_field
 
+                new_annots.append(new_w)
                 renamed_field_objs.append(new_field)
                 renamed.append(base)
             except Exception as exc:
+                new_annots.append(w)
                 logger.warning("   ⚠️ mező-átnevezés sikertelen (instance %d): %s", instance, exc)
+        page[pikepdf.Name("/Annots")] = dst_pdf.make_indirect(pikepdf.Array(new_annots))
         return renamed
 
     def _build_page_plan(

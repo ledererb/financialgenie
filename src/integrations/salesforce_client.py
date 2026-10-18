@@ -89,6 +89,12 @@ class SalesforceClient:
         else:
             try:
                 from simple_salesforce import Salesforce
+                if not username or not password:
+                    from config.settings import SF_USERNAME, SF_PASSWORD, SF_SECURITY_TOKEN, SF_DOMAIN
+                    username = username or SF_USERNAME
+                    password = password or SF_PASSWORD
+                    security_token = security_token or SF_SECURITY_TOKEN
+                    domain = domain if domain != "test" else (SF_DOMAIN or "test")
                 self._sf = Salesforce(
                     username=username,
                     password=password,
@@ -266,9 +272,10 @@ class SalesforceClient:
         income_flags: dict = {}
 
         try:
+            safe_deal_id = re.sub(r"[^a-zA-Z0-9]", "", str(deal_id or ""))
             ocr_res = self._sf.query(
                 "SELECT ContactId, Role FROM OpportunityContactRole "
-                f"WHERE OpportunityId = '{deal_id}'"
+                f"WHERE OpportunityId = '{safe_deal_id}'"
             )
             ocr_records = ocr_res.get("records", [])
         except Exception as e:
@@ -280,29 +287,39 @@ class SalesforceClient:
             return lookup_map, income_flags
 
         ocr_map: dict = {}
+        seen_cids: set = set()
         for rec in ocr_records:
             role_str = (rec.get("Role") or "").strip()
             cid = rec.get("ContactId")
             if not cid:
                 continue
             low = role_str.lower()
-            if low.startswith("adóstárs"):
-                mnum = re.search(r"adóstárs\s*(\d+)", low)
+            if low.startswith("adóstárs") or low.startswith("adostars"):
+                mnum = re.search(r"ad[oó]st[aá]rs\s*(\d+)", low)
                 idx = int(mnum.group(1)) if mnum else 1
+                while f"adóstárs_{idx}" in ocr_map and ocr_map[f"adóstárs_{idx}"] != cid:
+                    idx += 1
                 label = f"adóstárs_{idx}"
-            elif low.startswith("adós"):
+            elif low.startswith("adós") or low.startswith("ados"):
                 label = "adós"
+            elif low.startswith(("kezes", "zálogkötelezett", "zalogkotelezett")):
+                label = "kezes"
+            elif low.startswith(("haszonélvező", "haszonelvezo")):
+                label = "haszonélvező"
             else:
                 logger.info(f"Ismeretlen OCR szerep ({deal_id}): {role_str!r} — kihagyva")
                 continue
-            if label in ocr_map and ocr_map[label] != cid:
-                logger.warning(
-                    f"⚠️ OCR szerep-ütközés ({deal_id}): {label} kétszer szerepel "
-                    f"({ocr_map[label]} vs {cid}) — az első marad"
-                )
-                continue
+
+            if label in ("adós",) or label.startswith("adóstárs_"):
+                if cid in seen_cids:
+                    logger.warning(
+                        f"⚠️ Ugyanaz a Contact ({cid}) több adós/adóstárs szerepben is szerepel ({deal_id}, {label}) — duplikátum kihagyva!"
+                    )
+                    continue
+                seen_cids.add(cid)
+
             ocr_map[label] = cid
-            if "jövedelem nélkül" in low:
+            if "jövedelem nélkül" in low or "jovedelem nelkul" in low:
                 income_flags[label] = False
             elif "jovedelemmel" in low or "jövedelemmel" in low:
                 income_flags[label] = True
@@ -319,20 +336,8 @@ class SalesforceClient:
             int(k.rsplit("_", 1)[1]) for k in ocr_map if k.startswith("adóstárs_")
         ):
             roles_map[f"adóstárs_{i}"] = ocr_map[f"adóstárs_{i}"]
-        roles_map["kezes"] = opp.get("Mortgagor__c")
-        roles_map["haszonélvező"] = opp.get("Usufructuary__c")
-
-        # Adathiba-jelzés: ugyanaz a Contact több szerepben (pl. Négyesi)
-        participant_ids = [
-            v for k, v in roles_map.items()
-            if v and k not in ("kezes", "haszonélvező")
-        ]
-        dupes = sorted({i for i in participant_ids if participant_ids.count(i) > 1})
-        if dupes:
-            logger.warning(
-                f"⚠️ Ugyanaz a Contact több szerepben is szerepel ({deal_id}): "
-                f"{dupes} — valószínű SF adathiba, ellenőrizendő!"
-            )
+        roles_map["kezes"] = ocr_map.get("kezes") or opp.get("Mortgagor__c")
+        roles_map["haszonélvező"] = ocr_map.get("haszonélvező") or opp.get("Usufructuary__c")
 
         logger.info(
             f"Résztvevők OCR-ből ({deal_id}): "
@@ -496,7 +501,7 @@ class SalesforceClient:
                     except Exception as exc:
                         logger.warning("Account rekord lekérése sikertelen (%s): %s", account_id, exc)
 
-                # 4. Résztvevők listájának felépítése
+                # 4. Résztvevők listájának felépítése (valós SF adatokból, fiktív teszt-fallbackek nélkül)
                 participants_records = []
                 for role_label, cid in roles_map.items():
                     if not cid or cid not in contacts:
@@ -504,49 +509,39 @@ class SalesforceClient:
                     c = contacts[cid]
                     
                     role_str = "adóstárs" if role_label.startswith("adóstárs") else role_label
-                    perm_addr = c.get("Permanent_address__c") or "1123 Budapest, Alkotás utca 12, 3. em. 4. ajtó"
-                    address_dict = self._parse_address_string(perm_addr, c.get("ZIP__c"))
-                    
-                    # Programmatic fallback values for unpopulated Salesforce fields
-                    if role_str == "adós":
-                        default_name = "Teszt_Ados János"
-                        default_birth_name = "Teszt János"
-                        default_tax_id = "8401021234"
-                        default_personal_id = "123456AB"
-                        default_id_card = "AD123456"
-                    elif role_str == "adóstárs":
-                        default_name = "Teszt_Adostars Mária"
-                        default_birth_name = "Teszt Mária"
-                        default_tax_id = "8401025678"
-                        default_personal_id = "789012CD"
-                        default_id_card = "CD789012"
-                    else:
-                        default_name = "Teszt Kezes Béla"
-                        default_birth_name = "Teszt Béla"
-                        default_tax_id = "8401029012"
-                        default_personal_id = "345678EF"
-                        default_id_card = "EF345678"
+                    perm_addr = (c.get("Permanent_address__c") or "").strip()
+                    zip_raw = str(c.get("ZIP__c") or "").strip()
+                    address_dict = (
+                        self._parse_address_string(perm_addr, zip_raw)
+                        if (perm_addr or zip_raw)
+                        else None
+                    )
+
+                    full_name = (
+                        c.get("Name")
+                        or f"{c.get('FirstName') or ''} {c.get('LastName') or ''}".strip()
+                    )
 
                     participant_record = {
                         "role": role_str,
-                        "name": c.get("Name") or f"{c.get('FirstName', '')} {c.get('LastName', '')}".strip() or default_name,
-                        "birth_name": c.get("Szuletesi_nev__c") or default_birth_name,
-                        "mother_name": c.get("Mother_s_Name__c") or "Minta Mária",
-                        "birth_place": c.get("Place_of_Birth__c") or "Budapest",
-                        "birth_date": c.get("Date_of_birth__c") or "1985-05-12",
-                        "personal_id": c.get("ID_Card_Number__c") or default_personal_id,
-                        "tax_id": c.get("Tax_ID__c") or default_tax_id,
-                        "id_card_number": c.get("Address_Card_Number__c") or default_id_card,
+                        "name": full_name,
+                        "birth_name": c.get("Szuletesi_nev__c") or None,
+                        "mother_name": c.get("Mother_s_Name__c") or None,
+                        "birth_place": c.get("Place_of_Birth__c") or None,
+                        "birth_date": c.get("Date_of_birth__c") or c.get("Birthdate") or None,
+                        "personal_id": c.get("ID_Card_Number__c") or None,
+                        "tax_id": c.get("Tax_ID__c") or None,
+                        "id_card_number": c.get("Address_Card_Number__c") or None,
                         "address": address_dict,
-                        "phone": c.get("Phone") or "+36301234567",
-                        "email": c.get("Email") or "janos.teszt@example.com",
-                        "employer": c.get("Name_of_employer__c") or "Fiktív Kft.",
-                        "monthly_income": c.get("Average_monthly_net_income__c") or 450000,
-                        "marital_status": c.get("Marital_Status__c") or "egyedülálló",
-                        "citizenship": c.get("Citizenship__c") or "magyar",
-                        "dependents_count": c.get("Dependents_count__c") or 4,
-                        "education": c.get("Highest_Educational_Qualification__c") or "Felsofoku",
-                        "income_type": c.get("Income_type__c") or "Munkabér (belföldről)",
+                        "phone": c.get("Phone") or c.get("MobilePhone") or None,
+                        "email": c.get("Email") or None,
+                        "employer": c.get("Name_of_employer__c") or None,
+                        "monthly_income": c.get("Average_monthly_net_income__c"),
+                        "marital_status": c.get("Marital_Status__c") or None,
+                        "citizenship": c.get("Citizenship__c") or None,
+                        "dependents_count": c.get("Dependents_count__c"),
+                        "education": c.get("Highest_Educational_Qualification__c") or None,
+                        "income_type": c.get("Income_type__c") or None,
                         "is_active": True,
                         # Extra Contact mezők (SOQL-ból, lehetnek üresek)
                         "salutation": c.get("Salutation") or "",
@@ -585,7 +580,11 @@ class SalesforceClient:
                         "income_from_self_owned": c.get("Income_from_self_owned_company__c") or 0,
                         "industry": c.get("Industry__c") or "",
                         "monthly_payment_details": c.get("Monthly_Payment_details__c") or "",
-                        "monthly_installment_payment": c.get("Monthly_installment_payment__c") or 0,
+                        "monthly_installment_payment": (
+                            c.get("Monthly_installment_payment__c")
+                            or c.get("Affordable_monthly_installments__c")
+                            or 0
+                        ),
                         "mortgagor": c.get("Mortgagor__c") or "",
                         "numer_and_age_of_children": c.get("Numer_and_Age_of_Children__c") or "",
                         "other_income": c.get("Other_income__c") or 0,
@@ -605,28 +604,37 @@ class SalesforceClient:
                     participant_record["income_bearing"] = income_flags.get(role_label)
                     participants_records.append(participant_record)
 
-                # 5. Ingatlanok lekérdezése kapcsolótáblán keresztül
+                # 5. Ingatlanok lekérdezése:
+                #    Elsődleges: Opportunity_Property_Role__c kapcsolótábla
+                #    Fallback: Property__c WHERE Account__c = account_id (a valós
+                #    sandbox ügyleteknél az ingatlanok közvetlenül az Accountra
+                #    vannak kötve, és az Ingatlan_szerepe__c a Property__c-n él).
                 properties_records = []
-                # SOQL query construction for deal_id
+                prop_fields = (
+                    "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
+                    "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
+                    "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
+                    "Ingatlan_emelet__c, Ingatlan_energetika__c, Ingatlan_terhek__c, "
+                    "Ingatlan_szerepe__c, Ingatlan_jellege__c, Ingatlan_megjegyzes__c, "
+                    "Ingatlan_osztatlan__c, Ingatlan_neve__c, Ingatlan_hasznalatbaveteli__c"
+                )
+                import re as _re
+                safe_deal_id = _re.sub(r"[^a-zA-Z0-9]", "", str(deal_id or ""))
                 prop_role_query = (
                     "SELECT Property__c, Ingatlan_szerepe__c "
                     "FROM Opportunity_Property_Role__c "
-                    f"WHERE Opportunity__c = '{deal_id}'"
+                    f"WHERE Opportunity__c = '{safe_deal_id}'"
                 )
                 prop_role_results = self._sf.query(prop_role_query)
                 prop_roles = prop_role_results.get("records", [])
-                
+
+                ordered_props: list[tuple[dict, str]] = []
                 if prop_roles:
-                    prop_ids = [pr["Property__c"] for pr in prop_roles if pr.get("Property__c")]
+                    prop_ids = [
+                        _re.sub(r"[^a-zA-Z0-9]", "", str(pr["Property__c"]))
+                        for pr in prop_roles if pr.get("Property__c")
+                    ]
                     if prop_ids:
-                        prop_fields = (
-                            "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
-                            "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
-                            "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                            "Ingatlan_emelet__c, Ingatlan_energetika__c, Ingatlan_terhek__c, "
-                            "Ingatlan_szerepe__c, Ingatlan_jellege__c, Ingatlan_megjegyzes__c, "
-                            "Ingatlan_osztatlan__c, Ingatlan_neve__c, Ingatlan_hasznalatbaveteli__c"
-                        )
                         prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
@@ -634,50 +642,77 @@ class SalesforceClient:
                         )
                         prop_results = self._sf.query(prop_query)
                         props_by_id = {p_rec["Id"]: p_rec for p_rec in prop_results.get("records", [])}
-                        
                         for pr in prop_roles:
                             pid = pr.get("Property__c")
-                            if not pid or pid not in props_by_id:
-                                continue
-                            p = props_by_id[pid]
-                            
-                            street_parts = []
-                            if p.get("Ingatlan_kozterulet_neve__c"):
-                                street_parts.append(p.get("Ingatlan_kozterulet_neve__c"))
-                            if p.get("Ingatlan_Kozterulet_jellege__c"):
-                                street_parts.append(p.get("Ingatlan_Kozterulet_jellege__c"))
-                            
-                            street_name = " ".join(street_parts).strip()
-                            zip_val = p.get("Ingatlan_irsz__c")
-                            zip_str = str(int(zip_val)) if zip_val else ""
-                            
-                            prop_record = {
-                                "property_type": p.get("Property_Type__c") or "lakás",
-                                "parcel_number": p.get("Ingatlan_hrsz__c") or "12345/6/A",
-                                "area_sqm": p.get("Ingatlan_alapterulet__c") or 65.0,
-                                "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c") or 45000000,
-                                "purchase_price": p.get("Purchase_price__c") or 0,
-                                "form_type": p.get("Ingatlan_jellege__c", "") or "",
-                                "energetika": p.get("Ingatlan_energetika__c", "") or "",
-                                "terhek": p.get("Ingatlan_terhek__c", "") or "",
-                                "ingatlan_szerepe": p.get("Ingatlan_szerepe__c", "") or "",
-                                "epites_eve": str(p.get("Ingatlan_hasznalatbaveteli__c", "") or ""),
-                                "ingatlan_megjegyzes": p.get("Ingatlan_megjegyzes__c", "") or "",
-                                "ingatlan_neve": p.get("Ingatlan_neve__c", "") or "",
-                                "ingatlan_osztatlan": p.get("Ingatlan_osztatlan__c", "") or "",
-                                "address": {
-                                    "zip_code": zip_str or "1123",
-                                    "city": p.get("Ingatlan_telepules__c") or "Budapest",
-                                    "street": street_name or "Alkotás utca",
-                                    "house_number": p.get("Ingatlan_hazszam__c") or "12",
-                                    "floor": p.get("Ingatlan_emelet__c") or "3",
-                                    "door": None
-                                }
-                            }
-                            properties_records.append(prop_record)
+                            if pid and pid in props_by_id:
+                                p_rec = props_by_id[pid]
+                                role_override = pr.get("Ingatlan_szerepe__c") or p_rec.get("Ingatlan_szerepe__c") or ""
+                                ordered_props.append((p_rec, role_override))
+                elif account_id:
+                    safe_acc_id = _re.sub(r"[^a-zA-Z0-9]", "", str(account_id))
+                    try:
+                        acc_prop_query = (
+                            f"SELECT {prop_fields} FROM Property__c "
+                            f"WHERE Account__c = '{safe_acc_id}'"
+                        )
+                        acc_props = self._sf.query(acc_prop_query).get("records", [])
+                        # Sorrend: Célingatlan előre, Pótfedezet másodiknak
+                        def _prop_sort_key(p_item: dict) -> tuple:
+                            sz = (p_item.get("Ingatlan_szerepe__c") or "").lower()
+                            if "cél" in sz or "cel" in sz:
+                                return (0, p_item.get("Id") or "")
+                            if "pót" in sz or "pot" in sz:
+                                return (1, p_item.get("Id") or "")
+                            return (2, p_item.get("Id") or "")
 
-                # 6. Futamidő meghatározása (első résztvevő Term_in_year_c__c mezőjéből ha van)
-                loan_term_months = 240 # alapértelmezett 20 év
+                        for p_rec in sorted(acc_props, key=_prop_sort_key):
+                            ordered_props.append((p_rec, p_rec.get("Ingatlan_szerepe__c") or ""))
+                        if ordered_props:
+                            logger.info(
+                                "Account ingatlan-fallback: %d Property__c (%s)",
+                                len(ordered_props), account_id,
+                            )
+                    except Exception as exc:
+                        logger.warning("Account Property__c lekérése sikertelen (%s): %s", account_id, exc)
+
+                for p, role_val in ordered_props:
+                    street_parts = []
+                    if p.get("Ingatlan_kozterulet_neve__c"):
+                        street_parts.append(p.get("Ingatlan_kozterulet_neve__c"))
+                    if p.get("Ingatlan_Kozterulet_jellege__c"):
+                        street_parts.append(p.get("Ingatlan_Kozterulet_jellege__c"))
+
+                    street_name = " ".join(street_parts).strip()
+                    zip_val = p.get("Ingatlan_irsz__c")
+                    zip_str = str(int(zip_val)) if zip_val else ""
+
+                    prop_record = {
+                        "property_type": p.get("Property_Type__c") or "lakás",
+                        "parcel_number": p.get("Ingatlan_hrsz__c") or "",
+                        "area_sqm": p.get("Ingatlan_alapterulet__c"),
+                        "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
+                        "purchase_price": p.get("Purchase_price__c"),
+                        "form_type": p.get("Ingatlan_jellege__c", "") or "",
+                        "energetika": p.get("Ingatlan_energetika__c", "") or "",
+                        "terhek": p.get("Ingatlan_terhek__c", "") or "",
+                        "ingatlan_szerepe": role_val or p.get("Ingatlan_szerepe__c", "") or "",
+                        "epites_eve": str(p.get("Ingatlan_hasznalatbaveteli__c", "") or ""),
+                        "ingatlan_megjegyzes": p.get("Ingatlan_megjegyzes__c", "") or "",
+                        "ingatlan_neve": p.get("Ingatlan_neve__c", "") or "",
+                        "ingatlan_osztatlan": p.get("Ingatlan_osztatlan__c", "") or "",
+                        "address": {
+                            "zip_code": zip_str,
+                            "city": p.get("Ingatlan_telepules__c") or "",
+                            "street": street_name,
+                            "house_number": str(p.get("Ingatlan_hazszam__c") or ""),
+                            "floor": p.get("Ingatlan_emelet__c") or None,
+                            "door": None,
+                        },
+                    }
+                    properties_records.append(prop_record)
+
+                # 6. Futamidő meghatározása (Opportunity vagy első résztvevő Term_in_year_c__c mezőjéből)
+                loan_term_months = 240  # alapértelmezett 20 év
                 for cid in contact_ids:
                     if cid in contacts and contacts[cid].get("Term_in_year_c__c"):
                         try:
@@ -687,19 +722,30 @@ class SalesforceClient:
                         except (ValueError, TypeError):
                             pass
 
-                # 7. Normalizált formátum összeállítása
+                # Ha az Opportunity-n nincs Purchase_Price__c, de a célingatlanon van
+                first_prop_purchase = next(
+                    (pr.get("purchase_price") for pr in properties_records if pr.get("purchase_price")),
+                    None,
+                )
+
+                # 7. Normalizált formátum összeállítása (valós SF adatokból, fiktív fallback nélkül)
                 normalized_sf_data = {
                     "Id": opp.get("Id"),
                     "StageName": opp.get("StageName"),
-                    "Amount__c": opp.get("Hitel_sszeg__c") or opp.get("Amount"),
+                    "Amount__c": opp.get("Hitel_sszeg__c") or opp.get("Amount") or 0,
                     "Loan_Term__c": loan_term_months,
-                    "Interest_Period__c": opp.get("Interest_Period__c") or "5 év",
-                    "Loan_Purpose__c": opp.get("Hitelc_l__c") or opp.get("Loan_Purpose__c") or "Használt ingatlan vásárlása",
-                    "Product_Name__c": opp.get("Term_k__c") or "Lakáshitel",
-                    "Down_Payment__c": opp.get("Down_Payment__c") or 5000000,
-                    "Monthly_Payment__c": opp.get("Monthly_Payment__c") or 150000,
+                    "Interest_Period__c": opp.get("Interest_Period__c") or None,
+                    "Loan_Purpose__c": opp.get("Hitelc_l__c") or opp.get("Loan_Purpose__c") or None,
+                    "Product_Name__c": opp.get("Term_k__c") or opp.get("Name") or None,
+                    "Product_Type__c": opp.get("Product_Type__c") or opp.get("Term_k__c") or None,
+                    "Down_Payment__c": opp.get("Down_Payment__c"),
+                    "Monthly_Payment__c": opp.get("Monthly_Payment__c"),
+                    "Purchase_Price__c": opp.get("Purchase_Price__c") or first_prop_purchase,
+                    "CSOK_Amount__c": opp.get("CSOK_Amount__c") or opp.get("Csok__c"),
+                    "AFA_Support__c": opp.get("AFA_Support__c") or opp.get("Afa__c"),
+                    "Housing_Savings__c": opp.get("Housing_Savings__c") or opp.get("Lakastakarek__c"),
                     "CreatedDate": opp.get("CreatedDate"),
-                    "Description": opp.get("Description") or opp.get("remark__c") or "NAV nyilatkozat: adótartozás-mentes.",
+                    "Description": opp.get("Description") or opp.get("remark__c") or opp.get("Name") or None,
                     "Participants__r": {
                         "records": participants_records
                     },

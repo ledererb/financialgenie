@@ -237,40 +237,26 @@
       "pdf_field_name": "SZA_ESZ_kieg",
       "label": "Kiegészítő adat: Írástudatlan",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált Salesforce mező; leképezhető a Contact.Description-re vagy egyedi mezőre",
-      "checkbox_group": {
-        "group_id": "kiegeszito_adat",
-        "group_label": "Kiegészítő adat",
-        "option_value": "Írástudatlan",
-        "option_label": "Írástudatlan"
-      },
-      "fill_rule": {
-        "match_value": "Írástudatlan"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_ESZ_kieg2",
       "label": "Kiegészítő adat: Látássérült/olvasni nem tudó",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált Salesforce mező; leképezhető a Contact.Description-re vagy egyedi mezőre",
-      "checkbox_group": {
-        "group_id": "kiegeszito_adat",
-        "group_label": "Kiegészítő adat",
-        "option_value": "Látássérült/olvasni nem tudó",
-        "option_label": "Látássérült/olvasni nem tudó"
-      },
-      "fill_rule": {
-        "match_value": "Látássérült/olvasni nem tudó"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
@@ -337,27 +323,20 @@
       "pdf_field_name": "SZA_ESZ_személyazonosító___4,5",
       "label": "Személyazonosító dokumentum: Egyéb",
       "field_type": "checkbox",
-      "canonical_field": "Contact.ID_Card_Number__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Dokumentum típusa – Egyéb; a szabad szöveges értéket a SZA_ESZ_személyazonosító_egyéb mező tartalmazza",
-      "checkbox_group": {
-        "group_id": "szemelyi_dok_tipus",
-        "group_label": "Személyazonosító dokumentum",
-        "option_value": "Egyéb",
-        "option_label": "Egyéb"
-      },
-      "fill_rule": {
-        "match_value": "Egyéb"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_ESZ_személyazonosító_egyéb",
       "label": "Személyazonosító dokumentum – egyéb megnevezése",
       "field_type": "text",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,

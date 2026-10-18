@@ -115,6 +115,8 @@ CANONICAL_FIELDS = {
     "Contact.Highest_Educational_Qualification__c": "Legmagasabb iskolai végzettség",
     "Contact.HomePhone": "Otthoni telefon",
     "Contact.ID_Card_Number__c": "Személyi igazolvány szám",
+    "Contact.Personal_ID__c": "Személyazonosító igazolvány szám",
+    "Contact.Address_Card_Number__c": "Lakcímkártya száma",
     "Contact.Income_from_self_owned_company__c": "Income from self-owned company",
     "Contact.Income_type__c": "Jövedelem típusa",
     "Contact.IndividualId": "Individual ID",
@@ -143,6 +145,7 @@ CANONICAL_FIELDS = {
     "Contact.Missing_documents__c": "Missing documents",
     "Contact.MobilePhone": "Mobilszám",
     "Contact.Monthly_Payment_details__c": "Havi törlesztő részletei",
+    "Contact.Monthly_installment_payment__c": "Meglévő hitel havi törlesztője",
     "Contact.Mortgagor__c": "Zálogkötelezett",
     "Contact.Mother_s_Name__c": "Anyja születési neve",
     "Contact.Name": "Teljes név",
@@ -162,6 +165,7 @@ CANONICAL_FIELDS = {
     "Contact.Other_income__c": "Egyéb jövedelmi infó",
     "Contact.Other_monthly_deductions__c": "Jövedelmet terhelő egyéb levonások",
     "Contact.Other_monthly_income__c": "Egyéb havi jövedelem",
+    "Contact.Own_resources__c": "Önerő (Contact)",
     "Contact.OwnerId": "Owner ID",
     "Contact.Ownership_in_employer__c": "Tulajdonrésze a munkáltatóban",
     "Contact.Partneri_bank__c": "Partneri bank",
@@ -190,6 +194,7 @@ CANONICAL_FIELDS = {
     "Contact.State_Support__c": "Állami támogatás",
     "Contact.Szuletesi_nev__c": "Születési név",
     "Contact.Tax_ID__c": "Adóazonosító jel",
+    "Contact.Term_in_year_c": "Futamidő (év)",
     "Contact.Term_in_year_c__c": "Futamidő (év)",
     "Contact.Third_Co_debtor__c": "Third Co-debtor",
     "Contact.Title": "Title",
@@ -228,13 +233,14 @@ CANONICAL_FIELDS = {
     "Lead.Form_Type__c": "Form_Type",
     "Lead.Industry": "Industry",
     "Lead.Ingatlan_Kozterulet_jellege__c": "Közterület jellege",
-    "Lead.Ingatlan_alapterulet__c": "Hasznos alapterület",
-    "Lead.Ingatlan_emelet__c": "Épület, lépcsőház, emelet, ajtó",
+    "Lead.Ingatlan_alapterulet__c": "Hasznos alapterület (m2)",
+    "Lead.Ingatlan_emelet__c": "Csak emelet/ajtó (ha külön mezőben van az utcától)",
     "Lead.Ingatlan_energetika__c": "Energetikai besorolás",
+    "Lead.Ingatlan_hazszam__c": "Házszám",
     "Lead.Ingatlan_irsz__c": "Ingatlan irányítószáma",
-    "Lead.Ingatlan_jellege__c": "Ingatlan jellege",
-    "Lead.Ingatlan_kozterulet_neve__c": "Közterület neve",
-    "Lead.Ingatlan_megjegyzes__c": "Ingatlan megjegyzés",
+    "Lead.Ingatlan_jellege__c": "Ingatlan jellege (lakás/ház/telek)",
+    "Lead.Ingatlan_kozterulet_neve__c": "Ingatlan utca, házszám (teljes utcacím, lépcsőház, emelet, ajtó)",
+    "Lead.Ingatlan_megjegyzes__c": "Ingatlan helyrajzi száma (hrsz) — KIZÁRÓLAG helyrajzi számhoz!",
     "Lead.Ingatlan_szerepe__c": "Ingatlan szerepe",
     "Lead.Ingatlan_telepules__c": "Ingatlan település",
     "Lead.Ingatlan_terhek__c": "Ingatlan terhek",
@@ -616,11 +622,33 @@ def _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members
         if len(members) < (2 if stem else 4):
             continue
         slug = _re.sub(r"[^a-z0-9]+", "_", canonical.lower()).strip("_")
+        c_low = canonical.lower()
+        is_rtl = any(
+            kw in c_low
+            for kw in (
+                "hitel_sszeg",
+                "loan_amount",
+                "income",
+                "jovedelem",
+                "own_resources",
+                "onero",
+                "vetelar",
+                "purchase_price",
+                "becsult_ertek",
+                "installment",
+                "torleszto",
+                "csok",
+                "gyermekek_szama",
+                "term_in_year",
+                "futamido",
+                "alapterulet",
+            )
+        )
         groups.append({
             "group_id": f"chargroup_{slug}_p{page}_{len(groups)}",
             "canonical_field": canonical,
             "member_fields": list(members),
-            "direction": "left_to_right",
+            "direction": "right_to_left" if is_rtl else "left_to_right",
             "separator": "",
         })
         members_all.update(members)
@@ -916,16 +944,21 @@ Fontos szabályok:
         # 2. Heurisztikus alap-leképezés (mindig fut, OTP exact map-el)
         base_mapping = self._heuristic_map_fields(pdf_fields, pdf_path, "acroform")
 
-        # 3. AI leképezés – batch módban ha sok a mező
+        # 3. AI leképezés – mindig az annotált piros keretes batch módot használjuk
+        ai_mapping = None
         if self._client:
-            if len(pdf_fields) > 200:
-                ai_mapping = self._ai_batch_recognize(pdf_path, pdf_fields)
-            else:
-                ai_mapping = self._ai_map_fields(pdf_path, pdf_fields, "acroform")
+            ai_mapping = self._ai_batch_recognize(pdf_path, pdf_fields)
 
-            if ai_mapping:
-                # AI eredmények összefésülése a heurisztikussal
-                base_mapping = self._merge_mappings(base_mapping, ai_mapping)
+        if ai_mapping:
+            # AI eredmények összefésülése a heurisztikussal
+            base_mapping = self._merge_mappings(base_mapping, ai_mapping, pdf_fields=pdf_fields)
+        else:
+            char_groups, char_members = _detect_character_groups(pdf_fields, base_mapping.fields)
+            if char_members:
+                for f in base_mapping.fields:
+                    if f.pdf_field_name in char_members:
+                        f.canonical_field = None
+                base_mapping.character_groups = char_groups
 
         return base_mapping
 
@@ -1104,13 +1137,14 @@ Example (full group, 4 members):
   {{"f": "végzettség___4,5", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "8 általános", "ol": "8 általános"}}
 
 RULES:
-- Map EVERY field to the BEST matching Salesforce field from the list above.
+- Map a field ONLY when an EXACT semantic match exists in the Salesforce canonical list above.
+- NEVER guess or approximate! If no exact semantic match exists (e.g. room counts, elevator, heating type, currency code "deviza", "Írástudatlan/Látássérült", "Egyéb dokumentum szöveges", document copy counts on cover page), MUST set "c": null!
+- Lead.Ingatlan_megjegyzes__c is ONLY for parcel number (helyrajzi szám / hrsz) — NEVER map other property questions to it!
+- Lead.Ingatlan_kozterulet_neve__c is for the property street address ("Utca, házszám, lépcsőház, emelet, ajtó").
 - Use the Object.FieldName format exactly as shown in the canonical list.
-- For fields you CANNOT map to any SF field, set "c" to null.
 - For GENERIC field names (e.g., "Text_Field_43", "Szövegmező 123", "Check_Box_5"), ALWAYS look at the RED BOX on the image to find the label.
 - Use PDF field name prefixes as hints: SZA_IG = személyi (Contact fields), IA = ingatlan (Lead.Ingatlan_* fields), CSOK = family subsidy (Lead.Tervezett_CSOK_*), LAHI = lakáshitel (Opportunity fields), MA = munkáltatói (Contact employer fields)
-- Checkbox fields: if the label is a yes/no question or a selection option, map to the nearest matching SF field.
-- When multiple people (adós/adóstárs) share the same field structure, they ALL map to the same Contact.* fields.
+- When a field belongs to a co-borrower (társigénylő / adóstárs section or "-társ" suffix), append "-társ" to Contact.* canonical fields (e.g. "Contact.Name-társ").
 
 Output format: [{{"f": "field_name", "l": "human readable Hungarian label from the printed text next to the field", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
 For checkbox groups add: "g": "group_id", "gl": "group_label", "ov": "option_value", "ol": "option_label"
@@ -1147,6 +1181,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                     response = self._client.messages.create(
                         model=AI_MODEL,
                         max_tokens=8192,
+                        temperature=0.0,
                         system=system,
                         messages=[
                             {"role": "user", "content": content},
@@ -1190,10 +1225,6 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                             logger.debug(f"    🔄 Fuzzy: '{canonical}' → '{best}'")
                                             canonical = best
                                     
-                                    if not canonical:
-                                        skipped += 1
-                                        continue
-                                    
                                     t_val = item.get("t", "text")
                                     try:
                                         f_type = FieldType(t_val)
@@ -1201,6 +1232,19 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                         f_type = FieldType.TEXT
                                     
                                     ai_label = (item.get("l") or "").strip()
+                                    if not canonical:
+                                        skipped += 1
+                                        if ai_label:
+                                            all_fields.append(RecognizedField(
+                                                pdf_field_name=field_name,
+                                                label=ai_label,
+                                                field_type=f_type,
+                                                canonical_field=None,
+                                                confidence=MappingConfidence.LOW,
+                                                page_number=item.get("p", page_num),
+                                            ))
+                                        continue
+                                    
                                     all_fields.append(RecognizedField(
                                         pdf_field_name=field_name,
                                         label=ai_label or field_name.replace("_", " ").title(),
@@ -1306,7 +1350,10 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
         return None
 
     def _merge_mappings(
-        self, base: MappingConfig, ai: MappingConfig
+        self,
+        base: MappingConfig,
+        ai: MappingConfig,
+        pdf_fields: list[dict] | None = None,
     ) -> MappingConfig:
         """Heurisztikus és AI mapping összefésülése. AI felülírja a heurisztikust."""
         # AI mezők index-be
@@ -1320,6 +1367,11 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                 if ai_field.canonical_field:
                     merged.append(ai_field)
                 elif base_field.canonical_field:
+                    if ai_field.label and (
+                        not base_field.label
+                        or base_field.label == base_field.pdf_field_name.replace("_", " ").title()
+                    ):
+                        base_field.label = ai_field.label
                     merged.append(base_field)
                 else:
                     merged.append(ai_field)  # AI label/notes még hasznos
@@ -1332,8 +1384,30 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
             if ai_field.pdf_field_name not in base_names:
                 merged.append(ai_field)
 
+        # Merge character_groups from base and ai, plus re-detect if pdf_fields provided
+        char_groups: list[dict] = []
+        seen_members: set[str] = set()
+        for grp in list(ai.character_groups or []) + list(base.character_groups or []):
+            members = grp.get("member_fields", [])
+            if members and not any(m in seen_members for m in members):
+                char_groups.append(grp)
+                seen_members.update(members)
+
+        if pdf_fields:
+            extra_groups, _ = _detect_character_groups(pdf_fields, merged)
+            for grp in extra_groups:
+                members = grp.get("member_fields", [])
+                if members and not any(m in seen_members for m in members):
+                    char_groups.append(grp)
+                    seen_members.update(members)
+
+        if seen_members:
+            for f in merged:
+                if f.pdf_field_name in seen_members:
+                    f.canonical_field = None
+
         total_mapped = sum(1 for f in merged if f.canonical_field)
-        logger.info(f"📊 Merge eredmény: {total_mapped}/{len(merged)} mező leképezve")
+        logger.info(f"📊 Merge eredmény: {total_mapped}/{len(merged)} mező leképezve, {len(char_groups)} character_group")
 
         # PLAN §3.5 — checkbox-csoport konzisztencia ellenőrzés a merge után
         group_errors = _validate_checkbox_groups(merged)
@@ -1345,6 +1419,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
             form_name=base.form_name or ai.form_name,
             form_type=base.form_type,
             fields=merged,
+            character_groups=char_groups,
             page_structure=ai.page_structure or base.page_structure,
             notes=f"Összefésült mapping: heurisztikus + AI ({total_mapped} leképezve).",
         )
@@ -2088,9 +2163,12 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
             "SZA_IG_foglalkoztatás-társ": "Contact.Employment_Type_c__c",
             "SZA_IG_eltartottak-társ": "Contact.Dependents_count__c",
             # === IA_ – Ingatlan adatok ===
+            "IA_cím_isz": "Lead.Ingatlan_irsz__c",
+            "IA_cím_település": "Lead.Ingatlan_telepules__c",
+            "IA_cím_utca": "Lead.Ingatlan_kozterulet_neve__c",
+            "IA_helyrazi_szam": "Lead.Ingatlan_megjegyzes__c",
+            "IA_hasznos_terület": "Lead.Ingatlan_alapterulet__c",
             "IA_ingatlanhasználat": "Lead.Ingatlan_szerepe__c",
-            "IA_Bérletidíj": "Contact.Other_income__c",
-            "IA_Bérletidíj_EUR": "Contact.Other_income__c",
             "IA_Kapcsolattartó neve": "Opportunity.Contact_Name__c",
             "IA_Telefonszám": "Contact.OtherPhone",
             # === LAHI/KTKA – Lakáshitel/Költségkalkuláció ===

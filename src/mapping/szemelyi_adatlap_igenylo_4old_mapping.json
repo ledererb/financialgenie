@@ -82,7 +82,7 @@
       "coordinates": null,
       "notes": "Csak akkor kell kitölteni, ha nem csak piaci hitel szerepel az igénylésben, de az igénylő nem lesz támogatott személy",
       "checkbox_group": {
-        "group_id": "tamogatas_szerep",
+        "group_id": "tamogatas_szerep_tars",
         "group_label": "Szerepe a támogatásigénylésben",
         "option_value": "Nem támogatott személy",
         "option_label": "Nem támogatott személy"

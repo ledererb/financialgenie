@@ -3882,7 +3882,7 @@
       "pdf_field_name": "Text Field 520",
       "label": "Osztalék OTP - mező 2",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
@@ -3947,7 +3947,7 @@
       "pdf_field_name": "Text Field 525",
       "label": "Osztalék más bank - mező 1",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
@@ -6449,7 +6449,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "citizenship",
+        "group_id": "citizenship_tars",
         "group_label": "Állampolgársága",
         "option_value": "Magyar",
         "option_label": "Magyar"
@@ -6467,7 +6467,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "citizenship",
+        "group_id": "citizenship_tars",
         "group_label": "Állampolgársága",
         "option_value": "Egyéb",
         "option_label": "Egyéb"
@@ -6534,7 +6534,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "marital_status",
+        "group_id": "marital_status_tars",
         "group_label": "Családi állapot",
         "option_value": "Házas/bejegyzett",
         "option_label": "Házas/bejegyzett"
@@ -6552,7 +6552,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "marital_status",
+        "group_id": "marital_status_tars",
         "group_label": "Családi állapot",
         "option_value": "Élettárs",
         "option_label": "Élettárs"
@@ -6570,7 +6570,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "marital_status",
+        "group_id": "marital_status_tars",
         "group_label": "Családi állapot",
         "option_value": "Özvegy",
         "option_label": "Özvegy"
@@ -6588,7 +6588,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "marital_status",
+        "group_id": "marital_status_tars",
         "group_label": "Családi állapot",
         "option_value": "Egyedülálló",
         "option_label": "Egyedülálló"
@@ -6606,7 +6606,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "marital_status",
+        "group_id": "marital_status_tars",
         "group_label": "Családi állapot",
         "option_value": "Elvált",
         "option_label": "Elvált"
@@ -6702,7 +6702,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "has_mobile",
+        "group_id": "has_mobile_tars",
         "group_label": "Van mobiltelefonja?",
         "option_value": "Igen",
         "option_label": "Igen"
@@ -6720,7 +6720,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "has_mobile",
+        "group_id": "has_mobile_tars",
         "group_label": "Van mobiltelefonja?",
         "option_value": "Nem",
         "option_label": "Nem"
@@ -6777,7 +6777,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "residence_legal_title",
+        "group_id": "residence_legal_title_tars",
         "group_label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén?",
         "option_value": "Tulajdonos",
         "option_label": "Tulajdonos"
@@ -6795,7 +6795,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "residence_legal_title",
+        "group_id": "residence_legal_title_tars",
         "group_label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén?",
         "option_value": "Bérlő",
         "option_label": "Bérlő"
@@ -6813,7 +6813,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "residence_legal_title",
+        "group_id": "residence_legal_title_tars",
         "group_label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén?",
         "option_value": "Családtag",
         "option_label": "Családtag"
@@ -6831,7 +6831,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "residence_legal_title",
+        "group_id": "residence_legal_title_tars",
         "group_label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén?",
         "option_value": "Egyéb",
         "option_label": "Egyéb"
@@ -6927,7 +6927,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "highest_education",
+        "group_id": "highest_education_tars",
         "group_label": "Mi az Ön legmagasabb iskolai végzettsége?",
         "option_value": "Felsőfokú",
         "option_label": "Felsőfokú"
@@ -6945,7 +6945,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "highest_education",
+        "group_id": "highest_education_tars",
         "group_label": "Mi az Ön legmagasabb iskolai végzettsége?",
         "option_value": "Szakképesítés",
         "option_label": "Szakképesítés"
@@ -6963,7 +6963,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "highest_education",
+        "group_id": "highest_education_tars",
         "group_label": "Mi az Ön legmagasabb iskolai végzettsége?",
         "option_value": "Érettségi",
         "option_label": "Érettségi"
@@ -6981,7 +6981,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "highest_education",
+        "group_id": "highest_education_tars",
         "group_label": "Mi az Ön legmagasabb iskolai végzettsége?",
         "option_value": "8 általános vagy alacsonyabb",
         "option_label": "8 általános vagy alacsonyabb"
@@ -6999,7 +6999,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_employment",
+        "group_id": "work_type_employment_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Szellemi munkát végző alkalmazott",
         "option_label": "Szellemi munkát végző alkalmazott"
@@ -7017,7 +7017,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_employment",
+        "group_id": "work_type_employment_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Vezető alkalmazott",
         "option_label": "Vezető alkalmazott (felső- vagy középvezető)"
@@ -7035,7 +7035,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_employment",
+        "group_id": "work_type_employment_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Közalkalmazott vagy Egészségügyi szolgálati jogviszony",
         "option_label": "Közalkalmazott vagy Egészségügyi szolgálati jogviszony"
@@ -7053,7 +7053,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_employment",
+        "group_id": "work_type_employment_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Fizikai munkát végző alkalmazott",
         "option_label": "Fizikai munkát végző alkalmazott"
@@ -7071,7 +7071,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_employment",
+        "group_id": "work_type_employment_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Köztisztviselő",
         "option_label": "Köztisztviselő"
@@ -7089,7 +7089,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_entrepreneur",
+        "group_id": "work_type_entrepreneur_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Egyéni vállalkozó",
         "option_label": "Egyéni vállalkozó"
@@ -7107,7 +7107,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_entrepreneur",
+        "group_id": "work_type_entrepreneur_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Más társas vállalkozás tulajdonosa",
         "option_label": "Más társas vállalkozás tulajdonosa"
@@ -7125,7 +7125,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_entrepreneur",
+        "group_id": "work_type_entrepreneur_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Kkt. vagy Bt. bel- vagy kültagja",
         "option_label": "Kkt. vagy Bt. bel- vagy kültagja"
@@ -7143,7 +7143,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "work_type_entrepreneur",
+        "group_id": "work_type_entrepreneur_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Őstermelő",
         "option_label": "Őstermelő"
@@ -7161,7 +7161,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "Nyugdíjas",
         "option_label": "Nyugdíjas"
@@ -7179,7 +7179,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "Háztartásbeli",
         "option_label": "Háztartásbeli"
@@ -7197,7 +7197,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "GYES-en/GYED-en lévő",
         "option_label": "GYES-en/GYED-en lévő"
@@ -7215,7 +7215,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "Tanuló",
         "option_label": "Tanuló"
@@ -7233,7 +7233,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "Munkanélküli",
         "option_label": "Munkanélküli"
@@ -7251,7 +7251,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_jovedelem_tipus",
+        "group_id": "egyeb_jovedelem_tipus_tars",
         "group_label": "Egyéb jövedelem típusa",
         "option_value": "Egyéb",
         "option_label": "Egyéb"
@@ -7282,7 +7282,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_tipus",
+        "group_id": "munkaviszony_tipus_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Szellemi munkát végző alkalmazott",
         "option_label": "Szellemi munkát végző alkalmazott"
@@ -7300,7 +7300,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_tipus",
+        "group_id": "munkaviszony_tipus_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Vezető alkalmazott",
         "option_label": "Vezető alkalmazott (felső- vagy középvezető)"
@@ -7318,7 +7318,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_tipus",
+        "group_id": "munkaviszony_tipus_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Közalkalmazott vagy Egészségügyi szolgálati jogviszony",
         "option_label": "Közalkalmazott vagy Egészségügyi szolgálati jogviszony"
@@ -7336,7 +7336,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_tipus",
+        "group_id": "munkaviszony_tipus_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Fizikai munkát végző alkalmazott",
         "option_label": "Fizikai munkát végző alkalmazott"
@@ -7354,7 +7354,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_tipus",
+        "group_id": "munkaviszony_tipus_tars",
         "group_label": "Munkaviszony típusa",
         "option_value": "Köztisztviselő",
         "option_label": "Köztisztviselő"
@@ -7372,7 +7372,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "vallalkozo_tipus",
+        "group_id": "vallalkozo_tipus_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Egyéni vállalkozó",
         "option_label": "Egyéni vállalkozó"
@@ -7390,7 +7390,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "vallalkozo_tipus",
+        "group_id": "vallalkozo_tipus_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Más társas vállalkozás tulajdonosa",
         "option_label": "Más társas vállalkozás tulajdonosa"
@@ -7408,7 +7408,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "vallalkozo_tipus",
+        "group_id": "vallalkozo_tipus_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Kkt. vagy Bt. bel- vagy kültagja",
         "option_label": "Kkt. vagy Bt. bel- vagy kültagja"
@@ -7426,7 +7426,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "vallalkozo_tipus",
+        "group_id": "vallalkozo_tipus_tars",
         "group_label": "Vállalkozó típusa",
         "option_value": "Őstermelő",
         "option_label": "Őstermelő"
@@ -7444,7 +7444,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "Nyugdíjas",
         "option_label": "Nyugdíjas"
@@ -7462,7 +7462,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "Háztartásbeli",
         "option_label": "Háztartásbeli"
@@ -7480,7 +7480,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "GYES-en/GYED-en lévő",
         "option_label": "GYES-en/GYED-en lévő"
@@ -7498,7 +7498,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "Tanuló",
         "option_label": "Tanuló"
@@ -7516,7 +7516,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "Munkanélküli",
         "option_label": "Munkanélküli"
@@ -7534,7 +7534,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "egyeb_munka_tipus",
+        "group_id": "egyeb_munka_tipus_tars",
         "group_label": "Egyéb munka típusa",
         "option_value": "Egyéb",
         "option_label": "Egyéb"
@@ -7565,7 +7565,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_jelleg",
+        "group_id": "munkaviszony_jelleg_tars",
         "group_label": "Jelenlegi munkaviszony típusa",
         "option_value": "Határozatlan",
         "option_label": "Határozatlan"
@@ -7583,7 +7583,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaviszony_jelleg",
+        "group_id": "munkaviszony_jelleg_tars",
         "group_label": "Jelenlegi munkaviszony típusa",
         "option_value": "Határozott",
         "option_label": "Határozott"
@@ -7601,7 +7601,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Egyéni vállalkozó",
         "option_label": "Egyéni vállalkozó"
@@ -7619,7 +7619,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Őstermelő",
         "option_label": "Őstermelő"
@@ -7637,7 +7637,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Közkereseti társaság vagy betéti társaság",
         "option_label": "Közkereseti társaság vagy betéti társaság"
@@ -7655,7 +7655,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Korlátolt felelősségű társaság",
         "option_label": "Korlátolt felelősségű társaság"
@@ -7673,7 +7673,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Részvénytársaság",
         "option_label": "Részvénytársaság"
@@ -7691,7 +7691,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Non-profit szervezet vagy Kht.",
         "option_label": "Non-profit szervezet vagy Kht."
@@ -7709,7 +7709,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Központi vagy helyi közigazgatási szerv",
         "option_label": "Központi vagy helyi közigazgatási szerv"
@@ -7727,7 +7727,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Állami vagy helyi önkormányzati költségvetési szerv",
         "option_label": "Állami vagy helyi önkormányzati költségvetési szerv"
@@ -7745,7 +7745,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "munkaltato_cegforma",
+        "group_id": "munkaltato_cegforma_tars",
         "group_label": "Munkáltató cégformája",
         "option_value": "Egyéb",
         "option_label": "Egyéb"
@@ -7776,7 +7776,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "hitelkartya_mas_bank",
+        "group_id": "hitelkartya_mas_bank_tars",
         "group_label": "Rendelkezik más banknál hitelkártyával?",
         "option_value": "Igen",
         "option_label": "Igen"
@@ -7794,7 +7794,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "hitelkartya_mas_bank",
+        "group_id": "hitelkartya_mas_bank_tars",
         "group_label": "Rendelkezik más banknál hitelkártyával?",
         "option_value": "Nem",
         "option_label": "Nem"
@@ -8306,7 +8306,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "jovairas_vallalasa",
+        "group_id": "jovairas_vallalasa_tars",
         "group_label": "Vállalja, hogy jövedelme az OTP Banknál vezetett bankszámlára érkezzen?",
         "option_value": "Igen",
         "option_label": "Igen"
@@ -8324,7 +8324,7 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": {
-        "group_id": "jovairas_vallalasa",
+        "group_id": "jovairas_vallalasa_tars",
         "group_label": "Vállalja, hogy jövedelme az OTP Banknál vezetett bankszámlára érkezzen?",
         "option_value": "Nem",
         "option_label": "Nem"
@@ -9506,7 +9506,7 @@
       "pdf_field_name": "Text Field 861",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9519,7 +9519,7 @@
       "pdf_field_name": "Text Field 862",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (2. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9532,7 +9532,7 @@
       "pdf_field_name": "Text Field 863",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (3. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9545,7 +9545,7 @@
       "pdf_field_name": "Text Field 864",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (4. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9558,7 +9558,7 @@
       "pdf_field_name": "Text Field 865",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (5. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9571,7 +9571,7 @@
       "pdf_field_name": "Text Field 866",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (6. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9584,7 +9584,7 @@
       "pdf_field_name": "Text Field 867",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (7. mező)",
       "field_type": "number",
-      "canonical_field": "Contact.Divident__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9597,7 +9597,7 @@
       "pdf_field_name": "Text Field 868",
       "label": "Osztalék - OTP Banknál vezetett bankszámlára érkező utolsó havi nettó jövedelem (devizanem)",
       "field_type": "text",
-      "canonical_field": "Contact.Other_income__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -9896,7 +9896,7 @@
       "pdf_field_name": "Text Field 891",
       "label": "Rendszeres havi vállalkozói hitel törlesztőrészletek összege (OTP Banknál és egyéb banknál együtt)",
       "field_type": "number",
-      "canonical_field": "Contact.Current_debt_Credit_limit__c-társ",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
@@ -12615,8 +12615,8 @@
       "pdf_field_name": "Text Field 1096",
       "label": "Utca, házszám, lépcsőház, emelet, ajtó",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_emelet__c",
-      "confidence": "medium",
+      "canonical_field": "Lead.Ingatlan_kozterulet_neve__c",
+      "confidence": "high",
       "page_number": 10,
       "coordinates": null,
       "notes": null,
@@ -16066,7 +16066,7 @@
         "Text Field 786",
         "Text Field 787"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16083,7 +16083,7 @@
         "Text Field 1188",
         "Text Field 1189"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16100,7 +16100,7 @@
         "Text Field 1224",
         "Text Field 1225"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16110,7 +16110,7 @@
         "Text Field 1226",
         "Text Field 1227"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16126,7 +16126,7 @@
         "Text Field 418",
         "Text Field 419"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16187,7 +16187,7 @@
         "Text Field 1235",
         "Text Field 1236"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16197,7 +16197,7 @@
         "Text Field 1237",
         "Text Field 1238"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16229,7 +16229,7 @@
         "Text Field 526",
         "Text Field 527"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {
@@ -16277,7 +16277,7 @@
         "Text Field 894",
         "Text Field 895"
       ],
-      "direction": "ltr",
+      "direction": "right_to_left",
       "separator": ""
     },
     {

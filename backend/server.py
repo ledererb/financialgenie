@@ -168,14 +168,23 @@ def _validate_canonical_field(canonical_field: str | None) -> None:
     """Reject unknown canonical_field values with 422 (FIX M1).
 
     ``None`` / empty means "unmapped" and is always allowed. Any other value
-    must exist in the canonical-field catalog (the same data the
-    ``/api/mapping/canonical-fields`` endpoint serves). The error body includes
-    the full list of valid values so the frontend can drive its autocomplete.
+    must exist in the canonical-field catalog (after stripping pipeline
+    suffixes such as ``-társ``, ``#piaci``, ``#tamogatott``, ``#ev``, ``#ho``,
+    and multi-property ``_2``..``_9``).
     """
     if not canonical_field:
         return
     valid = _valid_canonical_paths()
     if canonical_field in valid:
+        return
+    base = canonical_field
+    if base.endswith("-társ"):
+        base = base[:-len("-társ")]
+    for gate in ("#piaci", "#tamogatott", "#ev", "#ho"):
+        if base.endswith(gate):
+            base = base[:-len(gate)]
+    base = re.sub(r"_[2-9]$", "", base)
+    if base in valid:
         return
     raise HTTPException(
         status_code=422,
@@ -263,7 +272,10 @@ def delete_pdf(pdf_id: str = Query(...)):
     if not pdf_id:
         raise HTTPException(400, "pdf_id query parameter is required")
 
-    pdf_path = PROJECT_ROOT / pdf_id
+    pdf_path = (PROJECT_ROOT / pdf_id).resolve()
+    samples_dir = (PROJECT_ROOT / "samples").resolve()
+    if not pdf_path.is_relative_to(samples_dir):
+        raise HTTPException(403, "Only uploaded PDFs under samples/ can be deleted")
     if not pdf_path.is_file():
         raise HTTPException(404, f"PDF not found: {pdf_id}")
 
@@ -1156,9 +1168,24 @@ def generate_package(body: dict):
                 continue
 
             # Determine how many copies to produce.
-            # per_applicant documents get one copy per active participant:
-            # the borrower + each co-borrower (1-3).
-            if per_applicant and has_co_borrower:
+            # Co-borrower-only forms (sza_ig_tarsigenylo) get 1 copy per co-borrower
+            # (none if there are no co-borrowers, since the main borrower has sza_ig_igenylo).
+            # General per_applicant documents (e.g. sza_esz) get 1 copy for the borrower
+            # plus 1 copy for each co-borrower.
+            doc_id_low = str(doc.get("id", "")).lower()
+            title_low = str(title).lower()
+            is_coborrower_only_form = (
+                "tarsigenylo" in doc_id_low
+                or "tarsigenylő" in doc_id_low
+                or "tarsigenylo" in title_low
+                or "tarsigenylő" in title_low
+                or "társigénylő" in title_low
+            )
+            if is_coborrower_only_form:
+                if not has_co_borrower:
+                    continue
+                copies = [(f"adóstárs {i+1}", i) for i in range(len(deal.co_borrowers))]
+            elif per_applicant and has_co_borrower:
                 copies = [(None, None)]  # adós
                 for i in range(len(deal.co_borrowers)):
                     copies.append((f"adóstárs {i+1}", i))
@@ -1173,6 +1200,7 @@ def generate_package(body: dict):
                         mapping_config=None,
                         force_recreate_mapping=False,
                         participant_override=override,
+                        upload_to_sf=False,
                     )
                     if not result["success"]:
                         err_msg = ", ".join(result.get("issues", [])) or "Ismeretlen hiba"
@@ -1295,6 +1323,7 @@ def fill_pdf(body: dict):
             template_pdf=pdf_path,
             mapping_config=None,
             force_recreate_mapping=False,  # use existing mapping
+            upload_to_sf=False,
         )
 
         if not result["success"]:
@@ -1350,6 +1379,7 @@ def validate_pdf(body: dict):
             template_pdf=pdf_path,
             mapping_config=None,
             force_recreate_mapping=False,
+            upload_to_sf=False,
         )
 
         if not result["success"]:
@@ -1359,24 +1389,29 @@ def validate_pdf(body: dict):
         # Validation: expected vs actual
         from engine.fill_validator import validate_filled_pdf
 
-        # Get SF context for AI review
+        # Get SF context for AI review and rebuild field_data with raw_opportunity
         sf_context = None
+        deal_raw = sf_client.get_deal(deal_id)
+        deal = pipeline.normalizer.normalize_deal(deal_raw)
         try:
-            deal_raw = sf_client.get_deal(deal_id)
-            if deal_raw:
-                deal = pipeline.normalizer.normalize_deal(deal_raw)
-                if deal.borrowers:
-                    b = pipeline._participant_to_dict(deal.borrowers[0])
-                    sf_context = {k: v for k, v in b.items() if v}
+            if deal.borrowers:
+                b = pipeline._participant_to_dict(deal.borrowers[0])
+                sf_context = {k: v for k, v in b.items() if v}
         except Exception:
             pass
 
-        # Rebuild field_data (same as run_for_deal does internally)
         mapping = pipeline._resolve_mapping(pdf_path, force_recreate=False)
         notices: list = []
+        raw_opp = (
+            deal_raw.get("_opportunity")
+            or deal_raw.get("Opportunity__c")
+            or deal_raw.get("opportunity")
+            or deal_raw
+        ) if isinstance(deal_raw, dict) else None
         field_data = pipeline._prepare_field_data(
-            pipeline.normalizer.normalize_deal(sf_client.get_deal(deal_id)),
+            deal,
             mapping,
+            raw_opportunity=raw_opp,
             notices=notices,
         )
 

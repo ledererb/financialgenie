@@ -55,9 +55,17 @@ def resolve_pdf(pdf_id: str) -> Path:
     p = PROJECT_ROOT / pdf_id
     if p.is_file():
         return p
+    # Handle legacy absolute paths (e.g. /Users/.../documents/otp_bank/split/fedlap.pdf)
+    norm_id = pdf_id.replace("\\", "/")
+    for marker in ("documents/", "samples/", "otp/", "OTP/"):
+        if marker in norm_id:
+            rel_part = marker + norm_id.split(marker, 1)[1]
+            cand = PROJECT_ROOT / rel_part
+            if cand.is_file():
+                return cand
     # Some callers may pass the path relative to otp/ or samples/.
     for root in PDF_ROOTS:
-        cand = root / pdf_id
+        cand = root / pdf_id.lstrip("/")
         if cand.is_file():
             return cand
     raise FileNotFoundError(f"PDF not found in repository: {pdf_id}")

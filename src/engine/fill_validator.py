@@ -76,18 +76,25 @@ def validate_filled_pdf(
 
 
 def _read_pikepdf_values(pdf_path: Path) -> dict[str, str]:
-    """Visszaolvassa a /V értékeket pikepdf-ből."""
+    """Visszaolvassa a /V értékeket pikepdf-ből (rekurzívan a /Kids-en is)."""
     import pikepdf
 
     values: dict[str, str] = {}
     try:
         pdf = pikepdf.open(str(pdf_path))
         acroform = pdf.Root.get("/AcroForm", {})
-        for field in acroform.get("/Fields", []):
-            name = str(field.get("/T", ""))
-            v = field.get("/V")
-            if v is not None:
-                values[name] = str(v)
+
+        def _walk(fields):
+            for field in fields:
+                name = str(field.get("/T", ""))
+                v = field.get("/V")
+                if name and v is not None:
+                    values[name] = str(v)
+                kids = field.get("/Kids", [])
+                if kids:
+                    _walk(kids)
+
+        _walk(acroform.get("/Fields", []))
         pdf.close()
     except Exception as e:
         logger.warning("pikepdf read failed: %s", e)
@@ -192,7 +199,7 @@ def _mechanical_validation(
         )
 
         if pdf_name in skipped_set:
-            # Elvárt érték nem üres, de a kitöltés kihagyta → mismatch
+            # Elvárt érték nem üres, de a kitöltés kihagyta → missing
             report.field_results.append(FieldValidation(
                 pdf_field_name=pdf_name,
                 expected=expected_str,
@@ -201,7 +208,7 @@ def _mechanical_validation(
                 status="missing",
                 detail="Kitöltés kihagyta (skipped)",
             ))
-            report.mismatch_fields += 1
+            report.missing_fields += 1
             continue
 
         # For checkbox options (___suffix), the base name is what gets filled

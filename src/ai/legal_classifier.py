@@ -433,7 +433,8 @@ class LegalClassifier:
 
 def extract_unmapped_checkboxes(mapping) -> list[dict]:
     """
-    Kinyeri a canonical_field nélküli checkbox mezőket egy MappingConfig-ból.
+    Kinyeri a canonical_field, fill_rule és checkbox_group nélküli
+    checkbox mezőket egy MappingConfig-ból.
 
     Args:
         mapping: src.ai.field_recognizer.MappingConfig
@@ -444,6 +445,8 @@ def extract_unmapped_checkboxes(mapping) -> list[dict]:
     out = []
     for f in getattr(mapping, "fields", []) or []:
         if f.canonical_field:
+            continue
+        if getattr(f, "fill_rule", None) or getattr(f, "checkbox_group", None):
             continue
         if str(getattr(f, "field_type", "")).lower().split(".")[-1] != "checkbox":
             continue
@@ -475,26 +478,38 @@ def fill_legal_declarations_on_pdf(pdf_path: Path, values: dict[str, bool]) -> i
         if "/Fields" not in acroform:
             return 0
 
-        def _walk(fields):
+        def _find_on_state(f_obj) -> pikepdf.Name:
+            ap = f_obj.get("/AP")
+            if ap and "/N" in ap:
+                n_dict = ap["/N"]
+                if isinstance(n_dict, pikepdf.Dictionary):
+                    for k in n_dict.keys():
+                        if str(k) != "/Off":
+                            return pikepdf.Name(str(k))
+            return pikepdf.Name("/Yes")
+
+        def _walk(fields, inherited_ft=""):
             nonlocal modified
             for field_ref in fields:
                 try:
                     f = field_ref
-                    if "/Kids" in f:
-                        _walk(f["/Kids"])
-                        continue
+                    ft = str(f.get("/FT", inherited_ft))
                     name = str(f.get("/T", ""))
-                    if name not in values:
+                    if name and name in values and ft == "/Btn":
+                        is_checked = bool(values[name])
+                        on_val = _find_on_state(f)
+                        target_val = on_val if is_checked else pikepdf.Name("/Off")
+                        f[pikepdf.Name("/V")] = target_val
+                        f[pikepdf.Name("/AS")] = target_val
+                        if "/Kids" in f:
+                            for kid in f["/Kids"]:
+                                kid_on = _find_on_state(kid)
+                                kid_target = kid_on if is_checked else pikepdf.Name("/Off")
+                                kid[pikepdf.Name("/AS")] = kid_target
+                        modified += 1
                         continue
-                    if str(f.get("/FT", "")) != "/Btn":
-                        continue
-                    is_checked = bool(values[name])
-                    f[pikepdf.Name("/V")] = (
-                        pikepdf.Name("/Yes") if is_checked else pikepdf.Name("/Off")
-                    )
-                    if "/AP" in f:
-                        del f["/AP"]
-                    modified += 1
+                    if "/Kids" in f:
+                        _walk(f["/Kids"], ft)
                 except Exception as exc:
                     logger.debug("Checkbox módosítási hiba: %s", exc)
 

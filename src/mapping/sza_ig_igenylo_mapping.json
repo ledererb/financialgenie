@@ -83,7 +83,7 @@
       "coordinates": null,
       "notes": "Csak akkor kell kitölteni, ha nem csak piaci hitel szerepel az igénylésben, de az igénylő nem lesz támogatott személy",
       "checkbox_group": {
-        "group_id": "szerep_tamogatas",
+        "group_id": "szerep_tamogatas_tars",
         "group_label": "Szerepe a támogatásigénylésben",
         "option_value": "Nem támogatott személy",
         "option_label": "Nem támogatott személy"
@@ -302,27 +302,20 @@
       "pdf_field_name": "SZA_IG_dokumentum___4,5",
       "label": "Személyazonosító dokumentum – Egyéb",
       "field_type": "checkbox",
-      "canonical_field": "Contact.ID_Card_Number__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "szemely_dok_tipus",
-        "group_label": "Személyazonosító dokumentum",
-        "option_value": "Egyéb",
-        "option_label": "Egyéb"
-      },
-      "fill_rule": {
-        "match_value": "Egyéb"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_dokumentum_egyéb",
       "label": "Személyazonosító dokumentum – Egyéb (szöveges)",
       "field_type": "text",
-      "canonical_field": "Contact.ID_Card_Number__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
@@ -414,7 +407,7 @@
       "pdf_field_name": "SZA_IG_kegészítő_adatok",
       "label": "Kiegészítő adat – Írástudatlan",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
@@ -427,7 +420,7 @@
       "pdf_field_name": "SZA_IG_kegészítő_adatok_2",
       "label": "Kiegészítő adat – Látássérült/olvasni nem tudó",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Description",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
@@ -1269,7 +1262,7 @@
       "pdf_field_name": "SZA_IG_jövedelem_deviza1",
       "label": "Munkabér (belföldről) – deviza",
       "field_type": "text",
-      "canonical_field": "Contact.Other_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1375,7 +1368,7 @@
       "pdf_field_name": "SZA_IG_jövedelem_deviza2",
       "label": "Családi pótlék – deviza",
       "field_type": "text",
-      "canonical_field": "Contact.Other_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1388,60 +1381,39 @@
       "pdf_field_name": "SZA_IG_jövedelem_érk2___1,2",
       "label": "Családi pótlék érkezése – OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "csaladi_potlek_erkezes",
-        "group_label": "Családi pótlék – hova érkezik?",
-        "option_value": "OTP-s számlára érkezik",
-        "option_label": "OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2___2,3",
       "label": "Családi pótlék érkezése – Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "csaladi_potlek_erkezes",
-        "group_label": "Családi pótlék – hova érkezik?",
-        "option_value": "Nem OTP-s számlára érkezik",
-        "option_label": "Nem OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "Nem OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk2___3,4",
       "label": "Családi pótlék érkezése – Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "csaladi_potlek_erkezes",
-        "group_label": "Családi pótlék – hova érkezik?",
-        "option_value": "Nem bankszámlára érkezik",
-        "option_label": "Nem bankszámlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "Nem bankszámlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
@@ -1481,7 +1453,7 @@
       "pdf_field_name": "SZA_IG_jövedelem_deviza3",
       "label": "Cafetéria havi összege – deviza",
       "field_type": "text",
-      "canonical_field": "Contact.Other_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1494,60 +1466,39 @@
       "pdf_field_name": "SZA_IG_jövedelem_érk3___1,2",
       "label": "Cafetéria érkezése – OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "cafeteria_erkezes",
-        "group_label": "Cafetéria – hova érkezik?",
-        "option_value": "OTP-s számlára érkezik",
-        "option_label": "OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3___2,3",
       "label": "Cafetéria érkezése – Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "cafeteria_erkezes",
-        "group_label": "Cafetéria – hova érkezik?",
-        "option_value": "Nem OTP-s számlára érkezik",
-        "option_label": "Nem OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "Nem OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk3___3,4",
       "label": "Cafetéria érkezése – Nem bankszámlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "cafeteria_erkezes",
-        "group_label": "Cafetéria – hova érkezik?",
-        "option_value": "Nem bankszámlára érkezik",
-        "option_label": "Nem bankszámlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "Nem bankszámlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
@@ -1587,7 +1538,7 @@
       "pdf_field_name": "SZA_IG_jövedelem_deviza4",
       "label": "Vállalkozásból származó jövedelem – deviza",
       "field_type": "text",
-      "canonical_field": "Contact.Other_income__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1600,40 +1551,26 @@
       "pdf_field_name": "SZA_IG_jövedelem_érk4___1,2",
       "label": "Vállalkozói jövedelem érkezése – OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "vallalkozoi_jovedelem_erkezes",
-        "group_label": "Vállalkozásból származó jövedelem – hova érkezik?",
-        "option_value": "OTP-s számlára érkezik",
-        "option_label": "OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk4___2,3",
       "label": "Vállalkozói jövedelem érkezése – Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Jovairas_vallalasa__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "vallalkozoi_jovedelem_erkezes",
-        "group_label": "Vállalkozásból származó jövedelem – hova érkezik?",
-        "option_value": "Nem OTP-s számlára érkezik",
-        "option_label": "Nem OTP-s számlára érkezik"
-      },
-      "fill_rule": {
-        "match_value": "Nem OTP-s számlára érkezik"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {

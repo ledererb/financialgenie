@@ -36,6 +36,8 @@ SF_ROLE_MAP = {
     "társadós": ParticipantRole.CO_BORROWER,
     "kezes": ParticipantRole.GUARANTOR,
     "guarantor": ParticipantRole.GUARANTOR,
+    "zálogkötelezett": ParticipantRole.GUARANTOR,
+    "zalogkotelezett": ParticipantRole.GUARANTOR,
     "haszonélvező": ParticipantRole.BENEFICIARY,
     "haszonelvezo": ParticipantRole.BENEFICIARY,
     "beneficiary": ParticipantRole.BENEFICIARY,
@@ -113,10 +115,10 @@ class DataNormalizer:
         """Salesforce API válaszból normalizálás."""
         # Hiteladatok (1c: új kanonikus mezők feltérképezése)
         loan = LoanDetails(
-            loan_amount=self._safe_int(sf_data.get("Amount__c") or sf_data.get("Amount")),
+            loan_amount=self._safe_int(sf_data.get("Amount__c") or sf_data.get("Amount")) or 0,
             loan_term_months=self._safe_int(
                 sf_data.get("Loan_Term__c") or self.DEFAULT_LOAN_TERM_MONTHS
-            ),
+            ) or self.DEFAULT_LOAN_TERM_MONTHS,
             interest_period=sf_data.get("Interest_Period__c"),
             loan_purpose=sf_data.get("Loan_Purpose__c"),
             product_name=sf_data.get("Product_Name__c"),
@@ -146,12 +148,39 @@ class DataNormalizer:
             if prop:
                 properties.append(prop)
 
+        # Termékek meghatározása (piaci_hitel / otthon_start / csok_plusz / falusi_csok)
+        raw_products = sf_data.get("products")
+        if isinstance(raw_products, list) and raw_products:
+            products = [str(x) for x in raw_products]
+        else:
+            opp_raw = sf_data.get("_opportunity") or {}
+            blob = " ".join(
+                str(x or "")
+                for x in (
+                    loan.product_name,
+                    loan.product_type,
+                    sf_data.get("Description"),
+                    opp_raw.get("Name"),
+                )
+            ).lower()
+            products = []
+            if any(k in blob for k in ("otthon start", "otthon_start", "otthonteremt", "osp")):
+                products.append("otthon_start")
+            if "falusi" in blob:
+                products.append("falusi_csok")
+            elif "csok" in blob or "csök" in blob:
+                products.append("csok_plusz")
+            if not products or "piaci" in blob:
+                if "piaci_hitel" not in products:
+                    products.append("piaci_hitel")
+
         return DealData(
             deal_id=sf_data.get("Id", "unknown"),
             salesforce_stage=sf_data.get("StageName"),
             loan=loan,
             participants=participants,
             properties=properties,
+            products=products,
             created_at=self._parse_date(sf_data.get("CreatedDate")),
             notes=sf_data.get("Description"),
             account_id=sf_data.get("AccountId"),
@@ -176,12 +205,14 @@ class DataNormalizer:
         address = None
         if p_data.get("Address__c") or p_data.get("address"):
             addr_data = p_data.get("Address__c") or p_data.get("address", {})
-            if isinstance(addr_data, dict):
+            if isinstance(addr_data, dict) and any(
+                addr_data.get(k) for k in ("zip_code", "city", "street", "house_number")
+            ):
                 address = Address(
-                    zip_code=str(addr_data.get("zip_code", "")),
-                    city=addr_data.get("city", ""),
-                    street=addr_data.get("street", ""),
-                    house_number=str(addr_data.get("house_number", "")),
+                    zip_code=str(addr_data.get("zip_code") or ""),
+                    city=addr_data.get("city") or "",
+                    street=addr_data.get("street") or "",
+                    house_number=str(addr_data.get("house_number") or ""),
                     floor=addr_data.get("floor"),
                     door=addr_data.get("door"),
                     district=addr_data.get("district"),

@@ -81,8 +81,8 @@
       "pdf_field_name": "IA_cím_utca",
       "label": "Utca, házszám, lépcsőház, emelet, ajtó",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_emelet__c",
-      "confidence": "medium",
+      "canonical_field": "Lead.Ingatlan_kozterulet_neve__c",
+      "confidence": "high",
       "page_number": 1,
       "coordinates": null,
       "notes": "Teljes utcacím mező; tartalmazza a házszámot, lépcsőházat, emeletet, ajtót – a Lead.Ingatlan_emelet__c leírásával legjobban egyezik",
@@ -95,7 +95,7 @@
       "label": "Ingatlan helyrajzi száma",
       "field_type": "text",
       "canonical_field": "Lead.Ingatlan_megjegyzes__c",
-      "confidence": "low",
+      "confidence": "high",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált helyrajzi szám mező a kanonikus modellben; ideiglenesen Lead.Ingatlan_megjegyzes__c-be javasolt tárolni",
@@ -107,47 +107,33 @@
       "pdf_field_name": "IA_lakásbizt___Igen",
       "label": "Vagyonbiztosítással (lakásbiztosítással) rendelkezem – Igen",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált lakásbiztosítás mező a kanonikus modellben; megjegyzésbe kerülhet",
-      "checkbox_group": {
-        "group_id": "lakasbiztositas",
-        "group_label": "A fentebb említett ingatlanra vagyonbiztosítással (lakásbiztosítással) rendelkezem",
-        "option_value": "Igen",
-        "option_label": "Igen"
-      },
-      "fill_rule": {
-        "match_value": "Igen"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakásbizt___no",
       "label": "Vagyonbiztosítással (lakásbiztosítással) rendelkezem – Nem",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakasbiztositas",
-        "group_label": "A fentebb említett ingatlanra vagyonbiztosítással (lakásbiztosítással) rendelkezem",
-        "option_value": "Nem",
-        "option_label": "Nem"
-      },
-      "fill_rule": {
-        "match_value": "Nem"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_egész_szobák",
       "label": "Egész szobák száma",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_alapterulet__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
@@ -160,7 +146,7 @@
       "pdf_field_name": "IA_fél_szobák",
       "label": "Fél szobák száma",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
@@ -173,440 +159,286 @@
       "pdf_field_name": "IA_lakás_állapot___1,2",
       "label": "Lakás állapota – Felújítandó",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált lakásállapot mező; Lead.Ingatlan_energetika__c a legközelebbi ingatlan-minősítési mező",
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Felújítandó",
-        "option_label": "Felújítandó"
-      },
-      "fill_rule": {
-        "match_value": "Felújítandó"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakás_állapot___2,3",
       "label": "Lakás állapota – Közepes",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Közepes",
-        "option_label": "Közepes"
-      },
-      "fill_rule": {
-        "match_value": "Közepes"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakás_állapot___3,4",
       "label": "Lakás állapota – Jó/karbantartott",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Jó/karbantartott",
-        "option_label": "Jó/karbantartott"
-      },
-      "fill_rule": {
-        "match_value": "Jó/karbantartott"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakás_állapot___4,5",
       "label": "Lakás állapota – Felújított",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Felújított",
-        "option_label": "Felújított"
-      },
-      "fill_rule": {
-        "match_value": "Felújított"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakás_állapot___5,6",
       "label": "Lakás állapota – Újszerű",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Újszerű",
-        "option_label": "Újszerű"
-      },
-      "fill_rule": {
-        "match_value": "Újszerű"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lakás_állapot___6,7",
       "label": "Lakás állapota – Új",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "lakas_allapot",
-        "group_label": "Lakás állapota",
-        "option_value": "Új",
-        "option_label": "Új"
-      },
-      "fill_rule": {
-        "match_value": "Új"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___1,2",
       "label": "Homlokzat állapota – Felújítandó",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált homlokzat-állapot mező",
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Felújítandó",
-        "option_label": "Felújítandó"
-      },
-      "fill_rule": {
-        "match_value": "Felújítandó"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___2,3",
       "label": "Homlokzat állapota – Átlagos",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Átlagos",
-        "option_label": "Átlagos"
-      },
-      "fill_rule": {
-        "match_value": "Átlagos"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___3,4",
       "label": "Homlokzat állapota – Jó",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Jó",
-        "option_label": "Jó"
-      },
-      "fill_rule": {
-        "match_value": "Jó"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___4,5",
       "label": "Homlokzat állapota – Felújított",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Felújított",
-        "option_label": "Felújított"
-      },
-      "fill_rule": {
-        "match_value": "Felújított"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___5,6",
       "label": "Homlokzat állapota – Újszerű",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Újszerű",
-        "option_label": "Újszerű"
-      },
-      "fill_rule": {
-        "match_value": "Újszerű"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_homlokzat_állapot___6,7",
       "label": "Homlokzat állapota – Új",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "homlokzat_allapot",
-        "group_label": "Homlokzat állapota",
-        "option_value": "Új",
-        "option_label": "Új"
-      },
-      "fill_rule": {
-        "match_value": "Új"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___1,2",
       "label": "Építés ideje – 2019 után",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált építési év mező; Lead.Ingatlan_jellege__c a legközelebbi ingatlan-jellemző mező",
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "2019 után",
-        "option_label": "2019 után"
-      },
-      "fill_rule": {
-        "match_value": "2019 után"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___2,3",
       "label": "Építés ideje – 2010–2019",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "2010-2019",
-        "option_label": "2010–2019"
-      },
-      "fill_rule": {
-        "match_value": "2010-2019"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___3,4",
       "label": "Építés ideje – 2000–2009",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "2000-2009",
-        "option_label": "2000–2009"
-      },
-      "fill_rule": {
-        "match_value": "2000-2009"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___4,5",
       "label": "Építés ideje – 1990–1999",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1990-1999",
-        "option_label": "1990–1999"
-      },
-      "fill_rule": {
-        "match_value": "1990-1999"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___5,6",
       "label": "Építés ideje – 1980–1989",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1980-1989",
-        "option_label": "1980–1989"
-      },
-      "fill_rule": {
-        "match_value": "1980-1989"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___6,7",
       "label": "Építés ideje – 1970–1979",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1970-1979",
-        "option_label": "1970–1979"
-      },
-      "fill_rule": {
-        "match_value": "1970-1979"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___7,8",
       "label": "Építés ideje – 1960–1969",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1960-1969",
-        "option_label": "1960–1969"
-      },
-      "fill_rule": {
-        "match_value": "1960-1969"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___8,9",
       "label": "Építés ideje – 1946–1959",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1946-1959",
-        "option_label": "1946–1959"
-      },
-      "fill_rule": {
-        "match_value": "1946-1959"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___9,10",
       "label": "Építés ideje – 1914–1945",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1914-1945",
-        "option_label": "1914–1945"
-      },
-      "fill_rule": {
-        "match_value": "1914-1945"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_építés_ideje___10,11",
       "label": "Építés ideje – 1914 előtt",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "epites_ideje",
-        "group_label": "Építés ideje",
-        "option_value": "1914 előtt",
-        "option_label": "1914 előtt"
-      },
-      "fill_rule": {
-        "match_value": "1914 előtt"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
@@ -713,320 +545,208 @@
       "pdf_field_name": "IA_lift___1,2",
       "label": "Van lift az épületben? – Igen",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált lift mező a kanonikus modellben",
-      "checkbox_group": {
-        "group_id": "van_lift",
-        "group_label": "Van lift az épületben?",
-        "option_value": "Igen",
-        "option_label": "Igen"
-      },
-      "fill_rule": {
-        "match_value": "Igen"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_lift___2,3",
       "label": "Van lift az épületben? – Nem",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "van_lift",
-        "group_label": "Van lift az épületben?",
-        "option_value": "Nem",
-        "option_label": "Nem"
-      },
-      "fill_rule": {
-        "match_value": "Nem"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___1,2",
       "label": "Fűtés típusa – Cirkofűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": "Nincs dedikált fűtés típus mező a kanonikus modellben; megjegyzésbe javasolt",
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Cirkofűtés",
-        "option_label": "Cirkofűtés"
-      },
-      "fill_rule": {
-        "match_value": "Cirkofűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___2,3",
       "label": "Fűtés típusa – Egyedi",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Egyedi",
-        "option_label": "Egyedi"
-      },
-      "fill_rule": {
-        "match_value": "Egyedi"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___3,4",
       "label": "Fűtés típusa – Egyedi kályhafűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Egyedi kályhafűtés",
-        "option_label": "Egyedi kályhafűtés"
-      },
-      "fill_rule": {
-        "match_value": "Egyedi kályhafűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___4,5",
       "label": "Fűtés típusa – Elektromos kályha",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Elektromos kályha",
-        "option_label": "Elektromos kályha"
-      },
-      "fill_rule": {
-        "match_value": "Elektromos kályha"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___5,6",
       "label": "Fűtés típusa – Fan coil",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Fan coil",
-        "option_label": "Fan coil."
-      },
-      "fill_rule": {
-        "match_value": "Fan coil"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___6,7",
       "label": "Fűtés típusa – Fűtőpanel",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Fűtőpanel",
-        "option_label": "Fűtőpanel"
-      },
-      "fill_rule": {
-        "match_value": "Fűtőpanel"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___7,8",
       "label": "Fűtés típusa – Hőszivattyú/geotermikus",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Hőszivattyú/geotermikus",
-        "option_label": "Hőszivattyú/geotermikus"
-      },
-      "fill_rule": {
-        "match_value": "Hőszivattyú/geotermikus"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___8,9",
       "label": "Fűtés típusa – Konvektor",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Konvektor",
-        "option_label": "Konvektor"
-      },
-      "fill_rule": {
-        "match_value": "Konvektor"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___9,10",
       "label": "Fűtés típusa – Központi fűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Központi fűtés",
-        "option_label": "Központi fűtés"
-      },
-      "fill_rule": {
-        "match_value": "Központi fűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___10,11",
       "label": "Fűtés típusa – Lakásban cirkofűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Lakásban cirkofűtés",
-        "option_label": "Lakásban cirkofűtés"
-      },
-      "fill_rule": {
-        "match_value": "Lakásban cirkofűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___11,12",
       "label": "Fűtés típusa – Távfűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Távfűtés",
-        "option_label": "Távfűtés"
-      },
-      "fill_rule": {
-        "match_value": "Távfűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___12,13",
       "label": "Fűtés típusa – Vegyes",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Vegyes",
-        "option_label": "Vegyes"
-      },
-      "fill_rule": {
-        "match_value": "Vegyes"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___13,14",
       "label": "Fűtés típusa – Épületben központi fűtés",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Épületben központi fűtés",
-        "option_label": "Épületben központi fűtés"
-      },
-      "fill_rule": {
-        "match_value": "Épületben központi fűtés"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_fűtés_típus___14,15",
       "label": "Fűtés típusa – Nincs",
       "field_type": "checkbox",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "futes_tipusa",
-        "group_label": "Fűtés típusa",
-        "option_value": "Nincs",
-        "option_label": "Nincs"
-      },
-      "fill_rule": {
-        "match_value": "Nincs"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
@@ -1093,7 +813,7 @@
       "pdf_field_name": "IA_Bérletidíj",
       "label": "Éves bérleti díj bruttó összege (Ft/EUR)",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
@@ -1106,7 +826,7 @@
       "pdf_field_name": "IA_Bérletidíj_EUR",
       "label": "Éves bérleti díj pénzneme (pl. Ft, EUR)",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
@@ -1184,47 +904,33 @@
       "pdf_field_name": "IA_bank___Igen",
       "label": "Bankszámla forrása értékbecslés díjához – a kölcsön törlesztésére megjelölt bankszámláról",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": "Kölcsönösen kizáró: kölcsön törlesztési számla VAGY egyéb OTP bankszámla",
-      "checkbox_group": {
-        "group_id": "ertekbecsles_szamla_forrasa",
-        "group_label": "Bankszámlaszám, amiről a költséget rendezni kívánom",
-        "option_value": "Törlesztési számla",
-        "option_label": "a kölcsön törlesztésére megjelölt bankszámláról, vagy"
-      },
-      "fill_rule": {
-        "match_value": "Törlesztési számla"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_bank___no",
       "label": "Bankszámla forrása értékbecslés díjához – egyéb OTP Banknál vezetett bankszámláról",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Account_holding_bank__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": {
-        "group_id": "ertekbecsles_szamla_forrasa",
-        "group_label": "Bankszámlaszám, amiről a költséget rendezni kívánom",
-        "option_value": "Egyéb OTP számla",
-        "option_label": "egyéb OTP Banknál vezetett bankszámláról:"
-      },
-      "fill_rule": {
-        "match_value": "Egyéb OTP számla"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "IA_szlaszám",
       "label": "Bankszámlaszám (117-es prefix után, értékbecslés díjának terheléséhez)",
       "field_type": "text",
-      "canonical_field": "loan.refinance_account",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1237,7 +943,7 @@
       "pdf_field_name": "IA_összeg2",
       "label": "Értékbecslés költsége – összeg kiírva (forint, szöveggel)",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
@@ -1250,7 +956,7 @@
       "pdf_field_name": "IA_összeg",
       "label": "Értékbecslés költsége (Ft, számmal)",
       "field_type": "number",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,

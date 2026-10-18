@@ -799,207 +799,137 @@
       "pdf_field_name": "KTKA_díjkedvezmény___1,2",
       "label": "Díjkedvezmény – OTP Díjkedvezményes akció",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – OTP Díjkedvezményes akció; nincs közvetlen Salesforce mező, megjegyzésbe kerülhet",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "OTP Díjkedvezményes akció",
-        "option_label": "OTP Díjkedvezményes akció"
-      },
-      "fill_rule": {
-        "match_value": "OTP Díjkedvezményes akció"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___2,3",
       "label": "Díjkedvezmény – OTP Zöld Díjkedvezményes akció",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – OTP Zöld Díjkedvezményes akció",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "OTP Zöld Díjkedvezményes akció",
-        "option_label": "OTP Zöld Díjkedvezményes akció"
-      },
-      "fill_rule": {
-        "match_value": "OTP Zöld Díjkedvezményes akció"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___3,4",
       "label": "Díjkedvezmény – Munkáltatói ingatlanhitel díjkedvezmények",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Munkáltatói ingatlanhitel díjkedvezmények",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Munkáltatói ingatlanhitel díjkedvezmények",
-        "option_label": "Munkáltatói ingatlanhitel díjkedvezmények"
-      },
-      "fill_rule": {
-        "match_value": "Munkáltatói ingatlanhitel díjkedvezmények"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___4,5",
       "label": "Díjkedvezmény – OTP Munkavállalói számlacsomag ajánlat esetén igénybe vehető kedvezmény",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – OTP Munkavállalói számlacsomag ajánlat esetén kedvezmény",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "OTP Munkavállalói számlacsomag ajánlat kedvezmény",
-        "option_label": "OTP Munkavállalói számlacsomag ajánlat esetén igénybe vehető kedvezmény"
-      },
-      "fill_rule": {
-        "match_value": "OTP Munkavállalói számlacsomag ajánlat kedvezmény"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___5,6",
       "label": "Díjkedvezmény – Munkáltatói Platina vagy Gyémánt számlacsomag esetén kedvezmény",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Munkáltatói Platina vagy Gyémánt számlacsomag esetén kedvezmény",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Munkáltatói Platina vagy Gyémánt számlacsomag kedvezmény",
-        "option_label": "Munkáltatói Platina vagy Gyémánt számlacsomag esetén igénybe vehető kedvezmény"
-      },
-      "fill_rule": {
-        "match_value": "Munkáltatói Platina vagy Gyémánt számlacsomag kedvezmény"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___6,7",
       "label": "Díjkedvezmény – Munkáltatói Arany számlacsomag esetén igénybe vehető díjkedvezmény",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Munkáltatói Arany számlacsomag kedvezmény",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Munkáltatói Arany számlacsomag díjkedvezmény",
-        "option_label": "Munkáltatói Arany számlacsomag esetén igénybe vehető díjkedvezmény"
-      },
-      "fill_rule": {
-        "match_value": "Munkáltatói Arany számlacsomag díjkedvezmény"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___7,8",
       "label": "Díjkedvezmény – Munkavállalói díjkedvezmény",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Munkavállalói díjkedvezmény",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Munkavállalói díjkedvezmény",
-        "option_label": "Munkavállalói díjkedvezmény"
-      },
-      "fill_rule": {
-        "match_value": "Munkavállalói díjkedvezmény"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___8,9",
       "label": "Díjkedvezmény – Diákhiteles ügyfelek díjkedvezménye",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Diákhiteles ügyfelek díjkedvezménye",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Diákhiteles ügyfelek díjkedvezménye",
-        "option_label": "Diákhiteles ügyfelek díjkedvezménye"
-      },
-      "fill_rule": {
-        "match_value": "Diákhiteles ügyfelek díjkedvezménye"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___9,10",
       "label": "Díjkedvezmény – OTP hitelkiváltási akció kamatstoppal érintett kölcsönök kiváltására",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – OTP hitelkiváltási akció kamatstoppal",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "OTP hitelkiváltási akció kamatstoppal",
-        "option_label": "OTP hitelkiváltási akció kamatstoppal érintett kölcsönök kiváltására"
-      },
-      "fill_rule": {
-        "match_value": "OTP hitelkiváltási akció kamatstoppal"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény___10,11",
       "label": "Díjkedvezmény – Egyéb (szövegmező)",
       "field_type": "checkbox",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
       "notes": "2/1. Díjkedvezmény, akció – Egyéb díjkedvezmény jelölőnégyzet",
-      "checkbox_group": {
-        "group_id": "dijkedvezmeny_1",
-        "group_label": "Díjkedvezmény, akció (1. kölcsön)",
-        "option_value": "Egyéb díjkedvezmény",
-        "option_label": "Egyéb díjkedvezmény, akció"
-      },
-      "fill_rule": {
-        "match_value": "Egyéb díjkedvezmény"
-      },
+      "checkbox_group": null,
+      "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "KTKA_díjkedvezmény_egyéb",
       "label": "Egyéb díjkedvezmény, akció – szöveg (1. kölcsön)",
       "field_type": "text",
-      "canonical_field": "Opportunity.remark__c",
+      "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
       "coordinates": null,
