@@ -18,6 +18,7 @@ interface ProductListProps {
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
   onGenerate: (bankId: string, bankName: string, productId: string, productName: string) => void;
+  readOnly?: boolean;
 }
 
 function ProductListImpl({
@@ -33,6 +34,7 @@ function ProductListImpl({
   onDeleteProduct,
   onDeleteDocument,
   onGenerate,
+  readOnly = false,
 }: ProductListProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -152,7 +154,7 @@ function ProductListImpl({
         )}
 
         {/* Edit name button */}
-        {!editingName && (
+        {!readOnly && !editingName && (
           <button
             onClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(product.name); }}
             title="Termék átnevezése"
@@ -178,25 +180,27 @@ function ProductListImpl({
         </span>
 
         {/* Upload document button */}
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            selectBank(bankId);
-            selectProduct(product.id);
-            setShowUpload(true);
-          }}
-          title="Dokumentum feltöltése ehhez a termékhez"
-          style={{
-            padding: "3px 8px",
-            fontSize: "0.7rem",
-            flexShrink: 0,
-            border: "1px solid var(--border-subtle)",
-            borderRadius: "var(--radius-sm)",
-          }}
-        >
-          + Dokumentum
-        </button>
+        {!readOnly && (
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              selectBank(bankId);
+              selectProduct(product.id);
+              setShowUpload(true);
+            }}
+            title="Dokumentum feltöltése ehhez a termékhez"
+            style={{
+              padding: "3px 8px",
+              fontSize: "0.7rem",
+              flexShrink: 0,
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+            }}
+          >
+            + Dokumentum
+          </button>
+        )}
 
         {/* Generate package button */}
         <button
@@ -225,27 +229,29 @@ function ProductListImpl({
         </button>
 
         {/* Delete product button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirmDelete(true);
-          }}
-          title="Termék törlése"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--text-tertiary)",
-            cursor: "pointer",
-            padding: "0 2px",
-            fontSize: "0.8rem",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
-        >
-          X
-        </button>
+        {!readOnly && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDelete(true);
+            }}
+            title="Termék törlése"
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-tertiary)",
+              cursor: "pointer",
+              padding: "0 2px",
+              fontSize: "0.8rem",
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+          >
+            X
+          </button>
+        )}
       </div>
 
       {/* Delete confirmation */}
@@ -309,6 +315,7 @@ function ProductListImpl({
             onSelectDocument={onSelectDocument}
             onOpenDocument={onOpenDocument}
             onDeleteDocument={onDeleteDocument}
+            readOnly={readOnly}
             onUpload={() => {
               selectBank(bankId);
               selectProduct(product.id);

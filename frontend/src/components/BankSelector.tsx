@@ -20,6 +20,7 @@ interface BankSelectorProps {
   onDeleteProduct: (productId: string, name: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
   onGenerate: (bankId: string, bankName: string, productId: string, productName: string) => void;
+  readOnly?: boolean;
 }
 
 function BankSelectorImpl({
@@ -39,6 +40,7 @@ function BankSelectorImpl({
   onDeleteProduct,
   onDeleteDocument,
   onGenerate,
+  readOnly = false,
 }: BankSelectorProps) {
   const [expanded, setExpanded] = useState(true);
   const [confirmDeleteBank, setConfirmDeleteBank] = useState(false);
@@ -186,7 +188,7 @@ function BankSelectorImpl({
         )}
 
         {/* Edit name button */}
-        {!editingName && (
+        {!readOnly && !editingName && (
           <button
             onClick={(e) => { e.stopPropagation(); setEditingName(true); setNameValue(bank.name); }}
             title="Bank átnevezése"
@@ -212,44 +214,48 @@ function BankSelectorImpl({
         </span>
 
         {/* Add Product button */}
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddProduct(bank.id);
-          }}
-          title="Új termék hozzáadása"
-          style={{
-            padding: "3px 8px",
-            fontSize: "0.7rem",
-            flexShrink: 0,
-          }}
-        >
-          + Termék
-        </button>
+        {!readOnly && (
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddProduct(bank.id);
+            }}
+            title="Új termék hozzáadása"
+            style={{
+              padding: "3px 8px",
+              fontSize: "0.7rem",
+              flexShrink: 0,
+            }}
+          >
+            + Termék
+          </button>
+        )}
 
         {/* Delete bank button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirmDeleteBank(true);
-          }}
-          title="Bank törlése"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--text-tertiary)",
-            cursor: "pointer",
-            padding: "0 4px",
-            fontSize: "0.8rem",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
-        >
-          X
-        </button>
+        {!readOnly && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDeleteBank(true);
+            }}
+            title="Bank törlése"
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-tertiary)",
+              cursor: "pointer",
+              padding: "0 4px",
+              fontSize: "0.8rem",
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-red)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-tertiary)")}
+          >
+            X
+          </button>
+        )}
       </div>
 
       {/* Delete bank confirmation */}
@@ -342,6 +348,7 @@ function BankSelectorImpl({
                 onDeleteProduct={onDeleteProduct}
                 onDeleteDocument={onDeleteDocument}
                 onGenerate={onGenerate}
+                readOnly={readOnly}
               />
             ))
           )}

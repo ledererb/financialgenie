@@ -100,3 +100,99 @@ class TestL2AddFieldPersistsExtras:
         # Fields without rules get None (not missing keys).
         assert record["fill_rule"] is None
         assert record["checkbox_group"] is None
+
+
+# ── Auth & Admin/Member Role Tests ─────────────────────────────────────────
+class TestAuthAndUserRoles:
+    def test_auth_service_crud_and_tokens(self, tmp_path):
+        from auth_service import AuthService
+
+        db_file = tmp_path / "test_users.db"
+        auth = AuthService(db_path=db_file)
+
+        # Default admin seeded
+        users = auth.list_users()
+        assert len(users) == 1
+        assert users[0]["username"] == "admin"
+        assert users[0]["role"] == "admin"
+
+        # Authenticate default admin
+        admin_user = auth.authenticate("admin", "Admin123!")
+        assert admin_user is not None
+        assert auth.authenticate("admin", "wrong") is None
+
+        # Create token & verify
+        token = auth.create_token(admin_user)
+        verified = auth.verify_token(token)
+        assert verified is not None
+        assert verified["id"] == admin_user["id"]
+
+        # Create member user
+        member = auth.create_user("kovacs.anna", "Titok123", "Kovács Anna", "member")
+        assert member["role"] == "member"
+        assert auth.authenticate("kovacs.anna", "Titok123") is not None
+
+        # Cannot demote or delete the only admin
+        with pytest.raises(ValueError):
+            auth.update_user(admin_user["id"], role="member")
+        with pytest.raises(ValueError):
+            auth.delete_user(admin_user["id"], acting_user_id=admin_user["id"])
+
+        # Can delete member
+        assert auth.delete_user(member["id"], acting_user_id=admin_user["id"]) is True
+        assert len(auth.list_users()) == 1
+
+    def test_server_role_middleware(self):
+        from fastapi.testclient import TestClient
+        import server
+
+        client = TestClient(server.app)
+
+        # Unauthenticated request with X-Enforce-Auth -> 401
+        r_unauth = client.get("/api/catalog", headers={"X-Enforce-Auth": "1"})
+        assert r_unauth.status_code == 401
+
+        # Admin login
+        r_login = client.post("/api/auth/login", json={"username": "admin", "password": "Admin123!"})
+        assert r_login.status_code == 200
+        admin_token = r_login.json()["token"]
+        admin_hdr = {"Authorization": f"Bearer {admin_token}"}
+
+        # Admin can list users and create a member
+        r_users = client.get("/api/users", headers=admin_hdr)
+        assert r_users.status_code == 200
+
+        r_create = client.post(
+            "/api/users",
+            headers=admin_hdr,
+            json={
+                "username": "teszt_member_tmp",
+                "password": "MemberPass1!",
+                "display_name": "Teszt Member",
+                "role": "member",
+            },
+        )
+        assert r_create.status_code == 200
+        member_id = r_create.json()["user"]["id"]
+
+        try:
+            # Login as member
+            r_mlogin = client.post(
+                "/api/auth/login",
+                json={"username": "teszt_member_tmp", "password": "MemberPass1!"},
+            )
+            assert r_mlogin.status_code == 200
+            member_token = r_mlogin.json()["token"]
+            member_hdr = {"Authorization": f"Bearer {member_token}"}
+
+            # Member can read catalog (/api/catalog) and /api/auth/me
+            assert client.get("/api/auth/me", headers=member_hdr).status_code == 200
+            assert client.get("/api/catalog", headers=member_hdr).status_code == 200
+
+            # Member CANNOT access /api/users or create banks or read/edit mappings -> 403
+            assert client.get("/api/users", headers=member_hdr).status_code == 403
+            assert client.post("/api/catalog/banks", headers=member_hdr, json={"name": "Tiltott"}).status_code == 403
+            assert client.get("/api/mapping?pdf_id=fedlap.pdf", headers=member_hdr).status_code == 403
+        finally:
+            client.delete(f"/api/users/{member_id}", headers=admin_hdr)
+

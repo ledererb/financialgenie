@@ -213,3 +213,14 @@ export interface PackageResult {
 }
 
 export type AdminTab = "banks" | "documents";
+
+export type UserRole = "admin" | "member";
+
+export interface User {
+  id: string;
+  username: string;
+  display_name: string;
+  role: UserRole;
+  created_at?: string;
+}
+

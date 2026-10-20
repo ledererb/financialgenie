@@ -1,18 +1,21 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useStore } from "@/store";
-import { getMapping, saveMapping } from "@/api/client";
-import TopNav from "@/components/TopNav";
+import type { User } from "@/types";
+import { getMapping, saveMapping, getAuthToken, setAuthToken, getMe } from "@/api/client";
+import TopNav, { type NavView } from "@/components/TopNav";
 import LibraryView from "@/components/LibraryView";
 import GenerateView from "@/components/GenerateView";
+import UsersView from "@/components/UsersView";
+import LoginView from "@/components/LoginView";
 import ReviewDashboard from "@/components/ReviewDashboard";
 import PageEditor from "@/components/PageEditor";
 import PointsEditor from "@/components/PointsEditor";
 import AnalysisStep from "@/components/AnalysisStep";
 
-type View = "library" | "generate";
-
 export default function App() {
-  const [view, setView] = useState<View>("library");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [view, setView] = useState<NavView>("library");
   const [activePdfId, setActivePdfId] = useState<string | null>(null);
   const [analyzingPdfId, setAnalyzingPdfId] = useState<string | null>(null);
   const [editingPage, setEditingPage] = useState<number | null>(null);
@@ -25,21 +28,81 @@ export default function App() {
   const [genProductName, setGenProductName] = useState<string | null>(null);
 
   const catalog = useStore((s) => s.catalog);
+  const loadCatalog = useStore((s) => s.loadCatalog);
 
-  // Open a document from the library tree or upload completion → activate MappingEditor overlay
-  const handleOpenDocument = useCallback((docIdOrPath: string) => {
-    if (catalog) {
-      const doc = catalog.documents.find((d) => d.id === docIdOrPath || d.file_path === docIdOrPath);
-      if (doc?.file_path) {
-        setActivePdfId(doc.file_path);
-        return;
+  // Check stored session on startup
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      setAuthChecking(false);
+      return;
+    }
+    getMe()
+      .then((res) => {
+        setCurrentUser(res.user);
+      })
+      .catch(() => {
+        setAuthToken(null);
+        setCurrentUser(null);
+      })
+      .finally(() => {
+        setAuthChecking(false);
+      });
+  }, []);
+
+  // Listen for 401 unauthorized events from fetch interceptor
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setAuthToken(null);
+      setCurrentUser(null);
+      setActivePdfId(null);
+      setAnalyzingPdfId(null);
+      setEditingPage(null);
+      setEditingPoints(false);
+    };
+    window.addEventListener("fg:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("fg:unauthorized", onUnauthorized);
+  }, []);
+
+  const handleLoginSuccess = useCallback(
+    (user: User) => {
+      setCurrentUser(user);
+      setView("library");
+      loadCatalog();
+    },
+    [loadCatalog],
+  );
+
+  const handleLogout = useCallback(() => {
+    setAuthToken(null);
+    setCurrentUser(null);
+    setActivePdfId(null);
+    setAnalyzingPdfId(null);
+    setEditingPage(null);
+    setEditingPoints(false);
+    setView("library");
+  }, []);
+
+  const isAdmin = currentUser?.role === "admin";
+
+  // Open a document from the library tree or upload completion → activate MappingEditor overlay (Admin only)
+  const handleOpenDocument = useCallback(
+    (docIdOrPath: string) => {
+      if (!isAdmin) return;
+      if (catalog) {
+        const doc = catalog.documents.find((d) => d.id === docIdOrPath || d.file_path === docIdOrPath);
+        if (doc?.file_path) {
+          setActivePdfId(doc.file_path);
+          return;
+        }
       }
-    }
-    if (docIdOrPath.toLowerCase().endsWith(".pdf")) {
-      setActivePdfId(docIdOrPath);
-      setAnalyzingPdfId(docIdOrPath);
-    }
-  }, [catalog]);
+      if (docIdOrPath.toLowerCase().endsWith(".pdf")) {
+        setActivePdfId(docIdOrPath);
+        setAnalyzingPdfId(docIdOrPath);
+      }
+    },
+    [catalog, isAdmin],
+  );
 
   // Switch to GenerateView with pre-selected bank/product
   const handleGenerate = useCallback(
@@ -81,21 +144,48 @@ export default function App() {
     setEditingPoints(false);
   }, [activePdfId]);
 
-  // MappingEditor overlay (full-screen)
-  const showAnalysis = analyzingPdfId !== null;
-  const showPageEditor = !showAnalysis && editingPage !== null && activePdfId;
-  const showPointsEditor = !showAnalysis && editingPoints && activePdfId;
-  const showReview = !showAnalysis && !showPageEditor && !showPointsEditor && activePdfId;
+  if (authChecking) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          background: "var(--bg-primary)",
+          color: "var(--text-tertiary)",
+          fontSize: "0.9rem",
+        }}
+      >
+        Betöltés...
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // MappingEditor overlay (full-screen, Admin only)
+  const showAnalysis = isAdmin && analyzingPdfId !== null;
+  const showPageEditor = isAdmin && !showAnalysis && editingPage !== null && activePdfId;
+  const showPointsEditor = isAdmin && !showAnalysis && editingPoints && activePdfId;
+  const showReview = isAdmin && !showAnalysis && !showPageEditor && !showPointsEditor && activePdfId;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <TopNav view={view} onViewChange={(v) => {
-        setView(v);
-        setActivePdfId(null);
-        setAnalyzingPdfId(null);
-        setEditingPage(null);
-        setEditingPoints(false);
-      }} />
+      <TopNav
+        view={view}
+        user={currentUser}
+        onLogout={handleLogout}
+        onViewChange={(v) => {
+          setView(v);
+          setActivePdfId(null);
+          setAnalyzingPdfId(null);
+          setEditingPage(null);
+          setEditingPoints(false);
+        }}
+      />
 
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         {/* Main views */}
@@ -103,6 +193,7 @@ export default function App() {
           <LibraryView
             onOpenDocument={handleOpenDocument}
             onGenerate={handleGenerate}
+            readOnly={!isAdmin}
           />
         )}
         {view === "generate" && (
@@ -113,6 +204,7 @@ export default function App() {
             preselectProductName={genProductName}
           />
         )}
+        {view === "users" && isAdmin && <UsersView currentUser={currentUser} />}
 
         {/* AI Analysis overlay */}
         {showAnalysis && analyzingPdfId && (

@@ -8,9 +8,10 @@ import DocumentList from "./DocumentList";
 interface LibraryViewProps {
   onOpenDocument: (docId: string) => void;
   onGenerate: (bankId: string, bankName: string, productId: string, productName: string) => void;
+  readOnly?: boolean;
 }
 
-export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewProps) {
+export default function LibraryView({ onOpenDocument, onGenerate, readOnly = false }: LibraryViewProps) {
   const catalog = useStore((s) => s.catalog);
   const catalogLoading = useStore((s) => s.catalogLoading);
   const loadCatalog = useStore((s) => s.loadCatalog);
@@ -88,13 +89,19 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
         <span style={{ fontSize: "0.8rem", color: "var(--text-tertiary)" }}>
           {catalog ? `${catalog.banks.length} bank · ${catalog.documents.length} dokumentum` : ""}
         </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setShowBankDialog(true)}
-          >
-            + Bank
-          </button>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+          {readOnly ? (
+            <span className="badge" style={{ fontSize: "0.7rem", color: "var(--text-tertiary)", border: "1px solid var(--border-subtle)" }}>
+              Csak olvasási mód
+            </span>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setShowBankDialog(true)}
+            >
+              + Bank
+            </button>
+          )}
         </div>
       </div>
 
@@ -161,10 +168,11 @@ export default function LibraryView({ onOpenDocument, onGenerate }: LibraryViewP
                 onDeleteProduct={handleDeleteProduct}
                 onDeleteDocument={handleDeleteDocument}
                 onGenerate={onGenerate}
+                readOnly={readOnly}
               />
             ))}
 
-            {orphanDocs.length > 0 && (
+            {!readOnly && orphanDocs.length > 0 && (
               <div
                 style={{
                   borderRadius: "var(--radius-md)",

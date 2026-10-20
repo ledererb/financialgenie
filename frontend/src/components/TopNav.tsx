@@ -1,12 +1,20 @@
+import type { User } from "@/types";
+
+export type NavView = "library" | "generate" | "users";
+
 interface TopNavProps {
-  view: "library" | "generate";
-  onViewChange: (view: "library" | "generate") => void;
+  view: NavView;
+  onViewChange: (view: NavView) => void;
+  user: User;
+  onLogout: () => void;
 }
 
-export default function TopNav({ view, onViewChange }: TopNavProps) {
-  const tabs: { key: "library" | "generate"; label: string }[] = [
+export default function TopNav({ view, onViewChange, user, onLogout }: TopNavProps) {
+  const isAdmin = user.role === "admin";
+  const tabs: { key: NavView; label: string }[] = [
     { key: "library", label: "Dokumentumtár" },
     { key: "generate", label: "Generálás" },
+    ...(isAdmin ? ([{ key: "users", label: "Felhasználók" }] as const) : []),
   ];
 
   return (
@@ -63,6 +71,44 @@ export default function TopNav({ view, onViewChange }: TopNavProps) {
           );
         })}
       </nav>
+
+      {/* Right side: logged-in user + logout */}
+      <div
+        style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <span
+          className={isAdmin ? "badge badge-blue" : "badge badge-green"}
+          style={{ fontSize: "0.65rem", padding: "2px 8px" }}
+        >
+          {isAdmin ? "Admin" : "Member"}
+        </span>
+        <span
+          style={{
+            fontSize: "0.8rem",
+            color: "var(--text-secondary)",
+            fontWeight: 500,
+          }}
+          title={user.username}
+        >
+          {user.display_name || user.username}
+        </span>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={onLogout}
+          style={{
+            fontSize: "0.75rem",
+            padding: "4px 10px",
+            color: "var(--text-tertiary)",
+          }}
+        >
+          Kijelentkezés
+        </button>
+      </div>
     </header>
   );
 }

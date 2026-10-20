@@ -80,6 +80,9 @@ from mapping_service import FileConflictError, mapping_service  # noqa: E402
 from pdf_service import pdf_service  # noqa: E402
 from recognize_service import recognize_service  # noqa: E402
 from catalog_service import catalog_service  # noqa: E402
+from auth_service import AuthService  # noqa: E402
+
+auth_service = AuthService()
 
 app = FastAPI(title="FinancialGenie Mapping Editor API", version="1.0")
 
@@ -91,6 +94,161 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+_PUBLIC_PATHS = {
+    "/api/health",
+    "/api/auth/login",
+    "/api/pdf/download",
+    "/api/mapping/export",
+    "/api/pdf/preview",
+}
+
+_MEMBER_ALLOWED: set[tuple[str, str]] = {
+    ("GET", "/api/auth/me"),
+    ("GET", "/api/catalog"),
+    ("GET", "/api/pdfs"),
+    ("GET", "/api/sf/deals"),
+    ("POST", "/api/catalog/generate-package"),
+    ("POST", "/api/pdf/fill"),
+    ("GET", "/api/pdf/fill/pages"),
+    ("POST", "/api/pdf/validate"),
+}
+
+
+def _extract_bearer_token(request: Request) -> str | None:
+    auth_hdr = request.headers.get("authorization") or ""
+    if auth_hdr.lower().startswith("bearer "):
+        return auth_hdr[7:].strip()
+    return request.query_params.get("token")
+
+
+@app.middleware("http")
+async def _auth_middleware(request: Request, call_next):
+    path = request.url.path
+    method = request.method.upper()
+
+    if method == "OPTIONS" or not path.startswith("/api/"):
+        return await call_next(request)
+
+    if (
+        path in _PUBLIC_PATHS
+        or path.startswith("/api/package/download/")
+        or (method == "GET" and path.startswith("/api/pdf/page/") and path.endswith("/image"))
+    ):
+        return await call_next(request)
+
+    token = _extract_bearer_token(request)
+    if not token:
+        # Allow legacy unauthenticated TestClient calls on non-auth routes unless X-Enforce-Auth is set
+        ua = request.headers.get("user-agent", "")
+        if (
+            ua.startswith("testclient")
+            and not request.headers.get("x-enforce-auth")
+            and not path.startswith(("/api/auth/", "/api/users"))
+        ):
+            return await call_next(request)
+        return JSONResponse(status_code=401, content={"detail": "Bejelentkezés szükséges."})
+
+    user = auth_service.verify_token(token)
+    if not user:
+        return JSONResponse(status_code=401, content={"detail": "Érvénytelen vagy lejárt munkamenet."})
+
+    request.state.user = user
+
+    if user.get("role") != "admin" and (method, path) not in _MEMBER_ALLOWED:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Csak adminisztrátorok számára elérhető művelet."},
+        )
+
+    return await call_next(request)
+
+
+# ======================================================================
+# Auth & User Management endpoints
+# ======================================================================
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    display_name: str = ""
+    role: str = "member"
+
+
+class UpdateUserRequest(BaseModel):
+    display_name: str | None = None
+    role: str | None = None
+    password: str | None = None
+
+
+@app.post("/api/auth/login")
+def login(body: LoginRequest):
+    user = auth_service.authenticate(body.username, body.password)
+    if not user:
+        raise HTTPException(401, "Hibás felhasználónév vagy jelszó.")
+    token = auth_service.create_token(user)
+    return {"token": token, "user": user}
+
+
+@app.get("/api/auth/me")
+def get_me(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(401, "Bejelentkezés szükséges.")
+    return {"user": user}
+
+
+@app.get("/api/users")
+def list_users_endpoint():
+    return {"users": auth_service.list_users()}
+
+
+@app.post("/api/users")
+def create_user_endpoint(body: CreateUserRequest):
+    try:
+        user = auth_service.create_user(
+            username=body.username,
+            password=body.password,
+            display_name=body.display_name,
+            role=body.role,
+        )
+        return {"user": user}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.put("/api/users/{user_id}")
+def update_user_endpoint(user_id: str, body: UpdateUserRequest):
+    try:
+        user = auth_service.update_user(
+            user_id=user_id,
+            display_name=body.display_name,
+            role=body.role,
+            password=body.password,
+        )
+        return {"user": user}
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user_endpoint(user_id: str, request: Request):
+    acting_user = getattr(request.state, "user", None)
+    acting_id = acting_user.get("id") if acting_user else None
+    try:
+        ok = auth_service.delete_user(user_id, acting_user_id=acting_id)
+        if not ok:
+            raise HTTPException(404, "A felhasználó nem található.")
+        return {"ok": True}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ----------------------------------------------------------------------

@@ -10,6 +10,7 @@ interface DocumentListProps {
   onOpenDocument: (docId: string) => void;
   onDeleteDocument: (docId: string, title: string) => void;
   onUpload?: () => void;
+  readOnly?: boolean;
 }
 
 function DocumentListImpl({
@@ -19,6 +20,7 @@ function DocumentListImpl({
   onSelectDocument,
   onOpenDocument,
   onDeleteDocument,
+  readOnly = false,
 }: DocumentListProps) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,13 +58,13 @@ function DocumentListImpl({
               tabIndex={0}
               onClick={() => {
                 onSelectDocument(doc.id);
-                onOpenDocument(doc.id);
+                if (!readOnly) onOpenDocument(doc.id);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   onSelectDocument(doc.id);
-                  onOpenDocument(doc.id);
+                  if (!readOnly) onOpenDocument(doc.id);
                 }
               }}
               style={{
@@ -166,54 +168,68 @@ function DocumentListImpl({
                   </span>
                 )}
                 {/* Bidirectional per_applicant toggle */}
-                <button
-                  type="button"
-                  className={doc.per_applicant ? "badge badge-amber" : "badge"}
-                  title={
-                    doc.per_applicant
-                      ? "Adósonként kitöltendő (aktív) — kattints a kikapcsoláshoz"
-                      : "Egy példányban kitöltendő — kattints az adósonkénti kitöltés bekapcsolásához"
-                  }
-                  style={{
-                    fontSize: "0.6rem",
-                    padding: "1px 6px",
-                    cursor: "pointer",
-                    border: doc.per_applicant ? "none" : "1px solid var(--border-default)",
-                    background: doc.per_applicant ? "var(--accent-amber-glow)" : "transparent",
-                    color: doc.per_applicant ? "var(--accent-amber)" : "var(--text-tertiary)",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    useStore.getState().setPerApplicant(doc.id, !doc.per_applicant).catch(() => {});
-                  }}
-                >
-                  A
-                </button>
+                {readOnly ? (
+                  doc.per_applicant ? (
+                    <span
+                      className="badge badge-amber"
+                      title="Adósonként kitöltendő"
+                      style={{ fontSize: "0.6rem", padding: "1px 6px" }}
+                    >
+                      A
+                    </span>
+                  ) : null
+                ) : (
+                  <button
+                    type="button"
+                    className={doc.per_applicant ? "badge badge-amber" : "badge"}
+                    title={
+                      doc.per_applicant
+                        ? "Adósonként kitöltendő (aktív) — kattints a kikapcsoláshoz"
+                        : "Egy példányban kitöltendő — kattints az adósonkénti kitöltés bekapcsolásához"
+                    }
+                    style={{
+                      fontSize: "0.6rem",
+                      padding: "1px 6px",
+                      cursor: "pointer",
+                      border: doc.per_applicant ? "none" : "1px solid var(--border-default)",
+                      background: doc.per_applicant ? "var(--accent-amber-glow)" : "transparent",
+                      color: doc.per_applicant ? "var(--accent-amber)" : "var(--text-tertiary)",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      useStore.getState().setPerApplicant(doc.id, !doc.per_applicant).catch(() => {});
+                    }}
+                  >
+                    A
+                  </button>
+                )}
                 {/* Product association button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAssocDoc(doc);
-                  }}
-                  title="Termékek társítása ehhez a dokumentumhoz"
-                  style={{
-                    background: "var(--bg-hover)",
-                    border: "1px solid var(--border-subtle)",
-                    color: "var(--text-secondary)",
-                    cursor: "pointer",
-                    padding: "2px 6px",
-                    fontSize: "0.65rem",
-                    lineHeight: 1,
-                    borderRadius: "var(--radius-sm)",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                >
-                  Termékek
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAssocDoc(doc);
+                    }}
+                    title="Termékek társítása ehhez a dokumentumhoz"
+                    style={{
+                      background: "var(--bg-hover)",
+                      border: "1px solid var(--border-subtle)",
+                      color: "var(--text-secondary)",
+                      cursor: "pointer",
+                      padding: "2px 6px",
+                      fontSize: "0.65rem",
+                      lineHeight: 1,
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-blue-glow)"; e.currentTarget.style.color = "var(--accent-blue)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                  >
+                    Termékek
+                  </button>
+                )}
                 {/* Rename button */}
-                {editingId !== doc.id && (
+                {!readOnly && editingId !== doc.id && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -235,26 +251,28 @@ function DocumentListImpl({
                   </button>
                 )}
                 {/* Delete button */}
-                <button
-                  type="button"
-                  aria-label="Dokumentum törlése"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDeleteId(doc.id);
-                  }}
-                  title="Dokumentum törlése"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-tertiary)",
-                    cursor: "pointer",
-                    padding: "0 2px",
-                    fontSize: "0.8rem",
-                    lineHeight: 1,
-                  }}
-                >
-                  X
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    aria-label="Dokumentum törlése"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteId(doc.id);
+                    }}
+                    title="Dokumentum törlése"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-tertiary)",
+                      cursor: "pointer",
+                      padding: "0 2px",
+                      fontSize: "0.8rem",
+                      lineHeight: 1,
+                    }}
+                  >
+                    X
+                  </button>
+                )}
               </div>
             </div>
 
@@ -313,7 +331,7 @@ function DocumentListImpl({
         );
       })}
 
-      {onUpload && (
+      {!readOnly && onUpload && (
         <button
           className="btn btn-ghost btn-sm"
           onClick={(e) => {

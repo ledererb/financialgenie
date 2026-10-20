@@ -16,7 +16,57 @@ import type {
   PdfFieldsResponse,
   PdfInfo,
   PdfSummary,
+  User,
+  UserRole,
 } from "@/types";
+
+export const AUTH_TOKEN_KEY = "fg_auth_token";
+
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token: string | null): void {
+  try {
+    if (token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+// Install global fetch interceptor so all /api/ calls attach Authorization header
+if (typeof window !== "undefined" && !(window as any).__fgFetchPatched) {
+  (window as any).__fgFetchPatched = true;
+  const origFetch = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const isApiCall = urlStr.startsWith("/api/") || (API_BASE && urlStr.startsWith(`${API_BASE}/api/`));
+    let nextInit = init;
+    if (isApiCall) {
+      const token = getAuthToken();
+      if (token) {
+        const headers = new Headers(init?.headers || {});
+        if (!headers.has("Authorization")) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
+        nextInit = { ...init, headers };
+      }
+    }
+    const res = await origFetch(input, nextInit);
+    if (isApiCall && res.status === 401 && !urlStr.includes("/api/auth/login")) {
+      window.dispatchEvent(new CustomEvent("fg:unauthorized"));
+    }
+    return res;
+  };
+}
 
 // Empty string = same-origin requests go through Vite proxy (/api → localhost:8765)
 export const API_BASE: string =
@@ -373,4 +423,56 @@ export async function updateDocument(
     body: JSON.stringify(patch),
   });
 }
+
+// --- Auth & User Management ------------------------------------------------
+
+export async function loginUser(
+  username: string,
+  password: string,
+): Promise<{ token: string; user: User }> {
+  return http<{ token: string; user: User }>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function getMe(): Promise<{ user: User }> {
+  return http<{ user: User }>("/api/auth/me");
+}
+
+export async function listUsers(): Promise<User[]> {
+  const data = await http<{ users: User[] }>("/api/users");
+  return data.users;
+}
+
+export async function createUser(payload: {
+  username: string;
+  password: string;
+  display_name: string;
+  role: UserRole;
+}): Promise<User> {
+  const data = await http<{ user: User }>("/api/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.user;
+}
+
+export async function updateUser(
+  userId: string,
+  payload: { display_name?: string; role?: UserRole; password?: string },
+): Promise<User> {
+  const data = await http<{ user: User }>(`/api/users/${enc(userId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.user;
+}
+
+export async function deleteUser(userId: string): Promise<{ ok: boolean }> {
+  return http<{ ok: boolean }>(`/api/users/${enc(userId)}`, {
+    method: "DELETE",
+  });
+}
+
 
