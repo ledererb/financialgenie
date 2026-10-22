@@ -559,6 +559,7 @@ _CHAR_STEM_CANONICAL_RULES = [
     ("okmány száma", "Contact.ID_Card_Number__c"),
     ("igazolvány száma", "Contact.ID_Card_Number__c"),
     ("dokumentum száma", "Contact.ID_Card_Number__c"),
+    ("ingatlan irányítószám", "Lead.Ingatlan_irsz__c"),
     ("irányítószám", "Contact.ZIP__c"),
     ("születési idő - év", "Contact.Birthdate_year"),
     ("születési idő - nap", "Contact.Birthdate_day"),
@@ -727,6 +728,91 @@ def _detect_character_groups(pdf_fields, recognized_fields):
             _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members_all)
 
     return groups, members_all
+
+
+def _postprocess_recognized_fields(
+    fields: list[RecognizedField],
+    char_groups: list[dict] | None = None,
+) -> None:
+    """Felismert mezők automatikus utófeldolgozása és javítása:
+
+    1. Karakterdoboz-csoportok (character_groups) tagmezőin megtartjuk /
+       visszatöltjük a csoport canonical_field-jét (hogy a UI-ban is látszódjon,
+       és futásidőben a _infer_runtime_character_groups is felismerje).
+    2. Helyrajzi szám (hrsz) szövegmezőket automatikusan a
+       Lead.Ingatlan_megjegyzes__c mezőre irányítja.
+    3. Szétbontott dátummezőkhöz (év / hónap / nap) automatikusan beállítja
+       a megfelelő regex fragment-et.
+    4. Fejléc / navigációs / belső technikai checkboxokról (low confidence,
+       checkbox_group nélkül) leveszi a téves canonical_field leképezést.
+    """
+    import re as _re
+
+    member_to_canon: dict[str, str] = {}
+    for grp in (char_groups or []):
+        c_field = grp.get("canonical_field")
+        if c_field:
+            for m in (grp.get("member_fields") or []):
+                member_to_canon[m] = c_field
+
+    for f in fields:
+        # 1. Karakterdoboz tagmező canonical visszatöltése
+        if f.pdf_field_name in member_to_canon and not f.canonical_field:
+            f.canonical_field = member_to_canon[f.pdf_field_name]
+
+        norm_name = _normalize_key(f.pdf_field_name or "")
+        norm_lbl = _normalize_key(f.label or "")
+        norm_notes = _normalize_key(f.notes or "")
+        combined = f"{norm_name} {norm_lbl}"
+
+        # 2. Helyrajzi szám automatikus leképezése
+        if f.field_type == FieldType.TEXT and (
+            "helyrajzi" in combined or _re.search(r"\bhrsz\b", combined)
+        ):
+            f.canonical_field = "Lead.Ingatlan_megjegyzes__c"
+            f.confidence = MappingConfidence.HIGH
+
+        # 3. Dátum-komponens (év/hónap/nap) automatikus fragment beállítása
+        if (
+            f.canonical_field
+            and not f.fragment
+            and f.canonical_field not in (
+                "Contact.Birthdate_year",
+                "Contact.Birthdate_month",
+                "Contact.Birthdate_day",
+            )
+            and any(
+                kw in f.canonical_field.lower()
+                for kw in ("date", "started", "birthdate")
+            )
+        ):
+            for text_cand in (norm_name, norm_lbl):
+                tokens = [t for t in _re.split(r"[^a-z0-9]+", text_cand) if t]
+                if not tokens:
+                    continue
+                last = tokens[-1]
+                if last in ("ev", "eve", "year", "yyyy") or ("ev" in tokens and "ho" not in tokens and "honap" not in tokens and "nap" not in tokens):
+                    f.fragment = {"type": "regex", "pattern": r"^(\d{4})"}
+                    break
+                if last in ("ho", "honap", "month", "mm") or ("honap" in tokens and "ev" not in tokens and "nap" not in tokens):
+                    f.fragment = {"type": "regex", "pattern": r"^\d{4}[.\-/](\d{1,2})"}
+                    break
+                if last in ("nap", "napja", "day", "dd") and "honap" not in tokens:
+                    f.fragment = {"type": "regex", "pattern": r"^\d{4}[.\-/]\d{1,2}[.\-/](\d{1,2})"}
+                    break
+
+        # 4. Fejléc / navigációs / technikai checkboxok tisztítása
+        if (
+            f.field_type == FieldType.CHECKBOX
+            and f.confidence == MappingConfidence.LOW
+            and not f.checkbox_group
+            and not f.fill_rule
+        ):
+            if any(
+                kw in f"{norm_lbl} {norm_notes}"
+                for kw in ("fejlec", "navigacio", "oldalszam", "oldal jelolo", "belso elem")
+            ):
+                f.canonical_field = None
 
 
 def _normalize_checkbox_group(cg_raw) -> Optional[dict]:
@@ -953,11 +1039,9 @@ Fontos szabályok:
             # AI eredmények összefésülése a heurisztikussal
             base_mapping = self._merge_mappings(base_mapping, ai_mapping, pdf_fields=pdf_fields)
         else:
-            char_groups, char_members = _detect_character_groups(pdf_fields, base_mapping.fields)
-            if char_members:
-                for f in base_mapping.fields:
-                    if f.pdf_field_name in char_members:
-                        f.canonical_field = None
+            char_groups, _ = _detect_character_groups(pdf_fields, base_mapping.fields)
+            _postprocess_recognized_fields(base_mapping.fields, char_groups)
+            if char_groups:
                 base_mapping.character_groups = char_groups
 
         return base_mapping
@@ -1296,10 +1380,8 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
         # (egy sorban lévő, azonos canonicalra mappelt kis dobozok →
         #  character_groups, hogy a filler karakterenként ossza szét)
         char_groups, char_members = _detect_character_groups(pdf_fields, all_fields)
+        _postprocess_recognized_fields(all_fields, char_groups)
         if char_members:
-            for f in all_fields:
-                if f.pdf_field_name in char_members:
-                    f.canonical_field = None
             logger.info(f"🧩 {len(char_groups)} karakterdoboz-csoport felismerve ({len(char_members)} tagmező)")
 
         return MappingConfig(
@@ -1401,10 +1483,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                     char_groups.append(grp)
                     seen_members.update(members)
 
-        if seen_members:
-            for f in merged:
-                if f.pdf_field_name in seen_members:
-                    f.canonical_field = None
+        _postprocess_recognized_fields(merged, char_groups)
 
         total_mapped = sum(1 for f in merged if f.canonical_field)
         logger.info(f"📊 Merge eredmény: {total_mapped}/{len(merged)} mező leképezve, {len(char_groups)} character_group")

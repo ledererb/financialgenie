@@ -479,30 +479,42 @@ class AcroFormFiller(BaseFiller):
                         # esetben be kell állítanunk, különben a renderer nem
                         # jeleníti meg a pipát.
                         as_targets = widgets if widgets else [field_obj]
-                        if isinstance(value, str) and value not in ("igen", "nem", "true", "false", "True", "False", "1", "0", ""):
-                            # Radio button specifikus érték (pl. "1,2")
-                            target_state = f"/{value}"
-                            # Érvényesség-ellenőrzés: azonos nevű, de KÜLÖN
-                            # AcroForm field-ként szereplő widgeteknél (pl.
-                            # "Check Box 17" Yes és no példányai) az export
-                            # érték csak az egyiknek érvényes on-state-e. Ha
-                            # ennek a fieldnek nincs ilyen állapota, ne írjunk
-                            # érvénytelen /V-t (a renderer hibásan értelmezi).
-                            valid_states = set()
+                        valid_states: list[str] = []
+                        for w in as_targets:
+                            try:
+                                ap_n = w.get("/AP", {}).get("/N", {})
+                                for k in ap_n.keys():
+                                    sk = str(k)
+                                    if sk != "/Off" and sk not in valid_states:
+                                        valid_states.append(sk)
+                            except Exception:
+                                pass
+
+                        val_str = str(value).strip() if isinstance(value, str) else ""
+                        matched_state = (
+                            self._match_pdf_state(f"/{val_str}", valid_states)
+                            if val_str and val_str.lower() not in ("igen", "nem")
+                            else None
+                        )
+                        is_radio_state = (
+                            matched_state is not None
+                            and (
+                                len(as_targets) > 1
+                                or len(valid_states) > 1
+                                or val_str.lower() not in ("igen", "nem", "true", "false", "1", "0", "")
+                            )
+                        )
+                        if is_radio_state:
+                            target_state = matched_state
+                            field_obj[pikepdf.Name("/V")] = pikepdf.Name(target_state)
                             for w in as_targets:
-                                try:
-                                    ap_n = w.get("/AP", {}).get("/N", {})
-                                    valid_states.update(str(k) for k in ap_n.keys() if str(k) != "/Off")
-                                except Exception:
-                                    pass
+                                self._set_widget_as(w, target_state)
+                        elif isinstance(value, str) and val_str.lower() not in ("igen", "nem", "true", "false", "1", "0", ""):
+                            # Ismeretlen export state, ami nem szerepel a widget /AP/N-jében
+                            target_state = f"/{val_str}"
                             if valid_states and target_state not in valid_states:
                                 continue
                             field_obj[pikepdf.Name("/V")] = pikepdf.Name(target_state)
-                            # FIX: minden child widget /AS (appearance state)
-                            # beállítása — a kiválasztott widgetre az export
-                            # érték, a többire /Off. A /AP streameket nem
-                            # töröljük, különben a renderer (PyMuPDF) nem
-                            # tudja megjeleníteni a pipát.
                             for w in as_targets:
                                 self._set_widget_as(w, target_state)
                         else:
@@ -528,6 +540,32 @@ class AcroFormFiller(BaseFiller):
                     else:
                         # Szöveg / dropdown / lista: String érték
                         str_val = str(value)
+
+                        # Ha zárt opciós lista (/Ch, Edit flag nélkül), ellenőrizzük az /Opt opciókat
+                        if field_type == "/Ch":
+                            try:
+                                ff_ch = int(field_obj.get("/Ff", 0) or 0)
+                                opts_raw = field_obj.get("/Opt")
+                                if opts_raw and not (ff_ch & (1 << 18)):
+                                    opt_strs = [
+                                        str(o[1] if isinstance(o, pikepdf.Array) and len(o) > 1 else o)
+                                        for o in opts_raw
+                                    ]
+                                    non_blank_opts = [o for o in opt_strs if o.strip()]
+                                    if non_blank_opts:
+                                        matched_opt = None
+                                        sv_clean = str_val.strip().lower()
+                                        for o in non_blank_opts:
+                                            ol = o.strip().lower()
+                                            if sv_clean == ol or sv_clean.startswith(ol + " ") or sv_clean.startswith(ol + "-"):
+                                                matched_opt = o
+                                                break
+                                        if matched_opt is None:
+                                            result.skipped_fields.append(pdf_field_name)
+                                            continue
+                                        str_val = matched_opt
+                            except Exception:
+                                pass
 
                         # Külön kezelés Comb mezőkhöz (dobozolt mezők, pl. összegek, dátumok, adószám)
                         try:
@@ -560,10 +598,9 @@ class AcroFormFiller(BaseFiller):
 
                         field_obj[pikepdf.Name("/V")] = pikepdf.String(str_val)
 
-                        # Szövegmezőknél a NeedAppearances flag elegendő — a
-                        # renderer maga generálja a megjelenést. (Csak /Tx
-                        # típusnál; gomboknál nem töröljük a /AP-t!)
-                        if field_type == "/Tx":
+                        # Szövegmezőknél (és választólistáknál) a NeedAppearances flag
+                        # + _sync_text_appearances generálja a megjelenést.
+                        if field_type in ("/Tx", "/Ch"):
                             for w in widgets:
                                 if "/AP" in w:
                                     del w["/AP"]
@@ -736,17 +773,52 @@ class AcroFormFiller(BaseFiller):
         try:
             with pikepdf.open(str(output_path), allow_overwriting_input=True) as pdf:
                 field_values: dict[str, str] = {}
-                for field in pdf.Root.get("/AcroForm", {}).get("/Fields", []):
-                    name = str(field.get("/T", ""))
-                    ft = str(field.get("/FT", ""))
-                    v = field.get("/V")
-                    if ft == "/Btn" and name and v is not None and str(v) not in ("/Off", "/"):
-                        field_values[name] = str(v)
-                        for kid in field.get("/Kids", []):
-                            AcroFormFiller._set_widget_as(kid, str(v))
+
+                def _walk_btn_fields(fields_arr, prefix=""):
+                    for field in fields_arr:
+                        try:
+                            name = str(field.get("/T", "")) if "/T" in field else ""
+                        except Exception:
+                            name = ""
+                        full = f"{prefix}.{name}" if prefix and name else (name or prefix)
+                        ft = str(field.get("/FT", ""))
+                        v = field.get("/V")
+                        kids = field.get("/Kids", [])
+                        sub_fields = [
+                            k for k in kids
+                            if "/T" in k and str(k.get("/Subtype", "")) != "/Widget"
+                        ]
+                        if sub_fields:
+                            _walk_btn_fields(sub_fields, full)
+                        elif ft == "/Btn" and full and v is not None and str(v) not in ("/Off", "/"):
+                            field_values[full] = str(v)
+                            if name and name not in field_values:
+                                field_values[name] = str(v)
+                            for kid in kids:
+                                AcroFormFiller._set_widget_as(kid, str(v))
+
+                _walk_btn_fields(pdf.Root.get("/AcroForm", {}).get("/Fields", []))
 
                 if not field_values:
                     return
+
+                def _annot_full_name(annot) -> str:
+                    parts: list[str] = []
+                    cur = annot
+                    seen: set[tuple[int, int]] = set()
+                    while cur is not None:
+                        og = getattr(cur, "objgen", None)
+                        if og and og in seen:
+                            break
+                        if og:
+                            seen.add(og)
+                        if "/T" in cur:
+                            try:
+                                parts.append(str(cur["/T"]))
+                            except Exception:
+                                pass
+                        cur = cur.get("/Parent") if "/Parent" in cur else None
+                    return ".".join(reversed(parts))
 
                 needs_save = False
                 for page in pdf.pages:
@@ -754,11 +826,11 @@ class AcroFormFiller(BaseFiller):
                         try:
                             if str(annot.get("/Subtype", "")) != "/Widget":
                                 continue
-                            t_name = str(annot.get("/T", "")) if "/T" in annot else ""
-                            if not t_name and "/Parent" in annot and "/T" in annot["/Parent"]:
-                                t_name = str(annot["/Parent"]["/T"])
-                            if t_name in field_values:
-                                AcroFormFiller._set_widget_as(annot, field_values[t_name])
+                            full_t = _annot_full_name(annot)
+                            leaf_t = full_t.rsplit(".", 1)[-1] if full_t else ""
+                            target_v = field_values.get(full_t) or field_values.get(leaf_t)
+                            if target_v:
+                                AcroFormFiller._set_widget_as(annot, target_v)
                                 needs_save = True
                         except Exception:
                             pass
@@ -783,7 +855,7 @@ class AcroFormFiller(BaseFiller):
         """
         import fitz  # PyMuPDF
 
-        filled_set = set(result.filled_fields)
+        handled_set = set(result.filled_fields) | set(result.skipped_fields)
         extra_filled = 0
 
         try:
@@ -793,7 +865,7 @@ class AcroFormFiller(BaseFiller):
             for page in doc:
                 for widget in page.widgets():
                     wname = widget.field_name
-                    if not wname or wname in filled_set:
+                    if not wname or wname in handled_set:
                         continue
 
                     # Try to resolve value via mapping
@@ -993,6 +1065,65 @@ class AcroFormFiller(BaseFiller):
         return reconciled
 
     @staticmethod
+    def _norm_pdf_state_name(s: str) -> str:
+        """Normalize a PDF button appearance state name across #XX hex escapes,
+        double-UTF8/Latin-1 mojibake (e.g. ``VÃ¡lasztÃ¡s2`` vs ``Választás2`` vs
+        ``V#C3#83#C2#A1laszt#C3#83#C2#A1s2``), accents, and case.
+        """
+        import re as _re
+        import unicodedata as _ud
+
+        raw = str(s or "").lstrip("/")
+        if "#" in raw:
+            try:
+                raw_bytes = bytearray()
+                i = 0
+                while i < len(raw):
+                    if raw[i] == "#" and i + 2 < len(raw):
+                        hex_part = raw[i + 1 : i + 3]
+                        if all(c in "0123456789abcdefABCDEF" for c in hex_part):
+                            raw_bytes.append(int(hex_part, 16))
+                            i += 3
+                            continue
+                    raw_bytes.extend(raw[i].encode("latin1", errors="ignore"))
+                    i += 1
+                raw = raw_bytes.decode("utf-8", errors="replace")
+            except Exception:
+                pass
+        for _ in range(2):
+            try:
+                decoded = raw.encode("latin1").decode("utf-8")
+                if decoded != raw:
+                    raw = decoded
+                else:
+                    break
+            except Exception:
+                break
+        nfd = _ud.normalize("NFD", raw)
+        folded = "".join(ch for ch in nfd if _ud.category(ch) != "Mn")
+        return _re.sub(r"\s+", " ", folded).strip().lower()
+
+    @classmethod
+    def _match_pdf_state(cls, target: str, available_states: list[str] | set[str]) -> str | None:
+        """Find the actual ``/AP/N`` state key in ``available_states`` matching ``target``."""
+        if not target or not available_states:
+            return None
+        t = target if target.startswith("/") else f"/{target}"
+        if t in available_states:
+            return t
+        t_low = t.lower()
+        for st in available_states:
+            if st != "/Off" and st.lower() == t_low:
+                return st
+        t_norm = cls._norm_pdf_state_name(t)
+        if not t_norm:
+            return None
+        for st in available_states:
+            if st != "/Off" and cls._norm_pdf_state_name(st) == t_norm:
+                return st
+        return None
+
+    @staticmethod
     def _set_widget_as(widget: Any, state: str) -> None:
         """Set a widget's /AS (Appearance State) so renderers display it.
 
@@ -1021,8 +1152,9 @@ class AcroFormFiller(BaseFiller):
                     widget[pikepdf.Name("/V")] = actual
                 return
             available_states = [str(k) for k in n_dict.keys()]
-            if state in available_states:
-                actual = pikepdf.Name(state)
+            matched = AcroFormFiller._match_pdf_state(state, available_states)
+            if matched is not None:
+                actual = pikepdf.Name(matched)
             elif "/Off" in available_states:
                 actual = pikepdf.Name("/Off")
             else:

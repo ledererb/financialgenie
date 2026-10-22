@@ -49,6 +49,10 @@ _POOL_ENRICH_FIELDS = (
     "Name_of_employer__c", "Occupation__c",
     "Phone", "MobilePhone", "Email",
     "Mother_s_Name__c", "Szuletesi_nev__c", "Place_of_Birth__c",
+    "Birthdate", "Date_of_birth__c",
+    "Permanent_address__c", "ZIP__c", "OtherCity", "OtherStreet",
+    "MailingCity", "MailingPostalCode", "MailingStreet",
+    "Tax_ID__c", "ID_Card_Number__c", "Address_Card_Number__c",
 )
 
 
@@ -722,11 +726,13 @@ class SalesforceClient:
                         logger.warning("Account Property__c lekérése sikertelen (%s): %s", account_id, exc)
 
                 for p, role_val in ordered_props:
+                    kozterulet_nev = (p.get("Ingatlan_kozterulet_neve__c") or "").strip()
+                    kozterulet_jelleg = (p.get("Ingatlan_Kozterulet_jellege__c") or "").strip()
                     street_parts = []
-                    if p.get("Ingatlan_kozterulet_neve__c"):
-                        street_parts.append(p.get("Ingatlan_kozterulet_neve__c"))
-                    if p.get("Ingatlan_Kozterulet_jellege__c"):
-                        street_parts.append(p.get("Ingatlan_Kozterulet_jellege__c"))
+                    if kozterulet_nev:
+                        street_parts.append(kozterulet_nev)
+                    if kozterulet_jelleg and not kozterulet_nev.lower().endswith(kozterulet_jelleg.lower()):
+                        street_parts.append(kozterulet_jelleg)
 
                     street_name = " ".join(street_parts).strip()
                     zip_val = p.get("Ingatlan_irsz__c")
@@ -734,7 +740,7 @@ class SalesforceClient:
 
                     prop_record = {
                         "property_type": p.get("Property_Type__c") or "lakás",
-                        "parcel_number": p.get("Ingatlan_hrsz__c") or "",
+                        "parcel_number": p.get("Ingatlan_hrsz__c") or p.get("Ingatlan_megjegyzes__c") or "",
                         "area_sqm": p.get("Ingatlan_alapterulet__c"),
                         "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
                         "purchase_price": p.get("Purchase_price__c"),

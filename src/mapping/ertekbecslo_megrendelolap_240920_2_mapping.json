@@ -1,0 +1,1333 @@
+{
+  "bank_name": "CIB Bank",
+  "form_name": "ertekbecslo_megrendelolap_240920_2",
+  "form_type": "acroform",
+  "approved": false,
+  "approved_by": null,
+  "notes": "Összefésült mapping: heurisztikus + AI (83 leképezve).",
+  "page_structure": {
+    "1": "per_property",
+    "2": "per_property",
+    "3": "per_property",
+    "4": "per_property",
+    "5": "global"
+  },
+  "fields": [
+    {
+      "pdf_field_name": "Megrendelő telefonszáma",
+      "label": "Üzletfél telefonszáma",
+      "field_type": "text",
+      "canonical_field": "Contact.Phone",
+      "confidence": "manual",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Megye_éb megrendelő",
+      "label": "Ingatlan megyéje",
+      "field_type": "text",
+      "canonical_field": "Lead.State",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "cím részlet_éb megrendelő",
+      "label": "Utca, házszám, lépcsőház / épület",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_kozterulet_neve__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Utca + házszám együtt; részben Lead.Ingtalan_hazszam__c is érintett",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "emelet ajtó_éb megrendelő",
+      "label": "Emelet / ajtó",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_emelet__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Helyrajzi szÝm Építésiúj lakás vásárlási hitelcél esetén a várható helyrajzi számot szükséges megadni",
+      "label": "Helyrajzi szám",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nincs dedikált helyrajzi szám mező a kanonikus listában; low confidence",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Az értékelni kért tulajdoni hÝnyad Osztatlan közös tulajdon esetén a tulajdoni lap szerinti értékelni kívánt tulajdoni hányad",
+      "label": "Az értékelni kért tulajdoni hányad",
+      "field_type": "text",
+      "canonical_field": "Contact.Property_50pct_ownership_details__c",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_1___VÃ¡lasztÃ¡s1",
+      "label": "Ingatlan adatlap oldal jelölő 1/5 – 1. oldal (1. checkbox)",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Oldalszám-jelölő checkbox a fejlécben; belső navigációs elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_1___0",
+      "label": "Ingatlan adatlap oldal jelölő 1/5 – 2. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Oldalszám-jelölő checkbox a fejlécben",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_1___2",
+      "label": "Ingatlan adatlap oldal jelölő 1/5 – 3. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Oldalszám-jelölő checkbox a fejlécben",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Megrend_tip___0",
+      "label": "Megrendelés típusa – Teljes értékbecslés",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_order_bank__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Megrendelés típusa checkbox csoport; nincs közvetlen Salesforce mező, low confidence",
+      "checkbox_group": {
+        "group_id": "megrendeles_tipusa",
+        "group_label": "Megrendelés típusa",
+        "option_value": "Teljes értékbecslés",
+        "option_label": "Teljes értékbecslés"
+      },
+      "fill_rule": {
+        "type": "static",
+        "value": "igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Megrend_tip___1",
+      "label": "Megrendelés típusa – Műszaki szemle",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_order_bank__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "megrendeles_tipusa",
+        "group_label": "Megrendelés típusa",
+        "option_value": "Műszaki szemle",
+        "option_label": "Műszaki szemle"
+      },
+      "fill_rule": {
+        "match_value": "Műszaki szemle"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Megrend_tip___2",
+      "label": "Megrendelés típusa – Értékbecslés aktualizálás",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_order_bank__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "megrendeles_tipusa",
+        "group_label": "Megrendelés típusa",
+        "option_value": "Értékbecslés aktualizálás",
+        "option_label": "Értékbecslés aktualizálás"
+      },
+      "fill_rule": {
+        "match_value": "Értékbecslés aktualizálás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Megrend_tip___3",
+      "label": "Megrendelés típusa – Előzetes értékbecslés",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_order_bank__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "megrendeles_tipusa",
+        "group_label": "Megrendelés típusa",
+        "option_value": "Előzetes értékbecslés",
+        "option_label": "Előzetes értékbecslés"
+      },
+      "fill_rule": {
+        "match_value": "Előzetes értékbecslés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "CO szám 1",
+      "label": "Kapcsolódó hitel száma (1. rész)",
+      "field_type": "text",
+      "canonical_field": "loan.refinance_account",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Bankos belső mező, Bank tölti ki – hitelszám 1. szegmense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "CO szám 2",
+      "label": "Kapcsolódó hitel száma (2. rész)",
+      "field_type": "text",
+      "canonical_field": "loan.refinance_account",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Bankos belső mező – hitelszám 2. szegmense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "CO szám 3",
+      "label": "Kapcsolódó hitel száma (3. rész)",
+      "field_type": "text",
+      "canonical_field": "loan.refinance_account",
+      "confidence": "medium",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Bankos belső mező – hitelszám 3. szegmense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÜI neve",
+      "label": "Banki ügyintéző neve",
+      "field_type": "text",
+      "canonical_field": "Opportunity.bankiugyintezoneve__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÜI telefonszáma",
+      "label": "Banki ügyintéző telefonszáma",
+      "field_type": "text",
+      "canonical_field": "Contact.Banki_ugyintezo_fiok__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nincs dedikált telefonszám mező banki ügyintézőhöz; low confidence",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÜI e-mail címe",
+      "label": "Banki ügyintéző e-mail címe",
+      "field_type": "text",
+      "canonical_field": "Contact.Banki_ugyintezo_pozicio__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nincs dedikált email mező banki ügyintézőhöz; low confidence",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Online igénylés",
+      "label": "Online igénylés",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.gylet_st_tusz__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Online igénylés jelölő; nincs pontos Salesforce megfelelő",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "AV_nélkül_előb",
+      "label": "CIB Adásvétel előtti Hitelbírálat",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Bank_Approval__c",
+      "confidence": "low",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Speciális CIB termék jelölő checkbox",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "felhat_szem",
+      "label": "Helyszíni szemlére felhatalmazott személy neve (1.)",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantName",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Első felhatalmazott neve",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "felhat_szem_2",
+      "label": "Helyszíni szemlére felhatalmazott személy neve (2.)",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantName",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Második felhatalmazott neve – ugyanaz a mező, 2. szereplőre",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_ing típusa___0",
+      "label": "Ingatlan típusa – Lakóingatlan",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlan_tipusa",
+        "group_label": "Ingatlan típusa",
+        "option_value": "Lakóingatlan",
+        "option_label": "Lakóingatlan"
+      },
+      "fill_rule": {
+        "match_value": "Lakóingatlan"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_ing típusa___1",
+      "label": "Ingatlan típusa – Nem lakóingatlan",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_jellege__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlan_tipusa",
+        "group_label": "Ingatlan típusa",
+        "option_value": "Nem lakóingatlan",
+        "option_label": "Nem lakóingatlan"
+      },
+      "fill_rule": {
+        "match_value": "Nem lakóingatlan"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_lakóing típ___0",
+      "label": "Lakóingatlan típusa – Társasházi lakás",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Property_Type__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "lakoingatlan_tipusa",
+        "group_label": "Lakóingatlan típusa",
+        "option_value": "Társasházi lakás",
+        "option_label": "Társasházi lakás"
+      },
+      "fill_rule": {
+        "match_value": "Társasházi lakás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_lakóing típ___1",
+      "label": "Lakóingatlan típusa – Lakó-üdülő ingatlan telekkel",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Property_Type__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "lakoingatlan_tipusa",
+        "group_label": "Lakóingatlan típusa",
+        "option_value": "Lakó-üdülő ingatlan telekkel",
+        "option_label": "Lakó-üdülő ingatlan telekkel"
+      },
+      "fill_rule": {
+        "match_value": "Lakó-üdülő ingatlan telekkel"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_lakóing típ___2",
+      "label": "Lakóingatlan típusa – Építési telek",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Property_Type__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "lakoingatlan_tipusa",
+        "group_label": "Lakóingatlan típusa",
+        "option_value": "Építési telek",
+        "option_label": "Építési telek"
+      },
+      "fill_rule": {
+        "match_value": "Építési telek"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_csok_y_n___VÃ¡lasztÃ¡s2",
+      "label": "Az ügylet állami kamattámogatással érintett? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Tervezett_CSOK_Plusz__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "allami_kamattamogatas",
+        "group_label": "Az ügylet állami kamattámogatással (CIB CSOK Plusz Kamattámogatott Hitel) érintett?",
+        "option_value": "true",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "true"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_csok_y_n___VÃ¡lasztÃ¡s1",
+      "label": "Az ügylet állami kamattámogatással érintett? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Tervezett_CSOK_Plusz__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "allami_kamattamogatas",
+        "group_label": "Az ügylet állami kamattámogatással (CIB CSOK Plusz Kamattámogatott Hitel) érintett?",
+        "option_value": "false",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "false"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Dropdown6",
+      "label": "Az ingatlan energetikai besorolása",
+      "field_type": "dropdown",
+      "canonical_field": "Lead.Ingatlan_energetika__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_rend_éb___VÃ¡lasztÃ¡s2",
+      "label": "Rendelkezik-e elmúlt 9 hónapos CIB Bankos értékbecslés? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_has_been_ordered__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "cib_ertekbecles_9ho",
+        "group_label": "Rendelkezik-e a fedezetként bevonandó ingatlanra vonatkozóan az elmúlt 9 hónapban készült CIB Bankos értékbecsléssel?",
+        "option_value": "true",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "true"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_rend_éb___2",
+      "label": "Rendelkezik-e elmúlt 9 hónapos CIB Bankos értékbecslés? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_has_been_ordered__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "cib_ertekbecles_9ho",
+        "group_label": "Rendelkezik-e a fedezetként bevonandó ingatlanra vonatkozóan az elmúlt 9 hónapban készült CIB Bankos értékbecsléssel?",
+        "option_value": "false",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "false"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_bizti___VÃ¡lasztÃ¡s2",
+      "label": "Vagyonbiztosítással rendelkezem – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Insurance__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "vagyonbiztositas",
+        "group_label": "Vagyonbiztosítással rendelkezem",
+        "option_value": "true",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "true"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_bizti___2",
+      "label": "Vagyonbiztosítással rendelkezem – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Insurance__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "vagyonbiztositas",
+        "group_label": "Vagyonbiztosítással rendelkezem",
+        "option_value": "false",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "false"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___0",
+      "label": "Ingatlan adatlap oldal jelölő 2/5 – 1. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___1",
+      "label": "Ingatlan adatlap oldal jelölő 2/5 – 2. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___2",
+      "label": "Ingatlan adatlap oldal jelölő 2/5 – 3. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___3",
+      "label": "Ingatlan adatlap oldal jelölő 3/5 – 1. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___4",
+      "label": "Ingatlan adatlap oldal jelölő 3/5 – 2. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_2___5",
+      "label": "Ingatlan adatlap oldal jelölő 3/5 – 3. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "telefonszám_1",
+      "label": "Felhatalmazott 1. telefonszáma",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantPhone",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "telefonszám_2",
+      "label": "Felhatalmazott 2. telefonszáma",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantPhone",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "felhatalmazott1emailcíme",
+      "label": "Felhatalmazott 1. e-mail címe",
+      "field_type": "text",
+      "canonical_field": "Contact.Secondary_Email__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "felhatalmazott2emailcíme",
+      "label": "Felhatalmazott 2. e-mail címe",
+      "field_type": "text",
+      "canonical_field": "Contact.Secondary_Email__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "OH_01",
+      "label": "Felhatalmazott 1. telefonszám országhívó",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantPhone",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Országhívó prefix az 1. felhatalmazott telefonszámához",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "OH_02",
+      "label": "Felhatalmazott 2. telefonszám országhívó",
+      "field_type": "text",
+      "canonical_field": "Contact.AssistantPhone",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": "Országhívó prefix a 2. felhatalmazott telefonszámához",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_rend_hozzáj___0",
+      "label": "Visszavonhatatlanul felhatalmazom a CIB Bankot az értékbecslés megrendelésére – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Bank_Approval__c",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "bank_felh_ertekbecles",
+        "group_label": "Visszavonhatatlanul felhatalmazom a CIB Bankot, hogy részemre az értékbecslést rendelje meg",
+        "option_value": "true",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "type": "static",
+        "value": "igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "ÉB_rend_hozzáj___1",
+      "label": "Visszavonhatatlanul felhatalmazom a CIB Bankot az értékbecslés megrendelésére – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Bank_Approval__c",
+      "confidence": "medium",
+      "page_number": 3,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "bank_felh_ertekbecles",
+        "group_label": "Visszavonhatatlanul felhatalmazom a CIB Bankot, hogy részemre az értékbecslést rendelje meg",
+        "option_value": "false",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "false"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_3___0",
+      "label": "Ingatlan adatlap oldal jelölő 4/5 – 1. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_3___1",
+      "label": "Ingatlan adatlap oldal jelölő 4/5 – 2. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_al_3___2",
+      "label": "Ingatlan adatlap oldal jelölő 4/5 – 3. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 4,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_adatlap_4_1___0",
+      "label": "Ingatlan adatlap oldal jelölő 5/5 – 1. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_adatlap_4_1___1",
+      "label": "Ingatlan adatlap oldal jelölő 5/5 – 2. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Ing_adatlap_4_1___2",
+      "label": "Ingatlan adatlap oldal jelölő 5/5 – 3. checkbox",
+      "field_type": "checkbox",
+      "canonical_field": null,
+      "confidence": "low",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Fejléc navigációs checkbox, belső elem",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Kelt_ing_adatlap_város",
+      "label": "Kelt – város",
+      "field_type": "text",
+      "canonical_field": "Contact.MailingCity",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Aláírás helye – város",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "Kelt_ing_adatlap_év",
+      "label": "Kelt – év",
+      "field_type": "text",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Aláírás dátumának év komponense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": {
+        "type": "regex",
+        "pattern": "^(\\d{4})"
+      }
+    },
+    {
+      "pdf_field_name": "Kelt_ing_adatlap_hónap",
+      "label": "Kelt – hónap",
+      "field_type": "text",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Aláírás dátumának hónap komponense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": {
+        "type": "regex",
+        "pattern": "^\\d{4}[.\\-/](\\d{1,2})"
+      }
+    },
+    {
+      "pdf_field_name": "Kelt_ing_adatlap_nap",
+      "label": "Kelt – nap",
+      "field_type": "text",
+      "canonical_field": "Contact.Date_of_signature__c",
+      "confidence": "medium",
+      "page_number": 5,
+      "coordinates": null,
+      "notes": "Aláírás dátumának nap komponense",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": {
+        "type": "regex",
+        "pattern": "^\\d{4}[.\\-/]\\d{1,2}[.\\-/](\\d{1,2})"
+      }
+    },
+    {
+      "pdf_field_name": "elozetes_eb_flag___elozetes_eb_flag_igen",
+      "label": "Készült az ingatlanra előzetes értékbecslés? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_has_been_ordered__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Igen opció",
+      "checkbox_group": {
+        "group_id": "elozetes_ertekbecles",
+        "group_label": "Készült az ingatlanra előzetes értékbecslés?",
+        "option_value": "true",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "true"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "elozetes_eb_flag___elozetes_eb_flag_nem",
+      "label": "Készült az ingatlanra előzetes értékbecslés? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Opportunity.Pre_valuation_has_been_ordered__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Nem opció",
+      "checkbox_group": {
+        "group_id": "elozetes_ertekbecles",
+        "group_label": "Készült az ingatlanra előzetes értékbecslés?",
+        "option_value": "false",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "false"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.product.loanTarget___PURCHASE",
+      "label": "Az értékbecslés / hitel célja – Lakás/Lakóház vásárlás (új ingatlan/használt)",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "hitel_celja",
+        "group_label": "Az értékbecslés / hitel célja",
+        "option_value": "Lakásvásárlás",
+        "option_label": "Lakás/Lakóház vásárlás (új ingatlan/használt)"
+      },
+      "fill_rule": {
+        "match_value": "Lakásvásárlás"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.product.loanTarget___BUILDING",
+      "label": "Az értékbecslés / hitel célja – Építés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "hitel_celja",
+        "group_label": "Az értékbecslés / hitel célja",
+        "option_value": "Építés",
+        "option_label": "Építés"
+      },
+      "fill_rule": {
+        "match_value": "Építés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.product.loanTarget___EXPANSION",
+      "label": "Az értékbecslés / hitel célja – Bővítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "hitel_celja",
+        "group_label": "Az értékbecslés / hitel célja",
+        "option_value": "Bővítés",
+        "option_label": "Bővítés"
+      },
+      "fill_rule": {
+        "match_value": "Bővítés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.product.loanTarget___MODERNIZATION",
+      "label": "Az értékbecslés / hitel célja – Korszerűsítés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "hitel_celja",
+        "group_label": "Az értékbecslés / hitel célja",
+        "option_value": "Korszerűsítés",
+        "option_label": "Korszerűsítés"
+      },
+      "fill_rule": {
+        "match_value": "Korszerűsítés"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.product.loanTarget___OTHER",
+      "label": "Az értékbecslés / hitel célja – Egyéb célú hitel igénylés",
+      "field_type": "checkbox",
+      "canonical_field": "Contact.Loan_Purpose__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "hitel_celja",
+        "group_label": "Az értékbecslés / hitel célja",
+        "option_value": "Egyéb",
+        "option_label": "Egyéb célú hitel igénylés"
+      },
+      "fill_rule": {
+        "match_value": "Egyéb"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isResidental___TRUE",
+      "label": "Az ingatlanban laknak vagy lakni fognak? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlanban_laknak",
+        "group_label": "Az ingatlanban laknak vagy lakni fognak?",
+        "option_value": "Igen",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "Igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isResidental___FALSE",
+      "label": "Az ingatlanban laknak vagy lakni fognak? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlanban_laknak",
+        "group_label": "Az ingatlanban laknak vagy lakni fognak?",
+        "option_value": "Nem",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "Nem"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isLoanPurpose___TRUE",
+      "label": "Az ingatlan a hitel célja? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlan_hitel_celja",
+        "group_label": "Az ingatlan a hitel célja?",
+        "option_value": "Igen",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "Igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isLoanPurpose___FALSE",
+      "label": "Az ingatlan a hitel célja? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "medium",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "ingatlan_hitel_celja",
+        "group_label": "Az ingatlan a hitel célja?",
+        "option_value": "Nem",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "Nem"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isCollateral___TRUE",
+      "label": "Fedezetként felajánlott az ingatlan? – Igen",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "fedezet_felajanlas",
+        "group_label": "Fedezetként felajánlott az ingatlan?",
+        "option_value": "Igen",
+        "option_label": "Igen"
+      },
+      "fill_rule": {
+        "match_value": "Igen"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].isCollateral___FALSE",
+      "label": "Fedezetként felajánlott az ingatlan? – Nem",
+      "field_type": "checkbox",
+      "canonical_field": "Lead.Ingatlan_szerepe__c",
+      "confidence": "high",
+      "page_number": 2,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": {
+        "group_id": "fedezet_felajanlas",
+        "group_label": "Fedezetként felajánlott az ingatlan?",
+        "option_value": "Nem",
+        "option_label": "Nem"
+      },
+      "fill_rule": {
+        "match_value": "Nem"
+      },
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.fullName",
+      "label": "Megrendelő üzletfél neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Name",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Aki megrendeli az értékbecslést (pl. Adós, Zálogkötelezett)",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.motherFullName",
+      "label": "Anyja neve",
+      "field_type": "text",
+      "canonical_field": "Contact.Mother_s_Name__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.birthDate",
+      "label": "Születési ideje",
+      "field_type": "date",
+      "canonical_field": "Contact.Birthdate",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.address",
+      "label": "Üzletfél állandó lakcíme",
+      "field_type": "text",
+      "canonical_field": "Contact.Permanent_address__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.email",
+      "label": "Üzletfél e-mail címe",
+      "field_type": "text",
+      "canonical_field": "Contact.Email",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].propertyAddress.city",
+      "label": "Ingatlan települése",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_telepules__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].propertyAddress.postalCodePart0",
+      "label": "Ingatlan irányítószáma (1. jegy)",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_irsz__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az irányítószám 4 részre osztott mezőjének 1. tagja",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].propertyAddress.postalCodePart1",
+      "label": "Ingatlan irányítószáma (2. jegy)",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_irsz__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az irányítószám 4 részre osztott mezőjének 2. tagja",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].propertyAddress.postalCodePart2",
+      "label": "Ingatlan irányítószáma (3. jegy)",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_irsz__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az irányítószám 4 részre osztott mezőjének 3. tagja",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.properties[0].propertyAddress.postalCodePart3",
+      "label": "Ingatlan irányítószáma (4. jegy)",
+      "field_type": "text",
+      "canonical_field": "Lead.Ingatlan_irsz__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": "Az irányítószám 4 részre osztott mezőjének 4. tagja",
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    },
+    {
+      "pdf_field_name": "c.debtor.place_of_birth",
+      "label": "Születési helye",
+      "field_type": "text",
+      "canonical_field": "Contact.Place_of_Birth__c",
+      "confidence": "high",
+      "page_number": 1,
+      "coordinates": null,
+      "notes": null,
+      "checkbox_group": null,
+      "fill_rule": null,
+      "fragment": null
+    }
+  ],
+  "character_groups": [
+    {
+      "group_id": "chargroup_lead_ingatlan_irsz_c_p1_0",
+      "canonical_field": "Lead.Ingatlan_irsz__c",
+      "member_fields": [
+        "c.properties[0].propertyAddress.postalCodePart0",
+        "c.properties[0].propertyAddress.postalCodePart1",
+        "c.properties[0].propertyAddress.postalCodePart2",
+        "c.properties[0].propertyAddress.postalCodePart3"
+      ],
+      "direction": "left_to_right",
+      "separator": ""
+    }
+  ],
+  "points": [],
+  "rule_sets": []
+}

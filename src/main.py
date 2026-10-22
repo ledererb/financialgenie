@@ -284,6 +284,249 @@ def _apply_fragment(value, fragment):
     return value
 
 
+def _infer_date_fragment(pdf_field_name: str, label: str = "") -> str | None:
+    """Automatikusan kikövetkezteti a dátum-komponenst ('year', 'month', 'day')
+    a PDF mezőnévből vagy feliratból, ha a mappingben a fragment=None maradt
+    (pl. 'Kelt_ing_adatlap_év', 'CSOK_31hó-1', 'Kelt – nap').
+    """
+    for raw in (pdf_field_name or "", label or ""):
+        if not raw:
+            continue
+        folded = _fold_text(raw)
+        # Split on non-alpha AND digit-to-alpha boundaries (e.g. "31ev" -> "31", "ev")
+        tokens = re.findall(r"[a-z]+", folded)
+        if not tokens:
+            continue
+        # Only infer if the component token is near the end or preceded by date/kelt/szul context
+        last_tok = tokens[-1]
+        if last_tok in ("honap", "ho", "month"):
+            return "month"
+        if last_tok in ("nap", "day") and "napos" not in tokens:
+            return "day"
+        if last_tok in ("ev", "year") and "eves" not in tokens:
+            return "year"
+        # Check non-final tokens if explicitly separated (e.g. "kelt_ev_1")
+        if any(t in ("kelt", "datum", "szul", "szuletesi", "date", "csok", "szerzodes") for t in tokens):
+            if any(t in ("honap", "ho", "month") for t in tokens):
+                return "month"
+            if any(t in ("nap", "day") for t in tokens) and "napos" not in tokens:
+                return "day"
+            if any(t in ("ev", "year") for t in tokens) and "eves" not in tokens:
+                return "year"
+    return None
+
+
+_SINGLE_VALUE_CODE_CANONICALS = {
+    "Lead.Ingatlan_irsz__c",
+    "Lead.PostalCode",
+    "Contact.ZIP__c",
+    "Contact.MailingPostalCode",
+    "Contact.OtherPostalCode",
+    "Account.BillingPostalCode",
+    "Account.ShippingPostalCode",
+    "Contact.Tax_ID__c",
+    "Contact.Personal_ID__c",
+    "Contact.ID_Card_Number__c",
+    "Contact.Address_Card_Number__c",
+    "Contact.Birthdate_year",
+    "Contact.Birthdate_month",
+    "Contact.Birthdate_day",
+}
+
+
+def _infer_runtime_character_groups(mapping) -> list[dict]:
+    """Automatikusan felismeri a karakterdoboz-csoportokat (pl. irányítószám
+    4 külön mezőben: postalCodePart0..3 vagy '(1. jegy)'..'(4. jegy)') akkor is,
+    ha a mapping JSON-ban a character_groups üres maradt vagy a felhasználó
+    utólag mappelte a mezőket.
+    """
+    existing = list(
+        (mapping.get("character_groups") if isinstance(mapping, dict) else getattr(mapping, "character_groups", None))
+        or []
+    )
+    already_grouped: set[str] = set()
+    for grp in existing:
+        members = grp.get("member_fields", []) if isinstance(grp, dict) else getattr(grp, "member_fields", [])
+        if members:
+            already_grouped.update(members)
+
+    fields = mapping.get("fields", []) if isinstance(mapping, dict) else getattr(mapping, "fields", [])
+    buckets: dict[tuple[int, str], list[tuple[str, str]]] = {}
+    for f in fields:
+        if isinstance(f, dict):
+            pdf_name = f.get("pdf_field_name") or ""
+            canon = f.get("canonical_field") or ""
+            ftype = f.get("field_type") or "text"
+            label = f.get("label") or ""
+            page = int(f.get("page_number") or 1)
+            cbg = f.get("checkbox_group")
+            fr = f.get("fill_rule")
+        else:
+            pdf_name = getattr(f, "pdf_field_name", "") or ""
+            canon = getattr(f, "canonical_field", "") or ""
+            ftype_raw = getattr(f, "field_type", "text")
+            ftype = getattr(ftype_raw, "value", str(ftype_raw or "text"))
+            label = getattr(f, "label", "") or ""
+            page = int(getattr(f, "page_number", 1) or 1)
+            cbg = getattr(f, "checkbox_group", None)
+            fr = getattr(f, "fill_rule", None)
+
+        if (
+            not pdf_name
+            or not canon
+            or pdf_name in already_grouped
+            or ftype in ("checkbox", "dropdown")
+            or "___" in pdf_name
+            or cbg
+            or fr
+        ):
+            continue
+        buckets.setdefault((page, canon), []).append((pdf_name, label))
+
+    inferred = list(existing)
+    for (page, canon), items in buckets.items():
+        if len(items) < 2:
+            continue
+        # 1. eset: a feliratokban "(1. jegy)", "(2. jegy)" / "karakter" / "számjegy" szerepel
+        jegy_matches = []
+        for pdf_name, label in items:
+            m = re.search(r"\(\s*(\d+)\.\s*(?:jegy|karakter|sz[aá]mjegy)\s*\)", label, flags=re.IGNORECASE)
+            if m:
+                jegy_matches.append((int(m.group(1)), pdf_name))
+        if len(jegy_matches) >= 2 and len(jegy_matches) == len(items):
+            jegy_matches.sort(key=lambda x: x[0])
+            members = [ name for _, name in jegy_matches ]
+            slug = re.sub(r"[^a-z0-9]+", "_", canon.lower()).strip("_")
+            inferred.append({
+                "group_id": f"auto_chargroup_{slug}_p{page}_{len(inferred)}",
+                "canonical_field": canon,
+                "member_fields": members,
+                "direction": "left_to_right",
+                "separator": "",
+            })
+            already_grouped.update(members)
+            continue
+
+        # 2. eset: szekvenciális mezőnevek (pl. postalCodePart0..3, irsz_1..4)
+        base_canon = canon[:-len("-társ")] if canon.endswith("-társ") else canon
+        seq_matches = []
+        prefixes = set()
+        for pdf_name, _ in items:
+            m = re.match(r"^(.*?)(?:part|_|\[|\.)?(\d+)\]?$", pdf_name, flags=re.IGNORECASE)
+            if m:
+                prefixes.add(m.group(1).lower())
+                seq_matches.append((int(m.group(2)), pdf_name))
+        if len(seq_matches) == len(items) and len(prefixes) == 1:
+            pref = next(iter(prefixes))
+            has_box_kw = any(kw in pref for kw in ("postalcode", "irsz", "zip", "jegy", "digit", "char", "adoazonosito", "tax"))
+            if has_box_kw or base_canon in _SINGLE_VALUE_CODE_CANONICALS:
+                seq_matches.sort(key=lambda x: x[0])
+                idxs = [i for i, _ in seq_matches]
+                # Check consecutive indices (e.g. 0,1,2,3 or 1,2,3,4)
+                if idxs == list(range(idxs[0], idxs[0] + len(idxs))):
+                    members = [name for _, name in seq_matches]
+                    slug = re.sub(r"[^a-z0-9]+", "_", canon.lower()).strip("_")
+                    inferred.append({
+                        "group_id": f"auto_chargroup_{slug}_p{page}_{len(inferred)}",
+                        "canonical_field": canon,
+                        "member_fields": members,
+                        "direction": "left_to_right",
+                        "separator": "",
+                    })
+                    already_grouped.update(members)
+
+    return inferred
+
+
+def _opt_matches(option: str, value: str, option_label: str = "") -> bool:
+    """Picklist- és rádiógomb-opció egyezés: pontos (kisbetűs), '/' előtti
+    szegmens, valamint bankközi szemantikus szinonimák (ingatlantípus,
+    hitelcél, szerepkör, boolean igen/nem ↔ true/false). Ékezet- és
+    kötőjel-független."""
+    import unicodedata
+
+    def _norm(s: str) -> str:
+        folded = "".join(
+            c for c in unicodedata.normalize("NFD", str(s or "").strip().lower())
+            if unicodedata.category(c) != "Mn"
+        )
+        return re.sub(r"[^a-z0-9/]+", " ", folded).strip()
+
+    opt, val = _norm(option), _norm(value)
+    opt_lbl = _norm(option_label) if option_label else ""
+    if not opt or not val:
+        return False
+
+    # 1. Boolean szinonimák (igen/true/yes/1 vs nem/false/no/0)
+    _TRUE_SET = {"igen", "true", "yes", "1"}
+    _FALSE_SET = {"nem", "false", "no", "0"}
+    if opt in _TRUE_SET and val in _TRUE_SET:
+        return True
+    if opt in _FALSE_SET and val in _FALSE_SET:
+        return True
+
+    # 2. Szerepkör szinonimák
+    _ROLE_SYNONYMS = {
+        "adostars": "tarsigenylo",
+        "tarsigenylo": "adostars",
+        "ados": "igenylo",
+        "igenylo": "ados",
+    }
+    if opt == val or _ROLE_SYNONYMS.get(opt) == val:
+        return True
+
+    # 3. Okmánytípus minta (6 számjegy + 2 betű -> személyi igazolvány)
+    if opt == "szemelyi igazolvany" and re.fullmatch(r"\d{6}[a-z]{2}", val.replace(" ", "")):
+        return True
+
+    # 4. Ingatlan típusa / jellege szinonimák (bankfüggetlen: OTP, CIB, K&H, Erste, MBH)
+    _RESIDENTIAL_VALS = {
+        "lakas", "haz", "lakohaz", "csaladi haz", "tarsashazi lakas",
+        "hasznalt lakohaz", "uj lakohaz", "hasznalt lakas", "uj lakas",
+        "ikerhaz", "sorhaz", "udulo", "telek", "epitesi telek", "lakoingatlan",
+    }
+    if opt == "lakoingatlan" and val in _RESIDENTIAL_VALS:
+        return True
+    if opt.startswith("nem ") and val in _RESIDENTIAL_VALS:
+        return False
+    # Társasházi lakás vs Lakó-üdülő ingatlan telekkel / Családi ház vs Építési telek
+    if opt in ("tarsashazi lakas", "lakas") and val in ("lakas", "tarsashazi lakas", "hasznalt lakas", "uj lakas"):
+        return True
+    if opt in ("lako udulo ingatlan telekkel", "csaladi haz", "lakohaz", "onallo csaladi haz") and val in (
+        "haz", "lakohaz", "csaladi haz", "hasznalt lakohaz", "uj lakohaz", "ikerhaz", "sorhaz", "udulo"
+    ):
+        return True
+    if opt in ("epitesi telek", "telek") and val in ("telek", "epitesi telek"):
+        return True
+
+    # 5. Hitelcél szinonimák (pl. SF 'Használt lakóingatlan vásárlás' -> 'Lakásvásárlás' / 'Vásárlás')
+    combined_opt = f"{opt} {opt_lbl}".strip()
+    if "vasarlas" in val and "vasarlas" in combined_opt and "kivaltas" not in val:
+        # Ha az opció kifejezetten csak új vagy csak használt vásárlásra vonatkozik, ellenőrizzük:
+        opt_has_uj = bool(re.search(r"\buj\b", combined_opt))
+        opt_has_hasznalt = "hasznalt" in combined_opt
+        val_has_uj = bool(re.search(r"\buj\b", val))
+        val_has_hasznalt = "hasznalt" in val
+        if opt_has_uj and not opt_has_hasznalt and val_has_hasznalt and not val_has_uj:
+            return False
+        if opt_has_hasznalt and not opt_has_uj and val_has_uj and not val_has_hasznalt:
+            return False
+        return True
+    if "epites" in val and "vasarlas" not in val and opt in ("epites", "uj epites", "lakasepites"):
+        return True
+    if "bovites" in val and "bovites" in combined_opt:
+        return True
+    if ("korszerusites" in val or "felujitas" in val) and ("korszerusites" in combined_opt or "felujitas" in combined_opt):
+        return True
+
+    # 6. Slash-előtti szegmens vagy prefix egyezés
+    if opt.split("/", 1)[0].strip() == val:
+        return True
+    if len(opt) >= 3 and len(val) >= 3 and not opt.startswith("nem ") and not val.startswith("nem "):
+        return opt.startswith(val) or val.startswith(opt)
+    return False
+
+
 def _field_canonical_lookup(mapping) -> dict:
     """PDF-mezőnév → canonical_field térkép a mapping-ből (dict vagy MappingConfig)."""
     fields = mapping.get("fields", []) if isinstance(mapping, dict) else getattr(mapping, "fields", [])
@@ -395,7 +638,17 @@ class FormFillerPipeline:
                     merged_fields.append(old_f)
                     
                 mapping.fields = merged_fields
-                mapping.character_groups = old_mapping.character_groups
+                if old_mapping.character_groups:
+                    existing_gids = {
+                        (g.get("group_id") if isinstance(g, dict) else getattr(g, "group_id", ""))
+                        for g in old_mapping.character_groups
+                    }
+                    combined_groups = list(old_mapping.character_groups)
+                    for ng in (mapping.character_groups or []):
+                        ngid = ng.get("group_id") if isinstance(ng, dict) else getattr(ng, "group_id", "")
+                        if ngid and ngid not in existing_gids:
+                            combined_groups.append(ng)
+                    mapping.character_groups = combined_groups
                 logger.info(f"   ✓ Eredmény: {len(mapping.fields)} mező (korábbi szabályok megtartva).")
             except Exception as e:
                 logger.warning(f"⚠️ Hiba a meglévő mapping összefésülésekor: {e}")
@@ -785,6 +1038,31 @@ class FormFillerPipeline:
         prop_data.setdefault("Lead.Purchase_price__c", _money_or_blank(loan.purchase_price))
         prop_data.setdefault("Lead.Tervezett_CSOK_Plusz__c", _money_or_blank(loan.csok_amount))
 
+        if not prop_data.get("Lead.Ingatlan_megjegyzes__c"):
+            fallback_hrsz = (
+                borrower_data.get("Contact.Town_or_possibly_the_exact_address__c", "")
+                or (co_borrower_data.get("Contact.Town_or_possibly_the_exact_address__c", "") if co_borrower_data else "")
+            ).strip()
+            if fallback_hrsz:
+                prop_data["Lead.Ingatlan_megjegyzes__c"] = fallback_hrsz
+
+        # Ingatlan-szintű adatok tükrözése a Contact.* fallback kulcsokba is,
+        # mert az AI gyakran Contact.Property_Type__c / Contact.Property_value__c
+        # mezőre mappeli az ingatlan típusát/értékét, míg a valós SF adat a
+        # Property__c (Lead.*) rekordban él.
+        prop_contact_fallbacks = {
+            "Contact.Property_Type__c": prop_data.get("Lead.Ingatlan_jellege__c", ""),
+            "Contact.Property_value__c": prop_data.get("Lead.Estimated__c", ""),
+            "Contact.Estimated_market_value__c": prop_data.get("Lead.Estimated__c", ""),
+            "Contact.Property_encumbrances__c": prop_data.get("Lead.Ingatlan_terhek__c", ""),
+        }
+        for k, v in prop_contact_fallbacks.items():
+            if v:
+                if not borrower_data.get(k):
+                    borrower_data[k] = v
+                if co_borrower_data and not co_borrower_data.get(k):
+                    co_borrower_data[k] = v
+
         # Account.* névtér — az ügyfél Account rekordjának nyers mezői.
         account_data: dict = {}
         for k, v in (getattr(deal, "account", None) or {}).items():
@@ -805,8 +1083,11 @@ class FormFillerPipeline:
         # mezőket CSAK az expand_character_groups töltheti, különben a
         # teljes felbontatlan string (pl. "2020-03-01", "Havi torleszto...")
         # belekerülne az egyes számjegy-dobozokba.
+        # Futásidőben is detektáljuk a számozott digit-box sorozatokat
+        # (pl. postalCodePart0..3), ha a mapping JSON character_groups üres.
+        runtime_char_groups = _infer_runtime_character_groups(mapping)
         char_group_members: set[str] = set()
-        for grp in (getattr(mapping, "character_groups", None) or []):
+        for grp in runtime_char_groups:
             members = grp.get("member_fields", []) if isinstance(grp, dict) else getattr(grp, "member_fields", [])
             if members:
                 char_group_members.update(members)
@@ -818,6 +1099,9 @@ class FormFillerPipeline:
 
             pdf_name = f.pdf_field_name
             canonical = f.canonical_field
+            f_label = getattr(f, "label", "") or ""
+            _ft_raw = getattr(f, "field_type", "text")
+            f_type = _ft_raw.value if hasattr(_ft_raw, "value") else (str(_ft_raw or "text"))
 
             if pdf_name in char_group_members:
                 continue
@@ -832,6 +1116,17 @@ class FormFillerPipeline:
             if "___" in pdf_name or getattr(f, 'checkbox_group', None) or getattr(f, 'fill_rule', None):
                 continue
 
+            # Ha egy szövegmező neve vagy címkéje kifejezetten helyrajzi számot kér,
+            # de az AI tévesen más címmezőre (pl. Contact.Town_or_possibly_the_exact_address__c)
+            # mappelte, irányítsuk a helyrajzi számra (Lead.Ingatlan_megjegyzes__c).
+            folded_name_lbl = _fold_text(f"{pdf_name} {f_label}")
+            if f_type == "text" and ("helyrajzi" in folded_name_lbl or re.search(r"\bhrsz\b", folded_name_lbl)):
+                hrsz_val = prop_data.get("Lead.Ingatlan_megjegyzes__c", "")
+                if hrsz_val:
+                    field_data[pdf_name] = hrsz_val
+                continue
+
+            raw_val = None
             if canonical.startswith("Contact."):
                 canon_tars = canonical.endswith("-társ")
                 is_co_borrower = (
@@ -844,23 +1139,35 @@ class FormFillerPipeline:
                 lookup_key = canonical[:-len("-társ")] if canon_tars else canonical
                 source = effective_co_data if is_co_borrower else borrower_data
                 if lookup_key in source and source[lookup_key]:
-                    field_data[pdf_name] = source[lookup_key]
+                    raw_val = source[lookup_key]
 
             elif canonical.startswith("Lead."):
                 if canonical in prop_data and prop_data[canonical]:
-                    field_data[pdf_name] = prop_data[canonical]
+                    raw_val = prop_data[canonical]
 
             elif canonical.startswith("Account."):
                 if canonical in account_data and account_data[canonical]:
-                    field_data[pdf_name] = account_data[canonical]
+                    raw_val = account_data[canonical]
 
             elif canonical.startswith("Opportunity."):
                 if canonical in loan_data and loan_data[canonical]:
-                    field_data[pdf_name] = loan_data[canonical]
+                    raw_val = loan_data[canonical]
 
             elif canonical.startswith("loan."):
                 if canonical in loan_data and loan_data[canonical]:
-                    field_data[pdf_name] = loan_data[canonical]
+                    raw_val = loan_data[canonical]
+
+            if raw_val:
+                # Önálló checkbox mezőre csak valódi logikai értéket engedünk
+                # (ne írjuk bele pl. az Opportunity.Offer_Status__c = "Aktív" szöveget).
+                if f_type == "checkbox":
+                    folded_rv = _fold_text(str(raw_val))
+                    if folded_rv in ("igen", "true", "yes", "1"):
+                        field_data[pdf_name] = "igen"
+                    elif folded_rv in ("nem", "false", "no", "0"):
+                        field_data[pdf_name] = "nem"
+                else:
+                    field_data[pdf_name] = raw_val
 
         # === Checkbox group resolution ===
         # Group checkbox fields by (group_id, canonical, is_co_field), then tick
@@ -885,7 +1192,20 @@ class FormFillerPipeline:
                     groups[gkey] = []
                 groups[gkey].append((f, cbg))
 
+        all_data = {**borrower_data, **loan_data, **prop_data, **account_data}
+
         for (gid, canonical, is_co_fn), group_items in groups.items():
+            # 1) Ha a csoport bármelyik tagján explicit típusos fill_rule van
+            #    (pl. {"type": "static", "value": "igen"}), az elsőbbséget élvez.
+            explicit_best = None
+            for f_item, cbg_item in group_items:
+                fr = getattr(f_item, 'fill_rule', None) if not isinstance(f_item, dict) else f_item.get('fill_rule')
+                if isinstance(fr, dict) and fr.get('type'):
+                    ev = self._eval_fill_rule(fr, all_data, borrower_data, effective_co_data, deal, None)
+                    if ev == 'igen':
+                        explicit_best = (f_item, cbg_item)
+                        break
+
             sf_value = None
             if canonical.startswith(('Contact.', 'participant.')):
                 canon_tars = canonical.endswith('-társ')
@@ -905,51 +1225,57 @@ class FormFillerPipeline:
             elif canonical.startswith('loan.'):
                 sf_value = loan_data.get(canonical, '')
 
-            if not sf_value:
+            # 2) Ha a csoport Igen/Nem (true/false) eldöntendő kérdés, de a
+            #    canonical mező összeg- vagy szerep-jellegű (pl. Tervezett_CSOK_Plusz__c,
+            #    Ingatlan_szerepe__c), vezessük le a logikai Igen/Nem választ.
+            opt_tokens = {
+                _fold_text((cbg_i.get('match_value') or cbg_i.get('option_value') or cbg_i.get('option_label') or ''))
+                for _, cbg_i in group_items if isinstance(cbg_i, dict)
+            } - {''}
+            is_bool_group = bool(opt_tokens) and opt_tokens.issubset({'igen', 'nem', 'true', 'false', 'yes', 'no', '1', '0'})
+            if is_bool_group:
+                folded_sf = _fold_text(str(sf_value or ''))
+                if folded_sf not in ('igen', 'nem', 'true', 'false', 'yes', 'no', '1', '0'):
+                    if canonical in ('Lead.Tervezett_CSOK_Plusz__c', 'loan.csok_amount', 'Contact.State_Support__c', 'loan.afa_support'):
+                        digits = re.sub(r'[^\d]', '', str(sf_value or ''))
+                        has_support = bool(digits and int(digits) > 0)
+                        if not has_support and canonical in ('Lead.Tervezett_CSOK_Plusz__c', 'loan.csok_amount'):
+                            prod_txt = _fold_text(f"{loan.product_name or ''} {' '.join(str(p) for p in (getattr(deal, 'products', []) or []))}")
+                            has_support = 'csok' in prod_txt
+                        sf_value = 'true' if has_support else 'false'
+                    elif canonical == 'Lead.Ingatlan_szerepe__c' and folded_sf:
+                        first_fn = (group_items[0][0].pdf_field_name if hasattr(group_items[0][0], 'pdf_field_name') else group_items[0][0].get('pdf_field_name', '')).lower()
+                        grp_lbl = _fold_text((group_items[0][1].get('group_label', '') if isinstance(group_items[0][1], dict) else '') + ' ' + gid + ' ' + first_fn)
+                        if 'collateral' in grp_lbl or 'fedezet' in grp_lbl:
+                            sf_value = 'igen' if ('celingatlan' in folded_sf or 'potfedezet' in folded_sf or 'fedezet' in folded_sf) else ''
+                        elif 'loanpurpose' in grp_lbl or 'hitel celja' in grp_lbl or 'hitelcel' in grp_lbl:
+                            if 'celingatlan' in folded_sf:
+                                sf_value = 'igen'
+                            elif 'potfedezet' in folded_sf:
+                                sf_value = 'nem'
+                        elif 'residental' in grp_lbl or 'residential' in grp_lbl or 'laknak' in grp_lbl:
+                            jelleg_fold = _fold_text(prop_data.get('Lead.Ingatlan_jellege__c', ''))
+                            if 'celingatlan' in folded_sf and any(w in jelleg_fold for w in ('lakas', 'lakohaz', 'haz', 'ikerhaz', 'sorhaz', 'udulo')):
+                                sf_value = 'igen'
+                            elif 'potfedezet' in folded_sf:
+                                sf_value = 'nem'
+
+            if explicit_best is None and not sf_value:
                 continue
 
-            sf_value_lower = str(sf_value).strip().lower()
+            sf_value_lower = str(sf_value or '').strip().lower()
 
-            def _opt_matches(option: str, value: str) -> bool:
-                """Picklist-opció egyezés: pontos (kisbetűs), vagy az opció
-                '/'-előtti szegmense egyezik az értékkel (pl. SF 'házas' ≈
-                opció 'Házas/bejegyzett élettárs'). Ékezet- és kötőjel-független."""
-                import unicodedata
-                def _norm(s: str) -> str:
-                    folded = "".join(
-                        c for c in unicodedata.normalize("NFD", s.strip().lower())
-                        if unicodedata.category(c) != "Mn"
-                    )
-                    return re.sub(r"[^a-z0-9/]+", " ", folded).strip()
-                opt, val = _norm(option), _norm(value)
-                if not opt or not val:
-                    return False
-                _ROLE_SYNONYMS = {
-                    "adostars": "tarsigenylo",
-                    "tarsigenylo": "adostars",
-                    "ados": "igenylo",
-                    "igenylo": "ados",
-                }
-                if opt == val or _ROLE_SYNONYMS.get(opt) == val:
-                    return True
-                if opt == "szemelyi igazolvany" and re.fullmatch(r"\d{6}[a-z]{2}", val.replace(" ", "")):
-                    return True
-                if opt.split("/", 1)[0].strip() == val:
-                    return True
-                if len(opt) >= 3 and len(val) >= 3:
-                    return opt.startswith(val) or val.startswith(opt)
-                return False
-
-            best_item = None
+            best_item = explicit_best
             best_score = -1
-            for f_item, cbg_item in group_items:
-                pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
-                match_val = (cbg_item.get('match_value') or cbg_item.get('option_value', '')) if isinstance(cbg_item, dict) else ''
-                if _opt_matches(match_val, sf_value_lower):
-                    score = min(len(_fold_text(match_val)), len(_fold_text(sf_value_lower)))
-                    if score > best_score:
-                        best_score = score
-                        best_item = (f_item, cbg_item)
+            if best_item is None and sf_value_lower:
+                for f_item, cbg_item in group_items:
+                    match_val = (cbg_item.get('match_value') or cbg_item.get('option_value', '')) if isinstance(cbg_item, dict) else ''
+                    opt_lbl = cbg_item.get('option_label', '') if isinstance(cbg_item, dict) else ''
+                    if _opt_matches(match_val, sf_value_lower, opt_lbl):
+                        score = min(len(_fold_text(match_val or opt_lbl)), len(_fold_text(sf_value_lower)))
+                        if score > best_score:
+                            best_score = score
+                            best_item = (f_item, cbg_item)
             if best_item is not None:
                 matched_cbg = best_item[1]
                 matched_mv = (matched_cbg.get('match_value') or matched_cbg.get('option_value', '')) if isinstance(matched_cbg, dict) else ''
@@ -970,13 +1296,24 @@ class FormFillerPipeline:
                         field_data[pdf_name] = 'nem'
 
         # === Fill Rule engine ===
-        all_data = {**borrower_data, **loan_data, **prop_data, **account_data}
-
         for f in mapping.fields:
             fill_rule = getattr(f, 'fill_rule', None)
             if isinstance(f, dict):
                 fill_rule = f.get('fill_rule')
             if not fill_rule:
+                continue
+
+            # Ha a mező már egy checkbox_group tagja és a fill_rule csak egy
+            # duplikált {"match_value": "..."} (típus nélkül), azt a fenti
+            # Checkbox group resolution már feloldotta — ne írjuk felül!
+            cbg = getattr(f, 'checkbox_group', None) if not isinstance(f, dict) else f.get('checkbox_group')
+            if (
+                isinstance(cbg, dict)
+                and cbg.get('group_id')
+                and isinstance(fill_rule, dict)
+                and not fill_rule.get('type')
+                and fill_rule.get('match_value') is not None
+            ):
                 continue
 
             pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
@@ -1142,14 +1479,20 @@ class FormFillerPipeline:
             fragment = getattr(f, 'fragment', None)
             if isinstance(f, dict):
                 fragment = f.get('fragment')
+            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
+            f_label = (getattr(f, 'label', '') if not isinstance(f, dict) else f.get('label', '')) or ''
+            if not fragment and pdf_name in field_data and field_data[pdf_name]:
+                # Automatikus év/hónap/nap fragment felismerés (pl. Kelt_ing_adatlap_év)
+                val_str = str(field_data[pdf_name]).strip()
+                if re.match(r"^\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}", val_str):
+                    fragment = _infer_date_fragment(pdf_name, f_label)
             if not fragment:
                 continue
-            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
             if pdf_name in field_data and field_data[pdf_name]:
                 field_data[pdf_name] = _apply_fragment(field_data[pdf_name], fragment)
 
         # === M5: Character-split groups (digit boxes / comb text) ===
-        char_groups = getattr(mapping, 'character_groups', None)
+        char_groups = runtime_char_groups
         if char_groups:
             for grp in char_groups:
                 if isinstance(grp, dict):
@@ -1227,7 +1570,7 @@ class FormFillerPipeline:
         match_value = rule.get("match_value")
         if match_value is not None and not rule_type:
             if canonical_value is not None:
-                if str(canonical_value).strip().lower() == str(match_value).strip().lower():
+                if _opt_matches(str(match_value), str(canonical_value)):
                     return "igen"
             return None
 
