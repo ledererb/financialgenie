@@ -306,6 +306,15 @@ class SalesforceClient:
                 label = "kezes"
             elif low.startswith(("haszonélvező", "haszonelvezo")):
                 label = "haszonélvező"
+            elif not low:
+                # Üres Role az OCR-ben: ha még nincs főadós, ő az adós, különben adóstárs
+                if "adós" not in ocr_map:
+                    label = "adós"
+                else:
+                    idx = 1
+                    while f"adóstárs_{idx}" in ocr_map and ocr_map[f"adóstárs_{idx}"] != cid:
+                        idx += 1
+                    label = f"adóstárs_{idx}"
             else:
                 logger.info(f"Ismeretlen OCR szerep ({deal_id}): {role_str!r} — kihagyva")
                 continue
@@ -327,8 +336,22 @@ class SalesforceClient:
                 income_flags[label] = None
 
         if "adós" not in ocr_map:
-            logger.warning(f"OCR-ben nincs adós ({deal_id}) — custom lookup fallback")
-            return lookup_map, income_flags
+            if opp.get("Opportunity_Contact_Name__c"):
+                ocr_map["adós"] = opp.get("Opportunity_Contact_Name__c")
+            else:
+                co_keys = sorted(
+                    (int(k.rsplit("_", 1)[1]), k)
+                    for k in ocr_map
+                    if k.startswith("adóstárs_")
+                )
+                if co_keys and not any(lookup_map.values()):
+                    first_key = co_keys[0][1]
+                    ocr_map["adós"] = ocr_map.pop(first_key)
+                    if first_key in income_flags:
+                        income_flags["adós"] = income_flags.pop(first_key)
+                else:
+                    logger.warning(f"OCR-ben nincs adós ({deal_id}) — custom lookup fallback")
+                    return lookup_map, income_flags
 
         # Sorrend: adós, adóstárs_1..N, kezes, haszonélvező
         roles_map: dict = {"adós": ocr_map["adós"]}
@@ -412,7 +435,38 @@ class SalesforceClient:
 
                 contact_ids = list(dict.fromkeys(cid for cid in roles_map.values() if cid))
                 contacts = {}
-                contact_fields = None  # a Contact SOQL mezőlista — az Account pool is ezt használja
+                contact_fields = (
+                    "Id, Name, FirstName, LastName, Salutation, Szuletesi_nev__c, "
+                    "Mother_s_Name__c, Place_of_Birth__c, Date_of_birth__c, Birthdate, "
+                    "ID_Card_Number__c, Address_Card_Number__c, Tax_ID__c, "
+                    "Permanent_address__c, Phone, MobilePhone, Email, "
+                    "Name_of_employer__c, Occupation__c, Average_monthly_net_income__c, "
+                    "Other_monthly_income__c, Term_in_year_c__c, Interest_Period__c, "
+                    "Highest_Educational_Qualification__c, Marital_Status__c, "
+                    "Dependents_count__c, Citizenship__c, Income_type__c, "
+                    "Foglalkozas_tipusa__c, Employment_Type_c__c, Relation__c, "
+                    "Legal_Title_of_permanent_residence__c, Jovairas_vallalasa__c, "
+                    "Loan_Purpose__c, Current_debt_Credit_limit__c, "
+                    "Current_employment_started__c, Date_of_notification_for_residence__c, "
+                    "Date_of_signature__c, Description, "
+                    "MailingCity, MailingPostalCode, MailingStreet, "
+                    "OtherCity, OtherStreet, OtherCountry, ZIP__c, "
+                    "Account_holding_bank__c, Cafeteria_bonus__c, "
+                    "Continuous_TB_2_years__c, Contract_end_date__c, Contract_start_date__c, "
+                    "Date_of_handover__c, Date_of_transfer__c, "
+                    "Description_of_loan_purpose_comments__c, Divident__c, "
+                    "Employee_registration_c__c, Employer_s_company_type__c, "
+                    "Income_from_self_owned_company__c, Industry__c, "
+                    "Monthly_Payment_details__c, "
+                    "Mortgagor__c, Numer_and_Age_of_Children__c, "
+                    "Other_income__c, Other_monthly_deductions__c, "
+                    "Property_50pct_ownership_details__c, Property_encumbrances__c, "
+                    "Property_value__c, Self_employment_details__c, State_Support__c, "
+                    "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
+                    "What_type_of_loan__c, Loan_amount__c, Loan_period__c, "
+                    "Affordable_monthly_installments__c, Interest_rate__c, "
+                    "Residence_Status__c, Ownership_in_employer__c, Preferalt_bank__c"
+                )
                 
                 # 3. Contact adatok lekérdezése
                 # NOTE (FIX M12): the SOQL below is built with f-string
@@ -423,38 +477,6 @@ class SalesforceClient:
                 # 18-char IDs), so injection risk is low — but do not assume
                 # the driver is escaping these values.
                 if contact_ids:
-                    contact_fields = (
-                        "Id, Name, FirstName, LastName, Salutation, Szuletesi_nev__c, "
-                        "Mother_s_Name__c, Place_of_Birth__c, Date_of_birth__c, Birthdate, "
-                        "ID_Card_Number__c, Address_Card_Number__c, Tax_ID__c, "
-                        "Permanent_address__c, Phone, MobilePhone, Email, "
-                        "Name_of_employer__c, Occupation__c, Average_monthly_net_income__c, "
-                        "Other_monthly_income__c, Term_in_year_c__c, Interest_Period__c, "
-                        "Highest_Educational_Qualification__c, Marital_Status__c, "
-                        "Dependents_count__c, Citizenship__c, Income_type__c, "
-                        "Foglalkozas_tipusa__c, Employment_Type_c__c, Relation__c, "
-                        "Legal_Title_of_permanent_residence__c, Jovairas_vallalasa__c, "
-                        "Loan_Purpose__c, Current_debt_Credit_limit__c, "
-                        "Current_employment_started__c, Date_of_notification_for_residence__c, "
-                        "Date_of_signature__c, Description, "
-                        "MailingCity, MailingPostalCode, MailingStreet, "
-                        "OtherCity, OtherStreet, OtherCountry, ZIP__c, "
-                        "Account_holding_bank__c, Cafeteria_bonus__c, "
-                        "Continuous_TB_2_years__c, Contract_end_date__c, Contract_start_date__c, "
-                        "Date_of_handover__c, Date_of_transfer__c, "
-                        "Description_of_loan_purpose_comments__c, Divident__c, "
-                        "Employee_registration_c__c, Employer_s_company_type__c, "
-                        "Income_from_self_owned_company__c, Industry__c, "
-                        "Monthly_Payment_details__c, "
-                        "Mortgagor__c, Numer_and_Age_of_Children__c, "
-                        "Other_income__c, Other_monthly_deductions__c, "
-                        "Property_50pct_ownership_details__c, Property_encumbrances__c, "
-                        "Property_value__c, Self_employment_details__c, State_Support__c, "
-                        "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
-                        "What_type_of_loan__c, Loan_amount__c, Loan_period__c, "
-                        "Affordable_monthly_installments__c, Interest_rate__c, "
-                        "Residence_Status__c, Ownership_in_employer__c, Preferalt_bank__c"
-                    )
                     id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
                         f"SELECT {contact_fields} FROM Contact "
@@ -467,7 +489,8 @@ class SalesforceClient:
                 # 3b. Account kontakt-pool (a "Javasolt új modell" felső szintje):
                 # az Opportunity.AccountId-hoz tartozó ÖSSZES Contact lekérdezése.
                 # Két cél: duplikált Contact-rekordokból enrichment (üres mezők
-                # pótlása), és az ügyletben NEM szereplő account-kontaktok jelzése.
+                # pótlása), és ha az OCR/lookup üres volt, az Account kontaktokból
+                # felépítjük a résztvevőket.
                 account_id = opp.get("AccountId")
                 pool_records: list = []
                 pool_extra_names: list = []
@@ -485,6 +508,21 @@ class SalesforceClient:
                     except Exception as exc:
                         logger.warning("Account pool lekérés sikertelen: %s", exc)
                 if pool_records:
+                    if not contact_ids:
+                        # Ha sem OCR, sem Opportunity lookup nincs kitöltve, az Account kontaktjait használjuk
+                        opp_name_fold = _fold_name(opp.get("Name") or "")
+                        def _contact_match_key(c_rec: dict) -> tuple:
+                            cname = _fold_name(c_rec.get("Name") or "")
+                            parts = [p for p in cname.split() if len(p) >= 3]
+                            matched = any(p in opp_name_fold for p in parts) if parts else False
+                            return (0 if matched else 1, c_rec.get("Id") or "")
+                        sorted_pool = sorted(pool_records, key=_contact_match_key)
+                        roles_map = {"adós": sorted_pool[0]["Id"]}
+                        for idx, extra_c in enumerate(sorted_pool[1:], start=1):
+                            roles_map[f"adóstárs_{idx}"] = extra_c["Id"]
+                        for c_rec in sorted_pool:
+                            contacts[c_rec["Id"]] = c_rec
+                        contact_ids = [c_rec["Id"] for c_rec in sorted_pool]
                     self._enrich_contacts_from_pool(contacts, pool_records)
                     pool_extra_names = [
                         r.get("Name") or r.get("Id")
@@ -624,13 +662,17 @@ class SalesforceClient:
                 )
                 import re as _re
                 safe_deal_id = _re.sub(r"[^a-zA-Z0-9]", "", str(deal_id or ""))
-                prop_role_query = (
-                    "SELECT Property__c, Ingatlan_szerepe__c "
-                    "FROM Opportunity_Property_Role__c "
-                    f"WHERE Opportunity__c = '{safe_deal_id}'"
-                )
-                prop_role_results = self._sf.query(prop_role_query)
-                prop_roles = prop_role_results.get("records", [])
+                prop_roles = []
+                try:
+                    prop_role_query = (
+                        "SELECT Property__c, Ingatlan_szerepe__c "
+                        "FROM Opportunity_Property_Role__c "
+                        f"WHERE Opportunity__c = '{safe_deal_id}'"
+                    )
+                    prop_role_results = self._sf.query(prop_role_query)
+                    prop_roles = prop_role_results.get("records", [])
+                except Exception as exc:
+                    logger.info("Opportunity_Property_Role__c nem elérhető (%s), Account Property__c fallback: %s", deal_id, exc)
 
                 ordered_props: list[tuple[dict, str]] = []
                 if prop_roles:
@@ -778,7 +820,7 @@ class SalesforceClient:
                 for did in self._state.deals
             ]
         else:
-            query = "SELECT Id, Name, StageName FROM Opportunity LIMIT 50"
+            query = "SELECT Id, Name, StageName FROM Opportunity ORDER BY CreatedDate DESC LIMIT 500"
             result = self._sf.query(query)
             return result.get("records", [])
 
