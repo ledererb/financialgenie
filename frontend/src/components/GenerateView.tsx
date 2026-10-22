@@ -3,6 +3,7 @@ import { useStore } from "@/store";
 import { generatePackage, listDeals } from "@/api/client";
 import type { PackageResult } from "@/types";
 import ValidationView from "./ValidationView";
+import DealCombobox from "./DealCombobox";
 
 interface GenerateViewProps {
   preselectBankId?: string | null;
@@ -159,7 +160,10 @@ export default function GenerateView({
 
           {/* Deal selector */}
           <div style={{ marginBottom: "var(--space-md)" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>
+            <label
+              htmlFor="generate-deal-combobox"
+              style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}
+            >
               Ügylet (Salesforce)
             </label>
             {dealsLoading ? (
@@ -167,23 +171,13 @@ export default function GenerateView({
             ) : deals.length === 0 ? (
               <div style={{ fontSize: "0.85rem", color: "var(--accent-red)" }}>Nincs elérhető ügylet.</div>
             ) : (
-              <select
+              <DealCombobox
+                inputId="generate-deal-combobox"
+                deals={deals}
                 value={selectedDealId}
-                onChange={(e) => setSelectedDealId(e.target.value)}
+                onChange={setSelectedDealId}
                 disabled={generating}
-                style={{
-                  width: "100%", padding: "8px 10px",
-                  background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)",
-                  borderRadius: "var(--radius-sm)", color: "var(--text-primary)",
-                  fontSize: "0.85rem", cursor: "pointer",
-                }}
-              >
-                {deals.map((d) => (
-                  <option key={d.Id} value={d.Id}>
-                    {d.Name || d.Id} {d.StageName ? `(${d.StageName})` : ""}
-                  </option>
-                ))}
-              </select>
+              />
             )}
           </div>
 

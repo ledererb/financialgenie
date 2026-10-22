@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { generatePackage, listDeals } from "@/api/client";
 import type { PackageResult } from "@/types";
+import DealCombobox from "./DealCombobox";
 
 interface PackageGenerationDialogProps {
   bankId: string;
@@ -122,6 +123,7 @@ export default function PackageGenerationDialog({
         {/* Deal selector */}
         <div style={{ marginBottom: "var(--space-md)" }}>
           <label
+            htmlFor="pkg-dialog-deal-combobox"
             style={{
               display: "block",
               fontSize: "0.8rem",
@@ -138,27 +140,13 @@ export default function PackageGenerationDialog({
               Nincs elérhető ügylet.
             </div>
           ) : (
-            <select
+            <DealCombobox
+              inputId="pkg-dialog-deal-combobox"
+              deals={deals}
               value={selectedDealId}
-              onChange={(e) => setSelectedDealId(e.target.value)}
+              onChange={setSelectedDealId}
               disabled={generating}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                background: "var(--bg-tertiary)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-sm)",
-                color: "var(--text-primary)",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
-            >
-              {deals.map((d) => (
-                <option key={d.Id} value={d.Id}>
-                  {d.Name || d.Id} {d.StageName ? `(${d.StageName})` : ""}
-                </option>
-              ))}
-            </select>
+            />
           )}
         </div>
 

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { listDeals, getAuthToken } from "@/api/client";
+import DealCombobox from "./DealCombobox";
 
 interface Deal {
   Id: string;
-  Name: string;
+  Name?: string;
   StageName?: string;
   CloseDate?: string;
   AccountName?: string;
@@ -40,10 +42,8 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
   // Load deals from SF
   useEffect(() => {
     setDealsLoading(true);
-    fetch("/api/sf/deals")
-      .then((r) => r.json())
-      .then((d) => {
-        const list: Deal[] = d.deals || [];
+    listDeals()
+      .then((list) => {
         setDeals(list);
         if (list.length > 0) setSelectedDealId(list[0].Id);
       })
@@ -59,9 +59,11 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
     setCurrentPage(0);
 
     try {
+      const token = getAuthToken();
+      const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await fetch("/api/pdf/fill", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ pdf_id: pdfId, deal_id: selectedDealId }),
       });
       if (!res.ok) {
@@ -81,7 +83,8 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
         setPreviewLoading(true);
         try {
           const pagesRes = await fetch(
-            `/api/pdf/fill/pages?path=${encodeURIComponent(rawPath)}&count=20`
+            `/api/pdf/fill/pages?path=${encodeURIComponent(rawPath)}&count=20`,
+            { headers: authHeaders },
           );
           if (pagesRes.ok) {
             const pagesData = await pagesRes.json();
@@ -150,6 +153,7 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
       <div className="card" style={{ padding: "var(--space-lg)" }}>
         <div style={{ marginBottom: "var(--space-md)" }}>
           <label
+            htmlFor="fill-preview-deal-combobox"
             style={{
               display: "block",
               fontSize: "0.8rem",
@@ -172,37 +176,17 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
           ) : deals.length === 0 ? (
             <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Nem találhatók ügyletek</div>
           ) : (
-            <select
+            <DealCombobox
+              inputId="fill-preview-deal-combobox"
+              deals={deals}
               value={selectedDealId}
-              onChange={(e) => {
-                setSelectedDealId(e.target.value);
+              onChange={(dealId) => {
+                setSelectedDealId(dealId);
                 setFillResult(null);
                 setFillError(null);
               }}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                background: "var(--bg-elevated)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                color: "var(--text-primary)",
-                fontSize: "0.9rem",
-                cursor: "pointer",
-                appearance: "none",
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 12px center",
-                paddingRight: 36,
-              }}
-            >
-              {deals.map((d) => (
-                <option key={d.Id} value={d.Id}>
-                  {d.Name || d.Id}
-                  {d.StageName ? ` — ${d.StageName}` : ""}
-                  {d.AccountName ? ` (${d.AccountName})` : ""}
-                </option>
-              ))}
-            </select>
+              disabled={filling}
+            />
           )}
         </div>
 
