@@ -76,11 +76,23 @@ PRODUCT_SECTIONS = {
 # instance 3 → ``_3`` …) so they become independent, fillable fields.
 #
 # Role classification of an instanced page group, used by the pipeline to map
-# an instance number to the right data (co-borrowers[1], properties[1], …).
+# an instance number to the right data (co_borrowers[1], properties[1], …).
 INSTANCE_ROLE_CO_BORROWER = "co_borrower"
 INSTANCE_ROLE_PROPERTY = "property"
 INSTANCE_ROLE_GUARANTOR = "guarantor"
 INSTANCE_ROLE_BENEFICIARY = "beneficiary"
+INSTANCE_ROLE_MORTGAGOR = "mortgagor"
+
+# Cutover Task 2 — canonical role names (src/canonical/paths) for instanced
+# page groups. The resolver addresses participants by canonical role, where a
+# duplicated "beneficiary" page holds a "usufructuary" participant's data.
+INSTANCE_ROLE_TO_CANONICAL = {
+    INSTANCE_ROLE_CO_BORROWER: "co_borrower",
+    INSTANCE_ROLE_GUARANTOR: "guarantor",
+    INSTANCE_ROLE_BENEFICIARY: "usufructuary",
+    INSTANCE_ROLE_MORTGAGOR: "mortgagor",
+    INSTANCE_ROLE_PROPERTY: "property",
+}
 
 
 def _classify_instance_role(section: str) -> str:
@@ -92,6 +104,8 @@ def _classify_instance_role(section: str) -> str:
         return INSTANCE_ROLE_GUARANTOR
     if "haszonelvez" in s or "beneficiary" in s:
         return INSTANCE_ROLE_BENEFICIARY
+    if "zálog" in s or "zalog" in s or "mortgagor" in s:
+        return INSTANCE_ROLE_MORTGAGOR
     # társigénylő / társadós / anything participant-like → co-borrower
     return INSTANCE_ROLE_CO_BORROWER
 
@@ -130,10 +144,15 @@ class AssemblyResult:
 
 class DocumentAssembler:
     """
-    OTP master dokumentum automatikus darbolása.
-    
+    OTP master dokumentum automatikus darabolása.
+
     A 97 oldalas PDF-ből a terméktípus, szereplőszám és
     ingatlaszám alapján összeállítja a végleges dokumentumot.
+
+    A ``num_participants`` jelentését a hívó ág határozza meg: a legacy
+    pipeline minden aktív szereplőt számol (kezes/zálogkötelezett is
+    társigénylő-példányt generál), a canonical (Genie) pipeline csak az
+    igénylőket (adós + adóstárs) — lásd ``assemble``.
     """
 
     #: A teljes (darabolatlan) OTP master PDF oldalainak száma.
@@ -172,9 +191,13 @@ class DocumentAssembler:
         Args:
             master_pdf: A 97 oldalas master PDF elérési útja
             products: Igényelt termékek listája
-            num_participants: Szereplők száma (adós + adóstárs + további)
+            num_participants: Szereplőszám a hívó ág szerint — a legacy
+                pipeline az ÖSSZES aktív szereplőt átadja (a kezes /
+                zálogkötelezett is társigénylő-példányt generál), a canonical
+                (Genie) pipeline csak az igénylőket (adós + adóstárs), így a
+                nem-igénylő szerepek sosem készítenek társigénylő másolatot.
             num_properties: Ingatlanok száma
-            output_path: Kimeneti PDF elérési útja (opcionális)
+            output_path: Kimeneti PDF útvonala (opcionális)
 
         Returns:
             ``AssemblyResult`` — a kész PDF útvonala, plusz a C6
@@ -190,9 +213,16 @@ class DocumentAssembler:
         page_plan = self._build_page_plan(products, num_participants, num_properties)
 
         logger.info("📋 Document Assembly:")
-        logger.info("   Master: %s (%d oldal)", master_pdf.name, self.MASTER_PDF_PAGE_COUNT)
+        with pikepdf.open(master_pdf) as _pdf_for_log:
+            logger.info(
+                "   Master: %s (%d oldal)",
+                master_pdf.name, len(_pdf_for_log.pages),
+            )
         logger.info("   Termékek: %s", [p.value for p in products])
-        logger.info("   Szereplők: %d, Ingatlanok: %d", num_participants, num_properties)
+        logger.info(
+            "   Szereplők (hívó ág szerint): %d, Ingatlanok: %d",
+            num_participants, num_properties,
+        )
         logger.info("   Tervezett oldalak: %d", len(page_plan))
 
         # 2. PDF összeállítás

@@ -11,7 +11,7 @@
       "pdf_field_name": "flat_1_1",
       "label": "Név",
       "field_type": "text",
-      "canonical_field": "Contact.Name",
+      "canonical_field": "participant.borrower.name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -26,7 +26,7 @@
       "pdf_field_name": "flat_1_2",
       "label": "Születési név",
       "field_type": "text",
-      "canonical_field": "Contact.Szuletesi_nev__c",
+      "canonical_field": "participant.borrower.birth_name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -41,7 +41,7 @@
       "pdf_field_name": "flat_1_3",
       "label": "Anyja neve",
       "field_type": "text",
-      "canonical_field": "Contact.Mother_s_Name__c",
+      "canonical_field": "participant.borrower.mother_name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -56,7 +56,7 @@
       "pdf_field_name": "flat_1_4",
       "label": "Születési hely, idő",
       "field_type": "text",
-      "canonical_field": "Contact.Birthdate",
+      "canonical_field": "participant.borrower.birth_date",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -71,7 +71,7 @@
       "pdf_field_name": "flat_1_5",
       "label": "mező_5",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_telepules__c",
+      "canonical_field": "property.address.city",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -86,7 +86,7 @@
       "pdf_field_name": "flat_1_6",
       "label": "Helyrajzi száma",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": "property.parcel_number",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -116,7 +116,7 @@
       "pdf_field_name": "flat_2_8",
       "label": "mező_8",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_telepules__c",
+      "canonical_field": "property.address.city",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -131,7 +131,7 @@
       "pdf_field_name": "flat_2_9",
       "label": "Helyrajzi száma",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": "property.parcel_number",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -161,7 +161,7 @@
       "pdf_field_name": "flat_2_11",
       "label": "mező_11",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_telepules__c",
+      "canonical_field": "property.address.city",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -176,7 +176,7 @@
       "pdf_field_name": "flat_2_12",
       "label": "Helyrajzi száma",
       "field_type": "text",
-      "canonical_field": "Lead.Ingatlan_megjegyzes__c",
+      "canonical_field": "property.parcel_number",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -206,7 +206,7 @@
       "pdf_field_name": "flat_2_14",
       "label": "mező_14",
       "field_type": "text",
-      "canonical_field": "Contact.OtherCity",
+      "canonical_field": "participant.borrower.address.city",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -266,7 +266,7 @@
       "pdf_field_name": "flat_2_18",
       "label": "Név",
       "field_type": "text",
-      "canonical_field": "Contact.Name",
+      "canonical_field": "participant.borrower.name",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {
@@ -296,7 +296,7 @@
       "pdf_field_name": "flat_2_20",
       "label": "Lakcím",
       "field_type": "text",
-      "canonical_field": "Contact.Permanent_address__c",
+      "canonical_field": "participant.borrower.permanent_address",
       "confidence": "high",
       "page_number": 2,
       "coordinates": {

@@ -2,10 +2,10 @@ import { useState, useRef, useEffect, useMemo, useId } from "react";
 
 export interface DealOption {
   Id: string;
-  Name?: string;
-  StageName?: string;
-  CloseDate?: string;
-  AccountName?: string;
+  Name?: string | null;
+  StageName?: string | null;
+  CloseDate?: string | null;
+  AccountName?: string | null;
 }
 
 interface DealComboboxProps {

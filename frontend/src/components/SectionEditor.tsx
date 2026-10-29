@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useStore } from "@/store";
 import { uploadMasterPdf, extractSection, pageImageUrl } from "@/api/client";
 import type { CatalogDocument } from "@/types";
+import AuthenticatedImage from "./AuthenticatedImage";
 
 interface SectionEditorProps {
   bankId: string;
@@ -257,8 +258,8 @@ export default function SectionEditor({ bankId, initialFile, onClose }: SectionE
                         transition: "border-color var(--transition-fast)",
                       }}
                     >
-                      <img
-                        src={pageImageUrl(pdfId, page)}
+                      <AuthenticatedImage
+                        sourceUrl={pageImageUrl(pdfId, page)}
                         alt={`Oldal ${page}`}
                         style={{ width: "100%", display: "block" }}
                         loading="lazy"

@@ -42,6 +42,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import sys
 import threading
 import unicodedata
@@ -76,11 +77,19 @@ from config import (  # noqa: E402
     log,
     resolve_pdf,
 )
-from mapping_service import FileConflictError, mapping_service  # noqa: E402
+from mapping_service import (  # noqa: E402
+    FileConflictError,
+    InvalidCanonicalFieldError,
+    InvalidFragmentError,
+    mapping_service,
+)
 from pdf_service import pdf_service  # noqa: E402
 from recognize_service import recognize_service  # noqa: E402
 from catalog_service import catalog_service  # noqa: E402
 from auth_service import AuthService  # noqa: E402
+# Cutover Task 4: the backend validates canonical values against the shared
+# Genie registry (same parser the pipeline uses), not a backend-side catalog.
+from src.canonical.registry import canonical_registry  # noqa: E402
 
 auth_service = AuthService()
 
@@ -99,9 +108,6 @@ app.add_middleware(
 _PUBLIC_PATHS = {
     "/api/health",
     "/api/auth/login",
-    "/api/pdf/download",
-    "/api/mapping/export",
-    "/api/pdf/preview",
 }
 
 _MEMBER_ALLOWED: set[tuple[str, str]] = {
@@ -116,11 +122,21 @@ _MEMBER_ALLOWED: set[tuple[str, str]] = {
 }
 
 
+def _member_allowed(method: str, path: str) -> bool:
+    if (method, path) in _MEMBER_ALLOWED:
+        return True
+    if method == "GET" and path == "/api/pdf/download":
+        return True
+    if method == "GET" and path.startswith("/api/package/download/"):
+        return True
+    return False
+
+
 def _extract_bearer_token(request: Request) -> str | None:
     auth_hdr = request.headers.get("authorization") or ""
     if auth_hdr.lower().startswith("bearer "):
         return auth_hdr[7:].strip()
-    return request.query_params.get("token")
+    return None
 
 
 @app.middleware("http")
@@ -131,23 +147,11 @@ async def _auth_middleware(request: Request, call_next):
     if method == "OPTIONS" or not path.startswith("/api/"):
         return await call_next(request)
 
-    if (
-        path in _PUBLIC_PATHS
-        or path.startswith("/api/package/download/")
-        or (method == "GET" and path.startswith("/api/pdf/page/") and path.endswith("/image"))
-    ):
+    if path in _PUBLIC_PATHS:
         return await call_next(request)
 
     token = _extract_bearer_token(request)
     if not token:
-        # Allow legacy unauthenticated TestClient calls on non-auth routes unless X-Enforce-Auth is set
-        ua = request.headers.get("user-agent", "")
-        if (
-            ua.startswith("testclient")
-            and not request.headers.get("x-enforce-auth")
-            and not path.startswith(("/api/auth/", "/api/users"))
-        ):
-            return await call_next(request)
         return JSONResponse(status_code=401, content={"detail": "Bejelentkezés szükséges."})
 
     user = auth_service.verify_token(token)
@@ -156,7 +160,7 @@ async def _auth_middleware(request: Request, call_next):
 
     request.state.user = user
 
-    if user.get("role") != "admin" and (method, path) not in _MEMBER_ALLOWED:
+    if user.get("role") != "admin" and not _member_allowed(method, path):
         return JSONResponse(
             status_code=403,
             content={"detail": "Csak adminisztrátorok számára elérhető művelet."},
@@ -259,6 +263,8 @@ def _get_pdf(pdf_id: str) -> Path:
         raise HTTPException(400, "pdf_id query parameter is required")
     try:
         return resolve_pdf(pdf_id)
+    except PermissionError:
+        raise HTTPException(403, "PDF access outside approved roots")
     except FileNotFoundError:
         raise HTTPException(404, f"PDF not found in repository: {pdf_id}")
 
@@ -267,7 +273,7 @@ def _png_response(data: bytes) -> Response:
     return Response(
         content=data,
         media_type="image/png",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "private, no-store"},
     )
 
 
@@ -289,6 +295,38 @@ def _get_sf_creds() -> dict | None:
         "domain": getattr(settings, "SF_DOMAIN", "login"),
         "mock_mode": False,
     }
+
+
+def _make_sf_client() -> Any:
+    """Return the explicitly selected Salesforce data source."""
+    from integrations.salesforce_client import SalesforceClient
+
+    # Importing project settings loads the project .env before source selection.
+    sf_creds = _get_sf_creds()
+    if os.getenv("SF_MOCK_MODE", "").strip().lower() == "true":
+        return SalesforceClient(
+            mock_mode=True,
+            mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data",
+        )
+
+    if not sf_creds:
+        raise HTTPException(
+            503,
+            "Live Salesforce is not configured; set SF_MOCK_MODE=true for local mock development.",
+        )
+    return SalesforceClient(**{**sf_creds, "mock_mode": False})
+
+
+def _raw_opportunity(deal_raw: Any) -> dict | None:
+    """Extract the raw Opportunity payload used during field preparation."""
+    if not isinstance(deal_raw, dict):
+        return None
+    return (
+        deal_raw.get("_opportunity")
+        or deal_raw.get("Opportunity__c")
+        or deal_raw.get("opportunity")
+        or deal_raw
+    )
 
 
 # FIX H6 — per-mapping reentrant lock so concurrent browser tabs editing the
@@ -317,45 +355,132 @@ def _get_mapping_lock(pdf_id: str) -> threading.RLock:
         return lock
 
 
-def _valid_canonical_paths() -> list[str]:
-    """Sorted list of known canonical_field paths (FIX M1)."""
-    return sorted(f["path"] for f in mapping_service.canonical_fields())
+# Cutover Task 3 review fix (defect 2): AI-review SF context a VALIDÁLT,
+# registry-approved canonical útvonalakból épül. A korábbi implementáció egy
+# NEM regisztrált útvonalat (participant.borrower.address.full_address)
+# próbált feloldani — a resolve_text ValueError-t dobott, és a blanket
+# except az egész contextet eldobta, így az sf_context mindig None volt.
+# Itt a regisztrált ``permanent_address`` (source: address.full_address)
+# szerepel, és minden útvonal KÜLÖN oldódik fel: egy rossz útvonal warning,
+# sosem a teljes context elvesztése.
+_BORROWER_SF_CONTEXT_PATHS = (
+    "participant.borrower.name",
+    "participant.borrower.birth_date",
+    "participant.borrower.tax_id",
+    "participant.borrower.phone",
+    "participant.borrower.email",
+    "participant.borrower.permanent_address",
+    "deal.loan_amount",
+    "deal.loan_purpose",
+)
+
+
+def _borrower_sf_context(deal) -> dict | None:
+    """AI-review SF context explicit canonical útvonalakból, útvonalankénti
+    izolációval. Nincs adós → ``None``; egyéb esetben a feloldható útvonalak
+    értékei (üres értékek kihagyva)."""
+
+    if not getattr(deal, "borrowers", None):
+        return None
+    from src.canonical.resolver import CanonicalResolver
+
+    resolver = CanonicalResolver()
+    context: dict = {}
+    for path in _BORROWER_SF_CONTEXT_PATHS:
+        try:
+            value = resolver.resolve_text(deal, path)
+        except ValueError as error:
+            log.warning(
+                "sf_context: feloldhatatlan canonical útvonal %r — kihagyva: %s",
+                path, error,
+            )
+            continue
+        if value:
+            context[path] = value
+    return context or None
 
 
 def _validate_canonical_field(canonical_field: str | None) -> None:
-    """Reject unknown canonical_field values with 422 (FIX M1).
+    """Reject non-registry canonical_field values with 422.
 
-    ``None`` / empty means "unmapped" and is always allowed. Any other value
-    must exist in the canonical-field catalog (after stripping pipeline
-    suffixes such as ``-társ``, ``#piaci``, ``#tamogatott``, ``#ev``, ``#ho``,
-    and multi-property ``_2``..``_9``).
+    Cutover Task 4 — SUFFIX-FREE validation against the shared Genie registry:
+    ``None`` / empty means "unmapped" and is always allowed; every other
+    value must be a registry-approved canonical path VERBATIM. The legacy
+    tolerance (stripping ``-társ`` / ``#piaci`` / ``#ev`` / ``_2`` suffixes to
+    rescue old Salesforce names) is deleted — a stale legacy mapping must be
+    migrated, not silently accepted.
+
+    The 422 payload intentionally does NOT embed the thousands of valid
+    paths; it names the offending value and where the accepted vocabulary
+    comes from (GET /api/mapping/canonical-fields).
     """
     if not canonical_field:
         return
-    valid = _valid_canonical_paths()
-    if canonical_field in valid:
-        return
-    base = canonical_field
-    if base.endswith("-társ"):
-        base = base[:-len("-társ")]
-    for gate in ("#piaci", "#tamogatott", "#ev", "#ho"):
-        if base.endswith(gate):
-            base = base[:-len(gate)]
-    base = re.sub(r"_[2-9]$", "", base)
-    if base in valid:
+    if canonical_registry.validate(canonical_field):
         return
     raise HTTPException(
         status_code=422,
         detail={
             "error": "invalid_canonical_field",
             "message": (
-                f"Unknown canonical_field: '{canonical_field}'. "
-                f"Use one of the known canonical paths (see valid_values)."
+                f"Ismeretlen/elavult canonical mező: '{canonical_field}'. "
+                "A pipeline kizárólag registry-approved Genie útvonalakat "
+                "fogad (lásd GET /api/mapping/canonical-fields). Legacy "
+                "Salesforce-neves mappinget a "
+                "scripts/migrate_mappings_to_genie.py --apply migrál."
             ),
             "field": "canonical_field",
-            "valid_values": valid,
+            "value": canonical_field,
         },
     )
+
+
+def _legacy_mapping_422(error: Exception) -> HTTPException:
+    """Operator-facing 422 for a stale (legacy Salesforce-named) mapping.
+
+    Cutover Task 4 additional requirement 6: a generikus 500 helyett a
+    operátor pontos utasítást kap — melyik mapping elavult és mi a teendő.
+    """
+    return HTTPException(
+        status_code=422,
+        detail={
+            "error": "legacy_mapping",
+            "message": (
+                "A PDF mappingje elavult (legacy Salesforce-neves canonical "
+                "mezőket hordoz), a kitöltő pipeline csak Genie canonical "
+                "útvonalakat fogad. Futtasd le a migrációt "
+                "(scripts/migrate_mappings_to_genie.py --apply), vagy "
+                "nyisd meg a mappinget a Mapping Studio-ban és mentsd el "
+                "registry-approved canonical mezőkkel. Részletek: "
+                f"{error}"
+            ),
+        },
+    )
+
+
+def _save_mapping_or_422(
+    pdf_id: str, data: dict, original_mtime: float | None = None
+) -> dict:
+    """``mapping_service.save`` + structured 422 translation — ONE place.
+
+    Cutover Task 4 review fix 1: every route that persists a mapping (full
+    save, import, field CRUD, group CRUD) funnels through here, so a stale /
+    invalid document is always reported as the same operator-facing 422
+    (``invalid_canonical_field`` / ``invalid_fragment``) — never a raw 500 —
+    and nothing partial is written (save() validates before any write).
+    """
+    try:
+        return mapping_service.save(pdf_id, data, original_mtime=original_mtime)
+    except FileConflictError as e:
+        raise HTTPException(409, str(e))
+    except InvalidCanonicalFieldError as e:
+        raise HTTPException(
+            422, detail={"error": "invalid_canonical_field", "message": str(e)}
+        )
+    except InvalidFragmentError as e:
+        raise HTTPException(
+            422, detail={"error": "invalid_fragment", "message": str(e)}
+        )
 
 
 def sanitize_filename(filename: str, existing: "set[str] | None" = None) -> str:
@@ -582,12 +707,7 @@ def get_mapping(pdf_id: str = Query(...)):
 def save_mapping(body: dict, pdf_id: str = Query(...)):
     """Full mapping save (editor Save button)."""
     _get_pdf(pdf_id)
-    original_mtime = body.get("_mtime")
-    try:
-        result = mapping_service.save(pdf_id, body, original_mtime=original_mtime)
-    except FileConflictError as e:
-        raise HTTPException(409, str(e))
-    return result
+    return _save_mapping_or_422(pdf_id, body, original_mtime=body.get("_mtime"))
 
 
 # --- Field-level helpers -------------------------------------------------
@@ -634,7 +754,7 @@ def update_field(body: FieldUpdate, pdf_id: str = Query(...), field: str = Query
             updated = mapping_service.update_field(data, field_name, body.model_dump(exclude_unset=True))
         except KeyError:
             raise HTTPException(404, f"field not found: {field_name}")
-        save_res = mapping_service.save(pdf_id, data)
+        save_res = _save_mapping_or_422(pdf_id, data)
     return {"field": updated, "_mtime": save_res["mtime"]}
 
 
@@ -648,7 +768,7 @@ def add_field(body: FieldCreate, pdf_id: str = Query(...)):
             created = mapping_service.add_field(data, body.model_dump())
         except ValueError as e:
             raise HTTPException(400, str(e))
-        save_res = mapping_service.save(pdf_id, data)
+        save_res = _save_mapping_or_422(pdf_id, data)
     return {"field": created, "_mtime": save_res["mtime"]}
 
 
@@ -661,7 +781,7 @@ def delete_field(pdf_id: str = Query(...), field: str = Query(...)):
         ok = mapping_service.delete_field(data, field_name)
         if not ok:
             raise HTTPException(404, f"field not found: {field_name}")
-        save_res = mapping_service.save(pdf_id, data)
+        save_res = _save_mapping_or_422(pdf_id, data)
     return {"deleted": ok, "_mtime": save_res["mtime"]}
 
 
@@ -687,6 +807,8 @@ class GroupUpdate(BaseModel):
 
 @app.post("/api/mapping/group")
 def create_group(body: GroupCreate, pdf_id: str = Query(...)):
+    # Cutover Task 4: a csoport canonicalja is registry-approved Genie path.
+    _validate_canonical_field(body.canonical_field)
     lock = _get_mapping_lock(pdf_id)
     with lock:
         data = mapping_service.load(pdf_id)
@@ -694,12 +816,13 @@ def create_group(body: GroupCreate, pdf_id: str = Query(...)):
             g = mapping_service.create_group(data, body.model_dump())
         except ValueError as e:
             raise HTTPException(400, str(e))
-        mapping_service.save(pdf_id, data)
+        _save_mapping_or_422(pdf_id, data)
     return g
 
 
 @app.put("/api/mapping/group")
 def update_group(body: GroupUpdate, pdf_id: str = Query(...), group_id: str = Query(...)):
+    _validate_canonical_field(body.canonical_field)
     lock = _get_mapping_lock(pdf_id)
     with lock:
         data = mapping_service.load(pdf_id)
@@ -709,7 +832,7 @@ def update_group(body: GroupUpdate, pdf_id: str = Query(...), group_id: str = Qu
             raise HTTPException(404, f"group not found: {group_id}")
         except ValueError as e:
             raise HTTPException(400, str(e))
-        mapping_service.save(pdf_id, data)
+        _save_mapping_or_422(pdf_id, data)
     return g
 
 
@@ -721,7 +844,7 @@ def delete_group(pdf_id: str = Query(...), group_id: str = Query(...)):
         ok = mapping_service.delete_group(data, group_id)
         if not ok:
             raise HTTPException(404, f"group not found: {group_id}")
-        mapping_service.save(pdf_id, data)
+        _save_mapping_or_422(pdf_id, data)
     return {"deleted": ok}
 
 
@@ -755,8 +878,9 @@ async def import_mapping(pdf_id: str = Query(...), file: UploadFile = File(...))
         data = json.loads(raw)
     except Exception as e:
         raise HTTPException(400, f"invalid JSON: {e}")
-    result = mapping_service.save(pdf_id, data)
-    return result
+    # Cutover Task 4 review fix 1: az import ugyanazt a centralizált
+    # registry-validáció/422-fordítást kapja, mint a teljes mentés.
+    return _save_mapping_or_422(pdf_id, data)
 
 
 # ======================================================================
@@ -831,12 +955,8 @@ def pdf_page_preview(page_number: int, body: dict):
 
     try:
         from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+
+        sf_client = _make_sf_client()
 
         if not deal_id:
             deals = sf_client.list_deals()
@@ -871,17 +991,12 @@ def pdf_page_preview(page_number: int, body: dict):
         raise
     except Exception as e:
         log.exception("Page preview fill failed")
-        raise HTTPException(500, f"Page preview error: {str(e)}")
+        raise HTTPException(500, "Page preview error")
 
 
 @app.get("/api/health")
 def health():
-    return {
-        "ok": True,
-        "recognizer_available": recognize_service.available(),
-        "project_root": str(PROJECT_ROOT),
-        "mapping_dir": str(MAPPING_DIR),
-    }
+    return {"ok": True}
 
 
 # ======================================================================
@@ -1272,8 +1387,12 @@ def generate_package(body: dict):
 
     Body: { bank_id: str, product_id: str, deal_id: str, upload_to_sf?: bool }
     Returns: { success, package_url, documents[], total_documents, errors[], sf_uploads }
+
+    ``upload_to_sf`` is explicit-only (opt-in): the live ContentVersion upload
+    runs solely when the request carries ``upload_to_sf: true`` — an omitted
+    flag never uploads. Mock mode never uploads either way.
     """
-    upload_to_sf = body.get("upload_to_sf", True)
+    upload_to_sf = body.get("upload_to_sf", False)
     import zipfile
     from datetime import datetime
 
@@ -1285,16 +1404,8 @@ def generate_package(body: dict):
 
     try:
         from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
 
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(
-                mock_mode=True,
-                mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data",
-            )
+        sf_client = _make_sf_client()
         pipeline = FormFillerPipeline(
             sf_client=sf_client, output_dir=PROJECT_ROOT / "output"
         )
@@ -1454,7 +1565,7 @@ def generate_package(body: dict):
         raise
     except Exception as e:
         log.exception("Package generation failed")
-        raise HTTPException(500, f"Csomag generálási hiba: {str(e)}")
+        raise HTTPException(500, "Csomag generálási hiba")
 
 
 @app.post("/api/pdf/fill")
@@ -1473,22 +1584,22 @@ def fill_pdf(body: dict):
     pdf_path = _get_pdf(pdf_id)
 
     try:
-        from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+        from main import FormFillerPipeline, LegacyCanonicalMappingError
 
+        sf_client = _make_sf_client()
         pipeline = FormFillerPipeline(sf_client=sf_client, output_dir=PROJECT_ROOT / "output")
-        result = pipeline.run_for_deal(
-            deal_id=deal_id,
-            template_pdf=pdf_path,
-            mapping_config=None,
-            force_recreate_mapping=False,  # use existing mapping
-            upload_to_sf=False,
-        )
+        try:
+            result = pipeline.run_for_deal(
+                deal_id=deal_id,
+                template_pdf=pdf_path,
+                mapping_config=None,
+                force_recreate_mapping=False,  # use existing mapping
+                upload_to_sf=False,
+            )
+        except LegacyCanonicalMappingError as e:
+            # Cutover Task 4 (additional requirement 6): elavult mapping →
+            # operátor-barát 422, nem generikus 500.
+            raise _legacy_mapping_422(e)
 
         if not result["success"]:
             issues = ", ".join(result.get("issues", []))
@@ -1508,7 +1619,7 @@ def fill_pdf(body: dict):
         raise
     except Exception as e:
         log.exception("Fill failed")
-        raise HTTPException(500, f"Fill error: {str(e)}")
+        raise HTTPException(500, "Fill error")
 
 
 @app.post("/api/pdf/validate")
@@ -1529,22 +1640,21 @@ def validate_pdf(body: dict):
     pdf_path = _get_pdf(pdf_id)
 
     try:
-        from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
+        from main import FormFillerPipeline, LegacyCanonicalMappingError
 
+        sf_client = _make_sf_client()
         pipeline = FormFillerPipeline(sf_client=sf_client, output_dir=PROJECT_ROOT / "output")
-        result = pipeline.run_for_deal(
-            deal_id=deal_id,
-            template_pdf=pdf_path,
-            mapping_config=None,
-            force_recreate_mapping=False,
-            upload_to_sf=False,
-        )
+        try:
+            result = pipeline.run_for_deal(
+                deal_id=deal_id,
+                template_pdf=pdf_path,
+                mapping_config=None,
+                force_recreate_mapping=False,
+                upload_to_sf=False,
+            )
+        except LegacyCanonicalMappingError as e:
+            # Cutover Task 4 (additional requirement 6).
+            raise _legacy_mapping_422(e)
 
         if not result["success"]:
             issues = ", ".join(result.get("issues", []))
@@ -1554,24 +1664,16 @@ def validate_pdf(body: dict):
         from engine.fill_validator import validate_filled_pdf
 
         # Get SF context for AI review and rebuild field_data with raw_opportunity
-        sf_context = None
         deal_raw = sf_client.get_deal(deal_id)
         deal = pipeline.normalizer.normalize_deal(deal_raw)
-        try:
-            if deal.borrowers:
-                b = pipeline._participant_to_dict(deal.borrowers[0])
-                sf_context = {k: v for k, v in b.items() if v}
-        except Exception:
-            pass
+        # Cutover Task 3 review fix (defect 2): a legacy Contact.* producer
+        # helyett explicit canonical útvonalak, útvonalankénti izolációval
+        # (lásd _borrower_sf_context).
+        sf_context = _borrower_sf_context(deal)
 
         mapping = pipeline._resolve_mapping(pdf_path, force_recreate=False)
         notices: list = []
-        raw_opp = (
-            deal_raw.get("_opportunity")
-            or deal_raw.get("Opportunity__c")
-            or deal_raw.get("opportunity")
-            or deal_raw
-        ) if isinstance(deal_raw, dict) else None
+        raw_opp = _raw_opportunity(deal_raw)
         field_data = pipeline._prepare_field_data(
             deal,
             mapping,
@@ -1618,7 +1720,7 @@ def validate_pdf(body: dict):
         raise
     except Exception as e:
         log.exception("Validation failed")
-        raise HTTPException(500, f"Validation error: {str(e)}")
+        raise HTTPException(500, "Validation error")
 
 
 @app.get("/api/pdf/fill/pages")
@@ -1628,18 +1730,23 @@ def fill_pdf_pages(path: str = Query(...), count: int = Query(default=10, ge=1, 
     abs_path = Path(path).resolve()
     if not abs_path.exists():
         raise HTTPException(404, "File not found")
-    if not str(abs_path).startswith(str(out_dir)):
+    if not abs_path.is_relative_to(out_dir):
         raise HTTPException(403, "Access denied")
+    if not abs_path.is_file():
+        raise HTTPException(404, "File not found")
 
     import fitz
     doc = fitz.open(str(abs_path))
-    pages = []
-    mat = fitz.Matrix(1.5, 1.5)  # 108 DPI for preview
-    for i in range(min(count, len(doc))):
-        pix = doc[i].get_pixmap(matrix=mat)
-        pages.append(base64.b64encode(pix.tobytes("png")).decode())
-    doc.close()
-    return {"total_pages": len(doc), "pages": pages, "path": str(abs_path)}
+    try:
+        total_pages = len(doc)
+        pages = []
+        mat = fitz.Matrix(1.5, 1.5)  # 108 DPI for preview
+        for i in range(min(count, total_pages)):
+            pix = doc[i].get_pixmap(matrix=mat)
+            pages.append(base64.b64encode(pix.tobytes("png")).decode())
+        return {"total_pages": total_pages, "pages": pages, "path": str(abs_path)}
+    finally:
+        doc.close()
 
 
 @app.get("/api/pdf/field-values")
@@ -1652,17 +1759,8 @@ def field_values(pdf_id: str = Query(...)):
     """
     try:
         from main import FormFillerPipeline
-        from integrations.salesforce_client import SalesforceClient
 
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(
-                mock_mode=True,
-                mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data",
-            )
-
+        sf_client = _make_sf_client()
         pipeline = FormFillerPipeline(
             sf_client=sf_client,
             output_dir=PROJECT_ROOT / "output",
@@ -1692,29 +1790,41 @@ def field_values(pdf_id: str = Query(...)):
 
         # Resolve field values via the pipeline's _prepare_field_data
         notices: list = []
-        field_data = pipeline._prepare_field_data(deal, mapping_config, notices=notices)
+        field_data = pipeline._prepare_field_data(
+            deal,
+            mapping_config,
+            raw_opportunity=_raw_opportunity(raw_data),
+            notices=notices,
+        )
 
         return {"values": field_data, "deal_id": deal_id, "notices": notices}
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception("field_values failed")
-        raise HTTPException(500, f"Field values error: {str(e)}")
+        raise HTTPException(500, "Field values error")
 
 
 @app.get("/api/sf/deals")
 def list_deals():
     """List available Salesforce deals for the fill preview dropdown."""
     try:
-        from integrations.salesforce_client import SalesforceClient
-        sf_creds = _get_sf_creds()
-        if sf_creds:
-            sf_client = SalesforceClient(**sf_creds)
-        else:
-            sf_client = SalesforceClient(mock_mode=True, mock_data_dir=PROJECT_ROOT / "samples" / "dummy_data")
-        deals = sf_client.list_deals()
-        return {"deals": deals}
+        deals = _make_sf_client().list_deals()
+        return {"deals": [
+            {
+                "Id": deal.get("Id") or deal.get("deal_id"),
+                "Name": deal.get("Name"),
+                "StageName": deal.get("StageName") or deal.get("stage"),
+                "CloseDate": deal.get("CloseDate"),
+                "AccountName": deal.get("AccountName"),
+            }
+            for deal in deals
+        ]}
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception("Failed to list deals")
-        raise HTTPException(500, f"SF error: {str(e)}")
+        raise HTTPException(500, "SF error")
 
 
 @app.get("/api/pdf/download")
@@ -1725,9 +1835,11 @@ def pdf_download(path: str = Query(...)):
     abs_path = Path(path).resolve()
     if not abs_path.exists():
         raise HTTPException(404, "File not found")
-    # Prevent directory traversal
-    if not str(abs_path).startswith(str(out_dir)):
+    # Prevent directory traversal, including sibling paths with the same prefix.
+    if not abs_path.is_relative_to(out_dir):
         raise HTTPException(403, "Access denied")
+    if not abs_path.is_file():
+        raise HTTPException(404, "File not found")
     media_type = "application/zip" if abs_path.suffix == ".zip" else "application/pdf"
     return FileResponse(abs_path, media_type=media_type, filename=abs_path.name)
 

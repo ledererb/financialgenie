@@ -62,7 +62,7 @@
       "pdf_field_name": "flat_1_4",
       "label": "Hiteligénylő neve",
       "field_type": "text",
-      "canonical_field": "Contact.Name",
+      "canonical_field": "participant.borrower.name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {

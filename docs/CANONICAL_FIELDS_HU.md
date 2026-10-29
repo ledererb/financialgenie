@@ -1,5 +1,18 @@
 # Kanonikus Mezők Útmutatója (FinancialGenie)
 
+> [!WARNING]
+> **Elavult (2026-10-29, Genie cutover):** ez a dokumentum a **legacy,
+> Salesforce-API-neves** canonical rendszert írja le (`Contact.*`, `Lead.*`,
+> `Opportunity.*` alakú mapping-útvonalakkal), ami a 2026-10-29-es cutover után
+> már NEM használatos — az aktív mappingekben és a futásidejű pipeline-ban
+> tilosak is ezek az utak. Az aktuális, kurált mezőkatalógus a
+> `src/canonical/fields.json` (a `/api/mapping/canonical-fields` végpont szolgálja
+> ki), a szerepkörök: `participant.borrower` / `co_borrower` / `guarantor` /
+> `mortgagor` / `usufructuary`. Ez az útmutató a sandbox-adatállapot történeti
+> felméréseként megőrzve marad. Salesforce API-név → kanonikus cél fordítás ma a
+> generált `src/integrations/salesforce_field_map.json`; élésítési előfeltételek:
+> `docs/SALESFORCE_SETUP_RUNBOOK.md`.
+
 Ez a dokumentum bemutatja a FinancialGenie rendszerében használt összes **kanonikus mezőt** (Canonical Field), azok pontos Salesforce API nevét, és azt, hogy a teszt Salesforce sandbox-ban mely mezőkhöz tartozik adat és melyekhez nem.
 
 ---

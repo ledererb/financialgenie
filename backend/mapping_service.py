@@ -22,19 +22,18 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from config import MAPPING_DIR, log
 
-# Canonical field catalog imported from the existing AI module so the
-# frontend autocomplete dropdown always matches the pipeline's vocabulary.
-try:
-    from ai.field_recognizer import CANONICAL_FIELDS  # type: ignore
-except Exception:  # pragma: no cover - defensive
-    CANONICAL_FIELDS = {}
+# Cutover Task 4: the canonical catalog is the shared Genie registry
+# (src/canonical/fields.json) — the recognizer's static Salesforce-named
+# CANONICAL_FIELDS dict and the SF_FIELD_TYPES type table are deleted.
+from src.canonical.registry import canonical_registry
 
 # PLAN_CHECKBOX_GROUPS.md §3.5 — checkbox-csoport konzisztencia validáló.
 # Importolt modul-szintű függvény; nem blokkolja a mentést, csak jelez.
@@ -45,6 +44,56 @@ except Exception:  # pragma: no cover - defensive
 
 
 _LOCK = threading.Lock()
+
+#: Fragment roles the fill engine understands (src.main._apply_fragment):
+#: date pieces + 1-based digit boxes. Anything else is a stale mapping artifact.
+_DATE_FRAGMENTS = frozenset({"year", "month", "day"})
+_DIGIT_FRAGMENT_RE = re.compile(r"digit:[1-9][0-9]*\Z")
+
+
+class InvalidCanonicalFieldError(ValueError):
+    """A mapping document carries a non-registry canonical path."""
+
+
+class InvalidFragmentError(ValueError):
+    """A mapping field carries a fragment role the fill engine cannot apply."""
+
+
+def _canonical_references(value: Any, location: str = "") -> Iterator[tuple[Any, str]]:
+    """Yield ``(value, location)`` for every canonical-carrying key, deeply.
+
+    Mirrors the migration audit's occurrence walk: any ``sf_field`` key or key
+    ending in ``canonical_field`` (top-level fields, nested ``fill_rule`` /
+    checkbox metadata, ``character_groups``, ``points[]`` params) must hold a
+    registry-approved Genie path or None.
+    """
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_location = f"{location}.{key}" if location else key
+            if key == "sf_field" or key.endswith("canonical_field"):
+                yield child, child_location
+            else:
+                yield from _canonical_references(child, child_location)
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            child_location = f"{location}[{index}]"
+            yield from _canonical_references(child, child_location)
+
+
+def _validate_fragment_role(fragment: Any, location: str) -> None:
+    if fragment is None:
+        return
+    valid = (
+        isinstance(fragment, str)
+        and (fragment in _DATE_FRAGMENTS or _DIGIT_FRAGMENT_RE.fullmatch(fragment))
+    )
+    if not valid:
+        raise InvalidFragmentError(
+            f"Érvénytelen fragment {fragment!r} itt: {location} — "
+            f"engedélyezett: year | month | day | digit:N (1-alapú). "
+            "A régi '#ev/#ho/#nap' canonical suffixok a migrációval fragment "
+            "metadata-ra váltottak."
+        )
 
 
 class MappingService:
@@ -81,7 +130,16 @@ class MappingService:
         return data
 
     def save(self, pdf_id: str, mapping: dict, original_mtime: float | None = None) -> dict:
-        """Persist the full mapping. Returns {"saved_at", "mtime", "path"}."""
+        """Persist the full mapping. Returns {"saved_at", "mtime", "path"}.
+
+        Cutover Task 4: the full document is validated against the shared
+        Genie registry BEFORE anything is written — every canonical-carrying
+        reference (fields, character_groups, nested fill_rule/point sf_field)
+        must be a registry-approved path and every fragment role must be one
+        the fill engine applies. Legacy/invalid values raise
+        InvalidCanonicalFieldError / InvalidFragmentError (the API maps both
+        to a 422 with an operator-facing message); nothing partial is saved.
+        """
         path = self._mapping_path(pdf_id)
         # Conflict detection: if the file changed on disk since we loaded it.
         if path.exists() and original_mtime is not None:
@@ -98,6 +156,8 @@ class MappingService:
         clean["approved"] = bool(clean.get("approved", False))
         if clean.get("form_type") not in ("acroform", "flat"):
             clean["form_type"] = "acroform"
+
+        self.validate_mapping_document(clean)
 
         MAPPING_DIR.mkdir(parents=True, exist_ok=True)
         with _LOCK:
@@ -265,63 +325,58 @@ class MappingService:
         return suggestions
 
     # ------------------------------------------------------------------
-    # Canonical catalog
+    # Canonical catalog (shared Genie registry)
     # ------------------------------------------------------------------
-    # SF field types — inferred from the Salesforce sandbox schema.
-    # Used by the canonical-fields endpoint to display type info in the UI.
-    SF_FIELD_TYPES = {
-        "Contact.Name": "string", "Contact.FirstName": "string", "Contact.LastName": "string",
-        "Contact.Szuletesi_nev__c": "string", "Contact.Mother_s_Name__c": "string",
-        "Contact.Place_of_Birth__c": "string", "Contact.Date_of_birth__c": "date",
-        "Contact.Birthdate": "date", "Contact.Year_of_birthdate__c": "string",
-        "Contact.Salutation": "picklist", "Contact.ID_Card_Number__c": "string",
-        "Contact.Tax_ID__c": "string", "Contact.Personal_ID__c": "string",
-        "Contact.Address_Card_Number__c": "string",
-        "Contact.Permanent_address__c": "textarea", "Contact.ZIP__c": "string",
-        "Contact.OtherCity": "string", "Contact.OtherStreet": "string",
-        "Contact.OtherCountry": "string", "Contact.MailingPostalCode": "string",
-        "Contact.MailingCity": "string", "Contact.MailingStreet": "string",
-        "Contact.Legal_Title_of_permanent_residence__c": "picklist",
-        "Contact.Date_of_notification_for_residence__c": "date",
-        "Contact.MobilePhone": "phone", "Contact.Phone": "phone",
-        "Contact.HomePhone": "phone", "Contact.Email": "email",
-        "Contact.Marital_Status__c": "picklist", "Contact.Citizenship__c": "picklist",
-        "Contact.Dependents_count__c": "double", "Contact.Relation__c": "picklist",
-        "Contact.Employment_Type_c__c": "picklist", "Contact.Foglalkozas_tipusa__c": "picklist",
-        "Contact.Occupation__c": "string", "Contact.Name_of_employer__c": "string",
-        "Contact.Self_employment_details__c": "string",
-        "Contact.Current_employment_started__c": "date",
-        "Contact.Highest_Educational_Qualification__c": "picklist",
-        "Contact.Average_monthly_net_income__c": "currency",
-        "Contact.Income_type__c": "picklist", "Contact.Other_income__c": "string",
-        "Contact.Other_monthly_income__c": "currency",
-        "Contact.Monthly_installment_payment__c": "currency",
-        "Contact.Own_resources__c": "currency",
-        "Contact.Term_in_year_c": "double", "Contact.Term_in_year_c__c": "double",
-        "Contact.Jovairas_vallalasa__c": "picklist",
-        "Contact.Current_debt_Credit_limit__c": "currency",
-        "Contact.Loan_Purpose__c": "picklist", "Contact.Loan_period__c": "double",
-        "Contact.Interest_Period__c": "picklist", "Contact.Loan_amount__c": "currency",
-        "Contact.Description": "textarea", "Contact.Date_of_signature__c": "date",
-        "Contact.AccountId": "reference", "Contact.Bank__c": "picklist",
-        "Contact.Department": "string",
-        "Opportunity.Hitel_sszeg__c": "currency", "Opportunity.Hitelc_l__c": "picklist",
-        "Opportunity.Term_k__c": "picklist", "Opportunity.StageName": "picklist",
-        "Opportunity.Amount": "currency", "Opportunity.CloseDate": "date",
-        "Opportunity.Name": "string",
-        "Lead.Estimated__c": "currency", "Lead.Ingatlan_alapterulet__c": "double",
-        "Lead.Ingatlan_irsz__c": "string", "Lead.Ingatlan_telepules__c": "string",
-        "Lead.Ingatlan_kozterulet_neve__c": "string", "Lead.Ingatlan_hazszam__c": "string",
-        "Lead.Ingtalan_hazszam__c": "string",
-        "Lead.Ingatlan_jellege__c": "picklist", "Lead.Ingatlan_megjegyzes__c": "string",
-        "Lead.Purchase_price__c": "currency",
-    }
-
     def canonical_fields(self) -> list[dict]:
-        return [
-            {"path": path, "label": label, "sf_type": self.SF_FIELD_TYPES.get(path, "string")}
-            for path, label in sorted(CANONICAL_FIELDS.items())
-        ]
+        """Registry entries with type/label/path metadata (no legacy paths).
+
+        Cutover Task 4: the full concrete expansion of the shared Genie
+        registry (thousands of indexed participant/property/income/
+        existing_loan paths) in deterministic registry order. The static
+        SF_FIELD_TYPES table is deleted — ``type`` is the registry's own
+        scalar type (string|integer|number|boolean|date|money).
+
+        Review fix 4: the registry expansion is immutable, so the payload is
+        built ONCE (module-level cache) and the same list object is served
+        on every request — callers must treat it as read-only.
+        """
+        return _canonical_fields_payload()
+
+
+    # ------------------------------------------------------------------
+    # Registry validation (consistent with src/canonical parser)
+    # ------------------------------------------------------------------
+    def validate_mapping_document(self, mapping: dict) -> None:
+        """Validate every canonical reference and fragment role in a document.
+
+        Raises:
+            InvalidCanonicalFieldError: a canonical value is not a
+                registry-approved Genie path (legacy Salesforce name,
+                ``-társ`` suffix, ``#gate`` suffix, invented namespace, …).
+            InvalidFragmentError: a ``fragment`` is not year|month|day|digit:N.
+        """
+        invalid: list[str] = []
+        for value, location in _canonical_references(mapping):
+            if value is None or value == "":
+                continue
+            if not isinstance(value, str) or not canonical_registry.validate(value):
+                invalid.append(f"{location}: {value!r}")
+
+        if invalid:
+            raise InvalidCanonicalFieldError(
+                "A mapping elavult vagy ismeretlen canonical értékeket hordoz "
+                "(a pipeline kizárólag registry-approved Genie útvonalakat "
+                "fogad): " + "; ".join(invalid) + ". Futtasd a "
+                "scripts/migrate_mappings_to_genie.py --apply migrációt, vagy "
+                "javítsd a mezőket a Mapping Studio-ban."
+            )
+
+        fields = mapping.get("fields") or []
+        for index, field in enumerate(fields):
+            if isinstance(field, dict):
+                _validate_fragment_role(
+                    field.get("fragment"), f"fields[{index}].fragment"
+                )
 
     # ------------------------------------------------------------------
     # Internals
@@ -352,6 +407,32 @@ class MappingService:
         while f"char_group_{i}" in existing:
             i += 1
         return f"char_group_{i}"
+
+
+def _canonical_fields_payload() -> list[dict]:
+    """Build the canonical-fields endpoint payload once (cached).
+
+    Review fix 4: the registry expansion is immutable, so this list is built
+    on first use and shared by every request; callers must treat it (and its
+    dicts) as read-only.
+    """
+    global _CANONICAL_FIELDS_CACHE
+    if _CANONICAL_FIELDS_CACHE is None:
+        _CANONICAL_FIELDS_CACHE = [
+            {
+                "path": field["path"],
+                "label": field["label"],
+                "type": field["type"],
+                "source": field["source"],
+                "repeat": field["repeat"],
+            }
+            for field in canonical_registry.canonical_fields()
+        ]
+    return _CANONICAL_FIELDS_CACHE
+
+
+#: Immutable-after-build cache for the canonical-fields endpoint payload.
+_CANONICAL_FIELDS_CACHE: list[dict] | None = None
 
 
 class FileConflictError(Exception):

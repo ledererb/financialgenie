@@ -179,13 +179,18 @@ class TestMappingConfig:
     def test_load_mapping(self, otp_mapping):
         assert otp_mapping.bank_name == "OTP Bank"
         assert len(otp_mapping.fields) > 0
-        assert otp_mapping.approved is True
+        # Final-review fix B1: a PoC-auto generált mapping sem tekinthető
+        # jóváhagyottnak — az approved flag minden aktív mappingen false.
+        assert otp_mapping.approved is False
 
     def test_mapping_dict(self, otp_mapping):
         md = otp_mapping.mapping_dict
         assert "borrower_name" in md
-        assert md["borrower_name"] == "Contact.Name"
+        # Cutover Task 3: az aktív mapping migrált — a borrower_name a Genie
+        # canonical útvonalat hordozza (Contact.Name → participant.borrower.name).
+        assert md["borrower_name"] == "participant.borrower.name"
         assert "loan_amount" in md
+        assert md["loan_amount"] == "deal.loan_amount"
 
     def test_save_and_load_roundtrip(self, otp_mapping, tmp_path):
         save_path = tmp_path / "test_mapping.json"

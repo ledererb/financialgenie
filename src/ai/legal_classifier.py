@@ -4,14 +4,21 @@ FinancialGenie – AI + config hibrid jogi nyilatkozat klasszifikátor
 A canonical_field nélküli (leképezetlen) checkbox-okat két lépésben kezeli:
 
 1. AI kategorizáló réteg – DeepSeek V4 Flash (deepseek-v4-flash) besorolja a
-   mezőket kategóriákba (consent, data_sharing, decline, conditional, stb.) a
+   mezőket kategóriákba (consent, data_sharing, decline, stb.) a
    mező NEVE + LABEL + oldal alapján. Batch módban dolgozik (100-200 mező / hívás).
 
-2. Config réteg – a legal_defaults.json alapján kategória → true/false érték.
-   A conditional_rules a DealData.products alapján dönt.
+2. Config réteg – a legal_defaults.json (v2.0, safe declaration policy)
+   alapján kategória → érték. A v2.0 politika SEMILYEN kategóriának nem ad
+   automatikus true/false értéket: a nem role-alapú jogi választások
+   (KHR/NAV/pénznem/cselekvőképesség/felhatalmazás/személyes állapotú
+   nyilatkozatok) kézi döntésként listázódnak; consent kizárólag explicit
+   CRM consent canonical úton (mapping canonical_field) tölthető; a
+   role/signature oszlopokat a mapping points/rule-2 bejegyzései kezelik,
+   amelyeket ez a réteg sosem írhat felül (Cutover Task 5).
 
 Fallback: ha nincs DEEPSEEK_API_KEY, szabályalapú kulcsszó-illesztés
-(classify_rule_based).
+(classify_rule_based). A kategorizálás kimenete a manual listinghez
+kell (mely mezők maradnak kézi döntésre) — értéket önmagában nem ad.
 
 Ez a modul NEM módosítja a field_recognizer.py mapping pipeline-ját –
 a jogi nyilatkozat kitöltés a canonical leképezés MELLÉ jön.
@@ -187,58 +194,92 @@ class LegalClassifier:
         self,
         classified: dict[str, str],
         deal: DealData,
+        points_managed: Optional[set[str]] = None,
+        crm_consent_evidence: Optional[set[str]] = None,
     ) -> dict[str, bool]:
         """
         Kategóriák → konkrét PDF mező értékek (true/false).
 
-        A conditional_rules a DealData.products alapján dönt.
-        A manual kategóriák (product_choice, unknown) kimaradnak.
+        Cutover Task 5 safe declaration policy:
+        * ``points_managed`` mezőket (role/signature pontok tagjai) SOHA nem
+          írja felül — még explicit override sem él a pont-motor felett;
+        * ``manual`` kategóriák és ismeretlen kategóriák sosem kapnak értéket;
+        * ``crm_consent`` kategóriák kizárólag explicit CRM consent canonical
+          úton (mapping ``canonical_field``) tölthetők — a klasszifikátor
+          önmagában sosem pipál consent mezőt. Egy boolean override SEM
+          elég evidence: csak akkor él, ha a mező benne van a hívó által
+          számított ``crm_consent_evidence`` halmazban (explicit canonical
+          consent út, ami a deal adatai alapján True-ra oldódik fel) —
+          review fix 4 (stale/unsafe override lezárása);
+        * az egykori ``always``/``conditional`` automatikus defaults és
+          termékfüggő pipálások törölve: a kód ezeket is elutasítja, még ha
+          egy elavult config tartalmazná is őket.
 
         Returns:
-            {"pdf_field_name": True/False, ...}
+            {"pdf_field_name": True/False, ...} — csak explicit CRM evidence
+            által fedett, felülvizsgált override-ok kerülnek bele.
         """
         categories = self.config.get("categories", {})
         overrides = self.config.get("overrides", {}) or {}
-        rules = self.config.get("conditional_rules", []) or []
-
-        # products előkészítése (normalized halmaz a rule matching-hez)
-        products_norm = {_normalize(p) for p in (deal.products or [])}
 
         out: dict[str, bool] = {}
         for pdf_name, category in classified.items():
-            # 1. Explicit override él elsőbbséggel.
+            # 0. Points-managed mezők érinthetetlenek a jogi réteg számára.
+            if points_managed and pdf_name in points_managed:
+                logger.debug(
+                    "apply_defaults: %s points-managed — jogi réteg kihagyja",
+                    pdf_name,
+                )
+                continue
+
+            # 1. Explicit override él elsőbbséggel — KIVÉVE consent család:
+            #    ott kizárólag explicit CRM canonical evidence fedezheti.
             if pdf_name in overrides and overrides[pdf_name] is not None:
-                out[pdf_name] = bool(overrides[pdf_name])
+                cat_cfg = categories.get(category)
+                if cat_cfg and cat_cfg.get("apply_when") == "crm_consent":
+                    if crm_consent_evidence and pdf_name in crm_consent_evidence:
+                        out[pdf_name] = bool(overrides[pdf_name])
+                    else:
+                        logger.warning(
+                            "apply_defaults: %s consent kategóriájú (%s) "
+                            "override NINCS explicit CRM canonical evidence "
+                            "mögötte — elutasítva, kézi döntés",
+                            pdf_name,
+                            category,
+                        )
+                else:
+                    out[pdf_name] = bool(overrides[pdf_name])
                 continue
 
             cat = categories.get(category)
             if cat is None:
-                # Ismeretlen kategória → kimarad (emberi review).
+                # Ismeretlen kategória → sosem kap értéket (emberi review).
                 continue
 
-            apply_when = cat.get("apply_when", "always")
+            apply_when = cat.get("apply_when", "manual")
 
             if apply_when == "manual":
-                # product_choice / unknown → ember dönt.
                 continue
-            elif apply_when == "conditional":
-                value = self._resolve_conditional(
-                    category, products_norm, rules
+            if apply_when == "crm_consent":
+                # Consent kizárólag explicit canonical consent úton
+                # (mapping canonical_field) tölthető — nem innen.
+                logger.debug(
+                    "apply_defaults: %s consent (%s) — csak explicit CRM "
+                    "consent canonical úton tölthető, itt nem pipáljuk",
+                    pdf_name,
+                    category,
                 )
-                if value is None:
-                    # Nincs egyező conditional szabály → default_value ha van,
-                    # különben kimarad.
-                    default_val = cat.get("default_value")
-                    if default_val is None:
-                        continue
-                    out[pdf_name] = bool(default_val)
-                else:
-                    out[pdf_name] = value
-            else:  # always
-                default_val = cat.get("default_value")
-                if default_val is None:
-                    continue
-                out[pdf_name] = bool(default_val)
+                continue
+            # Legacy "always"/"conditional" automatikus értékek: a safe
+            # policy eltávolítja őket — elavult config esetén is kihagyjuk.
+            logger.warning(
+                "apply_defaults: %s kategória (%s) elavult apply_when=%s — "
+                "automatikus értékadás tiltva, kézi döntés",
+                pdf_name,
+                category,
+                apply_when,
+            )
+            continue
 
         return out
 
@@ -397,44 +438,82 @@ class LegalClassifier:
                     return category
         return "unknown"
 
-    def _resolve_conditional(
-        self,
-        category: str,
-        products_norm: set[str],
-        rules: list[dict],
-    ) -> Optional[bool]:
-        """
-        conditional_rules alapján eldönti egy feltételes kategória értékét.
-
-        Args:
-            category: a mező kategóriája (általában "conditional").
-            products_norm: normalized DealData.products halmaz.
-            rules: a legal_defaults.json conditional_rules listája.
-
-        Returns:
-            True/False vagy None (ha egyetlen szabály sem illeszkedik).
-        """
-        for rule in rules:
-            if rule.get("category") != category:
-                continue
-            cond = rule.get("if", {}) or {}
-            key = "products_contains"
-            if key in cond:
-                wanted = _normalize(str(cond[key]))
-                if any(wanted in p for p in products_norm):
-                    val = rule.get("default_value")
-                    return bool(val) if val is not None else None
-        return None
-
 
 # ----------------------------------------------------------------------
 # Kényelmi függvények
 # ----------------------------------------------------------------------
 
+def points_managed_fields(mapping) -> set[str]:
+    """
+    A mapping ``points`` bejegyzései által kezelt PDF mezőnevek halmaza.
+
+    Ezeket a role/signature pont-motor (rule 1..7) tölti — a jogi
+    klasszifikációs réteg sosem írhatja felül őket.
+    """
+    points = getattr(mapping, "points", None)
+    if points is None and isinstance(mapping, dict):
+        points = mapping.get("points")
+    if points is None:
+        _to_dict = getattr(mapping, "to_dict", None)
+        points = (_to_dict().get("points") if callable(_to_dict) else None) or []
+    managed: set[str] = set()
+    for p in points or []:
+        if not isinstance(p, dict):
+            continue
+        for blk in p.get("blocks", []) or []:
+            managed.update(blk.get("members", []) or [])
+    return managed
+
+
+def explicit_crm_consent_evidence(mapping, deal: DealData) -> set[str]:
+    """
+    Explicit CRM canonical evidence a consent override-okhoz (review fix 4).
+
+    A halmaz azokat a PDF mezőneveket tartalmazza, amelyek mappingje EXPLICIT
+    consent canonical utat visel (pl. ``participant.borrower.khr_consent``)
+    ÉS az út a deal adatai alapján kifejezetten True-ra oldódik fel (a
+    résztvevő ``consents`` dictjében lévő explicit igaz érték). Csak ilyen
+    evidence fedezheti egy consent kategóriájú mező boolean override-ját —
+    maga az override sosem elég (stale/unsafe override lezárása).
+
+    A feloldás a ``CanonicalResolver``-rel történik, így a registry
+    role/index-forrás szimbolikája (``consents.khr`` stb.) egységes a
+    pipeline-nal.
+    """
+    from src.canonical.registry import canonical_registry
+    from src.canonical.resolver import CanonicalResolver, ResolutionContext
+
+    resolver = CanonicalResolver()
+    context = ResolutionContext()
+    evidence: set[str] = set()
+    for f in getattr(mapping, "fields", []) or []:
+        canonical = getattr(f, "canonical_field", None)
+        if not canonical:
+            continue
+        try:
+            field_def = canonical_registry.get(canonical)
+        except (KeyError, ValueError):
+            # KeyError: nem regisztrált útvonal; ValueError: malformált útvonal
+            # (parse_path hiba a registry.get-ben) — egyik sem ad evidence-t.
+            continue
+        if not (field_def.source or "").startswith("consents."):
+            continue
+        try:
+            value = resolver.resolve(deal, canonical, context)
+        except (ValueError, KeyError):
+            continue
+        if value is True:  # kifejezetett igaz — semmi más nem elfogadható
+            evidence.add(f.pdf_field_name)
+    return evidence
+
+
 def extract_unmapped_checkboxes(mapping) -> list[dict]:
     """
     Kinyeri a canonical_field, fill_rule és checkbox_group nélküli
     checkbox mezőket egy MappingConfig-ból.
+
+    Cutover Task 5: a points-managed mezők (role/signature pontok tagjai)
+    kimaradnak — azokat a pont-motor kezeli, nem a jogi klasszifikátor.
 
     Args:
         mapping: src.ai.field_recognizer.MappingConfig
@@ -442,6 +521,7 @@ def extract_unmapped_checkboxes(mapping) -> list[dict]:
     Returns:
         [{"pdf_field_name", "label", "page_number"}, ...]
     """
+    managed = points_managed_fields(mapping)
     out = []
     for f in getattr(mapping, "fields", []) or []:
         if f.canonical_field:
@@ -449,6 +529,8 @@ def extract_unmapped_checkboxes(mapping) -> list[dict]:
         if getattr(f, "fill_rule", None) or getattr(f, "checkbox_group", None):
             continue
         if str(getattr(f, "field_type", "")).lower().split(".")[-1] != "checkbox":
+            continue
+        if f.pdf_field_name in managed:
             continue
         out.append({
             "pdf_field_name": f.pdf_field_name,

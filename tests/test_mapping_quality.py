@@ -17,15 +17,18 @@ import pytest
 
 # ── Critical fields that the heuristic MUST recognize correctly ────────────
 #: (pdf_field_name, expected_canonical_field)
+#: Cutover Task 4: a felismerő kizárólag registry-approved Genie útvonalakat
+#: ad (a régi Salesforce-neves elvárástok a canonical_migration_map audited
+#: fordításával komponálódtak át).
 CRITICAL_FIELDS = [
-    ("SZA_IG_név", "Contact.Name"),
-    ("SZA_IG_szül_név", "Contact.Szuletesi_nev__c"),
-    ("SZA_IG_szül_hely", "Contact.Place_of_Birth__c"),
-    ("SZA_IG_szül_év", "Contact.Birthdate"),
-    ("SZA_IG_szül_hónap", "Contact.Birthdate"),
-    ("SZA_IG_szül_nap", "Contact.Birthdate"),
-    ("SZA_IG_anyja_neve", "Contact.Mother_s_Name__c"),
-    ("SZA_IG_adóazonosító", "Contact.Tax_ID__c"),
+    ("SZA_IG_név", "participant.borrower.name"),
+    ("SZA_IG_szül_név", "participant.borrower.birth_name"),
+    ("SZA_IG_szül_hely", "participant.borrower.birth_place"),
+    ("SZA_IG_szül_év", "participant.borrower.birth_date"),
+    ("SZA_IG_szül_hónap", "participant.borrower.birth_date"),
+    ("SZA_IG_szül_nap", "participant.borrower.birth_date"),
+    ("SZA_IG_anyja_neve", "participant.borrower.mother_name"),
+    ("SZA_IG_adóazonosító", "participant.borrower.tax_id"),
 ]
 
 #: Date fragments: (pdf_field_name, expected_fragment role)
@@ -145,19 +148,18 @@ class TestGoldenMappingStability:
     def test_high_fields_match_golden(self, heuristic_recognizer, test_pdf, golden_mapping):
         """Heuristic HIGH fields should agree with the golden mapping's canonicals.
 
-        The AI golden mapping is richer, but for the fields the heuristic
-        DOES recognize, the canonical assignment should match >=90% of the time.
+        Cutover Task 4: a felismerő és a (migrált) golden mapping is egyaránt
+        Genie canonical útvonalakat hordoz — az összehasonlás közvetlen
+        (nincs többé legacy→Genie fordítási lépés).
         """
-        heur_mapping = heuristic_recognizer.recognize(test_pdf, mode="acroform")
-
-        # Build golden lookup: pdf_field_name -> canonical_field
         from src.ai.field_recognizer import _normalize_key
+
+        heur_mapping = heuristic_recognizer.recognize(test_pdf, mode="acroform")
 
         golden_by_norm = {}
         for f in golden_mapping.fields:
             golden_by_norm[_normalize_key(f.pdf_field_name)] = f.canonical_field
 
-        # Compare heuristic HIGH fields
         matches = 0
         comparable = 0
         mismatches = []
@@ -168,13 +170,14 @@ class TestGoldenMappingStability:
             norm = _normalize_key(f.pdf_field_name)
             golden_canonical = golden_by_norm.get(norm)
             if golden_canonical is None:
-                continue  # Heuristic found something golden doesn't have
+                continue
             comparable += 1
             if f.canonical_field == golden_canonical:
                 matches += 1
             else:
                 mismatches.append(
-                    f"  {f.pdf_field_name}: heuristic={f.canonical_field} vs golden={golden_canonical}"
+                    f"  {f.pdf_field_name}: heuristic={f.canonical_field}"
+                    f" vs golden={golden_canonical}"
                 )
 
         assert comparable >= 15, (
@@ -182,12 +185,11 @@ class TestGoldenMappingStability:
         )
         match_rate = matches / comparable if comparable > 0 else 0
         # The AI golden mapping refines the heuristic — some canonical
-        # assignments differ (e.g. Birthdate vs Birthdate_year for fragments,
-        # MailingCity vs OtherCity for addresses). A 50% match rate is a
-        # reasonable floor: the critical fields (Name, Tax_ID, etc.) should
-        # agree, but the AI legitimately overrides some heuristic choices.
+        # assignments differ legitimately (fragment targets, mailing vs
+        # permanent address). A 50% semantic match rate is a reasonable
+        # floor: the critical fields (Name, Tax_ID, …) must agree.
         assert match_rate >= 0.5, (
-            f"Heuristic-golden match rate {match_rate:.0%} (< 50%). "
+            f"Heuristic-golden semantic match rate {match_rate:.0%} (< 50%). "
             f"This may indicate a regression in OTP_EXACT_MAP. "
             f"Mismatches:\n" + "\n".join(mismatches[:10])
         )

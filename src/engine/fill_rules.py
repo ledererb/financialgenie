@@ -22,7 +22,10 @@ Szabályok:
   7 — többblokkos, blokkonként eltérő pipázási minta
 """
 from dataclasses import dataclass
+import logging
 from typing import Callable, Optional
+
+logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -100,6 +103,39 @@ def _all_members(point: "Point") -> list:
 # ──────────────────────────────────────────────────────────────────────────
 
 
+def _warn_plain_indexed_coexistence(point_id: str, role_to_ticks: dict) -> None:
+    """Review fix 4b — figyelmeztetés sima + indexelt szerepkulcs keverésére.
+
+    ``adóstárs`` ÉS ``adóstárs_1``/``adóstárs_2`` egyidejű jelenléte
+    kétértelmű címzés: az indexelt bejegyzések elsőbbséget élveznek, a sima
+    kulcs ilyenkor csak az index nélküli előfordulásokra esik vissza. A
+    mapping szerkesztőjének tisztáznia kell, melyik címzést szánja.
+    """
+    import re
+
+    indexed_re = re.compile(r"^(?P<role>.+)_(?P<idx>\d+)$")
+    flags: dict[str, dict[str, bool]] = {}
+    for key in role_to_ticks:
+        match = indexed_re.fullmatch(key or "")
+        if match:
+            entry = flags.setdefault(match.group("role"), {"plain": False, "indexed": False})
+            entry["indexed"] = True
+        else:
+            entry = flags.setdefault(key or "", {"plain": False, "indexed": False})
+            entry["plain"] = True
+    for role, entry in sorted(flags.items()):
+        if entry["plain"] and entry["indexed"]:
+            indexed_keys = sorted(
+                k for k in role_to_ticks if indexed_re.fullmatch(k or "") and k.startswith(f"{role}_")
+            )
+            logger.warning(
+                "rule 2 (%s): a '%s' sima szerepkulcs mellett indexelt "
+                "bejegyzések (%s) is szerepelnek — az indexelt alak él; "
+                "tisztítsd a mapping role_to_ticks tábláját.",
+                point_id, role, ", ".join(indexed_keys),
+            )
+
+
 @rule(1)  # default, feltétel nélküli teljes körű pipázás
 def _r1_check_all(point: "Point", ctx: RuleContext) -> PointResult:
     value = "igen" if ctx.active_participants else "nem"
@@ -107,12 +143,34 @@ def _r1_check_all(point: "Point", ctx: RuleContext) -> PointResult:
     return PointResult(point.point_id, ticks)
 
 
-@rule(2)  # szerepkörös, többszörös pipázás
+@rule(2)  # szerepkörös, többszörös pipázás (indexelt szerep-címzéssel)
 def _r2_role_multicheck(point: "Point", ctx: RuleContext) -> PointResult:
-    role_to_ticks = point.params.get("role_to_ticks", {})  # {role_value: [pdf_field...]}
+    """Indexed role addressing (Cutover Task 5).
+
+    ``role_to_ticks`` kulcsai lehetnek indexeltek — ``adóstárs_1``,
+    ``adóstárs_2``, ``zálogkötelezett_1``, ``haszonélvező_2`` —, ahol az
+    index az adott szerep N-edik (1-based) aktív résztvevőjét jelöli. Az
+    indexelt kulcs pontosan a saját oszlopát pipálja; sima szerepkulcs
+    (pl. ``adós`` vagy legacy ``adóstárs``) minden azonos szerepű résztvevőre
+    továbbra is érvényes (visszamenő kompatibilitás), de indexelt kulcs
+    jelenlétében az él elsőbbséggel.
+
+    Review fix 4b: ha ugyanazon szerephez SIMA ÉS INDEXELT kulcs is szerepel,
+    a motor futásidejű WARNINGOT logol (kétértelmű címzés — az indexelt
+    bejegyzések elsőbbséget élveznek, a sima kulcs ilyenkor valószínűleg
+    elavult/örökölt maradvány, amit a mappingből törölni kell).
+    """
+    role_to_ticks = point.params.get("role_to_ticks", {})  # {role[_idx]: [pdf_field...]}
+    _warn_plain_indexed_coexistence(point.point_id, role_to_ticks)
     ticks = {m: "nem" for m in _all_members(point)}
+    occurrence: dict[str, int] = {}
     for p in ctx.active_participants:
-        for member in role_to_ticks.get(ctx.role(p), []):
+        role = ctx.role(p)
+        occurrence[role] = occurrence.get(role, 0) + 1
+        members = role_to_ticks.get(f"{role}_{occurrence[role]}")
+        if members is None:
+            members = role_to_ticks.get(role)
+        for member in members or []:
             ticks[member] = "igen"
     return PointResult(point.point_id, ticks)
 

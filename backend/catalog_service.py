@@ -30,7 +30,9 @@ PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 log = logging.getLogger("catalog_service")
 
 #: Path to the SQLite catalog database.
-DB_PATH: Path = PROJECT_ROOT / "catalog" / "catalog.db"
+DB_PATH: Path = Path(
+    os.getenv("CATALOG_DB_PATH", str(PROJECT_ROOT / "catalog" / "catalog.db"))
+)
 
 
 def _slugify(name: str) -> str:

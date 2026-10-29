@@ -170,11 +170,11 @@ class TestAISmoke:
   <div class="stat-card"><div class="num">{len(high)}</div><div>HIGH</div></div>
   <div class="stat-card"><div class="num" style="color:#f59e0b">{len(medium)}</div><div>MEDIUM</div></div>
   <div class="stat-card"><div class="num" style="color:#ef4444">{len(low)}</div><div>LOW</div></div>
-  <div class="stat-card"><div class="num" style="color:#ef4444">{len(invalid)}</div><div>Ismeretlen SF</div></div>
+  <div class="stat-card"><div class="num" style="color:#ef4444">{len(invalid)}</div><div>Ismeretlen canonical</div></div>
 </div>
 
 <table>
-<thead><tr><th>Oldal</th><th>PDF mező</th><th>Típus</th><th>Salesforce mező</th><th>Confidence</th><th>Fragment</th></tr></thead>
+<thead><tr><th>Oldal</th><th>PDF mező</th><th>Típus</th><th>Canonical mező (Genie)</th><th>Confidence</th><th>Fragment</th></tr></thead>
 <tbody>{''.join(rows)}
 </tbody>
 </table>
@@ -186,7 +186,8 @@ class TestAISmoke:
         report_path.write_text(report_html, encoding="utf-8")
         print(f"\n  Report saved: {report_path}")
 
-        # Assert no invalid canonicals (all mapped fields should be valid SF fields)
+        # Assert no invalid canonicals (all mapped fields must be registry-approved
+# Genie paths — Cutover Task 4)
         assert len(invalid) == 0, (
             f"{len(invalid)} fields have invalid canonical_field: "
             f"{[f.canonical_field for f in invalid[:5]]}"

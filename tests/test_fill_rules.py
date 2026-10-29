@@ -504,16 +504,56 @@ class TestPrepareFieldDataIntegration:
             FieldType, MappingConfidence, MappingConfig, RecognizedField,
         )
 
+        # Cutover Task 3: Contact.Name → participant.borrower.name (a legacy
+        # SF-név mappingeket a pipeline már elutasítja).
         mapping = MappingConfig(
             bank_name="OTP", form_name="t", form_type="acroform",
             fields=[RecognizedField("borrower_name", "n", FieldType.TEXT,
-                                    "Contact.Name", MappingConfidence.HIGH, 1)],
+                                    "participant.borrower.name", MappingConfidence.HIGH, 1)],
         )
         deal = _integration_deal()
         fd = pipeline._prepare_field_data(deal, mapping)
         # canonical field still resolved; no point keys present
         assert fd.get("borrower_name") == "Teszt Anna"
         assert "p1_a" not in fd
+
+    def test_missing_loan_term_produces_blank_pdf_fields_without_default_text(self, pipeline):
+        """Task 5: PDF-bound paths never print a fabricated 240-month term."""
+        from src.ai.field_recognizer import (
+            FieldType, MappingConfidence, MappingConfig, RecognizedField,
+        )
+        from src.models.canonical_model import LoanDetails
+
+        deal = _integration_deal()
+        deal.loan = LoanDetails(
+            loan_amount=deal.loan.loan_amount,
+            loan_purpose=deal.loan.loan_purpose,
+            product_name=deal.loan.product_name,
+        )
+        assert deal.loan.loan_term_months is None
+        # Cutover Task 3: a futamidő-mezők migrált canonical párjai
+        # (Contact.Loan_period__c → deal.loan_term_months,
+        #  Contact.Term_in_year_c(__c) → deal.loan_term_years).
+        mapping = MappingConfig(
+            bank_name="OTP", form_name="t", form_type="acroform",
+            fields=[
+                RecognizedField("loan_term_months", "n1", FieldType.TEXT,
+                                "deal.loan_term_months", MappingConfidence.HIGH, 1),
+                RecognizedField("loan_term_years", "n2", FieldType.TEXT,
+                                "deal.loan_term_years", MappingConfidence.HIGH, 2),
+                RecognizedField("loan_term_years2", "n3", FieldType.TEXT,
+                                "deal.loan_term_years", MappingConfidence.HIGH, 3),
+            ],
+        )
+
+        fd = pipeline._prepare_field_data(deal, mapping)
+
+        # Blank output: a missing term never fills the PDF field, and no
+        # fabricated "240"/"20" default text appears anywhere.
+        assert fd.get("n1", "") == ""
+        assert fd.get("n2", "") == ""
+        assert fd.get("n3", "") == ""
+        assert all("240" not in str(value) for value in fd.values())
 
     def test_unknown_rule_type_is_skipped(self, pipeline, caplog):
         """An unknown rule_type logs a warning and is skipped, not crashed."""

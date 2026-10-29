@@ -1,14 +1,34 @@
 """
 Shared pytest fixtures for the FinancialGenie test suite.
 
-No env-vars are stripped here. Tests that trigger real Anthropic
-(Claude) API calls must opt-in via the ``@pytest.mark.live_api`` marker,
-which is excluded from the default run via ``pytest.ini``.
+Database paths and the signing secret are redirected before test module
+collection, including modules that import backend singletons at module scope.
+Tests that trigger real Anthropic (Claude) API calls must opt-in via the
+``@pytest.mark.live_api`` marker, which is excluded by ``pytest.ini``.
 """
+import atexit
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
+
+# This executes while pytest loads the initial conftest, before importing any
+# test module. Override even inherited values so an exported production path or
+# secret can never be reused by the test suite.
+_TEST_STATE = tempfile.TemporaryDirectory(prefix="financialgenie-pytest-")
+_TEST_STATE_PATH = Path(_TEST_STATE.name)
+os.environ["CATALOG_DB_PATH"] = str(_TEST_STATE_PATH / "catalog.db")
+os.environ["AUTH_DB_PATH"] = str(_TEST_STATE_PATH / "auth.db")
+os.environ["AUTH_SECRET"] = "financialgenie-pytest-session-secret-0123456789abcdef"
+atexit.register(_TEST_STATE.cleanup)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Remove import-time databases and sidecar files at the session boundary."""
+    _TEST_STATE.cleanup()
+
 
 # Ensure project root is on sys.path so src.* imports resolve.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent

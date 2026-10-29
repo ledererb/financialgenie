@@ -48,26 +48,51 @@ RENDER_SCALE: float = RENDER_DPI / 72.0
 
 
 def resolve_pdf(pdf_id: str) -> Path:
+    """Resolve a regular PDF file contained by one of the approved roots.
+
+    Relative, absolute, legacy absolute, and root-relative identifiers are
+    supported, but every candidate is resolved before its containment and file
+    type are checked. Escapes raise PermissionError; unresolved paths inside an
+    approved root raise FileNotFoundError.
     """
-    Resolve a URL-decoded pdf_id (path relative to project root) to an absolute
-    Path. Raises FileNotFoundError if the file does not exist.
-    """
-    p = PROJECT_ROOT / pdf_id
-    if p.is_file():
-        return p
-    # Handle legacy absolute paths (e.g. /Users/.../documents/otp_bank/split/fedlap.pdf)
     norm_id = pdf_id.replace("\\", "/")
+    if not norm_id:
+        raise FileNotFoundError("PDF identifier is required")
+
+    raw = Path(norm_id)
+    resolved_roots = [root.resolve() for root in PDF_ROOTS]
+
+    def is_contained(path: Path) -> bool:
+        return any(path.is_relative_to(root) for root in resolved_roots)
+
+    # Handle legacy absolute paths (e.g. /Users/.../documents/otp_bank/split/fedlap.pdf)
+    legacy_candidates: list[Path] = []
     for marker in ("documents/", "samples/", "otp/", "OTP/"):
         if marker in norm_id:
             rel_part = marker + norm_id.split(marker, 1)[1]
-            cand = PROJECT_ROOT / rel_part
-            if cand.is_file():
-                return cand
-    # Some callers may pass the path relative to otp/ or samples/.
-    for root in PDF_ROOTS:
-        cand = root / pdf_id.lstrip("/")
-        if cand.is_file():
-            return cand
+            legacy_candidates.append(PROJECT_ROOT / rel_part)
+
+    primary = raw if raw.is_absolute() else PROJECT_ROOT / raw
+    if raw.is_absolute():
+        candidates = [*legacy_candidates, primary]
+    else:
+        candidates = [primary, *legacy_candidates]
+        # Some callers may pass the path relative to otp/, samples/, or documents/.
+        candidates.extend(root / raw for root in PDF_ROOTS)
+
+    explicit_escape = (
+        raw.is_absolute() or ".." in raw.parts
+    ) and not is_contained(primary.resolve())
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if is_contained(resolved):
+            if resolved.is_file():
+                return resolved
+        elif resolved.exists():
+            raise PermissionError(f"PDF access outside approved roots: {pdf_id}")
+
+    if explicit_escape:
+        raise PermissionError(f"PDF access outside approved roots: {pdf_id}")
     raise FileNotFoundError(f"PDF not found in repository: {pdf_id}")
 
 

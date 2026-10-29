@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { listDeals, getAuthToken } from "@/api/client";
+import { downloadFile, listDeals, getAuthToken } from "@/api/client";
 import DealCombobox from "./DealCombobox";
 
 interface Deal {
   Id: string;
-  Name?: string;
-  StageName?: string;
-  CloseDate?: string;
-  AccountName?: string;
+  Name?: string | null;
+  StageName?: string | null;
+  CloseDate?: string | null;
+  AccountName?: string | null;
 }
 
 interface FillResult {
@@ -103,12 +103,17 @@ export default function FillPreviewStep({ pdfId, onBack, onDone }: FillPreviewSt
     }
   }, [pdfId, selectedDealId]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!fillResult) return;
-    const link = document.createElement("a");
-    link.href = fillResult.filled_pdf_url;
-    link.download = `filled_${selectedDealId}.pdf`;
-    link.click();
+    setFillError(null);
+    try {
+      await downloadFile(
+        fillResult.filled_pdf_url,
+        `filled_${selectedDealId}.pdf`,
+      );
+    } catch (e) {
+      setFillError((e as Error).message || "PDF letöltése sikertelen.");
+    }
   };
 
   // Auto-fill when a deal is first loaded (dummy data flows automatically)

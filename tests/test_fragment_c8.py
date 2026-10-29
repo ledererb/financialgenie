@@ -19,11 +19,45 @@ from pathlib import Path
 from src.main import _apply_fragment, FormFillerPipeline
 from src.integrations.salesforce_client import SalesforceClient
 from src.normalizer.data_normalizer import DataNormalizer
-from src.ai.field_recognizer import FieldRecognizer, MappingConfig, RecognizedField, FieldType, MappingConfidence
+from src.ai.field_recognizer import (
+    FieldRecognizer,
+    MappingConfig,
+    RecognizedField,
+    FieldType,
+    MappingConfidence,
+    _postprocess_recognized_fields,
+)
 from src.models.canonical_model import DealData, ParticipantRole, Participant, Address, LoanDetails
 
 
 PROJECT_ROOT = Path(__file__).parent.parent
+
+
+def _date_field(name, label):
+    # Cutover Task 4: registry-approved Genie canonical a dátum-fragment
+    # inferencia teszteléséhez (Contact.Date_of_signature__c →
+    # participant.borrower.date_of_signature).
+    return RecognizedField(
+        pdf_field_name=name,
+        label=label,
+        field_type=FieldType.DATE,
+        canonical_field="participant.borrower.date_of_signature",
+        confidence=MappingConfidence.MEDIUM,
+        page_number=1,
+    )
+
+
+def test_recognizer_emits_string_date_fragments():
+    fields = [
+        _date_field("ev", "év"),
+        _date_field("ho", "hónap"),
+        _date_field("nap", "nap"),
+    ]
+
+    _postprocess_recognized_fields(fields)
+
+    assert [f.fragment for f in fields] == ["year", "month", "day"]
+    assert all(isinstance(f.fragment, str) for f in fields)
 
 
 # ---------------------------------------------------------------------------
@@ -100,10 +134,11 @@ class TestHeuristicMapperFragments:
         mapping = recognizer._heuristic_map_fields(fields_in, Path("x.pdf"), "acroform")
         by_name = {f.pdf_field_name: f for f in mapping.fields}
 
-        # Each box maps to the SAME parent canonical (Contact.Birthdate — the
-        # full-date canonical the pipeline actually produces) but carries a
-        # distinct fragment role — they must NOT collapse to a single full date.
-        assert by_name["SZA_IG_szül_év"].canonical_field == "Contact.Birthdate"
+        # Each box maps to the SAME parent canonical (Cutover Task 4:
+        # participant.borrower.birth_date — the full-date canonical the
+        # pipeline actually produces) but carries a distinct fragment role —
+        # they must NOT collapse to a single full date.
+        assert by_name["SZA_IG_szül_év"].canonical_field == "participant.borrower.birth_date"
         assert by_name["SZA_IG_szül_év"].fragment == "year"
         assert by_name["SZA_IG_szül_hónap"].fragment == "month"
         assert by_name["SZA_IG_szül_nap"].fragment == "day"
@@ -166,13 +201,17 @@ def _birth_date_deal():
 
 
 def _birth_date_mapping():
-    """Three year/month/day boxes all pointing at Contact.Birthdate."""
+    """Three year/month/day boxes all pointing at the canonical birth date.
+
+    Cutover Task 3: a mezők a migrált canonical útvonalat használják
+    (Contact.Birthdate → participant.borrower.birth_date) — a legacy SF-név
+    mappingeket a pipeline már elutasítja."""
     return MappingConfig(
         bank_name="OTP", form_name="t", form_type="acroform",
         fields=[
-            RecognizedField("SZA_IG_szül_év",   "Év",   FieldType.DATE, "Contact.Birthdate", MappingConfidence.HIGH, 1, fragment="year"),
-            RecognizedField("SZA_IG_szül_hónap","Hónap", FieldType.DATE, "Contact.Birthdate", MappingConfidence.HIGH, 1, fragment="month"),
-            RecognizedField("SZA_IG_szül_nap",  "Nap",   FieldType.DATE, "Contact.Birthdate", MappingConfidence.HIGH, 1, fragment="day"),
+            RecognizedField("SZA_IG_szül_év",   "Év",   FieldType.DATE, "participant.borrower.birth_date", MappingConfidence.HIGH, 1, fragment="year"),
+            RecognizedField("SZA_IG_szül_hónap","Hónap", FieldType.DATE, "participant.borrower.birth_date", MappingConfidence.HIGH, 1, fragment="month"),
+            RecognizedField("SZA_IG_szül_nap",  "Nap",   FieldType.DATE, "participant.borrower.birth_date", MappingConfidence.HIGH, 1, fragment="day"),
         ],
     )
 
@@ -206,7 +245,8 @@ class TestBirthDateFragmentsAreSplit:
         mapping = MappingConfig(
             bank_name="OTP", form_name="t", form_type="acroform",
             fields=[
-                RecognizedField(f"irsz_d{i}", f"Digit {i}", FieldType.TEXT, "Contact.ZIP__c",
+                # Cutover Task 3: Contact.ZIP__c → participant.borrower.address.zip_code
+                RecognizedField(f"irsz_d{i}", f"Digit {i}", FieldType.TEXT, "participant.borrower.address.zip_code",
                                 MappingConfidence.HIGH, 1, fragment=f"digit:{i}")
                 for i in (1, 2, 3, 4)
             ],

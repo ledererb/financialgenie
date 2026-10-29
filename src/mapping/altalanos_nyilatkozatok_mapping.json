@@ -4,13 +4,13 @@
   "form_type": "acroform",
   "approved": false,
   "approved_by": null,
-  "notes": "Összefésült mapping: heurisztikus + AI (9 leképezve).",
+  "notes": "Cutover Task 5 determinisztikus rebuild: a widget típusok és a felülvizsgált role/signature pontok a valódi AcroFormból származnak (207 checkbox + 5 text). A nem-role jogi választások (KHR/NAV/pénznem/cselekvőképesség/felhatalmazás/személyes állapotú nyilatkozatok) canonical-nélküliek és kézi döntések — kategória-alapú automatikus pipálás nincs. Újragenerálás: scripts/rebuild_altalanos_nyilatkozatok_mapping.py --apply.",
   "page_structure": {},
   "fields": [
     {
       "pdf_field_name": "A_NY_2_kölcsönigénylő",
       "label": "A Ny 2 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -18,12 +18,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2_társigénylő_1",
       "label": "A Ny 2 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -31,12 +32,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2_társigénylő_2",
       "label": "A Ny 2 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -44,12 +46,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2_társigénylő_3",
       "label": "A Ny 2 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -57,12 +60,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2_fedezet_tulaj_1",
       "label": "A Ny 2 Fedezet Tulaj 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -70,12 +74,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2_fedezet_tulaj_2",
       "label": "A Ny 2 Fedezet Tulaj 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 1,
@@ -83,12 +88,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_kölcsönigénylő",
       "label": "A Ny 3 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -96,12 +102,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_társigénylő_1",
       "label": "A Ny 3 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -109,12 +116,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_társigénylő_3",
       "label": "A Ny 3 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -122,12 +130,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_társigénylő_3-2",
       "label": "A Ny 3 Társigénylő 3-2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -135,12 +144,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_fedezet_tulaj_1",
       "label": "A Ny 3 Fedezet Tulaj 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -148,12 +158,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_fedezet_tulaj_2",
       "label": "A Ny 3 Fedezet Tulaj 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -161,12 +172,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_fedezet_haszonélvező_1",
       "label": "A Ny 3 Fedezet Haszonélvező 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -174,12 +186,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_3_fedezet_haszonélvező_2",
       "label": "A Ny 3 Fedezet Haszonélvező 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -187,12 +200,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_kölcsönigénylő",
       "label": "A Ny 4 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -200,12 +214,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_társigénylő_1",
       "label": "A Ny 4 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -213,12 +228,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_társigénylő_2",
       "label": "A Ny 4 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -226,12 +242,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_társigénylő_3",
       "label": "A Ny 4 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -239,12 +256,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_fedezet_tulaj_1",
       "label": "A Ny 4 Fedezet Tulaj 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -252,12 +270,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_fedezet_tulaj_2",
       "label": "A Ny 4 Fedezet Tulaj 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -265,12 +284,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_fedezet_haszonélvező_1",
       "label": "A Ny 4 Fedezet Haszonélvező 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -278,12 +298,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_4_fedezet_haszonélvező_2",
       "label": "A Ny 4 Fedezet Haszonélvező 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -291,12 +312,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_kölcsönigénylő",
       "label": "A Ny 5 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -304,12 +326,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_társigénylő_1",
       "label": "A Ny 5 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -317,12 +340,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_társigénylő_2",
       "label": "A Ny 5 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -330,12 +354,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_társigénylő_3",
       "label": "A Ny 5 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -343,12 +368,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_fedezet_tulaj_1",
       "label": "A Ny 5 Fedezet Tulaj 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -356,12 +382,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_fedezet_tulaj_2",
       "label": "A Ny 5 Fedezet Tulaj 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -369,12 +396,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_fedezet_haszonélvező_1",
       "label": "A Ny 5 Fedezet Haszonélvező 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -382,12 +410,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5_fedezet_haszonélvező_1-2",
       "label": "A Ny 5 Fedezet Haszonélvező 1-2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -395,12 +424,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_kölcsönigénylő",
       "label": "A Ny 5-2 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -408,12 +438,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_társigénylő_1",
       "label": "A Ny 5-2 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -421,12 +452,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_társigénylő_2",
       "label": "A Ny 5-2 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -434,12 +466,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_társigénylő_3",
       "label": "A Ny 5-2 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 2,
@@ -447,12 +480,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Kölcsönigénylő___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Kölcsönigénylő   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -460,12 +494,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Kölcsönigénylő___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Kölcsönigénylő   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -473,12 +508,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_1___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -486,12 +522,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_1___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -499,12 +536,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_2___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -512,12 +550,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_2___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -525,12 +564,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_3___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -538,12 +578,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Társigénylő_3___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Társigénylő 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -551,12 +592,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_tulajdonosa_1___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Tulajdonosa 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -564,12 +606,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_tulajdonosa_1___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Tulajdonosa 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -577,12 +620,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_tulajdonosa_2___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Tulajdonosa 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -590,12 +634,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_tulajdonosa_2___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Tulajdonosa 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -603,12 +648,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_haszonélvezője_1___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Haszonélvezője 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -616,12 +662,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_haszonélvezője_1___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Haszonélvezője 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -629,12 +676,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_haszonélvezője_2___Yes",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Haszonélvezője 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -642,12 +690,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképesség_Ptk_Fedezet_haszonélvezője_2___no",
       "label": "A Ny Nyil Cselekvőképesség Ptk Fedezet Haszonélvezője 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -655,12 +704,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Kölcsönigénylő___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Kölcsönigénylő   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -668,12 +718,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Kölcsönigénylő___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Kölcsönigénylő   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -681,12 +732,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_1___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -694,12 +746,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_1___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -707,12 +760,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_2___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -720,12 +774,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_2___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -733,12 +788,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_3___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -746,12 +802,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Társigénylő_3___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Társigénylő 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -759,12 +816,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_tulajdonosa_1___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Tulajdonosa 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -772,12 +830,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_tulajdonosa_1___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Tulajdonosa 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -785,12 +844,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_tulajdonosa_2___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Tulajdonosa 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -798,12 +858,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_tulajdonosa_2___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Tulajdonosa 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -811,12 +872,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_haszonélvezője_1___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Haszonélvezője 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -824,12 +886,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_haszonélvezője_1___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Haszonélvezője 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -837,12 +900,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_haszonélvezője_2___Yes",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Haszonélvezője 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -850,12 +914,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Korlátozott_cselekvőképességű_Fedezet_haszonélvezője_2___no",
       "label": "A Ny Nyil Korlátozott Cselekvőképességű Fedezet Haszonélvezője 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -863,12 +928,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Kölcsönigénylő___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Kölcsönigénylő   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -876,12 +942,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Kölcsönigénylő___no",
       "label": "A Ny Nyil Cselekvőképtelen Kölcsönigénylő   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -889,12 +956,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_1___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -902,12 +970,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_1___no",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -915,12 +984,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_2___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -928,12 +998,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_2___no",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -941,12 +1012,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_3___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -954,12 +1026,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Társigénylő_3___no",
       "label": "A Ny Nyil Cselekvőképtelen Társigénylő 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -967,12 +1040,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_tulajdonosa_1___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Tulajdonosa 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -980,12 +1054,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_tulajdonosa_1___no",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Tulajdonosa 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -993,12 +1068,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_tulajdonosa_2___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Tulajdonosa 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1006,12 +1082,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_tulajdonosa_2___no",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Tulajdonosa 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1019,12 +1096,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_haszonélvezője_1___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Haszonélvezője 1   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1032,12 +1110,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_haszonélvezője_1___no",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Haszonélvezője 1   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1045,12 +1124,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_haszonélvezője_2___Yes",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Haszonélvezője 2   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1058,12 +1138,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Nyil_Cselekvőképtelen_Fedezet_haszonélvezője_2___no",
       "label": "A Ny Nyil Cselekvőképtelen Fedezet Haszonélvezője 2   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1071,12 +1152,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_kölcsön___Yes",
       "label": "A Ny 6 1 Kölcsön   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1084,12 +1166,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_kölcsön___no",
       "label": "A Ny 6 1 Kölcsön   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1097,12 +1180,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_1___Yes",
       "label": "A Ny 6 1 Társ 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1110,12 +1194,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_1___no",
       "label": "A Ny 6 1 Társ 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1123,12 +1208,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_2___Yes",
       "label": "A Ny 6 1 Társ 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1136,12 +1222,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_2___no",
       "label": "A Ny 6 1 Társ 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1149,12 +1236,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_3___Yes",
       "label": "A Ny 6 1 Társ 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1162,12 +1250,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_1_társ_3___no",
       "label": "A Ny 6 1 Társ 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1175,12 +1264,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_kölcsön___Yes",
       "label": "A Ny 6 2 Kölcsön   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1188,12 +1278,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_kölcsön___no",
       "label": "A Ny 6 2 Kölcsön   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1201,12 +1292,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_1___Yes",
       "label": "A Ny 6 2 Társ 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1214,12 +1306,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_1___no",
       "label": "A Ny 6 2 Társ 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1227,12 +1320,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_2___Yes",
       "label": "A Ny 6 2 Társ 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1240,12 +1334,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_2___no",
       "label": "A Ny 6 2 Társ 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1253,12 +1348,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_3___Yes",
       "label": "A Ny 6 2 Társ 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1266,12 +1362,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_2_társ_3___no",
       "label": "A Ny 6 2 Társ 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1279,12 +1376,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_kölcsön___Yes",
       "label": "A Ny 6 3 Kölcsön   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1292,12 +1390,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_kölcsön___no",
       "label": "A Ny 6 3 Kölcsön   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1305,12 +1404,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_1___Yes",
       "label": "A Ny 6 3 Társ 1   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1318,12 +1418,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_1___no",
       "label": "A Ny 6 3 Társ 1   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1331,12 +1432,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_2___Yes",
       "label": "A Ny 6 3 Társ 2   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1344,12 +1446,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_2___no",
       "label": "A Ny 6 3 Társ 2   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1357,12 +1460,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_3___Yes",
       "label": "A Ny 6 3 Társ 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1370,12 +1474,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_3_társ_3___no",
       "label": "A Ny 6 3 Társ 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1383,12 +1488,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_kölcsönigénylő",
       "label": "A Ny 6 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1396,12 +1502,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_társigénylő_1",
       "label": "A Ny 6 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1409,12 +1516,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_társigénylő_2",
       "label": "A Ny 6 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1422,12 +1530,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_6_társigénylő_3",
       "label": "A Ny 6 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1435,12 +1544,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2303_Igenylo",
       "label": "A Ny 2303 Igenylo",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1448,12 +1558,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2303_tarsigenylo_1",
       "label": "A Ny 2303 Tarsigenylo 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1461,12 +1572,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2303_tarsigenylo_2",
       "label": "A Ny 2303 Tarsigenylo 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1474,12 +1586,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2303_tarsigenylo_3",
       "label": "A Ny 2303 Tarsigenylo 3",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
@@ -1487,12 +1600,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_211014_1_Igénylő",
       "label": "A Ny 211014 1 Igénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1500,12 +1614,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_211014_1_Társigénylő_1",
       "label": "A Ny 211014 1 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1513,12 +1628,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_211014_1_Társigénylő_2",
       "label": "A Ny 211014 1 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1526,12 +1642,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_211014_1_Társigénylő_3",
       "label": "A Ny 211014 1 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1539,12 +1656,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Pénznem___Yes",
       "label": "A Ny Pénznem   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1552,12 +1670,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Pénznem___no",
       "label": "A Ny Pénznem   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1565,12 +1684,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Pénznem_tipus___1,2",
       "label": "A Ny Pénznem Tipus   1,2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1578,12 +1698,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Pénznem_tipus___2,3",
       "label": "A Ny Pénznem Tipus   2,3",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1591,12 +1712,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_Pénznem_tipus___3,4",
       "label": "A Ny Pénznem Tipus   3,4",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1604,12 +1726,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_7_kölcsönigénylő",
       "label": "A Ny 7 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1617,12 +1740,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_7_társigénylő_1",
       "label": "A Ny 7 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1630,12 +1754,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_7_társigénylő_2",
       "label": "A Ny 7 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1643,12 +1768,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_7_társigénylő_3",
       "label": "A Ny 7 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1656,12 +1782,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_11_kölcsönigénylő",
       "label": "A Ny 11 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1669,12 +1796,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_11_társigénylő_1",
       "label": "A Ny 11 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1682,12 +1810,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_11_társigénylő_2",
       "label": "A Ny 11 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1695,12 +1824,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_11_társigénylő_3",
       "label": "A Ny 11 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 4,
@@ -1708,12 +1838,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_kölcsönigénylő.2",
       "label": "A Ny 15 Kölcsönigénylő.2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1721,12 +1852,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_1.2",
       "label": "A Ny 15 Társigénylő 1.2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1734,12 +1866,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_2.2",
       "label": "A Ny 15 Társigénylő 2.2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1747,12 +1880,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_3.2",
       "label": "A Ny 15 Társigénylő 3.2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1760,12 +1894,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_fedezet_tulaj_3",
       "label": "A Ny 5-2 Fedezet Tulaj 3",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1773,12 +1908,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_fedezet_tulaj_4",
       "label": "A Ny 5-2 Fedezet Tulaj 4",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1786,38 +1922,41 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_fedezet_haszonélvező_3",
       "label": "A Ny 5-2 Fedezet Haszonélvező 3",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Usufructuary__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 5,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_5-2_fedezet_haszonélvező_4",
       "label": "A Ny 5-2 Fedezet Haszonélvező 4",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Usufructuary__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 5,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_kölcsönigénylő.2-1",
       "label": "A Ny 15 Kölcsönigénylő.2-1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1825,12 +1964,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_1.2-2",
       "label": "A Ny 15 Társigénylő 1.2-2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1838,12 +1978,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_2.2-3",
       "label": "A Ny 15 Társigénylő 2.2-3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1851,12 +1992,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_15_társigénylő_3.2-4",
       "label": "A Ny 15 Társigénylő 3.2-4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 5,
@@ -1864,12 +2006,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_17_kölcsönigénylő.0",
       "label": "A Ny 17 Kölcsönigénylő.0",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1877,12 +2020,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_17társigénylő_1.0",
       "label": "A Ny 17Társigénylő 1.0",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1890,12 +2034,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_17társigénylő_2.0",
       "label": "A Ny 17Társigénylő 2.0",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1903,12 +2048,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_17társigénylő_3.0",
       "label": "A Ny 17Társigénylő 3.0",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1916,12 +2062,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_19_kölcsönigénylő",
       "label": "A Ny 19 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1929,12 +2076,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_19_társigénylő_1",
       "label": "A Ny 19 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1942,12 +2090,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_19_társigénylő_2",
       "label": "A Ny 19 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1955,12 +2104,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_19_társigénylő_3",
       "label": "A Ny 19 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1968,12 +2118,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2121_kölcsönigénylő",
       "label": "A Ny 2121 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1981,12 +2132,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2121_társigénylő_1",
       "label": "A Ny 2121 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -1994,12 +2146,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2121_társigénylő_2",
       "label": "A Ny 2121 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -2007,12 +2160,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2121_társigénylő_3",
       "label": "A Ny 2121 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 6,
@@ -2020,12 +2174,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2123_kölcsönigénylő",
       "label": "A Ny 2123 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2033,12 +2188,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2123_társigénylő_1",
       "label": "A Ny 2123 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2046,12 +2202,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2123_társigénylő_2",
       "label": "A Ny 2123 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2059,12 +2216,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2123_társigénylő_3",
       "label": "A Ny 2123 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2072,64 +2230,69 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_12_kölcsönigénylő.0",
       "label": "A Ny 12 Kölcsönigénylő.0",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Citizenship__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 7,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_12_társigénylő_1.0",
       "label": "A Ny 12 Társigénylő 1.0",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Citizenship__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 7,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_12_társigénylő_2.0",
       "label": "A Ny 12 Társigénylő 2.0",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Citizenship__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 7,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_12_társigénylő_3.0",
       "label": "A Ny 12 Társigénylő 3.0",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Citizenship__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 7,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "ANY_211011_Igénylő 2",
       "label": "Any 211011 Igénylő 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2137,12 +2300,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "ANY_211011_Társgénylő_2",
       "label": "Any 211011 Társgénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2150,12 +2314,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "ANY_211011_Társgénylő_3",
       "label": "Any 211011 Társgénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2163,12 +2328,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "ANY_211011_Társgénylő_4",
       "label": "Any 211011 Társgénylő 4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2176,12 +2342,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_igénylő___1,2",
       "label": "A Ny Khr 1 Igénylő   1,2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2189,12 +2356,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_igénylő___2,3",
       "label": "A Ny Khr 1 Igénylő   2,3",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2202,12 +2370,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_igénylő___3,4",
       "label": "A Ny Khr 1 Igénylő   3,4",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2215,12 +2384,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_1___1,2",
       "label": "A Ny Khr 1 Társigénylő 1   1,2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2228,12 +2398,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_1___2,3",
       "label": "A Ny Khr 1 Társigénylő 1   2,3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2241,12 +2412,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_1___3,4",
       "label": "A Ny Khr 1 Társigénylő 1   3,4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2254,12 +2426,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_2___1,2",
       "label": "A Ny Khr 1 Társigénylő 2   1,2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2267,12 +2440,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_2___2,3",
       "label": "A Ny Khr 1 Társigénylő 2   2,3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2280,12 +2454,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_2___3,4",
       "label": "A Ny Khr 1 Társigénylő 2   3,4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2293,12 +2468,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_3___1,2",
       "label": "A Ny Khr 1 Társigénylő 3   1,2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2306,12 +2482,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_3___2,3",
       "label": "A Ny Khr 1 Társigénylő 3   2,3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2319,12 +2496,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_1_társigénylő_3___3,4",
       "label": "A Ny Khr 1 Társigénylő 3   3,4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 7,
@@ -2332,12 +2510,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_igénylő 3___Yes",
       "label": "A Ny Khr 2 Igénylő 3   Yes",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2345,12 +2524,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_igénylő 3___no",
       "label": "A Ny Khr 2 Igénylő 3   No",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2358,12 +2538,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_3___Yes",
       "label": "A Ny Khr 2 Társigénylő 3   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2371,12 +2552,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_3___no",
       "label": "A Ny Khr 2 Társigénylő 3   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2384,12 +2566,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_5___Yes",
       "label": "A Ny Khr 2 Társigénylő 5   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2397,12 +2580,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_5___no",
       "label": "A Ny Khr 2 Társigénylő 5   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2410,12 +2594,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_7___Yes",
       "label": "A Ny Khr 2 Társigénylő 7   Yes",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2423,12 +2608,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_2_társigénylő_7___no",
       "label": "A Ny Khr 2 Társigénylő 7   No",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2436,12 +2622,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_3_kölcsönigénylő",
       "label": "A Ny Khr 3 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2449,12 +2636,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_3_társigénylő_1",
       "label": "A Ny Khr 3 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2462,12 +2650,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_3_társigénylő_2",
       "label": "A Ny Khr 3 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2475,12 +2664,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_3_társigénylő_3",
       "label": "A Ny Khr 3 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2488,12 +2678,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_4_kölcsönigénylő",
       "label": "A Ny Khr 4 Kölcsönigénylő",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2501,12 +2692,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_4_társigénylő_1",
       "label": "A Ny Khr 4 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2514,12 +2706,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_4_társigénylő_2",
       "label": "A Ny Khr 4 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2527,12 +2720,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_4_társigénylő_3",
       "label": "A Ny Khr 4 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2540,12 +2734,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_5_igénylő_1",
       "label": "A Ny Khr 5 Igénylő 1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2553,12 +2748,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_5_társigénylő_1",
       "label": "A Ny Khr 5 Társigénylő 1",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2566,12 +2762,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_5_társigénylő_2",
       "label": "A Ny Khr 5 Társigénylő 2",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2579,12 +2776,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_KHR_5_társigénylő_3",
       "label": "A Ny Khr 5 Társigénylő 3",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2592,12 +2790,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_kölcsönigénylő 2",
       "label": "A Ny 2223 Kölcsönigénylő 2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2605,12 +2804,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_társigénylő_4",
       "label": "A Ny 2223 Társigénylő 4",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2618,12 +2818,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_társigénylő_5",
       "label": "A Ny 2223 Társigénylő 5",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2631,12 +2832,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_társigénylő_6",
       "label": "A Ny 2223 Társigénylő 6",
-      "field_type": "number",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2644,12 +2846,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_fedezet tul1",
       "label": "A Ny 2223 Fedezet Tul1",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2657,12 +2860,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_fedezet tul2",
       "label": "A Ny 2223 Fedezet Tul2",
-      "field_type": "text",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 8,
@@ -2670,51 +2874,55 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_haszonelvezo1",
       "label": "A Ny 2223 Haszonelvezo1",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Usufructuary__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A_NY_2223_haszonelvezo2",
       "label": "A Ny 2223 Haszonelvezo2",
       "field_type": "checkbox",
-      "canonical_field": "Contact.Usufructuary__c",
+      "canonical_field": null,
       "confidence": "medium",
       "page_number": 8,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A NY_kelt",
       "label": "A Ny Kelt",
-      "field_type": "date",
-      "canonical_field": "Contact.Date_of_signature__c",
+      "field_type": "text",
+      "canonical_field": "participant.borrower.date_of_signature",
       "confidence": "medium",
       "page_number": 9,
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A NY_tanu1_név 2",
       "label": "A Ny Tanu1 Név 2",
-      "field_type": "date",
+      "field_type": "text",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 9,
@@ -2722,7 +2930,8 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A NY_tanu1_cím 2",
@@ -2735,12 +2944,13 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A NY_tanu2_név 2",
       "label": "A Ny Tanu2 Név 2",
-      "field_type": "date",
+      "field_type": "text",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 9,
@@ -2748,7 +2958,8 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     },
     {
       "pdf_field_name": "A NY_tanu2_cím 2",
@@ -2761,10 +2972,168 @@
       "notes": null,
       "checkbox_group": null,
       "fill_rule": null,
-      "fragment": null
+      "fragment": null,
+      "product_gate": null
     }
   ],
   "character_groups": [],
-  "points": [],
+  "points": [
+    {
+      "point_id": "A_NY_15@p5#2",
+      "framework": "*",
+      "rule_type": 2,
+      "blocks": [
+        {
+          "block_id": "A_NY_15@p5#2.main",
+          "members": [
+            "A_NY_15_kölcsönigénylő.2-1",
+            "A_NY_15_társigénylő_1.2-2",
+            "A_NY_15_társigénylő_2.2-3",
+            "A_NY_15_társigénylő_3.2-4"
+          ]
+        }
+      ],
+      "params": {
+        "role_to_ticks": {
+          "adós": [
+            "A_NY_15_kölcsönigénylő.2-1"
+          ],
+          "adóstárs_1": [
+            "A_NY_15_társigénylő_1.2-2"
+          ],
+          "adóstárs_2": [
+            "A_NY_15_társigénylő_2.2-3"
+          ],
+          "adóstárs_3": [
+            "A_NY_15_társigénylő_3.2-4"
+          ]
+        }
+      },
+      "review_note": "14. pont – fogyatékossággal élő ügyfelek tájékoztatása: pure acknowledgement that the accessibility information was provided."
+    },
+    {
+      "point_id": "A_NY_211014_1@p4#1",
+      "framework": "*",
+      "rule_type": 2,
+      "blocks": [
+        {
+          "block_id": "A_NY_211014_1@p4#1.main",
+          "members": [
+            "A_NY_211014_1_Igénylő",
+            "A_NY_211014_1_Társigénylő_1",
+            "A_NY_211014_1_Társigénylő_2",
+            "A_NY_211014_1_Társigénylő_3"
+          ]
+        }
+      ],
+      "params": {
+        "role_to_ticks": {
+          "adós": [
+            "A_NY_211014_1_Igénylő"
+          ],
+          "adóstárs_1": [
+            "A_NY_211014_1_Társigénylő_1"
+          ],
+          "adóstárs_2": [
+            "A_NY_211014_1_Társigénylő_2"
+          ],
+          "adóstárs_3": [
+            "A_NY_211014_1_Társigénylő_3"
+          ]
+        }
+      },
+      "review_note": "9. pont – hitelképesség-vizsgálati információk tudomásulvétele: pure acknowledgement of the credit-assessment information notice."
+    },
+    {
+      "point_id": "A_NY_2@p1#1",
+      "framework": "*",
+      "rule_type": 2,
+      "blocks": [
+        {
+          "block_id": "A_NY_2@p1#1.main",
+          "members": [
+            "A_NY_2_kölcsönigénylő",
+            "A_NY_2_társigénylő_1",
+            "A_NY_2_társigénylő_2",
+            "A_NY_2_társigénylő_3",
+            "A_NY_2_fedezet_tulaj_1",
+            "A_NY_2_fedezet_tulaj_2"
+          ]
+        }
+      ],
+      "params": {
+        "role_to_ticks": {
+          "adós": [
+            "A_NY_2_kölcsönigénylő"
+          ],
+          "adóstárs_1": [
+            "A_NY_2_társigénylő_1"
+          ],
+          "adóstárs_2": [
+            "A_NY_2_társigénylő_2"
+          ],
+          "adóstárs_3": [
+            "A_NY_2_társigénylő_3"
+          ],
+          "zálogkötelezett_1": [
+            "A_NY_2_fedezet_tulaj_1"
+          ],
+          "zálogkötelezett_2": [
+            "A_NY_2_fedezet_tulaj_2"
+          ]
+        }
+      },
+      "review_note": "1. pont – Előzetes tájékoztatás (tudomásulvétel): pure acknowledgement of the mandatory pre-application information; every signing participant ticks their own column."
+    },
+    {
+      "point_id": "A_NY_3@p2#1",
+      "framework": "*",
+      "rule_type": 2,
+      "blocks": [
+        {
+          "block_id": "A_NY_3@p2#1.main",
+          "members": [
+            "A_NY_3_kölcsönigénylő",
+            "A_NY_3_társigénylő_1",
+            "A_NY_3_társigénylő_3",
+            "A_NY_3_társigénylő_3-2",
+            "A_NY_3_fedezet_tulaj_1",
+            "A_NY_3_fedezet_tulaj_2",
+            "A_NY_3_fedezet_haszonélvező_1",
+            "A_NY_3_fedezet_haszonélvező_2"
+          ]
+        }
+      ],
+      "params": {
+        "role_to_ticks": {
+          "adós": [
+            "A_NY_3_kölcsönigénylő"
+          ],
+          "adóstárs_1": [
+            "A_NY_3_társigénylő_1"
+          ],
+          "adóstárs_2": [
+            "A_NY_3_társigénylő_3"
+          ],
+          "adóstárs_3": [
+            "A_NY_3_társigénylő_3-2"
+          ],
+          "zálogkötelezett_1": [
+            "A_NY_3_fedezet_tulaj_1"
+          ],
+          "zálogkötelezett_2": [
+            "A_NY_3_fedezet_tulaj_2"
+          ],
+          "haszonélvező_1": [
+            "A_NY_3_fedezet_haszonélvező_1"
+          ],
+          "haszonélvező_2": [
+            "A_NY_3_fedezet_haszonélvező_2"
+          ]
+        }
+      },
+      "review_note": "2. pont – Adatkezelési tájékoztatás tudomásulvétele: pure acknowledgement (megismertem) of the data-processing notice; no consent choice is made here."
+    }
+  ],
   "rule_sets": []
 }

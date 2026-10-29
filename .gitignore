@@ -47,6 +47,14 @@ frontend/playwright-report/
 # Agents / tooling
 .agents/
 .zcode/
+# Superpowers SDD review/task artifacts (briefs, reports, diffs) — never publish
+.superpowers/
+
+# Ad hoc scratch/review workspace — never publish
+scratch/
+
+# OTP cégkivonat (valós cégadatot tartalmazó üzleti dokumentum) — sosem kerül repo-ba
+otp/**/*gkivonat*.pdf
 
 # Ad hoc PDF-ek a gyökérben (csak a samples/ mappában tartjuk a mintákat)
 /*.pdf

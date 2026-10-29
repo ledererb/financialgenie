@@ -143,7 +143,10 @@ export interface CanonicalField {
   path: string;
   label?: string;
   description?: string;
-  sf_type?: string;
+  /** Registry scalar type (string|integer|number|boolean|date|money). */
+  type?: string;
+  /** Registry repeat mode (none|participant|property|income|existing_loan). */
+  repeat?: string;
 }
 
 export type FieldColorKey =

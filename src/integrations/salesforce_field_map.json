@@ -1,0 +1,1128 @@
+{
+  "Account": {
+    "AccountNumber": {
+      "path": "account.account_number",
+      "target": "account.account_number"
+    },
+    "BillingCity": {
+      "path": "account.billing_city",
+      "target": "account.billing_city"
+    },
+    "BillingCountry": {
+      "path": "account.billing_country",
+      "target": "account.billing_country"
+    },
+    "BillingPostalCode": {
+      "path": "account.billing_postal_code",
+      "target": "account.billing_postal_code"
+    },
+    "BillingState": {
+      "path": "account.billing_state",
+      "target": "account.billing_state"
+    },
+    "BillingStreet": {
+      "path": "account.billing_street",
+      "target": "account.billing_street"
+    },
+    "Description": {
+      "path": "account.description",
+      "target": "account.description"
+    },
+    "Fax": {
+      "path": "account.fax",
+      "target": "account.fax"
+    },
+    "Industry": {
+      "path": "account.industry",
+      "target": "account.industry"
+    },
+    "Name": {
+      "path": "account.name",
+      "target": "account.name"
+    },
+    "Phone": {
+      "path": "account.phone",
+      "target": "account.phone"
+    },
+    "ShippingCity": {
+      "path": "account.shipping_city",
+      "target": "account.shipping_city"
+    },
+    "ShippingCountry": {
+      "path": "account.shipping_country",
+      "target": "account.shipping_country"
+    },
+    "ShippingPostalCode": {
+      "path": "account.shipping_postal_code",
+      "target": "account.shipping_postal_code"
+    },
+    "ShippingStreet": {
+      "path": "account.shipping_street",
+      "target": "account.shipping_street"
+    },
+    "Website": {
+      "path": "account.website",
+      "target": "account.website"
+    }
+  },
+  "Contact": {
+    "AML_Consent__c": {
+      "key": "aml",
+      "path": "participant.borrower.aml_consent",
+      "target": "participant.consents"
+    },
+    "Account_holding_bank__c": {
+      "path": "participant.borrower.account_holding_bank",
+      "target": "participant.account_holding_bank"
+    },
+    "Address_Card_Number__c": {
+      "path": "participant.borrower.id_card_number",
+      "target": "participant.id_card_number"
+    },
+    "Affordable_monthly_installments__c": {
+      "key": "affordable_monthly_installments",
+      "path": "participant.borrower.affordable_monthly_installments",
+      "target": "participant.extra"
+    },
+    "AssistantName": {
+      "key": "assistant_name",
+      "path": "participant.borrower.assistant_name",
+      "target": "participant.extra"
+    },
+    "AssistantPhone": {
+      "key": "assistant_phone",
+      "path": "participant.borrower.assistant_phone",
+      "target": "participant.extra"
+    },
+    "Average_monthly_net_income__c": {
+      "path": "participant.borrower.monthly_income",
+      "target": "participant.monthly_income"
+    },
+    "Bank__c": {
+      "key": "bank_name",
+      "path": "participant.borrower.bank_name",
+      "target": "participant.extra"
+    },
+    "Banki_ugyintezo_fiok__c": {
+      "key": "bank_branch",
+      "path": "participant.borrower.bank_branch",
+      "target": "participant.extra"
+    },
+    "Banki_ugyintezo_pozicio__c": {
+      "key": "bank_contact_position",
+      "path": "participant.borrower.bank_contact_position",
+      "target": "participant.extra"
+    },
+    "Banki_ugyintezo_terulet__c": {
+      "key": "bank_contact_region",
+      "path": "participant.borrower.bank_contact_region",
+      "target": "participant.extra"
+    },
+    "Birthdate": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "Birthdate_day": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "Birthdate_month": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "Birthdate_year": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "Cafeteria_bonus__c": {
+      "path": "participant.borrower.cafeteria_bonus",
+      "target": "participant.cafeteria_bonus"
+    },
+    "Children_Count__c": {
+      "path": "participant.borrower.children_count",
+      "target": "participant.children_count"
+    },
+    "Citizenship__c": {
+      "path": "participant.borrower.citizenship",
+      "target": "participant.citizenship"
+    },
+    "Concern__c": {
+      "key": "concern",
+      "path": "participant.borrower.concern",
+      "target": "participant.extra"
+    },
+    "Continuous_TB_2_years__c": {
+      "path": "participant.borrower.continuous_tb_2_years",
+      "target": "participant.continuous_tb_2_years"
+    },
+    "Contract_end_date__c": {
+      "path": "participant.borrower.contract_end_date",
+      "target": "participant.contract_end_date"
+    },
+    "Contract_start_date__c": {
+      "path": "participant.borrower.contract_start_date",
+      "target": "participant.contract_start_date"
+    },
+    "Credit_Commitment__c": {
+      "path": "participant.borrower.credit_commitment",
+      "target": "participant.credit_commitment"
+    },
+    "Current_debt_Credit_limit__c": {
+      "path": "participant.borrower.current_debt_credit_limit",
+      "target": "participant.current_debt_credit_limit"
+    },
+    "Current_employment_started__c": {
+      "path": "participant.borrower.current_employment_started",
+      "target": "participant.current_employment_started"
+    },
+    "Data_Processing_Consent__c": {
+      "key": "data_processing",
+      "path": "participant.borrower.data_processing_consent",
+      "target": "participant.consents"
+    },
+    "Date_of_birth__c": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "Date_of_handover__c": {
+      "path": "participant.borrower.date_of_handover",
+      "target": "participant.date_of_handover"
+    },
+    "Date_of_notification_for_residence__c": {
+      "path": "participant.borrower.residence_notification_date",
+      "target": "participant.date_of_notification_for_residence"
+    },
+    "Date_of_signature__c": {
+      "path": "participant.borrower.date_of_signature",
+      "target": "participant.date_of_signature"
+    },
+    "Date_of_transfer__c": {
+      "path": "participant.borrower.date_of_transfer",
+      "target": "participant.date_of_transfer"
+    },
+    "Department": {
+      "key": "department",
+      "path": "participant.borrower.department",
+      "target": "participant.extra"
+    },
+    "Dependents_count__c": {
+      "path": "participant.borrower.dependents_count",
+      "target": "participant.dependents_count"
+    },
+    "Description": {
+      "path": "participant.borrower.description",
+      "target": "participant.description"
+    },
+    "Description_of_loan_purpose_comments__c": {
+      "path": "participant.borrower.description_of_loan_purpose",
+      "target": "participant.description_of_loan_purpose"
+    },
+    "Display_Name__c": {
+      "key": "display_name",
+      "path": "participant.borrower.display_name",
+      "target": "participant.extra"
+    },
+    "Divident__c": {
+      "path": "participant.borrower.divident",
+      "target": "participant.divident"
+    },
+    "Document_Type__c": {
+      "path": "participant.borrower.id_document_type",
+      "target": "participant.id_document_type"
+    },
+    "Email": {
+      "path": "participant.borrower.email",
+      "target": "participant.email"
+    },
+    "EmailBouncedDate": {
+      "key": "email_bounced_date",
+      "path": "participant.borrower.email_bounced_date",
+      "target": "participant.extra"
+    },
+    "EmailBouncedReason": {
+      "key": "email_bounced_reason",
+      "path": "participant.borrower.email_bounced_reason",
+      "target": "participant.extra"
+    },
+    "Employee_registration_c__c": {
+      "path": "participant.borrower.employee_registration",
+      "target": "participant.employee_registration"
+    },
+    "Employer_Company_Form__c": {
+      "path": "participant.borrower.employer_company_form",
+      "target": "participant.employer_company_form"
+    },
+    "Employer_Tax_Number__c": {
+      "path": "participant.borrower.employer_tax_number",
+      "target": "participant.employer_tax_number"
+    },
+    "Employer_s_company_type__c": {
+      "path": "participant.borrower.employer_company_type",
+      "target": "participant.employer_company_type"
+    },
+    "Employment_Type_c__c": {
+      "path": "participant.borrower.employment_type",
+      "target": "participant.employment_type"
+    },
+    "Fax": {
+      "key": "fax",
+      "path": "participant.borrower.fax",
+      "target": "participant.extra"
+    },
+    "Financial_Institution__c": {
+      "key": "financial_institution",
+      "path": "participant.borrower.financial_institution",
+      "target": "participant.extra"
+    },
+    "FirstName": {
+      "key": "first_name",
+      "path": "participant.borrower.first_name",
+      "target": "participant.extra"
+    },
+    "First_Co_debtor__c": {
+      "path": "participant.co_borrower[1].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Foglalkozas_tipusa__c": {
+      "path": "participant.borrower.foglalkozas_tipusa",
+      "target": "participant.foglalkozas_tipusa"
+    },
+    "HasOptedOutOfEmail": {
+      "key": "email_opt_out",
+      "path": "participant.borrower.email_opt_out",
+      "target": "participant.extra"
+    },
+    "Highest_Educational_Qualification__c": {
+      "path": "participant.borrower.education",
+      "target": "participant.education"
+    },
+    "HomePhone": {
+      "key": "home_phone",
+      "path": "participant.borrower.home_phone",
+      "target": "participant.extra"
+    },
+    "Household_Size__c": {
+      "path": "participant.borrower.household_size",
+      "target": "participant.household_size"
+    },
+    "ID_Card_Number__c": {
+      "path": "participant.borrower.personal_id",
+      "target": "participant.personal_id"
+    },
+    "ID_Document_Type__c": {
+      "path": "participant.borrower.id_document_type",
+      "target": "participant.id_document_type"
+    },
+    "Id": {
+      "path": "participant.borrower.contact_id",
+      "target": "participant.contact_id"
+    },
+    "Income_from_self_owned_company__c": {
+      "path": "participant.borrower.income_from_self_owned",
+      "target": "participant.income_from_self_owned"
+    },
+    "Income_type__c": {
+      "path": "participant.borrower.income_type",
+      "target": "participant.income_type"
+    },
+    "IndividualId": {
+      "key": "individual_id",
+      "path": "participant.borrower.individual_id",
+      "target": "participant.extra"
+    },
+    "Industry__c": {
+      "path": "participant.borrower.industry",
+      "target": "participant.industry"
+    },
+    "IsEmailBounced": {
+      "key": "is_email_bounced",
+      "path": "participant.borrower.is_email_bounced",
+      "target": "participant.extra"
+    },
+    "IsPriorityRecord": {
+      "key": "is_priority_record",
+      "path": "participant.borrower.is_priority_record",
+      "target": "participant.extra"
+    },
+    "Jovairas_vallalasa__c": {
+      "path": "participant.borrower.jovairas_vallalasa",
+      "target": "participant.jovairas_vallalasa"
+    },
+    "KHR_Consent__c": {
+      "key": "khr",
+      "path": "participant.borrower.khr_consent",
+      "target": "participant.consents"
+    },
+    "LastName": {
+      "key": "last_name",
+      "path": "participant.borrower.last_name",
+      "target": "participant.extra"
+    },
+    "Last_4_nr_of_ID__c": {
+      "key": "personal_id_last4",
+      "path": "participant.borrower.personal_id_last4",
+      "target": "participant.extra"
+    },
+    "Legal_Title_of_permanent_residence__c": {
+      "path": "participant.borrower.legal_title",
+      "target": "participant.legal_title"
+    },
+    "MailingCity": {
+      "path": "participant.borrower.mailing_address.city",
+      "target": "participant.mailing_address.city"
+    },
+    "MailingCountry": {
+      "key": "mailing_country",
+      "path": "participant.borrower.mailing_country",
+      "target": "participant.extra"
+    },
+    "MailingCountryCode": {
+      "key": "mailing_country_code",
+      "path": "participant.borrower.mailing_country_code",
+      "target": "participant.extra"
+    },
+    "MailingPostalCode": {
+      "path": "participant.borrower.mailing_address.zip_code",
+      "target": "participant.mailing_address.zip_code"
+    },
+    "MailingState": {
+      "key": "mailing_state",
+      "path": "participant.borrower.mailing_state",
+      "target": "participant.extra"
+    },
+    "MailingStateCode": {
+      "key": "mailing_state_code",
+      "path": "participant.borrower.mailing_state_code",
+      "target": "participant.extra"
+    },
+    "MailingStreet": {
+      "path": "participant.borrower.mailing_address.street",
+      "target": "participant.mailing_address.street"
+    },
+    "Marital_Status__c": {
+      "path": "participant.borrower.marital_status",
+      "target": "participant.marital_status"
+    },
+    "MobilePhone": {
+      "path": "participant.borrower.mobile_phone",
+      "target": "participant.mobile_phone"
+    },
+    "Monthly_Payment_details__c": {
+      "path": "participant.borrower.monthly_payment_details",
+      "target": "participant.monthly_payment_details"
+    },
+    "Mother_s_Name__c": {
+      "path": "participant.borrower.mother_name",
+      "target": "participant.mother_name"
+    },
+    "NAV_Consent__c": {
+      "key": "nav",
+      "path": "participant.borrower.nav_consent",
+      "target": "participant.consents"
+    },
+    "Name": {
+      "path": "participant.borrower.name",
+      "target": "participant.name"
+    },
+    "Name_of_employer__c": {
+      "path": "participant.borrower.employer",
+      "target": "participant.employer"
+    },
+    "Nem__c": {
+      "path": "participant.borrower.gender",
+      "target": "participant.gender"
+    },
+    "Nem_preferalt_bank__c": {
+      "key": "non_preferred_bank",
+      "path": "participant.borrower.non_preferred_bank",
+      "target": "participant.extra"
+    },
+    "Numer_and_Age_of_Children__c": {
+      "path": "participant.borrower.children_details",
+      "target": "participant.numer_and_age_of_children"
+    },
+    "Occupation__c": {
+      "path": "participant.borrower.occupation",
+      "target": "participant.occupation"
+    },
+    "OtherCity": {
+      "path": "participant.borrower.address.city",
+      "target": "participant.address.city"
+    },
+    "OtherCountry": {
+      "path": "participant.borrower.other_country",
+      "target": "participant.other_country"
+    },
+    "OtherCountryCode": {
+      "key": "other_country_code",
+      "path": "participant.borrower.other_country_code",
+      "target": "participant.extra"
+    },
+    "OtherPhone": {
+      "key": "other_phone",
+      "path": "participant.borrower.other_phone",
+      "target": "participant.extra"
+    },
+    "OtherPostalCode": {
+      "path": "participant.borrower.address.zip_code",
+      "target": "participant.address.zip_code"
+    },
+    "OtherState": {
+      "key": "other_state",
+      "path": "participant.borrower.other_state",
+      "target": "participant.extra"
+    },
+    "OtherStateCode": {
+      "key": "other_state_code",
+      "path": "participant.borrower.other_state_code",
+      "target": "participant.extra"
+    },
+    "OtherStreet": {
+      "path": "participant.borrower.address.street",
+      "target": "participant.address.street"
+    },
+    "Other_income__c": {
+      "path": "participant.borrower.other_income",
+      "target": "participant.other_income"
+    },
+    "Other_monthly_deductions__c": {
+      "path": "participant.borrower.other_monthly_deductions",
+      "target": "participant.other_monthly_deductions"
+    },
+    "Other_monthly_income__c": {
+      "path": "participant.borrower.other_monthly_income",
+      "target": "participant.other_monthly_income"
+    },
+    "OwnerId": {
+      "key": "owner_id",
+      "path": "participant.borrower.owner_id",
+      "target": "participant.extra"
+    },
+    "Ownership_in_employer__c": {
+      "path": "participant.borrower.ownership_in_employer",
+      "target": "participant.ownership_in_employer"
+    },
+    "Partneri_bank__c": {
+      "key": "partner_bank",
+      "path": "participant.borrower.partner_bank",
+      "target": "participant.extra"
+    },
+    "Permanent_address__c": {
+      "path": "participant.borrower.permanent_address",
+      "target": "participant.address.full_address"
+    },
+    "Personal_ID__c": {
+      "path": "participant.borrower.personal_number",
+      "target": "participant.personal_number"
+    },
+    "Personal_Number__c": {
+      "path": "participant.borrower.personal_number",
+      "target": "participant.personal_number"
+    },
+    "Phone": {
+      "path": "participant.borrower.phone",
+      "target": "participant.phone"
+    },
+    "Place_of_Birth__c": {
+      "path": "participant.borrower.birth_place",
+      "target": "participant.birth_place"
+    },
+    "Preferalt_bank__c": {
+      "path": "participant.borrower.preferalt_bank",
+      "target": "participant.preferalt_bank"
+    },
+    "Property_50pct_ownership_details__c": {
+      "path": "participant.borrower.property_50pct_ownership_details",
+      "target": "participant.property_50pct_ownership_details"
+    },
+    "Relation__c": {
+      "path": "participant.borrower.relation",
+      "target": "participant.relation"
+    },
+    "ReportsToId": {
+      "key": "reports_to_id",
+      "path": "participant.borrower.reports_to_id",
+      "target": "participant.extra"
+    },
+    "Residence_Status__c": {
+      "path": "participant.borrower.residence_status",
+      "target": "participant.residence_status"
+    },
+    "Salutation": {
+      "path": "participant.borrower.salutation",
+      "target": "participant.salutation"
+    },
+    "Second_Co_debtor__c": {
+      "path": "participant.co_borrower[2].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Secondary_Email__c": {
+      "key": "secondary_email",
+      "path": "participant.borrower.secondary_email",
+      "target": "participant.extra"
+    },
+    "Self_employment_details__c": {
+      "path": "participant.borrower.self_employment_details",
+      "target": "participant.self_employment_details"
+    },
+    "State_Support__c": {
+      "path": "participant.borrower.state_support",
+      "target": "participant.state_support"
+    },
+    "Szuletesi_nev__c": {
+      "path": "participant.borrower.birth_name",
+      "target": "participant.birth_name"
+    },
+    "Tax_ID__c": {
+      "path": "participant.borrower.tax_id",
+      "target": "participant.tax_id"
+    },
+    "Third_Co_debtor__c": {
+      "path": "participant.co_borrower[3].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Title": {
+      "key": "title",
+      "path": "participant.borrower.title",
+      "target": "participant.extra"
+    },
+    "Year_of_birthdate__c": {
+      "path": "participant.borrower.birth_date",
+      "target": "participant.birth_date"
+    },
+    "ZIP__c": {
+      "path": "participant.borrower.address.zip_code",
+      "target": "participant.address.zip_code"
+    }
+  },
+  "Jovedelem__c": {
+    "Bank__c": {
+      "path": "participant.borrower.income[1].bank_name",
+      "target": "income.bank_name"
+    },
+    "Contact__c": {
+      "target": "participant.contact_id"
+    },
+    "Erkezes_helye__c": {
+      "path": "participant.borrower.income[1].destination",
+      "target": "income.destination"
+    },
+    "Jovedelem_tipusa__c": {
+      "path": "participant.borrower.income[1].income_type",
+      "target": "income.income_type"
+    },
+    "Osszeg__c": {
+      "path": "participant.borrower.income[1].amount",
+      "target": "income.amount"
+    },
+    "Penznem__c": {
+      "path": "participant.borrower.income[1].currency",
+      "target": "income.currency"
+    },
+    "Sorszam__c": {
+      "path": "participant.borrower.income[1].sequence",
+      "target": "income.sequence"
+    },
+    "Szamlaszam__c": {
+      "path": "participant.borrower.income[1].account_number",
+      "target": "income.account_number"
+    }
+  },
+  "Meglevo_hitel__c": {
+    "Bank__c": {
+      "path": "participant.borrower.existing_loan[1].bank_name",
+      "target": "existing_loan.bank_name"
+    },
+    "Contact__c": {
+      "target": "participant.contact_id"
+    },
+    "Eredeti_osszeg__c": {
+      "path": "participant.borrower.existing_loan[1].original_amount",
+      "target": "existing_loan.original_amount"
+    },
+    "Fennallo_tartozas__c": {
+      "path": "participant.borrower.existing_loan[1].outstanding_amount",
+      "target": "existing_loan.outstanding_amount"
+    },
+    "Havi_torleszto__c": {
+      "path": "participant.borrower.existing_loan[1].monthly_payment",
+      "target": "existing_loan.monthly_payment"
+    },
+    "Hiteltipus__c": {
+      "path": "participant.borrower.existing_loan[1].loan_type",
+      "target": "existing_loan.loan_type"
+    },
+    "Kivaltando__c": {
+      "path": "participant.borrower.existing_loan[1].refinance",
+      "target": "existing_loan.refinance"
+    },
+    "Penznem__c": {
+      "path": "participant.borrower.existing_loan[1].currency",
+      "target": "existing_loan.currency"
+    },
+    "Sorszam__c": {
+      "path": "participant.borrower.existing_loan[1].sequence",
+      "target": "existing_loan.sequence"
+    },
+    "Szamlaszam__c": {
+      "path": "participant.borrower.existing_loan[1].account_number",
+      "target": "existing_loan.account_number"
+    }
+  },
+  "Opportunity": {
+    "AFA_Support__c": {
+      "path": "deal.afa_support",
+      "target": "loan.afa_support"
+    },
+    "AccountId": {
+      "path": "deal.account_id",
+      "target": "deal.account_id"
+    },
+    "Account__c": {
+      "key": "referrer_name",
+      "path": "deal.referrer_name",
+      "target": "deal.extra"
+    },
+    "Amount": {
+      "path": "deal.loan_amount",
+      "target": "loan.loan_amount"
+    },
+    "Approve_in_the_Bank_Application_OTP__c": {
+      "key": "bank_application_approved",
+      "path": "deal.bank_application_approved",
+      "target": "deal.extra"
+    },
+    "Attended_the_call__c": {
+      "key": "call_attended",
+      "path": "deal.call_attended",
+      "target": "deal.extra"
+    },
+    "Bank_Approval__c": {
+      "key": "bank_approval",
+      "path": "deal.bank_approval",
+      "target": "deal.extra"
+    },
+    "Bank__c": {
+      "key": "bank_name",
+      "path": "deal.bank_name",
+      "target": "deal.extra"
+    },
+    "Banki_ugyintezo_uj_c__c": {
+      "key": "bank_contact_name",
+      "path": "deal.bank_contact_name",
+      "target": "deal.extra"
+    },
+    "CSOK_Amount__c": {
+      "path": "deal.csok_amount",
+      "target": "loan.csok_amount"
+    },
+    "CampaignId": {
+      "key": "campaign_id",
+      "path": "deal.campaign_id",
+      "target": "deal.extra"
+    },
+    "Category__c": {
+      "key": "category",
+      "path": "deal.category",
+      "target": "deal.extra"
+    },
+    "Client_accepted_the_offer__c": {
+      "key": "offer_accepted",
+      "path": "deal.offer_accepted",
+      "target": "deal.extra"
+    },
+    "CloseDate": {
+      "key": "close_date",
+      "path": "deal.close_date",
+      "target": "deal.extra"
+    },
+    "ContactId": {
+      "path": "participant.borrower.contact_id",
+      "target": "participant.contact_id"
+    },
+    "Contact_Name__c": {
+      "path": "participant.borrower.name",
+      "target": "participant.name"
+    },
+    "Contract_signed_date__c": {
+      "key": "contract_signed_date",
+      "path": "deal.contract_signed_date",
+      "target": "deal.extra"
+    },
+    "CreatedDate": {
+      "path": "deal.created_at",
+      "target": "deal.created_at"
+    },
+    "Csabi_gylete__c": {
+      "key": "csabi_deal",
+      "path": "deal.csabi_deal",
+      "target": "deal.extra"
+    },
+    "Date_when_bank_received_all_documents__c": {
+      "key": "bank_documents_received_date",
+      "path": "deal.bank_documents_received_date",
+      "target": "deal.extra"
+    },
+    "Description": {
+      "path": "deal.notes",
+      "target": "deal.notes"
+    },
+    "Discount_Action__c": {
+      "path": "deal.discount_action",
+      "target": "loan.discount_action"
+    },
+    "Down_Payment__c": {
+      "path": "deal.down_payment",
+      "target": "loan.down_payment"
+    },
+    "Fill_and_send_back_request_form__c": {
+      "key": "form_return_requested",
+      "path": "deal.form_return_requested",
+      "target": "deal.extra"
+    },
+    "First_Co_debtor__c": {
+      "path": "participant.co_borrower[1].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Flag__c": {
+      "key": "flag",
+      "path": "deal.flag",
+      "target": "deal.extra"
+    },
+    "Hitel_sszeg__c": {
+      "path": "deal.loan_amount",
+      "target": "loan.loan_amount"
+    },
+    "Hitelc_l__c": {
+      "path": "deal.loan_purpose",
+      "target": "loan.loan_purpose"
+    },
+    "Hitelez_bank__c": {
+      "key": "bank_name",
+      "path": "deal.bank_name",
+      "target": "deal.extra"
+    },
+    "Housing_Savings__c": {
+      "path": "deal.housing_savings",
+      "target": "loan.housing_savings"
+    },
+    "Id": {
+      "path": "deal.deal_id",
+      "target": "deal.deal_id"
+    },
+    "Insurance__c": {
+      "key": "insurance",
+      "path": "deal.insurance",
+      "target": "deal.extra"
+    },
+    "Interest_Period__c": {
+      "path": "deal.interest_period",
+      "target": "loan.interest_period"
+    },
+    "Jutal_k_ideje__c": {
+      "key": "commission_date",
+      "path": "deal.commission_date",
+      "target": "deal.extra"
+    },
+    "Jutal_k_kifizetve__c": {
+      "key": "commission_paid",
+      "path": "deal.commission_paid",
+      "target": "deal.extra"
+    },
+    "Kamat__c": {
+      "key": "interest_rate",
+      "path": "deal.interest_rate",
+      "target": "deal.extra"
+    },
+    "Kedvezmeny_akcio__c": {
+      "path": "deal.discount_action",
+      "target": "loan.discount_action"
+    },
+    "LeadSource": {
+      "key": "lead_source",
+      "path": "deal.lead_source",
+      "target": "deal.extra"
+    },
+    "Lead_Priority__c": {
+      "key": "lead_priority",
+      "path": "deal.lead_priority",
+      "target": "deal.extra"
+    },
+    "Loan_Purpose__c": {
+      "path": "deal.loan_purpose",
+      "target": "loan.loan_purpose"
+    },
+    "Loan_Term__c": {
+      "path": "deal.loan_term_months",
+      "target": "loan.loan_term_months"
+    },
+    "Monthly_Payment__c": {
+      "path": "deal.monthly_payment",
+      "target": "loan.monthly_payment"
+    },
+    "Mortgagor__c": {
+      "path": "deal.has_mortgagor",
+      "target": "deal.has_mortgagor"
+    },
+    "Name": {
+      "key": "name",
+      "path": "deal.name",
+      "target": "deal.extra"
+    },
+    "NextStep": {
+      "key": "next_step",
+      "path": "deal.next_step",
+      "target": "deal.extra"
+    },
+    "Opportunity_Contact_Name__c": {
+      "path": "participant.borrower.name",
+      "target": "participant.name"
+    },
+    "Opportunity_ID__c": {
+      "path": "deal.deal_id",
+      "target": "deal.deal_id"
+    },
+    "OwnerId": {
+      "key": "owner_id",
+      "path": "deal.owner_id",
+      "target": "deal.extra"
+    },
+    "Pre_valuation_has_been_ordered__c": {
+      "key": "pre_valuation_ordered",
+      "path": "deal.pre_valuation_ordered",
+      "target": "deal.extra"
+    },
+    "Pre_valuation_order_bank__c": {
+      "key": "pre_valuation_bank",
+      "path": "deal.pre_valuation_bank",
+      "target": "deal.extra"
+    },
+    "Pre_valuation_order_date__c": {
+      "key": "pre_valuation_order_date",
+      "path": "deal.pre_valuation_order_date",
+      "target": "deal.extra"
+    },
+    "Product_Name__c": {
+      "path": "deal.product_name",
+      "target": "loan.product_name"
+    },
+    "Product_Type__c": {
+      "path": "deal.product_type",
+      "target": "loan.product_type"
+    },
+    "Purchase_Price__c": {
+      "path": "deal.purchase_price",
+      "target": "loan.purchase_price"
+    },
+    "Re_evaluate_the_quote__c": {
+      "key": "quote_revaluation_requested",
+      "path": "deal.quote_revaluation_requested",
+      "target": "deal.extra"
+    },
+    "Refinance_Account__c": {
+      "path": "deal.refinance_account",
+      "target": "loan.refinance_account"
+    },
+    "Second_Co_debtor__c": {
+      "path": "participant.co_borrower[2].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Session_ID__c": {
+      "key": "session_id",
+      "path": "deal.session_id",
+      "target": "deal.extra"
+    },
+    "Sign_all_documents__c": {
+      "key": "all_documents_signed",
+      "path": "deal.all_documents_signed",
+      "target": "deal.extra"
+    },
+    "Sign_all_documents_needed__c": {
+      "key": "document_signing_required",
+      "path": "deal.document_signing_required",
+      "target": "deal.extra"
+    },
+    "StageName": {
+      "path": "deal.salesforce_stage",
+      "target": "deal.salesforce_stage"
+    },
+    "Term_in_year__c": {
+      "path": "deal.loan_term_years",
+      "target": "loan.loan_term_years"
+    },
+    "Term_k__c": {
+      "path": "deal.product_name",
+      "target": "loan.product_name"
+    },
+    "Third_Co_debtor__c": {
+      "path": "participant.co_borrower[3].contact_id",
+      "target": "participant.contact_id"
+    },
+    "Tippad_kifizetve__c": {
+      "key": "referrer_paid",
+      "path": "deal.referrer_paid",
+      "target": "deal.extra"
+    },
+    "Tippado_uj__c": {
+      "key": "referrer_name",
+      "path": "deal.referrer_name",
+      "target": "deal.extra"
+    },
+    "Type": {
+      "key": "opportunity_type",
+      "path": "deal.opportunity_type",
+      "target": "deal.extra"
+    },
+    "Usufructuary__c": {
+      "path": "deal.has_usufructuary",
+      "target": "deal.has_usufructuary"
+    },
+    "Which_documents_are_missing__c": {
+      "key": "missing_documents",
+      "path": "deal.missing_documents",
+      "target": "deal.extra"
+    },
+    "bankiugyintezoneve__c": {
+      "key": "bank_contact_name",
+      "path": "deal.bank_contact_name",
+      "target": "deal.extra"
+    },
+    "gylet_kezel_je__c": {
+      "key": "deal_manager",
+      "path": "deal.deal_manager",
+      "target": "deal.extra"
+    },
+    "gylet_st_tusz__c": {
+      "path": "deal.salesforce_stage",
+      "target": "deal.salesforce_stage"
+    },
+    "remark__c": {
+      "path": "deal.notes",
+      "target": "deal.notes"
+    }
+  },
+  "Property__c": {
+    "Account__c": {
+      "path": "deal.account_id",
+      "target": "deal.account_id"
+    },
+    "Id": {
+      "path": "property.property_id",
+      "target": "property.property_id"
+    },
+    "Ingatlan_Kozterulet_jellege__c": {
+      "key": "street_type",
+      "path": "property.street_type",
+      "target": "property.extra"
+    },
+    "Ingatlan_alapterulet__c": {
+      "path": "property.area_sqm",
+      "target": "property.area_sqm"
+    },
+    "Ingatlan_allapot__c": {
+      "path": "property.condition",
+      "target": "property.condition"
+    },
+    "Ingatlan_biztositas__c": {
+      "path": "property.insurance",
+      "target": "property.insurance"
+    },
+    "Ingatlan_emelet__c": {
+      "path": "property.address.floor",
+      "target": "property.address.floor"
+    },
+    "Ingatlan_energetika__c": {
+      "path": "property.energetika",
+      "target": "property.energetika"
+    },
+    "Ingatlan_epites_eve__c": {
+      "path": "property.year_built",
+      "target": "property.year_built"
+    },
+    "Ingatlan_futes__c": {
+      "path": "property.heating",
+      "target": "property.heating"
+    },
+    "Ingatlan_hasznalatbaveteli__c": {
+      "key": "ingatlan_hasznalatbaveteli",
+      "target": "property.extra"
+    },
+    "Ingatlan_hazszam__c": {
+      "path": "property.address.house_number",
+      "target": "property.address.house_number"
+    },
+    "Ingatlan_hrsz__c": {
+      "path": "property.parcel_number",
+      "target": "property.parcel_number"
+    },
+    "Ingatlan_irsz__c": {
+      "path": "property.address.zip_code",
+      "target": "property.address.zip_code"
+    },
+    "Ingatlan_jellege__c": {
+      "path": "property.form_type",
+      "target": "property.form_type"
+    },
+    "Ingatlan_kozterulet_neve__c": {
+      "path": "property.address.street",
+      "target": "property.address.street"
+    },
+    "Ingatlan_lift__c": {
+      "path": "property.lift",
+      "target": "property.lift"
+    },
+    "Ingatlan_megjegyzes__c": {
+      "key": "ingatlan_megjegyzes",
+      "target": "property.extra"
+    },
+    "Ingatlan_megye__c": {
+      "key": "region",
+      "path": "property.region",
+      "target": "property.extra"
+    },
+    "Ingatlan_neve__c": {
+      "key": "ingatlan_neve",
+      "target": "property.extra"
+    },
+    "Ingatlan_osztatlan__c": {
+      "key": "ingatlan_osztatlan",
+      "target": "property.extra"
+    },
+    "Ingatlan_reszletes_tipus__c": {
+      "path": "property.property_type_detail",
+      "target": "property.property_type_detail"
+    },
+    "Ingatlan_szerepe__c": {
+      "path": "property.ingatlan_szerepe",
+      "target": "property.ingatlan_szerepe"
+    },
+    "Ingatlan_szobak_szama__c": {
+      "path": "property.number_of_rooms",
+      "target": "property.number_of_rooms"
+    },
+    "Ingatlan_telepules__c": {
+      "path": "property.address.city",
+      "target": "property.address.city"
+    },
+    "Ingatlan_terhek__c": {
+      "path": "property.terhek",
+      "target": "property.terhek"
+    },
+    "Name": {
+      "key": "name",
+      "target": "property.extra"
+    },
+    "Property_Type__c": {
+      "path": "property.property_type",
+      "target": "property.property_type"
+    },
+    "Property_value__c": {
+      "path": "property.estimated_value",
+      "target": "property.estimated_value"
+    },
+    "Purchase_price__c": {
+      "path": "property.purchase_price",
+      "target": "property.purchase_price"
+    }
+  }
+}

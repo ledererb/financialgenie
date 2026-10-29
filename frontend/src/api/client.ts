@@ -117,6 +117,21 @@ async function http<T>(
   return (await res.text()) as unknown as T;
 }
 
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.detail || `${response.status} ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 // --- PDF service -----------------------------------------------------------
 
 export async function listPdfs(): Promise<PdfSummary[]> {
@@ -137,7 +152,7 @@ export async function getPdfInfo(pdfId: string): Promise<PdfInfo> {
   return http<PdfInfo>("/api/pdf/info", { query: { pdf_id: pdfId } });
 }
 
-/** PNG URL for a rendered page (used directly as <img src>). */
+/** PNG URL for a rendered page, fetched by AuthenticatedImage. */
 export function pageImageUrl(pdfId: string, page: number, dpr = 1): string {
   return `${API_BASE}/api/pdf/page/${page}/image${qs({
     pdf_id: pdfId,
@@ -261,8 +276,12 @@ export async function getCanonicalFields(): Promise<CanonicalField[]> {
   return data.fields;
 }
 
-export function exportMappingUrl(pdfId: string): string {
-  return `${API_BASE}/api/mapping/export${qs({ pdf_id: pdfId })}`;
+export async function exportMapping(pdfId: string): Promise<void> {
+  const stem = pdfId.split("/").pop()?.replace(/\.pdf$/i, "") || "mapping";
+  await downloadFile(
+    `/api/mapping/export${qs({ pdf_id: pdfId })}`,
+    `${stem}_mapping.json`,
+  );
 }
 
 export async function importMapping(
@@ -406,9 +425,9 @@ export async function generatePackage(
 }
 
 export async function listDeals(): Promise<
-  { Id: string; Name?: string; StageName?: string; CloseDate?: string; AccountName?: string }[]
+  { Id: string; Name: string | null; StageName: string | null; CloseDate: string | null; AccountName: string | null }[]
 > {
-  const data = await http<{ deals: { Id: string; Name?: string; StageName?: string; CloseDate?: string; AccountName?: string }[] }>(
+  const data = await http<{ deals: { Id: string; Name: string | null; StageName: string | null; CloseDate: string | null; AccountName: string | null }[] }>(
     "/api/sf/deals",
   );
   return data.deals;

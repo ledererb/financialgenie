@@ -23,7 +23,9 @@ import time
 from pathlib import Path
 
 PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
-DB_PATH: Path = PROJECT_ROOT / "catalog" / "catalog.db"
+DB_PATH: Path = Path(
+    os.getenv("AUTH_DB_PATH", str(PROJECT_ROOT / "catalog" / "catalog.db"))
+)
 SECRET_PATH: Path = PROJECT_ROOT / "catalog" / ".auth_secret"
 
 log = logging.getLogger("auth_service")

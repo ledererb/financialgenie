@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useStore } from "@/store";
-import { generatePackage, listDeals } from "@/api/client";
+import { downloadFile, generatePackage, listDeals } from "@/api/client";
 import type { PackageResult } from "@/types";
 import ValidationView from "./ValidationView";
 import DealCombobox from "./DealCombobox";
@@ -14,8 +14,8 @@ interface GenerateViewProps {
 
 interface Deal {
   Id: string;
-  Name?: string;
-  StageName?: string;
+  Name?: string | null;
+  StageName?: string | null;
 }
 
 export default function GenerateView({
@@ -69,12 +69,16 @@ export default function GenerateView({
     }
   }, [selectedBankId, selectedProductId, selectedDealId, uploadToSf]);
 
-  const handleDownload = useCallback(() => {
-    if (result?.package_url) {
-      const a = document.createElement("a");
-      a.href = result.package_url;
-      a.download = `package_${selectedBankId}_${selectedProductId}.zip`;
-      a.click();
+  const handleDownload = useCallback(async () => {
+    if (!result?.package_url) return;
+    setError(null);
+    try {
+      await downloadFile(
+        result.package_url,
+        `package_${selectedBankId}_${selectedProductId}.zip`,
+      );
+    } catch (e) {
+      setError((e as Error).message || "ZIP letöltése sikertelen.");
     }
   }, [result, selectedBankId, selectedProductId]);
 

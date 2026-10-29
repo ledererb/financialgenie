@@ -11,7 +11,7 @@
       "pdf_field_name": "flat_1_1",
       "label": "Születési név",
       "field_type": "text",
-      "canonical_field": "Contact.Szuletesi_nev__c",
+      "canonical_field": "participant.borrower.birth_name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -27,7 +27,7 @@
       "pdf_field_name": "flat_1_2",
       "label": "Anyja neve",
       "field_type": "text",
-      "canonical_field": "Contact.Mother_s_Name__c",
+      "canonical_field": "participant.borrower.mother_name",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -43,7 +43,7 @@
       "pdf_field_name": "flat_1_3",
       "label": "Születési hely",
       "field_type": "text",
-      "canonical_field": "Contact.Place_of_Birth__c",
+      "canonical_field": "participant.borrower.birth_place",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -59,7 +59,7 @@
       "pdf_field_name": "flat_1_4",
       "label": "Születési dátum",
       "field_type": "text",
-      "canonical_field": "Contact.Birthdate",
+      "canonical_field": "participant.borrower.birth_date",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {
@@ -75,7 +75,7 @@
       "pdf_field_name": "flat_1_5",
       "label": "Neve",
       "field_type": "text",
-      "canonical_field": "Contact.Name_of_employer__c",
+      "canonical_field": "participant.borrower.employer",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {

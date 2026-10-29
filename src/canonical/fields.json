@@ -1,0 +1,1781 @@
+{
+  "version": 1,
+  "limits": {
+    "participant": 3,
+    "property": 9,
+    "related": 12
+  },
+  "fields": [
+    {
+      "path": "deal.loan_amount",
+      "label": "Hitelösszeg",
+      "type": "money",
+      "source": "loan.loan_amount",
+      "repeat": "none"
+    },
+    {
+      "path": "account.name",
+      "label": "Ügyfél neve",
+      "type": "string",
+      "source": "account.name",
+      "repeat": "none"
+    },
+    {
+      "path": "participant.{role}.name",
+      "label": "Teljes név",
+      "type": "string",
+      "source": "participant.name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.address.city",
+      "label": "Állandó lakcím – település",
+      "type": "string",
+      "source": "participant.address.city",
+      "repeat": "participant"
+    },
+    {
+      "path": "property.parcel_number",
+      "label": "Helyrajzi szám",
+      "type": "string",
+      "source": "property.parcel_number",
+      "repeat": "property"
+    },
+    {
+      "path": "property.address.city",
+      "label": "Ingatlan település",
+      "type": "string",
+      "source": "property.address.city",
+      "repeat": "property"
+    },
+    {
+      "path": "participant.{role}.income.income_type",
+      "label": "Jövedelem típusa",
+      "type": "string",
+      "source": "income.income_type",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.amount",
+      "label": "Jövedelem összege",
+      "type": "money",
+      "source": "income.amount",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.currency",
+      "label": "Jövedelem pénzneme",
+      "type": "string",
+      "source": "income.currency",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.destination",
+      "label": "Jövedelem érkezésének helye",
+      "type": "string",
+      "source": "income.destination",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.bank_name",
+      "label": "Jövedelem bankja",
+      "type": "string",
+      "source": "income.bank_name",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.account_number",
+      "label": "Jövedelem számlaszáma",
+      "type": "string",
+      "source": "income.account_number",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.income.sequence",
+      "label": "Jövedelem sorrendje",
+      "type": "integer",
+      "source": "income.sequence",
+      "repeat": "income"
+    },
+    {
+      "path": "participant.{role}.existing_loan.loan_type",
+      "label": "Meglévő hitel típusa",
+      "type": "string",
+      "source": "existing_loan.loan_type",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.bank_name",
+      "label": "Meglévő hitel bankja",
+      "type": "string",
+      "source": "existing_loan.bank_name",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.account_number",
+      "label": "Meglévő hitel számlaszáma",
+      "type": "string",
+      "source": "existing_loan.account_number",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.original_amount",
+      "label": "Meglévő hitel eredeti összege",
+      "type": "money",
+      "source": "existing_loan.original_amount",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.outstanding_amount",
+      "label": "Meglévő hitel fennálló tartozása",
+      "type": "money",
+      "source": "existing_loan.outstanding_amount",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.monthly_payment",
+      "label": "Meglévő hitel havi törlesztője",
+      "type": "money",
+      "source": "existing_loan.monthly_payment",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.currency",
+      "label": "Meglévő hitel pénzneme",
+      "type": "string",
+      "source": "existing_loan.currency",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.refinance",
+      "label": "Meglévő hitel kiváltandó",
+      "type": "boolean",
+      "source": "existing_loan.refinance",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "participant.{role}.existing_loan.sequence",
+      "label": "Meglévő hitel sorrendje",
+      "type": "integer",
+      "source": "existing_loan.sequence",
+      "repeat": "existing_loan"
+    },
+    {
+      "path": "property.number_of_rooms",
+      "label": "Szobák száma",
+      "type": "integer",
+      "source": "property.number_of_rooms",
+      "repeat": "property"
+    },
+    {
+      "path": "property.property_type_detail",
+      "label": "Részletes ingatlantípus",
+      "type": "string",
+      "source": "property.property_type_detail",
+      "repeat": "property"
+    },
+    {
+      "path": "property.property_id",
+      "label": "Ingatlan azonosító",
+      "type": "string",
+      "source": "property.property_id",
+      "repeat": "property"
+    },
+    {
+      "path": "deal.created_at",
+      "label": "Ügylet létrehozásának dátuma",
+      "type": "date",
+      "source": "deal.created_at",
+      "repeat": "none"
+    },
+    {
+      "path": "account.account_number",
+      "label": "Account száma",
+      "type": "string",
+      "source": "account.account_number",
+      "repeat": "none"
+    },
+    {
+      "path": "account.billing_city",
+      "label": "Számlázási település",
+      "type": "string",
+      "source": "account.billing_city",
+      "repeat": "none"
+    },
+    {
+      "path": "account.billing_country",
+      "label": "Számlázási ország",
+      "type": "string",
+      "source": "account.billing_country",
+      "repeat": "none"
+    },
+    {
+      "path": "account.billing_postal_code",
+      "label": "Számlázási irányítószám",
+      "type": "string",
+      "source": "account.billing_postal_code",
+      "repeat": "none"
+    },
+    {
+      "path": "account.billing_state",
+      "label": "Számlázási megye",
+      "type": "string",
+      "source": "account.billing_state",
+      "repeat": "none"
+    },
+    {
+      "path": "account.billing_street",
+      "label": "Számlázási utca",
+      "type": "string",
+      "source": "account.billing_street",
+      "repeat": "none"
+    },
+    {
+      "path": "account.description",
+      "label": "Account leírása",
+      "type": "string",
+      "source": "account.description",
+      "repeat": "none"
+    },
+    {
+      "path": "account.fax",
+      "label": "Account faxa",
+      "type": "string",
+      "source": "account.fax",
+      "repeat": "none"
+    },
+    {
+      "path": "account.industry",
+      "label": "Account tevékenységi köre",
+      "type": "string",
+      "source": "account.industry",
+      "repeat": "none"
+    },
+    {
+      "path": "account.phone",
+      "label": "Account telefonszáma",
+      "type": "string",
+      "source": "account.phone",
+      "repeat": "none"
+    },
+    {
+      "path": "account.shipping_city",
+      "label": "Szállítási település",
+      "type": "string",
+      "source": "account.shipping_city",
+      "repeat": "none"
+    },
+    {
+      "path": "account.shipping_country",
+      "label": "Szállítási ország",
+      "type": "string",
+      "source": "account.shipping_country",
+      "repeat": "none"
+    },
+    {
+      "path": "account.shipping_postal_code",
+      "label": "Szállítási irányítószám",
+      "type": "string",
+      "source": "account.shipping_postal_code",
+      "repeat": "none"
+    },
+    {
+      "path": "account.shipping_street",
+      "label": "Szállítási utca",
+      "type": "string",
+      "source": "account.shipping_street",
+      "repeat": "none"
+    },
+    {
+      "path": "account.website",
+      "label": "Account weboldala",
+      "type": "string",
+      "source": "account.website",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.account_id",
+      "label": "Account azonosító",
+      "type": "string",
+      "source": "deal.account_id",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.afa_support",
+      "label": "ÁFA támogatás összege",
+      "type": "money",
+      "source": "loan.afa_support",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.all_documents_signed",
+      "label": "Minden dokumentum aláírva",
+      "type": "boolean",
+      "source": "extra.all_documents_signed",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.annual_revenue",
+      "label": "Éves árbevétel",
+      "type": "money",
+      "source": "extra.annual_revenue",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.bank_application_approved",
+      "label": "Banki igénylés jóváhagyása",
+      "type": "boolean",
+      "source": "extra.bank_application_approved",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.bank_approval",
+      "label": "Banki jóváhagyás",
+      "type": "boolean",
+      "source": "extra.bank_approval",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.bank_contact_name",
+      "label": "Banki ügyintéző neve",
+      "type": "string",
+      "source": "extra.bank_contact_name",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.bank_documents_received_date",
+      "label": "Banki dokumentumátvétel dátuma",
+      "type": "date",
+      "source": "extra.bank_documents_received_date",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.bank_name",
+      "label": "Bank",
+      "type": "string",
+      "source": "extra.bank_name",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.call_attended",
+      "label": "Részvétel a híváson",
+      "type": "boolean",
+      "source": "extra.call_attended",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.campaign",
+      "label": "Kampány",
+      "type": "string",
+      "source": "extra.campaign",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.campaign_id",
+      "label": "Kampány azonosító",
+      "type": "string",
+      "source": "extra.campaign_id",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.category",
+      "label": "Kategória",
+      "type": "string",
+      "source": "extra.category",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.close_date",
+      "label": "Lezárás dátuma",
+      "type": "date",
+      "source": "extra.close_date",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.commission_date",
+      "label": "Jutalék dátuma",
+      "type": "date",
+      "source": "extra.commission_date",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.commission_paid",
+      "label": "Jutalék kifizetése",
+      "type": "boolean",
+      "source": "extra.commission_paid",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.contract_signed_date",
+      "label": "Szerződés aláírásának dátuma",
+      "type": "date",
+      "source": "extra.contract_signed_date",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.csabi_deal",
+      "label": "Csabi ügylete",
+      "type": "boolean",
+      "source": "extra.csabi_deal",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.csok_amount",
+      "label": "CSOK támogatás összege",
+      "type": "money",
+      "source": "loan.csok_amount",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.deal_id",
+      "label": "Ügylet azonosító",
+      "type": "string",
+      "source": "deal.deal_id",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.deal_manager",
+      "label": "Ügyletkezelő",
+      "type": "string",
+      "source": "extra.deal_manager",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.discount_action",
+      "label": "Kedvezményakció",
+      "type": "string",
+      "source": "loan.discount_action",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.document_signing_required",
+      "label": "Dokumentumok aláírása szükséges",
+      "type": "boolean",
+      "source": "extra.document_signing_required",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.down_payment",
+      "label": "Önerő",
+      "type": "money",
+      "source": "loan.down_payment",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.flag",
+      "label": "Jelölés",
+      "type": "string",
+      "source": "extra.flag",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.form_return_requested",
+      "label": "Űrlap visszaküldése",
+      "type": "boolean",
+      "source": "extra.form_return_requested",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.has_mortgagor",
+      "label": "Zálogkötelezett jelenléte",
+      "type": "boolean",
+      "source": "deal.has_mortgagor",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.has_usufructuary",
+      "label": "Haszonélvező jelenléte",
+      "type": "boolean",
+      "source": "deal.has_usufructuary",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.housing_savings",
+      "label": "Lakástakarék összege",
+      "type": "money",
+      "source": "loan.housing_savings",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.insurance",
+      "label": "Biztosítás",
+      "type": "string",
+      "source": "extra.insurance",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.interest_period",
+      "label": "Kamatperiódus",
+      "type": "string",
+      "source": "loan.interest_period",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.interest_rate",
+      "label": "Kamatláb",
+      "type": "number",
+      "source": "extra.interest_rate",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.lead_priority",
+      "label": "Lead prioritása",
+      "type": "string",
+      "source": "extra.lead_priority",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.lead_source",
+      "label": "Lead forrása",
+      "type": "string",
+      "source": "extra.lead_source",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.lead_status",
+      "label": "Lead státusza",
+      "type": "string",
+      "source": "extra.lead_status",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.loan_purpose",
+      "label": "Hitel célja",
+      "type": "string",
+      "source": "loan.loan_purpose",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.loan_term_months",
+      "label": "Futamidő hónapokban",
+      "type": "integer",
+      "source": "loan.loan_term_months",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.loan_term_years",
+      "label": "Futamidő években",
+      "type": "number",
+      "source": "loan.loan_term_years",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.missing_documents",
+      "label": "Hiányzó dokumentumok",
+      "type": "string",
+      "source": "extra.missing_documents",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.monthly_payment",
+      "label": "Becsült havi törlesztő",
+      "type": "money",
+      "source": "loan.monthly_payment",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.name",
+      "label": "Ügylet neve",
+      "type": "string",
+      "source": "extra.name",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.next_step",
+      "label": "Következő lépés",
+      "type": "string",
+      "source": "extra.next_step",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.notes",
+      "label": "Megjegyzések",
+      "type": "string",
+      "source": "deal.notes",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.offer_accepted",
+      "label": "Ajánlat elfogadása",
+      "type": "boolean",
+      "source": "extra.offer_accepted",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.opportunity_type",
+      "label": "Ügylet típusa",
+      "type": "string",
+      "source": "extra.opportunity_type",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.other_source_info",
+      "label": "Egyéb forrás információ",
+      "type": "string",
+      "source": "extra.other_source_info",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.otthon_start_amount",
+      "label": "Tervezett Otthon Start összeg",
+      "type": "money",
+      "source": "extra.otthon_start_amount",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.owner_id",
+      "label": "Ügylet tulajdonosának azonosítója",
+      "type": "string",
+      "source": "extra.owner_id",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.pre_valuation_bank",
+      "label": "Előzetes értékbecslés bankja",
+      "type": "string",
+      "source": "extra.pre_valuation_bank",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.pre_valuation_order_date",
+      "label": "Előzetes értékbecslés dátuma",
+      "type": "date",
+      "source": "extra.pre_valuation_order_date",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.pre_valuation_ordered",
+      "label": "Előzetes értékbecslés megrendelve",
+      "type": "boolean",
+      "source": "extra.pre_valuation_ordered",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.preferred_interest_period",
+      "label": "Preferált kamatperiódus",
+      "type": "string",
+      "source": "extra.preferred_interest_period",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.preferred_loan_term",
+      "label": "Preferált futamidő",
+      "type": "string",
+      "source": "extra.preferred_loan_term",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.product_name",
+      "label": "Termék neve",
+      "type": "string",
+      "source": "loan.product_name",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.product_type",
+      "label": "Termék típusa",
+      "type": "string",
+      "source": "loan.product_type",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.purchase_price",
+      "label": "Vételár",
+      "type": "money",
+      "source": "loan.purchase_price",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.quote_revaluation_requested",
+      "label": "Ajánlat újraértékelése",
+      "type": "boolean",
+      "source": "extra.quote_revaluation_requested",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.recent_loan_application_90_days",
+      "label": "Elmúlt 90 napos hiteligénylés",
+      "type": "boolean",
+      "source": "extra.recent_loan_application_90_days",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.referral_fee_percentage",
+      "label": "Ajánlói díj százaléka",
+      "type": "number",
+      "source": "extra.referral_fee_percentage",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.referrer_name",
+      "label": "Tippadó neve",
+      "type": "string",
+      "source": "extra.referrer_name",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.referrer_paid",
+      "label": "Tippadó kifizetve",
+      "type": "boolean",
+      "source": "extra.referrer_paid",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.refinance_account",
+      "label": "Kiváltandó hitel számlaszáma",
+      "type": "string",
+      "source": "loan.refinance_account",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.regular_referral",
+      "label": "Rendszeres ajánlás",
+      "type": "string",
+      "source": "extra.regular_referral",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.related_bank",
+      "label": "Kapcsolódó bank",
+      "type": "string",
+      "source": "extra.related_bank",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.repayment_fee",
+      "label": "Előtörlesztési díj",
+      "type": "money",
+      "source": "extra.repayment_fee",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.salesforce_stage",
+      "label": "Salesforce státusz",
+      "type": "string",
+      "source": "deal.salesforce_stage",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_affordable_monthly_installments",
+      "label": "Második hitel vállalható törlesztője",
+      "type": "money",
+      "source": "extra.secondary_affordable_monthly_installments",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_interest_period",
+      "label": "Második hitel kamatperiódusa",
+      "type": "string",
+      "source": "extra.secondary_interest_period",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_loan_amount",
+      "label": "Második hitel összege",
+      "type": "money",
+      "source": "extra.secondary_loan_amount",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_loan_purpose",
+      "label": "Második hitel célja",
+      "type": "string",
+      "source": "extra.secondary_loan_purpose",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_loan_term_years",
+      "label": "Második hitel futamideje években",
+      "type": "number",
+      "source": "extra.secondary_loan_term_years",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.secondary_product_type",
+      "label": "Második hitel típusa",
+      "type": "string",
+      "source": "extra.secondary_product_type",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.session_id",
+      "label": "Munkamenet azonosító",
+      "type": "string",
+      "source": "extra.session_id",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_affordable_monthly_installments",
+      "label": "Harmadik hitel vállalható törlesztője",
+      "type": "money",
+      "source": "extra.tertiary_affordable_monthly_installments",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_interest_period",
+      "label": "Harmadik hitel kamatperiódusa",
+      "type": "string",
+      "source": "extra.tertiary_interest_period",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_loan_amount",
+      "label": "Harmadik hitel összege",
+      "type": "money",
+      "source": "extra.tertiary_loan_amount",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_loan_purpose",
+      "label": "Harmadik hitel célja",
+      "type": "string",
+      "source": "extra.tertiary_loan_purpose",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_loan_term_years",
+      "label": "Harmadik hitel futamideje években",
+      "type": "number",
+      "source": "extra.tertiary_loan_term_years",
+      "repeat": "none"
+    },
+    {
+      "path": "deal.tertiary_product_type",
+      "label": "Harmadik hitel típusa",
+      "type": "string",
+      "source": "extra.tertiary_product_type",
+      "repeat": "none"
+    },
+    {
+      "path": "participant.{role}.account_holding_bank",
+      "label": "Számlavezető bank",
+      "type": "string",
+      "source": "participant.account_holding_bank",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.address.street",
+      "label": "Állandó lakcím – utca",
+      "type": "string",
+      "source": "participant.address.street",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.address.zip_code",
+      "label": "Állandó lakcím – irányítószám",
+      "type": "string",
+      "source": "participant.address.zip_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.affordable_monthly_installments",
+      "label": "Vállalható havi törlesztő",
+      "type": "money",
+      "source": "extra.affordable_monthly_installments",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.aml_consent",
+      "label": "AML hozzájárulás",
+      "type": "boolean",
+      "source": "consents.aml",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.assistant_name",
+      "label": "Asszisztens neve",
+      "type": "string",
+      "source": "extra.assistant_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.assistant_phone",
+      "label": "Asszisztens telefonszáma",
+      "type": "string",
+      "source": "extra.assistant_phone",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.bank_branch",
+      "label": "Bankfiók",
+      "type": "string",
+      "source": "extra.bank_branch",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.bank_contact_position",
+      "label": "Banki ügyintéző pozíciója",
+      "type": "string",
+      "source": "extra.bank_contact_position",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.bank_contact_region",
+      "label": "Banki ügyintéző területe",
+      "type": "string",
+      "source": "extra.bank_contact_region",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.bank_name",
+      "label": "Bank",
+      "type": "string",
+      "source": "extra.bank_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.birth_date",
+      "label": "Születési dátum",
+      "type": "date",
+      "source": "participant.birth_date",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.birth_name",
+      "label": "Születési név",
+      "type": "string",
+      "source": "participant.birth_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.birth_place",
+      "label": "Születési hely",
+      "type": "string",
+      "source": "participant.birth_place",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.cafeteria_bonus",
+      "label": "Cafeteria, bónusz",
+      "type": "money",
+      "source": "participant.cafeteria_bonus",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.children_count",
+      "label": "Gyermekek száma",
+      "type": "integer",
+      "source": "participant.children_count",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.children_details",
+      "label": "Gyermekek száma és életkora",
+      "type": "string",
+      "source": "participant.numer_and_age_of_children",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.citizenship",
+      "label": "Állampolgárság",
+      "type": "string",
+      "source": "participant.citizenship",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.concern",
+      "label": "Aggály",
+      "type": "string",
+      "source": "extra.concern",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.contact_id",
+      "label": "Contact azonosító",
+      "type": "string",
+      "source": "participant.contact_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.continuous_tb_2_years",
+      "label": "OEP/TB jogviszony két éve",
+      "type": "string",
+      "source": "participant.continuous_tb_2_years",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.contract_end_date",
+      "label": "Határozott szerződés vége",
+      "type": "date",
+      "source": "participant.contract_end_date",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.contract_start_date",
+      "label": "Szerződés kezdete",
+      "type": "date",
+      "source": "participant.contract_start_date",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.country",
+      "label": "Ország",
+      "type": "string",
+      "source": "extra.country",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.country_code",
+      "label": "Országkód",
+      "type": "string",
+      "source": "extra.country_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.credit_commitment",
+      "label": "Hitelvállalás",
+      "type": "string",
+      "source": "participant.credit_commitment",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.current_debt_credit_limit",
+      "label": "Fennálló hitelek részletezve",
+      "type": "string",
+      "source": "participant.current_debt_credit_limit",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.current_employment_started",
+      "label": "Jelenlegi munkaviszony kezdete",
+      "type": "date",
+      "source": "participant.current_employment_started",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.data_processing_consent",
+      "label": "Adatkezelési hozzájárulás",
+      "type": "boolean",
+      "source": "consents.data_processing",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.date_of_handover",
+      "label": "Átadás dátuma",
+      "type": "date",
+      "source": "participant.date_of_handover",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.date_of_signature",
+      "label": "Aláírás dátuma",
+      "type": "date",
+      "source": "participant.date_of_signature",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.date_of_transfer",
+      "label": "Utalás dátuma",
+      "type": "date",
+      "source": "participant.date_of_transfer",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.department",
+      "label": "Osztály",
+      "type": "string",
+      "source": "extra.department",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.dependents_count",
+      "label": "Eltartottak száma",
+      "type": "integer",
+      "source": "participant.dependents_count",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.description",
+      "label": "Szereplő megjegyzése",
+      "type": "string",
+      "source": "participant.description",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.description_of_loan_purpose",
+      "label": "Hitelcél megjegyzése",
+      "type": "string",
+      "source": "participant.description_of_loan_purpose",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.display_name",
+      "label": "Megjelenített név",
+      "type": "string",
+      "source": "extra.display_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.divident",
+      "label": "Osztalék",
+      "type": "money",
+      "source": "participant.divident",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.education",
+      "label": "Legmagasabb iskolai végzettség",
+      "type": "string",
+      "source": "participant.education",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.email",
+      "label": "E-mail cím",
+      "type": "string",
+      "source": "participant.email",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.email_bounced_date",
+      "label": "E-mail visszapattanás dátuma",
+      "type": "date",
+      "source": "extra.email_bounced_date",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.email_bounced_reason",
+      "label": "E-mail visszapattanás oka",
+      "type": "string",
+      "source": "extra.email_bounced_reason",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.email_opt_out",
+      "label": "E-mail leiratkozás",
+      "type": "boolean",
+      "source": "extra.email_opt_out",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employee_registration",
+      "label": "Munkavállalói regisztráció",
+      "type": "string",
+      "source": "participant.employee_registration",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employer",
+      "label": "Munkáltató neve",
+      "type": "string",
+      "source": "participant.employer",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employer_company_form",
+      "label": "Munkáltató cégformája",
+      "type": "string",
+      "source": "participant.employer_company_form",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employer_company_type",
+      "label": "Munkáltató cégformája",
+      "type": "string",
+      "source": "participant.employer_company_type",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employer_tax_number",
+      "label": "Munkáltató adószáma",
+      "type": "string",
+      "source": "participant.employer_tax_number",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.employment_type",
+      "label": "Munkaviszony típusa",
+      "type": "string",
+      "source": "participant.employment_type",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.fax",
+      "label": "Fax",
+      "type": "string",
+      "source": "extra.fax",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.financial_institution",
+      "label": "Pénzintézet",
+      "type": "string",
+      "source": "extra.financial_institution",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.first_name",
+      "label": "Keresztnév",
+      "type": "string",
+      "source": "extra.first_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.foglalkozas_tipusa",
+      "label": "Foglalkozás típusa",
+      "type": "string",
+      "source": "participant.foglalkozas_tipusa",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.gender",
+      "label": "Nem",
+      "type": "string",
+      "source": "participant.gender",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.home_phone",
+      "label": "Otthoni telefon",
+      "type": "string",
+      "source": "extra.home_phone",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.household_size",
+      "label": "Háztartás létszáma",
+      "type": "integer",
+      "source": "participant.household_size",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.id_card_number",
+      "label": "Lakcímkártya száma",
+      "type": "string",
+      "source": "participant.id_card_number",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.id_document_type",
+      "label": "Okmány típusa",
+      "type": "string",
+      "source": "participant.id_document_type",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.income_from_self_owned",
+      "label": "Saját cégből származó jövedelem",
+      "type": "money",
+      "source": "participant.income_from_self_owned",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.income_type",
+      "label": "Jövedelem típusa",
+      "type": "string",
+      "source": "participant.income_type",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.individual_id",
+      "label": "Individual azonosító",
+      "type": "string",
+      "source": "extra.individual_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.industry",
+      "label": "Iparág",
+      "type": "string",
+      "source": "participant.industry",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.is_email_bounced",
+      "label": "Visszapattanó e-mail",
+      "type": "boolean",
+      "source": "extra.is_email_bounced",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.is_priority_record",
+      "label": "Prioritásos rekord",
+      "type": "boolean",
+      "source": "extra.is_priority_record",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.jovairas_vallalasa",
+      "label": "Jóváírás vállalása",
+      "type": "string",
+      "source": "participant.jovairas_vallalasa",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.khr_consent",
+      "label": "KHR hozzájárulás",
+      "type": "boolean",
+      "source": "consents.khr",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.last_name",
+      "label": "Vezetéknév",
+      "type": "string",
+      "source": "extra.last_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.legal_title",
+      "label": "Lakóhely jogcíme",
+      "type": "string",
+      "source": "participant.legal_title",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_address.city",
+      "label": "Levelezési település",
+      "type": "string",
+      "source": "participant.mailing_address.city",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_address.street",
+      "label": "Levelezési utca",
+      "type": "string",
+      "source": "participant.mailing_address.street",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_address.zip_code",
+      "label": "Levelezési irányítószám",
+      "type": "string",
+      "source": "participant.mailing_address.zip_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_country",
+      "label": "Levelezési ország",
+      "type": "string",
+      "source": "extra.mailing_country",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_country_code",
+      "label": "Levelezési ország kódja",
+      "type": "string",
+      "source": "extra.mailing_country_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_state",
+      "label": "Levelezési megye",
+      "type": "string",
+      "source": "extra.mailing_state",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mailing_state_code",
+      "label": "Levelezési megye kódja",
+      "type": "string",
+      "source": "extra.mailing_state_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.marital_status",
+      "label": "Családi állapot",
+      "type": "string",
+      "source": "participant.marital_status",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mobile_phone",
+      "label": "Mobiltelefonszám",
+      "type": "string",
+      "source": "participant.mobile_phone",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.monthly_income",
+      "label": "Havi nettó jövedelem",
+      "type": "money",
+      "source": "participant.monthly_income",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.monthly_payment_details",
+      "label": "Havi törlesztés részletei",
+      "type": "string",
+      "source": "participant.monthly_payment_details",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.mother_name",
+      "label": "Anyja születési neve",
+      "type": "string",
+      "source": "participant.mother_name",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.nav_consent",
+      "label": "NAV hozzájárulás",
+      "type": "boolean",
+      "source": "consents.nav",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.non_preferred_bank",
+      "label": "Nem preferált bank",
+      "type": "string",
+      "source": "extra.non_preferred_bank",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.occupation",
+      "label": "Foglalkozás",
+      "type": "string",
+      "source": "participant.occupation",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_country",
+      "label": "Egyéb cím országa",
+      "type": "string",
+      "source": "participant.other_country",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_country_code",
+      "label": "Egyéb cím országkódja",
+      "type": "string",
+      "source": "extra.other_country_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_income",
+      "label": "Egyéb jövedelem",
+      "type": "money",
+      "source": "participant.other_income",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_monthly_deductions",
+      "label": "Egyéb havi levonások",
+      "type": "money",
+      "source": "participant.other_monthly_deductions",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_monthly_income",
+      "label": "Egyéb havi jövedelem",
+      "type": "money",
+      "source": "participant.other_monthly_income",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_phone",
+      "label": "Egyéb telefonszám",
+      "type": "string",
+      "source": "extra.other_phone",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_state",
+      "label": "Egyéb cím megyéje",
+      "type": "string",
+      "source": "extra.other_state",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.other_state_code",
+      "label": "Egyéb cím megyekódja",
+      "type": "string",
+      "source": "extra.other_state_code",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.owner_id",
+      "label": "Tulajdonos azonosítója",
+      "type": "string",
+      "source": "extra.owner_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.ownership_in_employer",
+      "label": "Tulajdonrész a munkáltatóban",
+      "type": "string",
+      "source": "participant.ownership_in_employer",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.partner_bank",
+      "label": "Partneri bank",
+      "type": "string",
+      "source": "extra.partner_bank",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.permanent_address",
+      "label": "Állandó lakcím",
+      "type": "string",
+      "source": "participant.address.full_address",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.personal_id",
+      "label": "Személyazonosító igazolvány száma",
+      "type": "string",
+      "source": "participant.personal_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.personal_id_last4",
+      "label": "Igazolványszám utolsó négy jegye",
+      "type": "string",
+      "source": "extra.personal_id_last4",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.personal_number",
+      "label": "Személyi szám",
+      "type": "string",
+      "source": "participant.personal_number",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.phone",
+      "label": "Telefonszám",
+      "type": "string",
+      "source": "participant.phone",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.preferalt_bank",
+      "label": "Preferált bank",
+      "type": "string",
+      "source": "participant.preferalt_bank",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.property_50pct_ownership_details",
+      "label": "50%-ot meghaladó lakóingatlan-tulajdon",
+      "type": "string",
+      "source": "participant.property_50pct_ownership_details",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.region",
+      "label": "Megye",
+      "type": "string",
+      "source": "extra.region",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.relation",
+      "label": "Kapcsolat típusa",
+      "type": "string",
+      "source": "participant.relation",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.reports_to_id",
+      "label": "Vezető azonosítója",
+      "type": "string",
+      "source": "extra.reports_to_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.residence_notification_date",
+      "label": "Lakcím bejelentésének dátuma",
+      "type": "date",
+      "source": "participant.date_of_notification_for_residence",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.residence_status",
+      "label": "Lakóhelyi jogviszony",
+      "type": "string",
+      "source": "participant.residence_status",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.role",
+      "label": "Szerep",
+      "type": "string",
+      "source": "participant.role",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.salutation",
+      "label": "Megszólítás",
+      "type": "string",
+      "source": "participant.salutation",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.secondary_email",
+      "label": "Másodlagos e-mail cím",
+      "type": "string",
+      "source": "extra.secondary_email",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.self_employment_details",
+      "label": "Egyéni vállalkozás részletei",
+      "type": "string",
+      "source": "participant.self_employment_details",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.state_support",
+      "label": "Állami támogatás",
+      "type": "string",
+      "source": "participant.state_support",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.tax_id",
+      "label": "Adóazonosító jel",
+      "type": "string",
+      "source": "participant.tax_id",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.title",
+      "label": "Titulus",
+      "type": "string",
+      "source": "extra.title",
+      "repeat": "participant"
+    },
+    {
+      "path": "property.address.floor",
+      "label": "Ingatlan emelete",
+      "type": "string",
+      "source": "property.address.floor",
+      "repeat": "property"
+    },
+    {
+      "path": "property.address.house_number",
+      "label": "Ingatlan házszáma",
+      "type": "string",
+      "source": "property.address.house_number",
+      "repeat": "property"
+    },
+    {
+      "path": "property.address.street",
+      "label": "Ingatlan utcája",
+      "type": "string",
+      "source": "property.address.street",
+      "repeat": "property"
+    },
+    {
+      "path": "property.address.zip_code",
+      "label": "Ingatlan irányítószáma",
+      "type": "string",
+      "source": "property.address.zip_code",
+      "repeat": "property"
+    },
+    {
+      "path": "property.area_sqm",
+      "label": "Hasznos alapterület",
+      "type": "number",
+      "source": "property.area_sqm",
+      "repeat": "property"
+    },
+    {
+      "path": "property.condition",
+      "label": "Ingatlan állapota",
+      "type": "string",
+      "source": "property.condition",
+      "repeat": "property"
+    },
+    {
+      "path": "property.energetika",
+      "label": "Energetikai besorolás",
+      "type": "string",
+      "source": "property.energetika",
+      "repeat": "property"
+    },
+    {
+      "path": "property.estimated_value",
+      "label": "Becsült piaci érték",
+      "type": "money",
+      "source": "property.estimated_value",
+      "repeat": "property"
+    },
+    {
+      "path": "property.form_type",
+      "label": "Építmény típusa",
+      "type": "string",
+      "source": "property.form_type",
+      "repeat": "property"
+    },
+    {
+      "path": "property.heating",
+      "label": "Ingatlan fűtése",
+      "type": "string",
+      "source": "property.heating",
+      "repeat": "property"
+    },
+    {
+      "path": "property.ingatlan_szerepe",
+      "label": "Ingatlan szerepe",
+      "type": "string",
+      "source": "property.ingatlan_szerepe",
+      "repeat": "property"
+    },
+    {
+      "path": "property.insurance",
+      "label": "Ingatlanbiztosítás",
+      "type": "string",
+      "source": "property.insurance",
+      "repeat": "property"
+    },
+    {
+      "path": "property.lift",
+      "label": "Lift megléte",
+      "type": "boolean",
+      "source": "property.lift",
+      "repeat": "property"
+    },
+    {
+      "path": "property.property_type",
+      "label": "Ingatlan típusa",
+      "type": "string",
+      "source": "property.property_type",
+      "repeat": "property"
+    },
+    {
+      "path": "property.purchase_price",
+      "label": "Ingatlan vételára",
+      "type": "money",
+      "source": "property.purchase_price",
+      "repeat": "property"
+    },
+    {
+      "path": "property.region",
+      "label": "Ingatlan megyéje",
+      "type": "string",
+      "source": "extra.region",
+      "repeat": "property"
+    },
+    {
+      "path": "property.street_type",
+      "label": "Közterület jellege",
+      "type": "string",
+      "source": "extra.street_type",
+      "repeat": "property"
+    },
+    {
+      "path": "property.terhek",
+      "label": "Ingatlan terhek",
+      "type": "string",
+      "source": "property.terhek",
+      "repeat": "property"
+    },
+    {
+      "path": "property.town_or_exact_address",
+      "label": "Ingatlan települése vagy pontos címe",
+      "type": "string",
+      "source": "extra.town_or_exact_address",
+      "repeat": "property"
+    },
+    {
+      "path": "property.year_built",
+      "label": "Építés éve",
+      "type": "integer",
+      "source": "property.year_built",
+      "repeat": "property"
+    }
+  ]
+}

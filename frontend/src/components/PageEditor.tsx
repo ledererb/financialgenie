@@ -4,7 +4,7 @@
 // editing, SF type display, field add/delete, scroll sync.
 // ---------------------------------------------------------------------------
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
   CanonicalField,
   CharacterGroup,
@@ -30,6 +30,16 @@ import {
   updateGroup,
 } from "@/api/client";
 import CheckboxGroupDialog from "./CheckboxGroupDialog";
+import AuthenticatedImage from "./AuthenticatedImage";
+import {
+  buildFoldedIndex,
+  buildGroupChips,
+  canonicalGroupOf,
+  capGroups,
+  filterFoldedIndex,
+  groupCanonicals,
+  moveActive,
+} from "@/lib/canonicalSearch";
 
 interface PageEditorProps {
   pdfId: string;
@@ -67,7 +77,21 @@ function confidenceBadgeClass(c: Confidence): string {
 }
 
 // ── CanonicalFieldSearch: searchable combobox for canonical field selection ──
-// Replaces the native <select> which was impractical for 249+ SF fields.
+// Cutover Task 4: the catalog is the shared Genie registry's FULL expansion
+// (thousands of concrete paths). The picker groups it (deal / account /
+// participant.<role> / property / income / existing_loan), searches
+// accent-insensitively through a CACHED folded index (review fix 4), and
+// CAPS the rendered rows — never one huge list.
+//
+// Review fix 2: the widget is a proper ARIA combobox — input
+// role="combobox" with aria-expanded/aria-controls/aria-activedescendant,
+// role="listbox"/role="option" rows with aria-selected, full keyboard
+// support (ArrowUp/ArrowDown/Home/End navigation with wrap-around, Enter
+// selects the active option, Escape closes) and a visible active-option
+// highlight — replacing the native <select>s must not cost accessibility.
+const MAX_ROWS_PER_GROUP = 25;
+const MAX_ROWS_TOTAL = 200;
+
 function CanonicalFieldSearch({
   autoFocus,
   value,
@@ -85,9 +109,11 @@ function CanonicalFieldSearch({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [objFilter, setObjFilter] = useState<string | null>(null);
+  const [groupFilter, setGroupFilter] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     if (autoFocus) {
@@ -107,32 +133,59 @@ function CanonicalFieldSearch({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClear]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return fields.filter((c) => {
-      if (objFilter) {
-        const obj = c.path.split(".")[0];
-        if (obj !== objFilter) return false;
-      }
-      if (!q) return true;
-      return c.path.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q);
-    });
-  }, [fields, query, objFilter]);
+  // Review fix 4: fold the immutable catalog ONCE, not per keystroke.
+  const foldedIndex = useMemo(() => buildFoldedIndex(fields), [fields]);
 
-  // Group by SF object prefix
-  const groups = useMemo(() => {
-    const g = new Map<string, CanonicalField[]>();
-    for (const c of filtered) {
-      const dot = c.path.indexOf(".");
-      const obj = dot > 0 ? c.path.slice(0, dot) : "Other";
-      const arr = g.get(obj);
-      if (arr) arr.push(c);
-      else g.set(obj, [c]);
-    }
-    return g;
-  }, [filtered]);
+  const chips = useMemo(() => buildGroupChips(fields), [fields]);
+
+  const filtered = useMemo(() => {
+    const matched = filterFoldedIndex(foldedIndex, query);
+    if (!groupFilter) return matched;
+    return matched.filter((c) => canonicalGroupOf(c.path) === groupFilter);
+  }, [foldedIndex, query, groupFilter]);
+
+  const capped = useMemo(
+    () =>
+      capGroups(groupCanonicals(filtered), {
+        perGroup: MAX_ROWS_PER_GROUP,
+        maxTotal: MAX_ROWS_TOTAL,
+      }),
+    [filtered]
+  );
+
+  // The keyboard-navigable option list mirrors the rendered (capped) rows.
+  const options = useMemo(
+    () => capped.groups.flatMap((group) => group.fields),
+    [capped]
+  );
+
+  // Reset the active option when the option set changes.
+  useEffect(() => {
+    setActiveIndex(null);
+  }, [query, groupFilter, fields]);
+
+  // Keep the active option in view while navigating.
+  useEffect(() => {
+    if (activeIndex === null) return;
+    const el = document.getElementById(`${listboxId}-opt-${activeIndex}`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, listboxId]);
 
   const isValid = !value || validPaths.has(value);
+  const activeId =
+    activeIndex !== null && activeIndex < options.length
+      ? `${listboxId}-opt-${activeIndex}`
+      : undefined;
+
+  const commit = (index: number | null) => {
+    const target = index !== null ? options[index] : undefined;
+    const chosen = target ?? filtered[0];
+    if (chosen) {
+      onSelect(chosen.path);
+      setOpen(false);
+      inputRef.current?.blur();
+    }
+  };
 
   return (
     <div ref={containerRef} style={{ flex: 1, position: "relative" }} onClick={(e) => e.stopPropagation()}>
@@ -140,15 +193,49 @@ function CanonicalFieldSearch({
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-label="Canonical mező kiválasztása"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-activedescendant={activeId}
+          aria-autocomplete="list"
           value={open ? query : value}
           placeholder={value || "— keresés —"}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => { setOpen(true); setQuery(""); }}
+          // Review fix 2 (reopening): clicking an ALREADY-FOCUSED input never
+          // fires onFocus, so a closed combobox would stay closed and typed
+          // text equal to the current value would be swallowed as a no-op —
+          // always reopen (and restart the query) on click too.
+          onClick={(e) => { e.stopPropagation(); setOpen(true); setQuery(""); }}
           onKeyDown={(e) => {
-            if (e.key === "Escape") { setOpen(false); onClear(); }
-            if (e.key === "Enter" && filtered.length > 0) {
-              onSelect(filtered[0].path);
-              setOpen(false);
+            if (e.key === "Escape") { setOpen(false); onClear(); return; }
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setOpen(true);
+              setActiveIndex((i) => moveActive(i, 1, options.length));
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setOpen(true);
+              setActiveIndex((i) => moveActive(i, -1, options.length));
+              return;
+            }
+            if (e.key === "Home" && options.length > 0) {
+              e.preventDefault();
+              setActiveIndex(0);
+              return;
+            }
+            if (e.key === "End" && options.length > 0) {
+              e.preventDefault();
+              setActiveIndex(options.length - 1);
+              return;
+            }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(activeIndex);
             }
           }}
           style={{
@@ -167,6 +254,7 @@ function CanonicalFieldSearch({
             className="btn btn-ghost btn-sm"
             onClick={(e) => { e.stopPropagation(); onSelect(""); }}
             title="Törlés"
+            aria-label="Canonical mező törlése"
             style={{ padding: "2px 6px", fontSize: "0.7rem", flexShrink: 0 }}
           >
             X
@@ -175,97 +263,153 @@ function CanonicalFieldSearch({
       </div>
 
       {open && (
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          right: 0,
-          marginTop: "2px",
-          maxHeight: "280px",
-          overflow: "auto",
-          background: "var(--bg-secondary)",
-          border: "1px solid var(--border-default)",
-          borderRadius: "var(--radius-sm)",
-          boxShadow: "var(--shadow-lg)",
-          zIndex: 50,
-        }}>
-          {/* Objektum-szűrő chipsek — a 145 elemű Contact blokk ne takarja
-              el a többi objektum mezőit */}
-          {(() => {
-            const objCounts = new Map<string, number>();
-            for (const c of fields) {
-              const obj = c.path.split(".")[0];
-              objCounts.set(obj, (objCounts.get(obj) || 0) + 1);
-            }
-            const chips = ["", ...Array.from(objCounts.keys()).sort()];
-            return (
-              <div style={{
-                display: "flex", flexWrap: "wrap", gap: "4px",
-                padding: "6px 8px", borderBottom: "1px solid var(--border-subtle)",
-                position: "sticky", top: 0, background: "var(--bg-secondary)", zIndex: 2,
-              }}>
-                {chips.map((obj) => {
-                  const active = objFilter === obj || (obj === "" && !objFilter);
-                  const label = obj === "" ? "Összes" : obj;
-                  const count = obj === "" ? fields.length : objCounts.get(obj) || 0;
-                  return (
-                    <button
-                      key={obj || "all"}
-                      onClick={(e) => { e.stopPropagation(); setObjFilter(obj === "" ? null : obj); }}
-                      style={{
-                        padding: "2px 8px", fontSize: "0.68rem", cursor: "pointer",
-                        borderRadius: "10px", border: `1px solid ${active ? "var(--accent-blue)" : "var(--border-default)"}`,
-                        background: active ? "var(--accent-blue-glow)" : "var(--bg-tertiary)",
-                        color: active ? "var(--accent-blue)" : "var(--text-secondary)",
-                        fontWeight: active ? 700 : 400,
-                      }}
-                    >
-                      {label} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Canonical mezők"
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: "2px",
+            maxHeight: "300px",
+            overflow: "auto",
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-default)",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "var(--shadow-lg)",
+            zIndex: 50,
+          }}
+        >
+          {/* Csoport-szűrő chipsek — a review-olt canonical csoportok
+              (deal / account / participant.<role> / property / income /
+              existing_loan) közül lehet szűkíteni; a counts a TELJES
+              katalóguson számolódnak. */}
+          <div style={{
+            display: "flex", flexWrap: "wrap", gap: "4px",
+            padding: "6px 8px", borderBottom: "1px solid var(--border-subtle)",
+            position: "sticky", top: 0, background: "var(--bg-secondary)", zIndex: 2,
+          }}>
+            <button
+              aria-pressed={!groupFilter}
+              onClick={(e) => { e.stopPropagation(); setGroupFilter(null); }}
+              style={{
+                padding: "2px 8px", fontSize: "0.68rem", cursor: "pointer",
+                borderRadius: "10px",
+                border: `1px solid ${!groupFilter ? "var(--accent-blue)" : "var(--border-default)"}`,
+                background: !groupFilter ? "var(--accent-blue-glow)" : "var(--bg-tertiary)",
+                color: !groupFilter ? "var(--accent-blue)" : "var(--text-secondary)",
+                fontWeight: !groupFilter ? 700 : 400,
+              }}
+            >
+              Összes ({fields.length})
+            </button>
+            {chips.map((chip) => {
+              const active = groupFilter === chip.key;
+              return (
+                <button
+                  key={chip.key}
+                  title={chip.key}
+                  aria-pressed={active}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGroupFilter(active ? null : chip.key);
+                  }}
+                  style={{
+                    padding: "2px 8px", fontSize: "0.68rem", cursor: "pointer",
+                    borderRadius: "10px",
+                    border: `1px solid ${active ? "var(--accent-blue)" : "var(--border-default)"}`,
+                    background: active ? "var(--accent-blue-glow)" : "var(--bg-tertiary)",
+                    color: active ? "var(--accent-blue)" : "var(--text-secondary)",
+                    fontWeight: active ? 700 : 400,
+                  }}
+                >
+                  {chip.label} ({chip.count})
+                </button>
+              );
+            })}
+          </div>
+
           {filtered.length === 0 ? (
             <div style={{ padding: "8px 12px", fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
               Nincs találat
             </div>
           ) : (
-            Array.from(groups.entries()).map(([obj, gFields]) => (
-              <div key={obj}>
-                <div style={{
-                  padding: "3px 10px",
-                  fontSize: "0.65rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "var(--text-tertiary)",
-                  background: "var(--bg-tertiary)",
-                }}>
-                  {obj} ({gFields.length})
-                </div>
-                {gFields.map((c) => (
-                  <div
-                    key={c.path}
-                    onClick={() => { onSelect(c.path); setOpen(false); }}
-                    style={{
-                      padding: "4px 12px",
-                      fontSize: "0.73rem",
-                      cursor: "pointer",
-                      color: "var(--text-primary)",
-                      background: c.path === value ? "var(--accent-blue-glow)" : "transparent",
-                    }}
-                    onMouseEnter={(e) => { if (c.path !== value) e.currentTarget.style.background = "var(--bg-hover)"; }}
-                    onMouseLeave={(e) => { if (c.path !== value) e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <strong>{c.path.split(".").pop()}</strong>
-                    <span style={{ color: "var(--text-tertiary)" }}> — {c.label}</span>
-                    {c.sf_type && <span style={{ color: "var(--text-tertiary)", fontSize: "0.65rem" }}> [{c.sf_type}]</span>}
+            <>
+              {capped.groups.map((group) => {
+                const groupOffset = options.indexOf(group.fields[0]);
+                return (
+                <div key={group.key}>
+                  <div aria-hidden style={{
+                    padding: "3px 10px",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "var(--text-tertiary)",
+                    background: "var(--bg-tertiary)",
+                  }}>
+                    {group.label} ({group.fields.length}
+                    {group.hidden > 0 ? `/${group.fields.length + group.hidden}` : ""})
                   </div>
-                ))}
-              </div>
-            ))
+                  {group.fields.map((c, i) => {
+                    const optionIndex = groupOffset + i;
+                    const isActive = optionIndex === activeIndex;
+                    const isSelected = c.path === value;
+                    return (
+                    <div
+                      key={c.path}
+                      id={`${listboxId}-opt-${optionIndex}`}
+                      role="option"
+                      aria-selected={isSelected}
+                      aria-label={`${c.path} — ${c.label ?? ""}`}
+                      onClick={() => { onSelect(c.path); setOpen(false); }}
+                      style={{
+                        padding: "4px 12px",
+                        fontSize: "0.73rem",
+                        cursor: "pointer",
+                        color: "var(--text-primary)",
+                        background: isActive
+                          ? "var(--bg-hover)"
+                          : isSelected
+                            ? "var(--accent-blue-glow)"
+                            : "transparent",
+                        outline: isActive ? "1px solid var(--accent-blue)" : "none",
+                        outlineOffset: "-1px",
+                      }}
+                    >
+                      <strong>{c.path}</strong>
+                      {c.label ? <span style={{ color: "var(--text-tertiary)" }}> — {c.label}</span> : null}
+                      {c.type && <span style={{ color: "var(--text-tertiary)", fontSize: "0.65rem" }}> [{c.type}]</span>}
+                    </div>
+                    );
+                  })}
+                  {group.hidden > 0 && (
+                    <div aria-hidden style={{
+                      padding: "3px 12px",
+                      fontSize: "0.65rem",
+                      color: "var(--text-muted)",
+                      fontStyle: "italic",
+                    }}>
+                      +{group.hidden} további ebben a csoportban — pontosítsd a keresést
+                    </div>
+                  )}
+                </div>
+                );
+              })}
+              {capped.hiddenTotal > 0 && (
+                <div aria-hidden style={{
+                  padding: "6px 12px",
+                  fontSize: "0.68rem",
+                  color: "var(--text-secondary)",
+                  borderTop: "1px solid var(--border-subtle)",
+                }}>
+                  Összesen {capped.hiddenTotal} találat elrejtve (listalimit:{" "}
+                  {MAX_ROWS_TOTAL} sor) — írj be több karaktert a szűkítéshez.
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1090,8 +1234,8 @@ export default function PageEditor({
             onMouseMove={handleDrawMouseMove}
             onMouseUp={handleDrawMouseUp}
           >
-            <img
-              src={pageImageUrl(pdfId, pageNumber)}
+            <AuthenticatedImage
+              sourceUrl={pageImageUrl(pdfId, pageNumber)}
               alt={`${pageNumber}. oldal`}
               onLoad={handleImageLoad}
               style={{
@@ -2112,22 +2256,20 @@ export default function PageEditor({
                       }}
                       style={{ ...inputStyle, fontFamily: "monospace" }}
                     />
-                    <select
+                    {/* Cutover Task 4: a teljes registry-katalógus (több ezer
+                        path) csoportosított, korlátozott sorú keresővel —
+                        native <select> itt nem méretezhető. */}
+                    <CanonicalFieldSearch
                       value={g.canonical_field ?? ""}
-                      onChange={(e) =>
+                      fields={canonicals}
+                      validPaths={validCanonicalPaths}
+                      onSelect={(path) =>
                         handleUpdateCharGroup(g.group_id, {
-                          canonical_field: e.target.value || null,
+                          canonical_field: path || null,
                         })
                       }
-                      style={inputStyle}
-                    >
-                      <option value="">— kanonikus mező —</option>
-                      {canonicals.map((c) => (
-                        <option key={c.path} value={c.path}>
-                          {c.path}
-                        </option>
-                      ))}
-                    </select>
+                      onClear={() => {}}
+                    />
                   </div>
                 ))}
 
@@ -2147,18 +2289,13 @@ export default function PageEditor({
                     onChange={(e) => setNewCharGroupMembers(e.target.value)}
                     style={{ ...inputStyle, fontFamily: "monospace" }}
                   />
-                  <select
+                  <CanonicalFieldSearch
                     value={newCharGroupCanonical}
-                    onChange={(e) => setNewCharGroupCanonical(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">— kanonikus mező —</option>
-                    {canonicals.map((c) => (
-                      <option key={c.path} value={c.path}>
-                        {c.path}
-                      </option>
-                    ))}
-                  </select>
+                    fields={canonicals}
+                    validPaths={validCanonicalPaths}
+                    onSelect={(path) => setNewCharGroupCanonical(path)}
+                    onClear={() => {}}
+                  />
                   <button
                     onClick={() => {
                       handleCreateCharGroup(newCharGroupMembers, newCharGroupCanonical);

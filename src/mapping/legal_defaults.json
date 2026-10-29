@@ -1,81 +1,58 @@
 {
-  "version": "1.0",
-  "description": "Jogi nyilatkozatok alapértelmezett értékei (AI + config hibrid rendszer). A LegalClassifier ezt használja, hogy kategória → true/false értékké alakítsa a leképezetlen checkboxokat.",
+  "version": "2.0",
+  "description": "Biztonságos jogi nyilatkozat politika (Cutover Task 5). A LegalClassifier ezt a táblát használja — a v2.0-ban SEMILYEN kategória nem ad automatikus true/false értéket. A nem role-alapú jogi választások (KHR/NAV/pénznem/cselekvőképesség/felhatalmazás/személyes állapotú nyilatkozatok) kézi döntések maradnak, és a pipeline manual_declarations listában jelennek meg.",
+  "policy": {
+    "unknown_categories": "Soha nem kapnak értéket — kézi döntésként listázódnak (manual).",
+    "automatic_defaults": "Tiltva: egyetlen kategóriának sincs default_value true/false értéke.",
+    "product_conditioned_ticks": "Tiltva: a conditional_rules tábla üres — a terméklista sosem pipál automatikusan nyilatkozatot.",
+    "consent": "Kizárólag explicit CRM consent canonical utakon keresztül tölthető (participant.{role}.aml_consent / data_processing_consent / khr_consent / nav_consent), emberileg felülvizsgált mapping canonical_field-ként. A klasszifikátor önmagában SOHA nem pipál consent mezőt — a 'crm_consent' apply_when a kódban is kihagyást jelent.",
+    "role_signature": "A szerepkör/aláírás oszlopokat a mapping 'points' bejegyzései (rule 2, indexelt szerep-címzés: adós, adóstárs_1..3, zálogkötelezett_1..2, haszonélvező_1..2) kezelik. A LegalClassifier a points-managed mezőket nem írhatja felül (apply_defaults points_managed guard).",
+    "manual_listing": "A pipeline (_fill_legal_declarations / run_for_deal result['manual_declarations']) listázza a feloldatlan nyilatkozatokat kézi döntésként."
+  },
   "categories": {
     "consent": {
-      "default_value": true,
-      "description": "Általános jogi hozzájárulások (elfogadom, tudomásul veszem, hozzájárulok)",
-      "apply_when": "always"
+      "default_value": null,
+      "description": "Hozzájárulások — kizárólag explicit CRM consent canonical úton (mapping canonical_field), sosem kategória-alapértelmezettként",
+      "apply_when": "crm_consent"
     },
     "data_sharing": {
-      "default_value": true,
-      "description": "Adatkezelési / adattovábbítási hozzájárulások",
-      "apply_when": "always"
+      "default_value": null,
+      "description": "Adattovábbítási / adatkezelési hozzájárulások — kizárólag explicit CRM consent canonical úton",
+      "apply_when": "crm_consent"
     },
     "bank_info": {
-      "default_value": true,
-      "description": "Banki tájékoztatás (kondíciók, szerződés) megkapásához / elolvasásához kapcsolódó",
-      "apply_when": "always"
+      "default_value": null,
+      "description": "Banki tájékoztatások — kézi döntés",
+      "apply_when": "manual"
     },
     "decline": {
-      "default_value": false,
-      "description": "Lemondó / elutasító nyilatkozatok (nem járulok hozzá, lemondok)",
-      "apply_when": "always"
+      "default_value": null,
+      "description": "Lemondó / elutasító nyilatkozatok — kézi döntés",
+      "apply_when": "manual"
     },
     "property_state": {
-      "default_value": false,
-      "description": "Ingatlan állapotára / tulajdoni lapra vonatkozó nyilatkozatok (alapértelmezetten nem pipált, kivéve ha van rá adat)",
-      "apply_when": "always"
+      "default_value": null,
+      "description": "Ingatlan állapotára vonatkozó nyilatkozatok — kézi döntés",
+      "apply_when": "manual"
     },
     "product_choice": {
       "default_value": null,
-      "description": "Termékválasztás – emberi döntés kell",
+      "description": "Termékválasztás — emberi döntés kell",
       "apply_when": "manual"
     },
     "conditional": {
       "default_value": null,
-      "description": "Feltételes nyilatkozat (pl. CSOK, ÁFA, kamattámogatás) – az conditional_rules dönti el",
-      "apply_when": "conditional"
+      "description": "Termékfüggő nyilatkozat — az automatikus termékfüggő pipálás eltávolítva (Cutover Task 5); kézi döntés",
+      "apply_when": "manual"
     },
     "unknown": {
       "default_value": null,
-      "description": "AI nem tudta besorolni – emberi review szükséges",
+      "description": "Nem besorolható — kézi döntés, sosem kap értéket",
       "apply_when": "manual"
     }
   },
-  "conditional_rules": [
-    {
-      "if": { "products_contains": "csok_plusz" },
-      "category": "conditional",
-      "default_value": true,
-      "note": "CSOK Plusz nyilatkozatok automatikus pipálása, ha a termék szerepel az ügyletben"
-    },
-    {
-      "if": { "products_contains": "csok" },
-      "category": "conditional",
-      "default_value": true,
-      "note": "CSOK nyilatkozatok automatikus pipálása"
-    },
-    {
-      "if": { "products_contains": "piaci_hitel" },
-      "category": "conditional",
-      "default_value": true,
-      "note": "Piaci hitel nyilatkozatok automatikus pipálása"
-    },
-    {
-      "if": { "products_contains": "zold_lakashitel" },
-      "category": "conditional",
-      "default_value": true,
-      "note": "Zöld lakáshitel nyilatkozatok automatikus pipálása"
-    },
-    {
-      "if": { "products_contains": "afa_tamogatas" },
-      "category": "conditional",
-      "default_value": true,
-      "note": "ÁFA támogatás nyilatkozatok automatikus pipálása"
-    }
-  ],
+  "conditional_rules": [],
   "overrides": {
-    "_comment": "Konkrét PDF mezőnév → bool felülírás. Ha egy mező itt szerepel, ez él az AI kategória felett."
+    "_comment": "Konkrét PDF mezőnév → bool felülvizsgált felülírás. Jelenleg üres — a points-managed mezők itt sem írhatók felül (apply_defaults points_managed guard)."
   }
 }

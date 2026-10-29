@@ -1,0 +1,255 @@
+{
+  "org_id": "00D000000000001AAA",
+  "generated_at": "2026-10-29T01:02:03Z",
+  "objects": {
+    "Account": {
+      "label": "Account",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Name": {
+          "type": "string",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Industry": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "Finance",
+              "label": "Finance",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "BillingStreet": {
+          "type": "textarea",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    },
+    "Contact": {
+      "label": "Contact",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Name": {
+          "type": "string",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Email": {
+          "type": "email",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "AccountId": {
+          "type": "reference",
+          "referenceTo": [
+            "Account"
+          ],
+          "picklistValues": []
+        },
+        "Marital_Status__c": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "single",
+              "label": "Egyedülálló",
+              "active": true,
+              "defaultValue": false
+            },
+            {
+              "value": "married",
+              "label": "Házas",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "KHR_Consent__c": {
+          "type": "boolean",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    },
+    "Jovedelem__c": {
+      "label": "Jövedelem",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Contact__c": {
+          "type": "reference",
+          "referenceTo": [
+            "Contact"
+          ],
+          "picklistValues": []
+        },
+        "Sorszam__c": {
+          "type": "number",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Jovedelem_tipusa__c": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "salary",
+              "label": "Munkabér",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "Osszeg__c": {
+          "type": "currency",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    },
+    "Meglevo_hitel__c": {
+      "label": "Meglévő hitel",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Contact__c": {
+          "type": "reference",
+          "referenceTo": [
+            "Contact"
+          ],
+          "picklistValues": []
+        },
+        "Hiteltipus__c": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "mortgage",
+              "label": "Jelzáloghitel",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "Kivaltando__c": {
+          "type": "boolean",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Havi_torleszto__c": {
+          "type": "currency",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    },
+    "Opportunity": {
+      "label": "Opportunity",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Name": {
+          "type": "string",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "StageName": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "New",
+              "label": "Új",
+              "active": true,
+              "defaultValue": true
+            },
+            {
+              "value": "Closed Won",
+              "label": "Lezárva",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "AccountId": {
+          "type": "reference",
+          "referenceTo": [
+            "Account"
+          ],
+          "picklistValues": []
+        },
+        "Amount": {
+          "type": "currency",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    },
+    "Property__c": {
+      "label": "Ingatlan",
+      "fields": {
+        "Id": {
+          "type": "id",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Name": {
+          "type": "string",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Account__c": {
+          "type": "reference",
+          "referenceTo": [
+            "Account"
+          ],
+          "picklistValues": []
+        },
+        "Property_Type__c": {
+          "type": "picklist",
+          "referenceTo": [],
+          "picklistValues": [
+            {
+              "value": "apartment",
+              "label": "Lakás",
+              "active": true,
+              "defaultValue": false
+            }
+          ]
+        },
+        "Ingatlan_hrsz__c": {
+          "type": "string",
+          "referenceTo": [],
+          "picklistValues": []
+        },
+        "Ingatlan_lift__c": {
+          "type": "boolean",
+          "referenceTo": [],
+          "picklistValues": []
+        }
+      }
+    }
+  }
+}

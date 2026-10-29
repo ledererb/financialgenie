@@ -16,6 +16,7 @@ Használat:
 import json
 import logging
 import base64
+import re
 import unicodedata
 from dataclasses import dataclass, field
 from enum import Enum
@@ -55,305 +56,88 @@ def _normalize_key(s: str) -> str:
 
 
 # --- A kanonikus modell mezőkatalógusa ---
-# Auto-generated from Salesforce org schema (2026-06-29).
-# Keys are SF API names in Object.Field format.
-# The AI maps PDF form fields → these SF field keys directly.
-# Includes: all fillable types + reference lookups.
-# Excludes: url (doc uploads), location (geo), system metadata, Lat/Long.
+# Cutover Task 4: a korábbi, Salesforce API-neveket tartalmazó statikus
+# ``CANONICAL_FIELDS`` / ``SF_FIELD_TYPES`` katalógus törölve — a felismerő
+# (promptok, heurisztikák, autocomplete) kizárólag a megosztott Genie
+# canonical registry (``src/canonical/fields.json``) szókincsét használja.
+# A katalógus a registry SABLONJAIBOL épül szerepkörönként kifejtve:
+#   - repeat="none"          → path változatlan (deal.*, account.*)
+#   - repeat="participant"   → participant.<role>.<mező> mind az 5 szerepre
+#   - repeat="property"      → property.<mező> (index nélküli alapalak)
+#   - repeat="income"/"existing_loan" → participant.<role>.<collection>[1].<mező>
+# Így minden kulcs registry-approved canonical path — a felismert mapping
+# az aktivált (Genie-only) pipeline-ban azonnal használható.
 
-CANONICAL_FIELDS = {
-    # ════════════════════════════════════════════════════════════
-    # Contact — személyi adatok (156 fields)
-    # ════════════════════════════════════════════════════════════
-    "Contact.AccountId": "Account ID",
-    "Contact.Account_holding_bank__c": "Számlavezető bank",
-    "Contact.Affordable_monthly_installments__c": "Vállalható havi törlesztő",
-    "Contact.AssistantName": "Assistant's Name",
-    "Contact.AssistantPhone": "Asst. Phone",
-    "Contact.Average_monthly_net_income__c": "Nettó jövedelem mértéke",
-    "Contact.Bank__c": "Bank",
-    "Contact.Banki_ugyintezo_fiok__c": "Fiók",
-    "Contact.Banki_ugyintezo_pozicio__c": "Pozíció",
-    "Contact.Banki_ugyintezo_terulet__c": "Terület",
-    "Contact.Birthdate": "Születési dátum (egyben, pl. 1980.01.01)",
-    "Contact.Birthdate_year": "Születési dátum - CSAK ÉV (pl. 1980)",
-    "Contact.Birthdate_month": "Születési dátum - CSAK HÓNAP (pl. 01)",
-    "Contact.Birthdate_day": "Születési dátum - CSAK NAP (pl. 01)",
-    "Contact.Cafeteria_bonus__c": "Cafeteria, bónusz",
-    "Contact.Campaign__c": "Campaign",
-    "Contact.Citizenship__c": "Állampolgárság",
-    "Contact.Concern__c": "Concern",
-    "Contact.Continuous_TB_2_years__c": "OEP/TB jogviszony 2 év",
-    "Contact.Contract_end_date__c": "Határozott szerződés vége",
-    "Contact.Contract_start_date__c": "Határozott szerződés kezdete",
-    "Contact.Current_debt_Credit_limit__c": "Fennálló hitelek részletezve",
-    "Contact.Current_employment_started__c": "Munkaviszony/vállalkozás kezdete",
-    "Contact.Date_of_birth__c": "Születési idő",
-    "Contact.Date_of_handover__c": "Date of handover",
-    "Contact.Date_of_notification_for_residence__c": "Mióta lakik a lakóhelyén",
-    "Contact.Date_of_signature__c": "Date of signature",
-    "Contact.Date_of_transfer__c": "Date of transfer",
-    "Contact.Department": "Department",
-    "Contact.Dependents_count__c": "Eltartottak száma",
-    "Contact.Description": "Contact Description",
-    "Contact.Description_of_loan_purpose_comments__c": "Description of loan purpose, comments",
-    "Contact.Display_Name__c": "Display_Name",
-    "Contact.Divident__c": "Divident",
-    "Contact.Email": "Email",
-    "Contact.EmailBouncedDate": "Email Bounced Date",
-    "Contact.EmailBouncedReason": "Email Bounced Reason",
-    "Contact.Employee_registration_c__c": "Employee registration",
-    "Contact.Employer_s_company_type__c": "Employer's company type",
-    "Contact.Employment_Type_c__c": "Munkaviszony határozott/határozatlan",
-    "Contact.Estimated_market_value__c": "Estimated market value",
-    "Contact.Fax": "Business Fax",
-    "Contact.Financial_Institution__c": "Financial Institution",
-    "Contact.FirstName": "Keresztnév",
-    "Contact.First_Co_debtor__c": "First Co-debtor",
-    "Contact.Foglalkozas_tipusa__c": "Foglalkozás típusa",
-    "Contact.HasOptedOutOfEmail": "Email Opt Out",
-    "Contact.Highest_Educational_Qualification__c": "Legmagasabb iskolai végzettség",
-    "Contact.HomePhone": "Otthoni telefon",
-    "Contact.ID_Card_Number__c": "Személyi igazolvány szám",
-    "Contact.Personal_ID__c": "Személyazonosító igazolvány szám",
-    "Contact.Address_Card_Number__c": "Lakcímkártya száma",
-    "Contact.Income_from_self_owned_company__c": "Income from self-owned company",
-    "Contact.Income_type__c": "Jövedelem típusa",
-    "Contact.IndividualId": "Individual ID",
-    "Contact.Industry__c": "Industry",
-    "Contact.Interest_Period__c": "Kamatperiódus",
-    "Contact.Interest_rate__c": "Kamatláb",
-    "Contact.IsEmailBounced": "Is Email Bounced",
-    "Contact.IsPriorityRecord": "Important",
-    "Contact.Jovairas_vallalasa__c": "Jóváírás vállalása",
-    "Contact.LastName": "Vezetéknév",
-    "Contact.Last_4_nr_of_ID__c": "Ig. szám utolsó 4 jegye",
-    "Contact.LeadSource": "Lead Source",
-    "Contact.Lead_Priority__c": "Lead Priority",
-    "Contact.Legal_Title_of_permanent_residence__c": "Lakóhely jogcíme",
-    "Contact.Loan_Purpose__c": "Hitel célja",
-    "Contact.Loan_amount__c": "Hitelösszeg",
-    "Contact.Loan_period__c": "Futamidő",
-    "Contact.MailingCity": "Levelezési település",
-    "Contact.MailingCountry": "Levelezési ország",
-    "Contact.MailingCountryCode": "Levelezési ország kód",
-    "Contact.MailingPostalCode": "Levelezési irányítószám",
-    "Contact.MailingState": "Levelezési megye",
-    "Contact.MailingStateCode": "Levelezési megye kód",
-    "Contact.MailingStreet": "Levelezési utca",
-    "Contact.Marital_Status__c": "Családi állapot",
-    "Contact.Missing_documents__c": "Missing documents",
-    "Contact.MobilePhone": "Mobilszám",
-    "Contact.Monthly_Payment_details__c": "Havi törlesztő részletei",
-    "Contact.Monthly_installment_payment__c": "Meglévő hitel havi törlesztője",
-    "Contact.Mortgagor__c": "Zálogkötelezett",
-    "Contact.Mother_s_Name__c": "Anyja születési neve",
-    "Contact.Name": "Teljes név",
-    "Contact.Name_of_employer__c": "Munkáltató neve",
-    "Contact.Nem_preferalt_bank__c": "Nem preferált bank",
-    "Contact.Next_step__c": "Next step",
-    "Contact.Numer_and_Age_of_Children__c": "Gyermekek száma és életkora",
-    "Contact.Occupation__c": "Foglalkozás",
-    "Contact.OtherCity": "Egyéb cím település",
-    "Contact.OtherCountry": "Egyéb cím ország",
-    "Contact.OtherCountryCode": "Egyéb cím ország kód",
-    "Contact.OtherPhone": "Egyéb telefon",
-    "Contact.OtherPostalCode": "Egyéb cím irányítószám",
-    "Contact.OtherState": "Egyéb cím megye",
-    "Contact.OtherStateCode": "Egyéb cím megye kód",
-    "Contact.OtherStreet": "Egyéb cím utca",
-    "Contact.Other_income__c": "Egyéb jövedelmi infó",
-    "Contact.Other_monthly_deductions__c": "Jövedelmet terhelő egyéb levonások",
-    "Contact.Other_monthly_income__c": "Egyéb havi jövedelem",
-    "Contact.Own_resources__c": "Önerő (Contact)",
-    "Contact.OwnerId": "Owner ID",
-    "Contact.Ownership_in_employer__c": "Tulajdonrésze a munkáltatóban",
-    "Contact.Partneri_bank__c": "Partneri bank",
-    "Contact.Permanent_address__c": "Állandó lakcím",
-    "Contact.Phone": "Telefonszám",
-    "Contact.Place_of_Birth__c": "Születési hely",
-    "Contact.Preferalt_bank__c": "Preferált bank",
-    "Contact.Property_50pct_ownership_details__c": "50%+ lakóingatlan tulajdon",
-    "Contact.Property_Type__c": "Ingatlan típusa",
-    "Contact.Property_encumbrances__c": "Ingatlan terhek",
-    "Contact.Property_value__c": "Becsült piaci érték",
-    "Contact.Purchase_price_construction_cost__c": "Vételár / építési költség",
-    "Contact.Re_payment_fee__c": "Előtörlesztési díj",
-    "Contact.Referral_fee_percentage__c": "Referral fee percentage",
-    "Contact.Referral_name__c": "Referral name",
-    "Contact.Regular_referral__c": "Regular referral",
-    "Contact.Related_Bank__c": "Kapcsolódó bank",
-    "Contact.Relation__c": "Kapcsolat típusa",
-    "Contact.ReportsToId": "Reports To ID",
-    "Contact.Residence_Status__c": "Jogviszony a lakóhelyén",
-    "Contact.Salutation": "Megszólítás",
-    "Contact.Second_Co_debtor__c": "Second Co-debtor",
-    "Contact.Secondary_Email__c": "Másodlagos email",
-    "Contact.Self_employment_details__c": "Egyéni vállalkozás jövedelmi részletek",
-    "Contact.Session_ID__c": "Session ID",
-    "Contact.State_Support__c": "Állami támogatás",
-    "Contact.Szuletesi_nev__c": "Születési név",
-    "Contact.Tax_ID__c": "Adóazonosító jel",
-    "Contact.Term_in_year_c": "Futamidő (év)",
-    "Contact.Term_in_year_c__c": "Futamidő (év)",
-    "Contact.Third_Co_debtor__c": "Third Co-debtor",
-    "Contact.Title": "Title",
-    "Contact.Town_or_possibly_the_exact_address__c": "Ingatlan település vagy cím",
-    "Contact.Usufructuary__c": "Haszonélvező",
-    "Contact.What_type_of_loan__c": "Hitel típusa",
-    "Contact.X2_Affordable_monthly_installments__c": "2. hitel vállalható törlesztő",
-    "Contact.X2_Interest_Period__c": "2. hitel kamatperiódus",
-    "Contact.X2_Loan_Purpose__c": "2. hitel célja",
-    "Contact.X2_Loan_amount__c": "2. hitel összeg",
-    "Contact.X2_Term_in_year__c": "2. hitel futamidő",
-    "Contact.X2_What_type_of_loan__c": "2. hitel típusa",
-    "Contact.X3_Affordable_monthly_installments__c": "3. hitel vállalható törlesztő",
-    "Contact.X3_Interest_Period__c": "3. hitel kamatperiódus",
-    "Contact.X3_Loan_Purpose__c": "3. hitel célja",
-    "Contact.X3_Loan_amount__c": "3. hitel összeg",
-    "Contact.X3_Term_in_year__c": "3. hitel futamidő",
-    "Contact.X3_What_type_of_loan__c": "3. hitel típusa",
-    "Contact.Year_of_birthdate__c": "Születési év",
-    "Contact.ZIP__c": "Irányítószám",
+from src.canonical.registry import canonical_registry  # noqa: E402
 
-    # ════════════════════════════════════════════════════════════
-    # Lead — lead-only fields (not on Contact)
-    # ════════════════════════════════════════════════════════════
-    "Lead.AnnualRevenue": "Annual Revenue",
-    "Lead.City": "City",
-    "Lead.Company": "Company",
-    "Lead.Country": "Country",
-    "Lead.CountryCode": "Country Code",
-    "Lead.Country__c": "Country",
-    "Lead.Egyeb_forras_info__c": "Egyéb forrás infó",
-    "Lead.Elmult_90_napos_hiteligenyles__c": "Elmúlt 90 napos hiteligénylés",
-    "Lead.Employee_registration__c": "Employee registration",
-    "Lead.Employment_Type__c": "Munkaviszony határozott/határozatlan",
-    "Lead.Estimated__c": "Becsült piaci érték",
-    "Lead.Form_Type__c": "Form_Type",
-    "Lead.Industry": "Industry",
-    "Lead.Ingatlan_Kozterulet_jellege__c": "Közterület jellege",
-    "Lead.Ingatlan_alapterulet__c": "Hasznos alapterület (m2)",
-    "Lead.Ingatlan_emelet__c": "Csak emelet/ajtó (ha külön mezőben van az utcától)",
-    "Lead.Ingatlan_energetika__c": "Energetikai besorolás",
-    "Lead.Ingatlan_hazszam__c": "Házszám",
-    "Lead.Ingatlan_irsz__c": "Ingatlan irányítószáma",
-    "Lead.Ingatlan_jellege__c": "Ingatlan jellege (lakás/ház/telek)",
-    "Lead.Ingatlan_kozterulet_neve__c": "Ingatlan utca, házszám (teljes utcacím, lépcsőház, emelet, ajtó)",
-    "Lead.Ingatlan_megjegyzes__c": "Ingatlan helyrajzi száma (hrsz) — KIZÁRÓLAG helyrajzi számhoz!",
-    "Lead.Ingatlan_szerepe__c": "Ingatlan szerepe",
-    "Lead.Ingatlan_telepules__c": "Ingatlan település",
-    "Lead.Ingatlan_terhek__c": "Ingatlan terhek",
-    "Lead.Ingtalan_hazszam__c": "Házszám",
-    "Lead.PostalCode": "Irányítószám",
-    "Lead.Preferalt_futamido__c": "Preferált futamidő",
-    "Lead.Preferalt_kamatperiodus__c": "Preferált kamatperiódus",
-    "Lead.Purchase_price__c": "Vételár",
-    "Lead.Related_Account__c": "Related Account",
-    "Lead.State": "Megye",
-    "Lead.Status": "Státusz",
-    "Lead.Street": "Utca",
-    "Lead.Term_in_year__c": "Futamidő (év)",
-    "Lead.Tervezett_CSOK_Plusz__c": "Tervezett CSOK Plusz",
-    "Lead.Tervezett_Otthon_Start__c": "Tervezett Otthon Start",
-    "Lead.Tervezett_onero__c": "Tervezett önerő",
-    "Lead.Tervezett_piaci_hitel__c": "Tervezett piaci hitel",
+#: Review fix 3: a szereplő-lista a registry-ből érkezik (egyetlen forrás:
+#: ``src.canonical.paths.PARTICIPANT_ROLES``), a recognizer nem másolja.
+_PARTICIPANT_ROLES = canonical_registry.roles()
 
-    # ════════════════════════════════════════════════════════════
-    # Opportunity — ALL fields
-    # ════════════════════════════════════════════════════════════
-    "Account.Id": "Account ID",
-    "Account.Name": "Account neve",
-    "Account.AccountNumber": "Account szám",
-    "Account.Phone": "Telefonszám",
-    "Account.Fax": "Fax",
-    "Account.Website": "Weboldal",
-    "Account.Industry": "Tevékenységi kör",
-    "Account.Description": "Leírás",
-    "Account.BillingStreet": "Számlázási cím (utca)",
-    "Account.BillingCity": "Számlázási cím (város)",
-    "Account.BillingState": "Számlázási cím (állam/megye)",
-    "Account.BillingPostalCode": "Számlázási cím (irányítószám)",
-    "Account.BillingCountry": "Számlázási cím (ország)",
-    "Account.ShippingStreet": "Szállítási/levél cím (utca)",
-    "Account.ShippingCity": "Szállítási/levél cím (város)",
-    "Account.ShippingPostalCode": "Szállítási/levél cím (irányítószám)",
-    "Account.ShippingCountry": "Szállítási/levél cím (ország)",
-    "Opportunity.AccountId": "Account ID",
-    "Opportunity.Account__c": "Tippadó neve",
-    "Opportunity.Amount": "Amount",
-    "Opportunity.Approve_in_the_Bank_Application_OTP__c": "Approve in the Bank Application (OTP)",
-    "Opportunity.Attended_the_call__c": "Attended the call",
-    "Opportunity.Bank_Approval__c": "Bank Approval",
-    "Opportunity.Bank__c": "Potenciális bankok",
-    "Opportunity.Banki_ugyintezo_uj_c__c": "Banki ügyintéző (új)",
-    "Opportunity.CampaignId": "Campaign ID",
-    "Opportunity.Category__c": "Category",
-    "Opportunity.Client_accepted_the_offer__c": "Offer acceptance",
-    "Opportunity.CloseDate": "Close Date",
-    "Opportunity.ContactId": "Contact ID",
-    "Opportunity.Contact_Name__c": "Contact Name",
-    "Opportunity.Contract_signed_date__c": "Szerződés aláírás dátuma",
-    "Opportunity.Csabi_gylete__c": "Csabi ügylete?",
-    "Opportunity.Date_when_bank_received_all_documents__c": "Date when bank received all documents",
-    "Opportunity.Description": "Description",
-    "Opportunity.Fill_and_send_back_request_form__c": "Fill and send back-request form",
-    "Opportunity.First_Co_debtor__c": "First Co-debtor",
-    "Opportunity.Flag__c": "Flag",
-    "Opportunity.Hitel_sszeg__c": "Hitelösszeg",
-    "Opportunity.Hitelc_l__c": "Hitelcél",
-    "Opportunity.Hitelez_bank__c": "Hitelező bank",
-    "Opportunity.Insurance__c": "Biztosítás",
-    "Opportunity.Jutal_k_ideje__c": "Jutalék ideje",
-    "Opportunity.Jutal_k_kifizetve__c": "Jutalék kifizetve?",
-    "Opportunity.Kamat__c": "Kamat",
-    "Opportunity.LeadSource": "Lead Source",
-    "Opportunity.Lead_Priority__c": "Lead Priority",
-    "Opportunity.Mortgagor__c": "Zálogkötelezett",
-    "Opportunity.Name": "Opportunity Name",
-    "Opportunity.NextStep": "Next Step",
-    "Opportunity.Opportunity_Contact_Name__c": "Opportunity Contact Name",
-    "Opportunity.Opportunity_ID__c": "Opportunity ID",
-    "Opportunity.OwnerId": "Owner ID",
-    "Opportunity.Pre_valuation_has_been_ordered__c": "Pre-valuation has been ordered",
-    "Opportunity.Pre_valuation_order_bank__c": "Pre-valuation order bank",
-    "Opportunity.Pre_valuation_order_date__c": "Pre-valuation order date",
-    "Opportunity.Re_evaluate_the_quote__c": "Re-evaluate the quote",
-    "Opportunity.Second_Co_debtor__c": "Second Co-debtor",
-    "Opportunity.Session_ID__c": "Session ID",
-    "Opportunity.Sign_all_documents__c": "Sign all documents",
-    "Opportunity.Sign_all_documents_needed__c": "Sign all documents needed",
-    "Opportunity.StageName": "Stage",
-    "Opportunity.Term_k__c": "Termék",
-    "Opportunity.Third_Co_debtor__c": "Third Co-debtor",
-    "Opportunity.Tippad_kifizetve__c": "Tippadó kifizetve",
-    "Opportunity.Tippado_uj__c": "Tippadó (új)",
-    "Opportunity.Type": "Opportunity Type",
-    "Opportunity.Usufructuary__c": "Haszonélvező",
-    "Opportunity.Which_documents_are_missing__c": "Hiányzó dokumentumok",
-    "Opportunity.bankiugyintezoneve__c": "Banki ügyintéző neve",
-    "Opportunity.gylet_kezel_je__c": "Ügylet kezelője",
-    "Opportunity.gylet_st_tusz__c": "Ügylet státusz",
-    "Opportunity.remark__c": "Megjegyzés",
 
-    # ════════════════════════════════════════════════════════════
-    # loan.* — hitel-szintű canonical mezők (FIX H4)
-    # Ezek a LoanDetails modellből kerülnek a kitöltő-diktumba; az OTP
-    # mapping-ek több helyen hivatkoznak rájuk (pl. LAHI_KTKA_Lakástakarék
-    # → loan.housing_savings). Korábban hiányoztak a CANONICAL_FIELDS-ből,
-    # így az AI nem ismerte fel őket.
-    # ════════════════════════════════════════════════════════════
-    "loan.loan_amount": "Hitelösszeg (Ft)",
-    "loan.loan_purpose": "Hitel célja",
-    "loan.monthly_payment": "Becsült havi törlesztő (Ft)",
-    "loan.down_payment": "Önerő (Ft)",
-    "loan.purchase_price": "Vételár (Ft)",
-    "loan.csok_amount": "CSÖK támogatás összege (Ft)",
-    "loan.afa_support": "ÁFA támogatás összege (Ft)",
-    "loan.housing_savings": "Lakástakarék összege (Ft)",
-    "loan.product_type": "Termék típusa (pl. piaci_hitel, csok_plusz, otthon_start)",
-    "loan.refinance_account": "Refinanszírozott hitel számlaszáma",
-}
+def _build_canonical_catalog() -> dict[str, str]:
+    """Registry-sablonok → szerepkör-kifejtett canonical path → magyar label."""
+
+    catalog: dict[str, str] = {}
+    for definition in canonical_registry.definitions():
+        template = definition["path"]
+        repeat = definition["repeat"]
+        label = definition["label"]
+        if repeat == "none":
+            catalog[template] = label
+        elif repeat == "participant":
+            for role in _PARTICIPANT_ROLES:
+                catalog[template.replace("{role}", role)] = label
+        elif repeat == "property":
+            catalog[template] = label
+        else:  # income | existing_loan — 1-es (reprezentatív) indexű sor
+            field = template.rsplit(".", 1)[1]
+            for role in _PARTICIPANT_ROLES:
+                catalog[f"participant.{role}.{repeat}[1].{field}"] = label
+    return catalog
+
+
+#: A felismerő AI és a heurisztikák kizárólagos canonical szókincse: minden
+#: kulcs registry-approved Genie path (ellenőrzés:
+#: tests/test_recognizer_genie_registry.py).
+CANONICAL_FIELDS: dict[str, str] = _build_canonical_catalog()
+
+
+def _canonical_catalog_description() -> str:
+    """A canonical szókincs prompt-barát, determinisztikus leírása."""
+
+    return "\n".join(
+        f"  - {key}: {desc}" for key, desc in sorted(CANONICAL_FIELDS.items())
+    )
+
+
+def _sanitize_canonical(canonical) -> Optional[str]:
+    """Csak registry-approved canonical path enged át; minden más None.
+
+    A felismerő kimenetében (AI válasz, fuzzy match, posztprocessz) sosem
+    szerepelhet kitalált névtér vagy legacy Salesforce-név — az aktivált
+    pipeline ezeket elutasítaná (Cutover Task 3).
+    """
+    if not isinstance(canonical, str) or not canonical:
+        return None
+    return canonical if canonical_registry.validate(canonical) else None
+
+
+def _sanitize_fill_rule(fill_rule):
+    """A fill_rule-ben lévő canonical hivatkozás (sf_field) is registry-only.
+
+    None / nem-dict szabályváltozat érintetlenül visszajön; egy érvénytelen
+    ``sf_field`` None-ra vált (a szabály típusa/más mezői megmaradnak), hogy
+    az auto-létrehozott mapping mentése (mapping_service.save registry-
+    validációja) sosem bukjon el a felismerő saját kimenetén.
+    """
+    if not isinstance(fill_rule, dict):
+        return fill_rule
+    if "sf_field" not in fill_rule:
+        return fill_rule
+    sanitized = dict(fill_rule)
+    sanitized["sf_field"] = _sanitize_canonical(fill_rule.get("sf_field"))
+    return sanitized
 
 
 class FieldType(str, Enum):
@@ -394,6 +178,12 @@ class RecognizedField:
     # the fill engine can reassemble it. Values: "year", "month", "day", or
     # "digit:N". Survives JSON round-trip via MappingConfig.to_dict/from_dict.
     fragment: Optional[str] = None
+    # Cutover Task 2 review F4 — product section gate ("piaci" | "tamogatott").
+    # Migrated from the legacy `#piaci` / `#tamogatott` canonical suffixes by
+    # scripts.migrate_mappings_to_genie; the canonical fill pipeline skips the
+    # entry (or its whole checkbox group) when the deal's products do not
+    # activate the gate. Survives JSON round-trip via MappingConfig.
+    product_gate: Optional[str] = None
 
 
 @dataclass
@@ -450,6 +240,7 @@ class MappingConfig:
                     "checkbox_group": f.checkbox_group,
                     "fill_rule": f.fill_rule,
                     "fragment": f.fragment,
+                    "product_gate": f.product_gate,
                 }
                 for f in self.fields
             ],
@@ -478,6 +269,7 @@ class MappingConfig:
                 checkbox_group=f.get("checkbox_group"),
                 fill_rule=f.get("fill_rule"),
                 fragment=f.get("fragment"),
+                product_gate=f.get("product_gate"),
             )
             for f in data.get("fields", [])
         ]
@@ -551,22 +343,24 @@ def _char_group_stem(label: str) -> str | None:
 
 
 #: Label-törzs kulcsszó → canonical mező (comb dobozokhoz, ha az AI nem adott
-#: canonicalt az egyes jegyeknek). Csak CANONICAL_FIELDS-ben létező kulcsok.
+#: canonicalt az egyes jegyeknek). Cutover Task 4: minden érték registry-approved
+#: Genie path (a régi Contact.*/Lead.* SF-nevek helyett).
 _CHAR_STEM_CANONICAL_RULES = [
-    ("hónap", "Contact.Birthdate_month"),          # "nap"-ot is tartalmaz → előbb!
-    ("adóazonosító", "Contact.Tax_ID__c"),
-    ("személyazonosító", "Contact.ID_Card_Number__c"),
-    ("okmány száma", "Contact.ID_Card_Number__c"),
-    ("igazolvány száma", "Contact.ID_Card_Number__c"),
-    ("dokumentum száma", "Contact.ID_Card_Number__c"),
-    ("ingatlan irányítószám", "Lead.Ingatlan_irsz__c"),
-    ("irányítószám", "Contact.ZIP__c"),
-    ("születési idő - év", "Contact.Birthdate_year"),
-    ("születési idő - nap", "Contact.Birthdate_day"),
-    ("születési dátum - év", "Contact.Birthdate_year"),
-    ("születési dátum - nap", "Contact.Birthdate_day"),
-    (" - év", "Contact.Birthdate_year"),
-    (" - nap", "Contact.Birthdate_day"),
+    # "nap"-ot is tartalmazó szöveg előbb jöjjön, mint a hónap!
+    ("hónap", "participant.borrower.birth_date"),
+    ("adóazonosító", "participant.borrower.tax_id"),
+    ("személyazonosító", "participant.borrower.personal_id"),
+    ("okmány száma", "participant.borrower.personal_id"),
+    ("igazolvány száma", "participant.borrower.personal_id"),
+    ("dokumentum száma", "participant.borrower.personal_id"),
+    ("ingatlan irányítószám", "property.address.zip_code"),
+    ("irányítószám", "participant.borrower.address.zip_code"),
+    ("születési idő - év", "participant.borrower.birth_date"),
+    ("születési idő - nap", "participant.borrower.birth_date"),
+    ("születési dátum - év", "participant.borrower.birth_date"),
+    ("születési dátum - nap", "participant.borrower.birth_date"),
+    (" - év", "participant.borrower.birth_date"),
+    (" - nap", "participant.borrower.birth_date"),
 ]
 
 
@@ -624,25 +418,29 @@ def _flush_char_run(run, page, canonical_by_name, label_by_name, groups, members
             continue
         slug = _re.sub(r"[^a-z0-9]+", "_", canonical.lower()).strip("_")
         c_low = canonical.lower()
+        # A jobb-balra sorrendű (számérték) csoportok felismerése Genie
+        # canonical nevekből (Cutover Task 4: a régi SF-név kulcsszavak —
+        # pl. "hitel_sszeg", "jovedelem" — már sosem fordulnak elő).
         is_rtl = any(
             kw in c_low
             for kw in (
-                "hitel_sszeg",
                 "loan_amount",
-                "income",
-                "jovedelem",
-                "own_resources",
-                "onero",
-                "vetelar",
+                "monthly_income",
+                "other_monthly_income",
+                "monthly_payment",
+                "affordable_monthly_installments",
+                "down_payment",
                 "purchase_price",
-                "becsult_ertek",
-                "installment",
-                "torleszto",
-                "csok",
-                "gyermekek_szama",
-                "term_in_year",
-                "futamido",
-                "alapterulet",
+                "estimated_value",
+                "csok_amount",
+                "afa_support",
+                "housing_savings",
+                "otthon_start_amount",
+                "children_count",
+                "dependents_count",
+                "household_size",
+                "loan_term",
+                "area_sqm",
             )
         )
         groups.append({
@@ -740,11 +538,15 @@ def _postprocess_recognized_fields(
        visszatöltjük a csoport canonical_field-jét (hogy a UI-ban is látszódjon,
        és futásidőben a _infer_runtime_character_groups is felismerje).
     2. Helyrajzi szám (hrsz) szövegmezőket automatikusan a
-       Lead.Ingatlan_megjegyzes__c mezőre irányítja.
-    3. Szétbontott dátummezőkhöz (év / hónap / nap) automatikusan beállítja
-       a megfelelő regex fragment-et.
+       property.parcel_number mezőre irányítja.
+    3. Szétbontott dátummezőkhöz (év / hónap / nap) automatikusan beállítja a
+       megfelelő string fragment-et.
     4. Fejléc / navigációs / belső technikai checkboxokról (low confidence,
        checkbox_group nélkül) leveszi a téves canonical_field leképezést.
+
+    Cutover Task 4 (requirement 1): minden itt beírt canonical érték
+    registry-approved Genie path — legacy SF-név vagy kitalált névtér
+    sosem kerül a kimenetbe.
     """
     import re as _re
 
@@ -765,25 +567,25 @@ def _postprocess_recognized_fields(
         norm_notes = _normalize_key(f.notes or "")
         combined = f"{norm_name} {norm_lbl}"
 
-        # 2. Helyrajzi szám automatikus leképezése
+        # 2. Helyrajzi szám automatikus leképezése (audited fordítás:
+        #    Lead.Ingatlan_megjegyzes__c → property.parcel_number)
         if f.field_type == FieldType.TEXT and (
             "helyrajzi" in combined or _re.search(r"\bhrsz\b", combined)
         ):
-            f.canonical_field = "Lead.Ingatlan_megjegyzes__c"
+            f.canonical_field = "property.parcel_number"
             f.confidence = MappingConfidence.HIGH
 
         # 3. Dátum-komponens (év/hónap/nap) automatikus fragment beállítása
+        #    (Cutover Task 4: a régi Contact.Birthdate_year/_month/_day
+        #    pszeudo-canonicalok megszűntek — a fragment-kizárásra nincs
+        #    szükség, a részdobozok ugyanazt a full-date canonicalt viszik
+        #    fragment metadata-val.)
         if (
             f.canonical_field
             and not f.fragment
-            and f.canonical_field not in (
-                "Contact.Birthdate_year",
-                "Contact.Birthdate_month",
-                "Contact.Birthdate_day",
-            )
             and any(
                 kw in f.canonical_field.lower()
-                for kw in ("date", "started", "birthdate")
+                for kw in ("date", "started", "birth")
             )
         ):
             for text_cand in (norm_name, norm_lbl):
@@ -792,13 +594,13 @@ def _postprocess_recognized_fields(
                     continue
                 last = tokens[-1]
                 if last in ("ev", "eve", "year", "yyyy") or ("ev" in tokens and "ho" not in tokens and "honap" not in tokens and "nap" not in tokens):
-                    f.fragment = {"type": "regex", "pattern": r"^(\d{4})"}
+                    f.fragment = "year"
                     break
                 if last in ("ho", "honap", "month", "mm") or ("honap" in tokens and "ev" not in tokens and "nap" not in tokens):
-                    f.fragment = {"type": "regex", "pattern": r"^\d{4}[.\-/](\d{1,2})"}
+                    f.fragment = "month"
                     break
                 if last in ("nap", "napja", "day", "dd") and "honap" not in tokens:
-                    f.fragment = {"type": "regex", "pattern": r"^\d{4}[.\-/]\d{1,2}[.\-/](\d{1,2})"}
+                    f.fragment = "day"
                     break
 
         # 4. Fejléc / navigációs / technikai checkboxok tisztítása
@@ -935,9 +737,9 @@ class FieldRecognizer:
 
 1. Elemezd az üres banki nyomtatvány képét/tartalmát
 2. Azonosítsd az összes kitöltendő mezőt (név, cím, dátum, stb.)
-3. Mindegyik mezőt képezd le a Salesforce API mezőkre (Object.FieldName formátum)
+3. Mindegyik mezőt képezd le a Genie canonical mezőkre (namespace.mező formátum)
 
-A Salesforce kanonikus mezők:
+A Genie canonical mezők (CSAK ezek használhatók):
 {canonical_fields}
 
 Válaszolj JSON formátumban az alábbi struktúrával:
@@ -953,27 +755,29 @@ Válaszolj JSON formátumban az alábbi struktúrával:
       "pdf_field_name": "a mező neve vagy azonosítója a PDF-ben",
       "label": "a mező felirata magyarul",
       "field_type": "text|checkbox|date|number|dropdown",
-      "canonical_field": "Object.FieldName (pl. Contact.Name, Lead.Ingatlan_irsz__c)",
+      "canonical_field": "Genie canonical útvonal (pl. participant.borrower.name, deal.loan_amount)",
       "confidence": "high|medium|low",
       "page_number": 1,
       "notes": "opcionális megjegyzés",
       "checkbox_group": {{
         "group_id": "stabil snake_case azonosító, közös a csoport minden tagján (pl. 'highest_education')",
         "group_label": "a KÉRDÉS felirata (pl. 'Legmagasabb iskolai végzettség')",
-        "option_value": "a Salesforce picklist érték, ami ezt az opciót kiválasztja (pl. 'Felsőfokú')",
+        "option_value": "az option érték, ami ezt az opciót kiválasztja (pl. 'Felsőfokú')",
         "option_label": "az opció felirata a PDF-en (általában = option_value)"
       }},
-      "fill_rule": {{"match_value": "Az a Salesforce mező érték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
+      "fill_rule": {{"match_value": "Az a mezőérték, ami kiválasztja ezt a konkrét opciót (pl. 'Férfi' vagy 'Házas')"}}
     }}
   ]
 }}
 
 Fontos szabályok:
-- Használd a Salesforce Object.FieldName formátumot (pl. Contact.FirstName, Lead.Ingatlan_telepules__c)
-- Ha ingatlan-specifikus, használd a Lead.Ingatlan_* mezőket
-- Ha nem vagy biztos a leképezésben, jelöld "low" confidence-szel
-- Az ismétlődő blokkok (pl. adós, adóstárs) ugyanazokra a Contact.* mezőkre képeződnek
-- **Rádiógombok / Kölcsönösen kizáró Checkbox-csoportok**: Ha egy kérdés alatt több checkbox opció van (pl. "Mi a legmagasabb iskolai végzettsége? ☐ Felsőfokú ☐ Szakképesítés ☐ Érettségi ☐ 8 általános"), ez egy EXKLÚZÍV csoport. MINDEN tagnak add meg a `checkbox_group`-ot ugyanazzal `group_id`-val és `group_label`-lel, de KÜLÖNBÖZŐ `option_value`/`option_label`-lel. A `group_label` a kérdés szövege, az `option_value` pedig az a picklist érték, amit a Contact mezőbe tárolunk. Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb — ilyenkor MÁSOLD BE a bbox koordinátákat, keresd meg a képen a feliratot, és töltsd ki a `checkbox_group` mezőket!"""
+- Használd a Genie canonical útvonalakat PONTOSAN a fenti listából (pl. participant.borrower.name, property.address.zip_code)
+- A szereplőket a participant névtér szerepe különbözteti meg: adós = participant.borrower.*, adóstárs/társigénylő = participant.co_borrower.*, kezes = participant.guarantor.*, zálogkötelezett = participant.mortgagor.*, haszonélvező = participant.usufructuary.*
+- Ingatlan-specifikus mezők a property.* névtérben vannak (pl. property.address.city, property.parcel_number)
+- Ügylet-szintű mezők a deal.* névtérben (pl. deal.loan_amount, deal.loan_purpose, deal.loan_term_years)
+- Ha nem vagy biztos a leképezésben, jelöld "low" confidence-szel vagy canonical_field: null
+- HA EGY MEZŐ NINCS a canonical listában, KÖTELEZŐ null-t adni — sosem találd ki új útvonalat!
+- **Rádiógombok / Kölcsönösen kizáró Checkbox-csoportok**: Ha egy kérdés alatt több checkbox opció van (pl. "Mi a legmagasabb iskolai végzettsége? ☐ Felsőfokú ☐ Szakképesítés ☐ Érettségi ☐ 8 általános"), ez egy EXKLÚZÍV csoport. MINDEN tagnak add meg a `checkbox_group`-ot ugyanazzal `group_id`-val és `group_label`-lel, de KÜLÖNBÖZŐ `option_value`/`option_label`-lel. A `group_label` a kérdés szövege. Ha a `pdf_field_name` végén pl. `___1,2` vagy `___Yes` szerepel, az azt jelenti, hogy ez egy rádiógomb — ilyenkor MÁSOLD BE a bbox koordinátákat, keresd meg a képen a feliratot, és töltsd ki a `checkbox_group` mezőket!"""
 
     def __init__(self, api_key: str = None):
         """
@@ -1085,9 +889,7 @@ Fontos szabályok:
         logger.info(f"  {len(page_groups)} oldal mezőkkel")
 
         # ── 3. Kanonikus mezők leírása (SF schema-ból) ───────────────────
-        canonical_desc = "\n".join(
-            f"  - {key}: {desc}" for key, desc in CANONICAL_FIELDS.items()
-        )
+        canonical_desc = _canonical_catalog_description()
 
         # ── 4. Oldal-alapú batch feldolgozás ────────────────────────────
         all_fields: list[RecognizedField] = []
@@ -1162,8 +964,11 @@ Fontos szabályok:
                 # Build the system prompt with vision-enhanced instructions
                 system = f"""Output ONLY a raw JSON array. No markdown, no explanation, no code fences.
 
-You are mapping PDF form field names to Salesforce API fields for a Hungarian mortgage broker company.
-The canonical fields follow the format: Object.FieldName (e.g., Contact.FirstName, Lead.Ingatlan_irsz__c, Opportunity.Hitel_sszeg__c).
+You are mapping PDF form field names to Genie canonical paths for a Hungarian mortgage broker system.
+The canonical paths follow the format: namespace.field (e.g., participant.borrower.name, property.address.zip_code, deal.loan_amount).
+Participants are distinguished by ROLE: applicant = participant.borrower.*, co-applicant (társigénylő/adóstárs) = participant.co_borrower.*,
+guarantor = participant.guarantor.*, mortgagor = participant.mortgagor.*, usufructuary = participant.usufructuary.*.
+Properties live in the property.* namespace; deal-level data in the deal.* namespace.
 
 VISION INSTRUCTIONS:
 The page image has NUMBERED RED BOXES drawn around form fields.
@@ -1172,32 +977,29 @@ LOOK AT THE RED BOX with that number on the image to see the LABEL next to the f
 This is CRITICAL for fields with generic names like "Text_Field_43" or "Szövegmező 123" — 
 the RED BOX shows you WHERE the field is, and the printed label next to it tells you WHAT it contains.
 
-SALESFORCE CANONICAL FIELDS (use exactly these keys):
+GENIE CANONICAL PATHS (use exactly these keys):
 {canonical_desc}
 
 EXAMPLES of correct mappings:
-  {{"f": "SZA_IG_név", "c": "Contact.Name", "t": "text"}} — "név" = name → Contact.Name
-  {{"f": "SZA_IG_szül_név", "c": "Contact.Szuletesi_nev__c", "t": "text"}} — "szül név" = birth name
-  {{"f": "SZA_IG_anyja_neve", "c": "Contact.Mother_s_Name__c", "t": "text"}} — "anyja neve" = mother's name
-  {{"f": "SZA_IG_szül_hely", "c": "Contact.Place_of_Birth__c", "t": "text"}} — "szül hely" = birthplace
-  {{"f": "SZA_IG_szül_dátum", "c": "Contact.Birthdate", "t": "date"}} — "szül dátum" = birth date
-  {{"f": "SZA_IG_állandó_lakcím", "c": "Contact.Permanent_address__c", "t": "text"}} — "lakcím" = address
-  {{"f": "SZA_IG_irányítószám", "c": "Contact.ZIP__c", "t": "text"}} — "irsz" = zip code
-  {{"f": "SZA_IG_település", "c": "Contact.MailingCity", "t": "text"}}
-  {{"f": "SZA_IG_személyi_szám", "c": "Contact.ID_Card_Number__c", "t": "text"}}
-  {{"f": "SZA_IG_adóazonosító", "c": "Contact.Tax_ID__c", "t": "text"}}
-  {{"f": "SZA_IG_email", "c": "Contact.Email", "t": "text"}}
-  {{"f": "SZA_IG_mobil", "c": "Contact.MobilePhone", "t": "text"}}
-  {{"f": "SZA_IG_munkáltató", "c": "Contact.Name_of_employer__c", "t": "text"}}
-  {{"f": "SZA_IG_jövedelem", "c": "Contact.Average_monthly_net_income__c", "t": "number"}}
-  {{"f": "SZA_IG_foglalkoztatás", "c": "Contact.Income_type__c", "t": "text"}}
-  {{"f": "SZA_IG_családi_állapot", "c": "Contact.Marital_Status__c", "t": "text"}}
-  {{"f": "SZA_IG_végzettség", "c": "Contact.Highest_Educational_Qualification__c", "t": "text"}}
-  {{"f": "IA_település", "c": "Lead.Ingatlan_telepules__c", "t": "text"}} — "IA" = ingatlan adatlap
-  {{"f": "IA_irsz", "c": "Lead.Ingatlan_irsz__c", "t": "text"}}
-  {{"f": "IA_alapterület", "c": "Lead.Ingatlan_alapterulet__c", "t": "number"}}
-  {{"f": "LAHI_összeg", "c": "Opportunity.Hitel_sszeg__c", "t": "number"}} — "LAHI" = lakáshitel
-  {{"f": "CSOK_tervezett", "c": "Lead.Tervezett_CSOK_Plusz__c", "t": "text"}}
+  {{"f": "SZA_IG_név", "c": "participant.borrower.name", "t": "text"}} — "név" = applicant name
+  {{"f": "SZA_IG_szül_név", "c": "participant.borrower.birth_name", "t": "text"}} — "szül név" = birth name
+  {{"f": "SZA_IG_anyja_neve", "c": "participant.borrower.mother_name", "t": "text"}} — "anyja neve" = mother's name
+  {{"f": "SZA_IG_szül_hely", "c": "participant.borrower.birth_place", "t": "text"}} — "szül hely" = birthplace
+  {{"f": "SZA_IG_szül_dátum", "c": "participant.borrower.birth_date", "t": "date"}} — "szül dátum" = birth date
+  {{"f": "SZA_IG_irányítószám", "c": "participant.borrower.address.zip_code", "t": "text"}} — "irsz" = zip code
+  {{"f": "SZA_IG_személyi_szám", "c": "participant.borrower.personal_number", "t": "text"}}
+  {{"f": "SZA_IG_adóazonosító", "c": "participant.borrower.tax_id", "t": "text"}}
+  {{"f": "SZA_IG_email", "c": "participant.borrower.email", "t": "text"}}
+  {{"f": "SZA_IG_mobil", "c": "participant.borrower.mobile_phone", "t": "text"}}
+  {{"f": "SZA_IG_munkáltató", "c": "participant.borrower.employer", "t": "text"}}
+  {{"f": "SZA_IG_jövedelem", "c": "participant.borrower.monthly_income", "t": "number"}}
+  {{"f": "SZA_IG_név-társ", "c": "participant.co_borrower.name", "t": "text"}} — "-társ" suffix = co-applicant!
+  {{"f": "SZA_IG_adóazonosító-társ", "c": "participant.co_borrower.tax_id", "t": "text"}}
+  {{"f": "IA_település", "c": "property.address.city", "t": "text"}} — "IA" = ingatlan adatlap (property)
+  {{"f": "IA_irsz", "c": "property.address.zip_code", "t": "text"}}
+  {{"f": "IA_alapterület", "c": "property.area_sqm", "t": "number"}}
+  {{"f": "IA_helyrajzi", "c": "property.parcel_number", "t": "text"}} — helyrajzi szám / hrsz
+  {{"f": "LAHI_összeg", "c": "deal.loan_amount", "t": "number"}} — "LAHI" = lakáshitel (deal level)
 
 CHECKBOX GROUP DETECTION (CRITICAL — do this for EVERY mutually-exclusive option group):
 When you see a question followed by multiple checkboxes, each next to a different option
@@ -1205,37 +1007,40 @@ When you see a question followed by multiple checkboxes, each next to a differen
 this is a RADIO/EXCLUSIVE group. For EACH checkbox in the group, add ALL of:
   "g"   — group_id: stable snake_case id shared by all members (e.g. "highest_education")
   "gl"  — group_label: the QUESTION text (e.g. "Legmagasabb iskolai végzettség")
-  "ov"  — option_value: the Salesforce picklist value this option represents (e.g. "Felsőfokú")
+  "ov"  — option_value: the value this option represents (e.g. "Felsőfokú")
   "ol"  — option_label: the option text printed next to this checkbox (e.g. "Felsőfokú")
 
 Rules:
 - Every member of an exclusive group MUST share the SAME "g" and "gl", but have DIFFERENT "ov"/"ol".
-- "ov" must be the value stored in Salesforce (Contact.Highest_Educational_Qualification__c = "Felsőfokú").
+- "ov" must be the stored value of the canonical field the group maps to (e.g. participant.borrower.education = "Felsőfokú").
 - If a checkbox is a standalone yes/no (not part of a picklist group), do NOT set "g" — leave it as a plain checkbox.
 - Look at the RED BOXES: options belonging to one question are visually clustered (same row or stacked column).
 
 Example (full group, 4 members):
-  {{"f": "végzettség___1,2", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Felsőfokú", "ol": "Felsőfokú"}}
-  {{"f": "végzettség___2,3", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Szakképesítés", "ol": "Szakképesítés"}}
-  {{"f": "végzettség___3,4", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Érettségi", "ol": "Érettségi"}}
-  {{"f": "végzettség___4,5", "c": "Contact.Highest_Educational_Qualification__c", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "8 általános", "ol": "8 általános"}}
+  {{"f": "végzettség___1,2", "c": "participant.borrower.education", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Felsőfokú", "ol": "Felsőfokú"}}
+  {{"f": "végzettség___2,3", "c": "participant.borrower.education", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Szakképesítés", "ol": "Szakképesítés"}}
+  {{"f": "végzettség___3,4", "c": "participant.borrower.education", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "Érettségi", "ol": "Érettségi"}}
+  {{"f": "végzettség___4,5", "c": "participant.borrower.education", "t": "checkbox", "g": "highest_education", "gl": "Legmagasabb iskolai végzettség", "ov": "8 általános", "ol": "8 általános"}}
 
 RULES:
-- Map a field ONLY when an EXACT semantic match exists in the Salesforce canonical list above.
+- Map a field ONLY when an EXACT semantic match exists in the Genie canonical list above.
 - NEVER guess or approximate! If no exact semantic match exists (e.g. room counts, elevator, heating type, currency code "deviza", "Írástudatlan/Látássérült", "Egyéb dokumentum szöveges", document copy counts on cover page), MUST set "c": null!
-- Lead.Ingatlan_megjegyzes__c is ONLY for parcel number (helyrajzi szám / hrsz) — NEVER map other property questions to it!
-- Lead.Ingatlan_kozterulet_neve__c is for the property street address ("Utca, házszám, lépcsőház, emelet, ajtó").
-- Use the Object.FieldName format exactly as shown in the canonical list.
+- NEVER invent a path that is not in the canonical list — unknown values are dropped, not guessed.
+- property.parcel_number is ONLY for parcel number (helyrajzi szám / hrsz) — NEVER map other property questions to it!
+- property.address.street is for the property street address ("Utca, házszám").
+- Use the canonical paths exactly as shown in the canonical list.
 - For GENERIC field names (e.g., "Text_Field_43", "Szövegmező 123", "Check_Box_5"), ALWAYS look at the RED BOX on the image to find the label.
-- Use PDF field name prefixes as hints: SZA_IG = személyi (Contact fields), IA = ingatlan (Lead.Ingatlan_* fields), CSOK = family subsidy (Lead.Tervezett_CSOK_*), LAHI = lakáshitel (Opportunity fields), MA = munkáltatói (Contact employer fields)
-- When a field belongs to a co-borrower (társigénylő / adóstárs section or "-társ" suffix), append "-társ" to Contact.* canonical fields (e.g. "Contact.Name-társ").
+- Use PDF field name prefixes as hints: SZA_IG = személyi (participant.borrower.* fields), "-társ" suffix = társigénylő (participant.co_borrower.*), IA = ingatlan (property.* fields), CSOK = family subsidy (deal.csok_*), LAHI = lakáshitel (deal.* fields), MA = munkáltatói (participant.borrower.employer* fields)
+- When a field belongs to a co-borrower (társigénylő / adóstárs section or "-társ" suffix), map it to the participant.co_borrower.* variant of the path.
 
-Output format: [{{"f": "field_name", "l": "human readable Hungarian label from the printed text next to the field", "c": "Object.FieldName", "t": "text|checkbox|date|number", "p": {page_num}}}]
+Output format: [{{"f": "field_name", "l": "human readable Hungarian label from the printed text next to the field", "c": "canonical.path", "t": "text|checkbox|date|number", "p": {page_num}}}]
 For checkbox groups add: "g": "group_id", "gl": "group_label", "ov": "option_value", "ol": "option_label"
 The "l" label is REQUIRED for every field — read the printed label next to the RED BOX on the image
 (e.g. "Személyazonosító igazolvány száma", "Anyja neve"). Never just repeat the field name.
 
 Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
+
+
 
                 content = []
 
@@ -1301,13 +1106,20 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                     if not field_name:
                                         continue
                                     
-                                    # Fuzzy match canonical field
+                                    # Fuzzy match canonical field (registry-only:
+                                    # nincs találat → a canonical elutasítása,
+                                    # a mező nem-lemappeltként él tovább).
                                     if canonical and canonical not in canonical_keys:
-                                        # Try to find closest match
                                         best = self._fuzzy_match_canonical(canonical, canonical_keys)
                                         if best:
                                             logger.debug(f"    🔄 Fuzzy: '{canonical}' → '{best}'")
                                             canonical = best
+                                        else:
+                                            logger.debug(
+                                                "    ✋ Nem registry-canonical AI érték elutasítva: %r",
+                                                canonical,
+                                            )
+                                            canonical = None
                                     
                                     t_val = item.get("t", "text")
                                     try:
@@ -1337,7 +1149,7 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
                                         confidence=MappingConfidence.MEDIUM,
                                         page_number=item.get("p", page_num),
                                         checkbox_group=_normalize_checkbox_group(item),
-                                        fill_rule=item.get("fill_rule"),
+                                        fill_rule=_sanitize_fill_rule(item.get("fill_rule")),
                                     ))
                                     mapped += 1
                                 
@@ -1395,39 +1207,34 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
 
     @staticmethod
     def _fuzzy_match_canonical(candidate: str, valid_keys: set[str]) -> str | None:
-        """Try to match an AI-returned canonical key to a valid one.
+        """Snap an AI-returned canonical path to a valid catalog key.
 
-        FIX M8 — matching is case-insensitive. The canonical catalog
-        (``CANONICAL_FIELDS``) uses mixed-case keys like ``Contact.Name``
-        while the AI often returns lower-case variants (``contact.name``).
-        We build a lower-cased index that maps back to the original key so a
-        case-insensitive search still returns the proper canonical form.
+        Cutover Task 4: the match is a FORMAT tolerance (case, spaces,
+        hyphens→underscores), never semantic guessing. The old behaviour that
+        accepted AI-invented prefixes (``csok.``, ``document.``,
+        ``participant.<unknown>`` …) as-is is DELETED: every accepted value
+        must be a registry-approved Genie path, unknown values return None and
+        the caller drops them.
         """
-        # Lower-cased index: "contact.name" → "Contact.Name"
+        if not isinstance(candidate, str):
+            return None
         lower_index: dict[str, str] = {k.lower(): k for k in valid_keys}
 
         c = candidate.lower().strip().replace(" ", "_").replace("-", "_")
+        if not c:
+            return None
         # Exact (case-insensitive) hit → return the original-cased key.
         if c in lower_index:
             return lower_index[c]
 
-        # Try common variations
-        # e.g. "participant.full_name" → "Contact.Name"
-        # e.g. "property.address" → "property.address.full_address"
-        for lower_key, orig_key in lower_index.items():
-            # Substring match
-            if c in lower_key or lower_key in c:
-                return orig_key
-            # Same suffix
-            c_parts = c.split(".")
-            k_parts = lower_key.split(".")
-            if len(c_parts) >= 2 and len(k_parts) >= 2 and c_parts[0] == k_parts[0] and c_parts[-1] == k_parts[-1]:
-                return orig_key
-
-        # If it starts with a valid prefix, accept it as-is (AI invented a reasonable field)
-        for prefix in ("participant.", "property.", "loan.", "csok.", "document.", "declaration.", "signature.", "vat.", "appraisal."):
-            if c.startswith(prefix):
-                return c
+        # Tolerate an explicit participant/property index the catalog omits:
+        # "participant.borrower[1].name" ↔ "participant.borrower.name".
+        stripped = re.sub(r"\[\d+\]", "", c)
+        if stripped != c and stripped in lower_index:
+            return lower_index[stripped]
+        with_index = c.replace("[", "")
+        if with_index != c and with_index in lower_index:
+            return lower_index[with_index]
 
         return None
 
@@ -1691,6 +1498,26 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
         doc.close()
         return fields
 
+    @staticmethod
+    def _sanitize_label_map(raw: dict) -> dict:
+        """Registry-szűrés egy AI ``{mező_id: canonical}`` válaszra.
+
+        Cutover Task 4 (requirement 1): a nem registry-approved canonical
+        értékek kikerülnek a mapből — a hozzájuk tartozó mezők nem-lemappeltként
+        élnek tovább, a felismert mapping sosem tartalmaz elavult/kitalált
+        canonicalt.
+        """
+        if not isinstance(raw, dict):
+            return {}
+        sanitized: dict = {}
+        for key, value in raw.items():
+            clean = _sanitize_canonical(value)
+            if clean is not None:
+                sanitized[key] = clean
+            elif value:
+                logger.debug("  ✋ AI label-map érték elutasítva: %r → %r", key, value)
+        return sanitized
+
     def _ai_map_flat_labels(
         self, anchor_fields: list[dict], pdf_path: Path
     ) -> dict:
@@ -1698,25 +1525,23 @@ Page {page_num}. RESPOND WITH ONLY THE JSON ARRAY."""
         AI szemantikus mapping: label + kontextus → kanonikus mező.
         Csak egyszer hívja az AI-t, nem küld képeket – tisztán szöveges.
         """
-        canonical_desc = "\n".join(
-            f"  - {key}: {desc}" for key, desc in CANONICAL_FIELDS.items()
-        )
+        canonical_desc = _canonical_catalog_description()
 
         fields_desc = "\n".join(
             f'  - id="{f["id"]}" label="{f["label"]}" context="{f["context"][:100]}"'
             for f in anchor_fields
         )
 
-        prompt = f"""Párosítsd az alábbi banki nyomtatvány mezőket a kanonikus mezőkkel.
+        prompt = f"""Párosítsd az alábbi banki nyomtatvány mezőket a Genie kanonikus mezőkkel.
 
-Kanonikus mezők:
+Genie kanonikus mezők (CSAK ezek, pontos alakban):
 {canonical_desc}
 
 Nyomtatvány mezők:
 {fields_desc}
 
-Válaszolj CSAK JSON objektummal: {{"mező_id": "kanonikus.mező", ...}}
-Ha egy mező nem képezhető le, hagyd ki.
+Válaszolj CSAK JSON objektummal: {{"mező_id": "canonical.path", ...}}
+Ha egy mező nem képezhető le a fenti listából, hagyd ki — sosem találd ki új útvonalat.
 PDF: {pdf_path.name}"""
 
         try:
@@ -1734,7 +1559,7 @@ PDF: {pdf_path.name}"""
 
             if response_text:
                 json_str = self._extract_json(response_text)
-                return json.loads(json_str)
+                return self._sanitize_label_map(json.loads(json_str))
         except Exception as e:
             logger.warning(f"  AI mapping hiba: {str(e)[:80]}")
 
@@ -1803,9 +1628,7 @@ PDF: {pdf_path.name}"""
         self, pdf_path: Path, pdf_fields: list[dict], form_type: str
     ) -> MappingConfig:
         """AI-alapú mezőleképezés Claude API-val."""
-        canonical_desc = "\n".join(
-            f"  - {key}: {desc}" for key, desc in CANONICAL_FIELDS.items()
-        )
+        canonical_desc = _canonical_catalog_description()
 
         system = self.SYSTEM_PROMPT.format(canonical_fields=canonical_desc)
 
@@ -1891,9 +1714,7 @@ PDF: {pdf_path.name}"""
 
     def _ai_recognize_flat_pdf(self, pdf_path: Path) -> MappingConfig:
         """Lapos PDF AI-alapú felismerése koordinátákkal."""
-        canonical_desc = "\n".join(
-            f"  - {key}: {desc}" for key, desc in CANONICAL_FIELDS.items()
-        )
+        canonical_desc = _canonical_catalog_description()
 
         system = self.SYSTEM_PROMPT.format(canonical_fields=canonical_desc)
         system += """
@@ -2063,7 +1884,12 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 pdf_field_name=pdf_name,
                 label=f_data.get("label", f_data.get("l", "")),
                 field_type=FieldType(f_data.get("field_type", f_data.get("t", "text"))),
-                canonical_field=f_data.get("canonical_field") or f_data.get("c"),
+                # Cutover Task 4: nem registry-canonical AI érték → None
+                # (a mező nem-lemappeltként él tovább, sosem kerül legacy
+                # név a kimeneti mappingbe).
+                canonical_field=_sanitize_canonical(
+                    f_data.get("canonical_field") or f_data.get("c")
+                ),
                 confidence=MappingConfidence(
                     f_data.get("confidence", f_data.get("conf", "medium"))
                 ),
@@ -2071,7 +1897,7 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
                 coordinates=f_data.get("coordinates"),
                 notes=f_data.get("notes"),
                 checkbox_group=_normalize_checkbox_group(f_data.get("checkbox_group")),
-                fill_rule=f_data.get("fill_rule"),
+                fill_rule=_sanitize_fill_rule(f_data.get("fill_rule")),
             ))
 
         if not fields:
@@ -2099,173 +1925,178 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
         """Heurisztikus mezőleképezés mezőnevek alapján."""
         logger.info("Heurisztikus mezőleképezés (AI nélkül)")
 
-        # Általános kulcsszó → kanonikus leképezés
+        # Általános kulcsszó → kanonikus leképezés.
+        # Cutover Task 4: minden érték registry-approved Genie path — a régi
+        # Salesforce-neves értékeket a canonical_migration_map audited
+        # fordításaival (keyword ∘ audited map) komponáltuk át. A kulcsszavas
+        # ág prefix/suffix-eltávolítás UTÁN fut, ahol a "-társ" jelzés már
+        # elveszett — ezért ez az ág mindig ADÓS (borrower) scope-ot ad.
         KEYWORD_MAP = {
-            # Személyi adatok
-            "nev": "Contact.Name",
-            "name": "Contact.Name",
-            "szul_nev": "Contact.Szuletesi_nev__c",
-            "szuletesi_nev": "Contact.Szuletesi_nev__c",
-            "birth_name": "Contact.Szuletesi_nev__c",
-            "anyja_neve": "Contact.Mother_s_Name__c",
-            "mother_name": "Contact.Mother_s_Name__c",
-            "szul_hely": "Contact.Place_of_Birth__c",
-            "szuletesi_hely": "Contact.Place_of_Birth__c",
-            "birth_place": "Contact.Place_of_Birth__c",
-            "szul_datum": "Contact.Date_of_birth__c",
-            "szuletesi_datum": "Contact.Date_of_birth__c",
-            "birth_date": "Contact.Date_of_birth__c",
-            "szemelyi_szam": "Contact.ID_Card_Number__c",
-            "szem_ig": "Contact.ID_Card_Number__c",
-            "personal_id": "Contact.ID_Card_Number__c",
-            "adoazonosito": "Contact.Tax_ID__c",
-            "adoaz": "Contact.Tax_ID__c",
-            "tax_id": "Contact.Tax_ID__c",
-            # Cím
-            "lakcim": "Contact.Permanent_address__c",
-            "address": "Contact.Permanent_address__c",
-            "iranyitoszam": "Contact.ZIP__c",
-            "irsz": "Contact.ZIP__c",
-            "zip": "Contact.ZIP__c",
-            "zip_code": "Contact.ZIP__c",
-            "telepules": "Contact.MailingCity",
-            "varos": "Contact.MailingCity",
-            "city": "Contact.MailingCity",
-            "utca": "Contact.MailingStreet",
-            "kozterulet": "Contact.MailingStreet",
-            "street": "Contact.MailingStreet",
-            "hazszam": "Contact.MailingStreet",
-            "hsz": "Contact.MailingStreet",
-            "house_number": "Contact.MailingStreet",
+            # Személyi adatok (adós)
+            "nev": "participant.borrower.name",
+            "name": "participant.borrower.name",
+            "szul_nev": "participant.borrower.birth_name",
+            "szuletesi_nev": "participant.borrower.birth_name",
+            "birth_name": "participant.borrower.birth_name",
+            "anyja_neve": "participant.borrower.mother_name",
+            "mother_name": "participant.borrower.mother_name",
+            "szul_hely": "participant.borrower.birth_place",
+            "szuletesi_hely": "participant.borrower.birth_place",
+            "birth_place": "participant.borrower.birth_place",
+            "szul_datum": "participant.borrower.birth_date",
+            "szuletesi_datum": "participant.borrower.birth_date",
+            "birth_date": "participant.borrower.birth_date",
+            "szemelyi_szam": "participant.borrower.personal_id",
+            "szem_ig": "participant.borrower.personal_id",
+            "personal_id": "participant.borrower.personal_id",
+            "adoazonosito": "participant.borrower.tax_id",
+            "adoaz": "participant.borrower.tax_id",
+            "tax_id": "participant.borrower.tax_id",
+            # Cím (adós)
+            "lakcim": "participant.borrower.permanent_address",
+            "address": "participant.borrower.permanent_address",
+            "iranyitoszam": "participant.borrower.address.zip_code",
+            "irsz": "participant.borrower.address.zip_code",
+            "zip": "participant.borrower.address.zip_code",
+            "zip_code": "participant.borrower.address.zip_code",
+            "telepules": "participant.borrower.mailing_address.city",
+            "varos": "participant.borrower.mailing_address.city",
+            "city": "participant.borrower.mailing_address.city",
+            "utca": "participant.borrower.mailing_address.street",
+            "kozterulet": "participant.borrower.mailing_address.street",
+            "street": "participant.borrower.mailing_address.street",
+            "hazszam": "participant.borrower.mailing_address.street",
+            "hsz": "participant.borrower.mailing_address.street",
+            "house_number": "participant.borrower.mailing_address.street",
             # Kontakt
-            "telefon": "Contact.Phone",
-            "telefonszam": "Contact.Phone",
-            "phone": "Contact.Phone",
-            "email": "Contact.Email",
-            "e_mail": "Contact.Email",
+            "telefon": "participant.borrower.phone",
+            "telefonszam": "participant.borrower.phone",
+            "phone": "participant.borrower.phone",
+            "email": "participant.borrower.email",
+            "e_mail": "participant.borrower.email",
             # Munka
-            "munkaltato": "Contact.Name_of_employer__c",
-            "munkahely": "Contact.Name_of_employer__c",
-            "employer": "Contact.Name_of_employer__c",
-            "jovedelem": "Contact.Average_monthly_net_income__c",
-            "havi_netto": "Contact.Average_monthly_net_income__c",
-            "monthly_income": "Contact.Average_monthly_net_income__c",
-            # Hitel
-            "hitelosszeg": "Opportunity.Hitel_sszeg__c",
-            "kolcson_osszeg": "Opportunity.Hitel_sszeg__c",
-            "igenyelt_kolcson": "Opportunity.Hitel_sszeg__c",
-            "loan_amount": "Opportunity.Hitel_sszeg__c",
-            "futamido": "Contact.Term_in_year_c__c",
-            "loan_term": "Contact.Term_in_year_c__c",
-            "kamatperiodus": "Contact.Interest_Period__c",
-            "hitel_celja": "Contact.Loan_Purpose__c",
-            "loan_purpose": "Contact.Loan_Purpose__c",
-            "onero": "Lead.Tervezett_onero__c",
-            "torleszto": "Contact.Affordable_monthly_installments__c",
-            # Ingatlan
-            # FIX M3: helyrajzi szám / hrsz / parcel_number a Lead.Ingatlan_megjegyzes__c
-            # (ingatlan megjegyzés/helyrajsi szám) mezőre képeződik, NEM az
-            # Ingatlan_jellege__c-re (ami az ingatlan típusa = lakás/ház/telek).
-            "helyrajzi_szam": "Lead.Ingatlan_megjegyzes__c",
-            "hrsz": "Lead.Ingatlan_megjegyzes__c",
-            "parcel_number": "Lead.Ingatlan_megjegyzes__c",
-            "terulet": "Lead.Ingatlan_alapterulet__c",
-            "alapterulet": "Lead.Ingatlan_alapterulet__c",
-            "area": "Lead.Ingatlan_alapterulet__c",
-            "ingatlan_tipus": "Lead.Ingatlan_jellege__c",
-            "becsult_ertek": "Lead.Estimated__c",
-            "forgalmi_ertek": "Lead.Estimated__c",
+            "munkaltato": "participant.borrower.employer",
+            "munkahely": "participant.borrower.employer",
+            "employer": "participant.borrower.employer",
+            "jovedelem": "participant.borrower.monthly_income",
+            "havi_netto": "participant.borrower.monthly_income",
+            "monthly_income": "participant.borrower.monthly_income",
+            # Hitel (ügylet-szintű)
+            "hitelosszeg": "deal.loan_amount",
+            "kolcson_osszeg": "deal.loan_amount",
+            "igenyelt_kolcson": "deal.loan_amount",
+            "loan_amount": "deal.loan_amount",
+            "futamido": "deal.loan_term_years",
+            "loan_term": "deal.loan_term_years",
+            "kamatperiodus": "deal.interest_period",
+            "hitel_celja": "deal.loan_purpose",
+            "loan_purpose": "deal.loan_purpose",
+            "onero": "deal.down_payment",
+            "torleszto": "participant.borrower.affordable_monthly_installments",
+            # Ingatlan (property névtér)
+            # (helyrajzi szám / hrsz a property.parcel_number mezőre képeződik)
+            "helyrajzi_szam": "property.parcel_number",
+            "hrsz": "property.parcel_number",
+            "parcel_number": "property.parcel_number",
+            "terulet": "property.area_sqm",
+            "alapterulet": "property.area_sqm",
+            "area": "property.area_sqm",
+            "ingatlan_tipus": "property.property_type",
+            "becsult_ertek": "property.estimated_value",
+            "forgalmi_ertek": "property.estimated_value",
         }
 
-        # OTP-specifikus mező → kanonikus leképezés (valódi mezőnevek a PDF-ből)
+        # OTP-specifikus mező → kanonikus leképezés (valódi mezőnevek a PDF-ből).
+        # Cutover Task 4: Genie canonical útvonalak (audited fordítás); a
+        # "-társ" (társigénylő) mezők participant.co_borrower.* célra mutatnak
+        # — a régi "Contact.X-társ" suffix-forma megszűnt.
         OTP_EXACT_MAP = {
             # === SZA_IG_ – Személyi adatok (Igénylő) ===
-            "SZA_IG_név": "Contact.Name",
-            "SZA_IG_szül_név": "Contact.Szuletesi_nev__c",
-            "SZA_IG_anyja_neve": "Contact.Mother_s_Name__c",
-            "SZA_IG_szül_hely": "Contact.Place_of_Birth__c",
-            # C8: az év/hónap/nap dobozok a Contact.Birthdate (teljes dátum)
-            # kanonikushoz tartoznak, fragment=year|month|day darabolja fel.
-            # Korábban Contact.Date_of_birth__c-re mutattak, amit a pipeline
-            # sosem állít elő → a dobozok üresek maradtak.
-            "SZA_IG_szül_év": "Contact.Birthdate",
-            "SZA_IG_szül_hónap": "Contact.Birthdate",
-            "SZA_IG_szül_nap": "Contact.Birthdate",
-            "SZA_IG_személyiszám": "Contact.ID_Card_Number__c",
-            "SZA_IG_személyazonosíó_szám": "Contact.ID_Card_Number__c",
-            "SZA_IG_adóazonosító": "Contact.Tax_ID__c",
-            "SZA_IG_állandó_lakcím_irányító": "Contact.ZIP__c",
-            "SZA_IG_állandó_lakcim_település": "Contact.MailingCity",
-            "SZA_IG_állandó_lakcim_utca": "Contact.MailingStreet",
-            "SZA_IG_levelezési_cím_irányító": "Contact.MailingPostalCode",
-            "SZA_IG_levelezési_cím_település": "Contact.MailingCity",
-            "SZA_IG_levelezési_lakcim_utca": "Contact.MailingStreet",
-            "SZA_IG_mobil": "Contact.Phone",
-            "SZA_IG_email_cím": "Contact.Email",
-            "SZA_IG_eltartottak": "Contact.Dependents_count__c",
-            "SZA_IG_kata": "Contact.Self_employment_details__c",
-            "SZA_IG_létszám": "Contact.Self_employment_details__c",
-            "SZA_IG_mióta_lakik_év": "Contact.Date_of_notification_for_residence__c",
-            "SZA_IG_mióta_lakik_hónap": "Contact.Date_of_notification_for_residence__c",
-            "SZA_IG_Elsődleges_Szerep": "Contact.Relation__c",
-            "SZA_IG_neme": "Contact.Salutation",
-            "SZA_IG_állampolgárság": "Contact.Citizenship__c",
-            "SZA_IG_családiállapot": "Contact.Marital_Status__c",
-            "SZA_IG_dokumentum": "Contact.ID_Card_Number__c",
-            "SZA_IG_végzettség": "Contact.Highest_Educational_Qualification__c",
-            "SZA_IG_foglalkoztatás": "Contact.Employment_Type_c__c",
-            "SZA_IG_lakcim_ország": "Contact.MailingCountry",
-            "SZA_IG_levelezési_cím": "Contact.MailingStreet",
-            "SZA_IG_nav": "Contact.Description",
-            # === SZA_IG_ – Társigénylő (-társ suffix) ===
-            "SZA_IG_név-társ": "Contact.Name",
-            "SZA_IG_szül_név-társ": "Contact.Szuletesi_nev__c",
-            "SZA_IG_anyja_neve-társ": "Contact.Mother_s_Name__c",
-            "SZA_IG_szül_hely-társ": "Contact.Place_of_Birth__c",
-            "SZA_IG_szül_év-társ": "Contact.Birthdate",
-            "SZA_IG_szül_hónap-társ": "Contact.Birthdate",
-            "SZA_IG_szül_nap-társ": "Contact.Birthdate",
-            "SZA_IG_személyiszám-társ": "Contact.ID_Card_Number__c",
-            "SZA_IG_személyazonosíó_szám-társ": "Contact.ID_Card_Number__c",
-            "SZA_IG_adóazonosító-társ": "Contact.Tax_ID__c",
-            "SZA_IG_állandó_lakcím_irányító-társ": "Contact.ZIP__c",
-            "SZA_IG_állandó_lakcim_település-társ": "Contact.MailingCity",
-            "SZA_IG_állandó_lakcim_utca-társ": "Contact.MailingStreet",
-            "SZA_IG_mobil-társ": "Contact.Phone",
-            "SZA_IG_email_cím-társ": "Contact.Email",
-            "SZA_IG_Elsődleges_Szerep-társ": "Contact.Relation__c",
-            "SZA_IG_neme-társ": "Contact.Salutation",
-            "SZA_IG_állampolgárság-társ": "Contact.Citizenship__c",
-            "SZA_IG_családiállapot-társ": "Contact.Marital_Status__c",
-            "SZA_IG_dokumentum-társ": "Contact.ID_Card_Number__c",
-            "SZA_IG_végzettség-társ": "Contact.Highest_Educational_Qualification__c",
-            "SZA_IG_foglalkoztatás-társ": "Contact.Employment_Type_c__c",
-            "SZA_IG_eltartottak-társ": "Contact.Dependents_count__c",
-            # === IA_ – Ingatlan adatok ===
-            "IA_cím_isz": "Lead.Ingatlan_irsz__c",
-            "IA_cím_település": "Lead.Ingatlan_telepules__c",
-            "IA_cím_utca": "Lead.Ingatlan_kozterulet_neve__c",
-            "IA_helyrazi_szam": "Lead.Ingatlan_megjegyzes__c",
-            "IA_hasznos_terület": "Lead.Ingatlan_alapterulet__c",
-            "IA_ingatlanhasználat": "Lead.Ingatlan_szerepe__c",
-            "IA_Kapcsolattartó neve": "Opportunity.Contact_Name__c",
-            "IA_Telefonszám": "Contact.OtherPhone",
-            # === LAHI/KTKA – Lakáshitel/Költségkalkuláció ===
-            "LAHI_KTKA_Igényelt_kölcsön": "Opportunity.Hitel_sszeg__c",
-            "LAHI_KTKA_Vásárolt_ingatlan_ár": "Lead.Purchase_price__c",
-            "LAHI_KTKA_Önerő_kp": "Lead.Tervezett_onero__c",
-            "LAHI_KTKA_CSOK": "Lead.Tervezett_CSOK_Plusz__c",
-            "LAHI_KTKA_Afa": "Contact.State_Support__c",
-            "LAHI_KTKA_Lakástakarék": "loan.housing_savings",
-            "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám": "loan.refinance_account",
-            "LAHI_KTKA_Kölcsön_tipusa_OTP": "loan.product_type",
+            "SZA_IG_név": "participant.borrower.name",
+            "SZA_IG_szül_név": "participant.borrower.birth_name",
+            "SZA_IG_anyja_neve": "participant.borrower.mother_name",
+            "SZA_IG_szül_hely": "participant.borrower.birth_place",
+            # C8: az év/hónap/nap dobozok a participant.borrower.birth_date
+            # (teljes dátum) kanonikushoz tartoznak, fragment=year|month|day
+            # darabolja fel.
+            "SZA_IG_szül_év": "participant.borrower.birth_date",
+            "SZA_IG_szül_hónap": "participant.borrower.birth_date",
+            "SZA_IG_szül_nap": "participant.borrower.birth_date",
+            "SZA_IG_személyiszám": "participant.borrower.personal_number",
+            "SZA_IG_személyazonosíó_szám": "participant.borrower.personal_id",
+            "SZA_IG_adóazonosító": "participant.borrower.tax_id",
+            "SZA_IG_állandó_lakcím_irányító": "participant.borrower.address.zip_code",
+            "SZA_IG_állandó_lakcim_település": "participant.borrower.address.city",
+            "SZA_IG_állandó_lakcim_utca": "participant.borrower.address.street",
+            "SZA_IG_levelezési_cím_irányító": "participant.borrower.mailing_address.zip_code",
+            "SZA_IG_levelezési_cím_település": "participant.borrower.mailing_address.city",
+            "SZA_IG_levelezési_lakcim_utca": "participant.borrower.mailing_address.street",
+            "SZA_IG_mobil": "participant.borrower.mobile_phone",
+            "SZA_IG_email_cím": "participant.borrower.email",
+            "SZA_IG_eltartottak": "participant.borrower.children_count",
+            "SZA_IG_kata": "participant.borrower.self_employment_details",
+            "SZA_IG_létszám": "participant.borrower.household_size",
+            "SZA_IG_mióta_lakik_év": "participant.borrower.residence_notification_date",
+            "SZA_IG_mióta_lakik_hónap": "participant.borrower.residence_notification_date",
+            "SZA_IG_Elsődleges_Szerep": "participant.borrower.relation",
+            "SZA_IG_neme": "participant.borrower.salutation",
+            "SZA_IG_állampolgárság": "participant.borrower.citizenship",
+            "SZA_IG_családiállapot": "participant.borrower.marital_status",
+            "SZA_IG_dokumentum": "participant.borrower.personal_id",
+            "SZA_IG_végzettség": "participant.borrower.education",
+            "SZA_IG_foglalkoztatás": "participant.borrower.foglalkozas_tipusa",
+            "SZA_IG_lakcim_ország": "participant.borrower.mailing_country",
+            "SZA_IG_levelezési_cím": "participant.borrower.mailing_address.street",
+            "SZA_IG_nav": "participant.borrower.description",
+            # === SZA_IG_ – Társigénylő (-társ suffix) → co_borrower névtér ===
+            "SZA_IG_név-társ": "participant.co_borrower.name",
+            "SZA_IG_szül_név-társ": "participant.co_borrower.birth_name",
+            "SZA_IG_anyja_neve-társ": "participant.co_borrower.mother_name",
+            "SZA_IG_szül_hely-társ": "participant.co_borrower.birth_place",
+            "SZA_IG_szül_év-társ": "participant.co_borrower.birth_date",
+            "SZA_IG_szül_hónap-társ": "participant.co_borrower.birth_date",
+            "SZA_IG_szül_nap-társ": "participant.co_borrower.birth_date",
+            "SZA_IG_személyiszám-társ": "participant.co_borrower.personal_number",
+            "SZA_IG_személyazonosíó_szám-társ": "participant.co_borrower.personal_id",
+            "SZA_IG_adóazonosító-társ": "participant.co_borrower.tax_id",
+            "SZA_IG_állandó_lakcím_irányító-társ": "participant.co_borrower.address.zip_code",
+            "SZA_IG_állandó_lakcim_település-társ": "participant.co_borrower.mailing_address.city",
+            "SZA_IG_állandó_lakcim_utca-társ": "participant.co_borrower.mailing_address.street",
+            "SZA_IG_mobil-társ": "participant.co_borrower.phone",
+            "SZA_IG_email_cím-társ": "participant.co_borrower.email",
+            "SZA_IG_Elsődleges_Szerep-társ": "participant.co_borrower.relation",
+            "SZA_IG_neme-társ": "participant.co_borrower.salutation",
+            "SZA_IG_állampolgárság-társ": "participant.co_borrower.citizenship",
+            "SZA_IG_családiállapot-társ": "participant.co_borrower.marital_status",
+            "SZA_IG_dokumentum-társ": "participant.co_borrower.personal_id",
+            "SZA_IG_végzettség-társ": "participant.co_borrower.education",
+            "SZA_IG_foglalkoztatás-társ": "participant.co_borrower.foglalkozas_tipusa",
+            "SZA_IG_eltartottak-társ": "participant.co_borrower.children_count",
+            # === IA_ – Ingatlan adatok (property névtér) ===
+            "IA_cím_isz": "property.address.zip_code",
+            "IA_cím_település": "property.address.city",
+            "IA_cím_utca": "property.address.street",
+            "IA_helyrazi_szam": "property.parcel_number",
+            "IA_hasznos_terület": "property.area_sqm",
+            "IA_ingatlanhasználat": "property.ingatlan_szerepe",
+            "IA_Kapcsolattartó neve": "participant.borrower.name",
+            "IA_Telefonszám": "participant.borrower.other_phone",
+            # === LAHI/KTKA – Lakáshitel/Költségkalkuláció (deal névtér) ===
+            "LAHI_KTKA_Igényelt_kölcsön": "deal.loan_amount",
+            "LAHI_KTKA_Vásárolt_ingatlan_ár": "property.purchase_price",
+            "LAHI_KTKA_Önerő_kp": "deal.down_payment",
+            "LAHI_KTKA_CSOK": "deal.csok_amount",
+            "LAHI_KTKA_Afa": "deal.afa_support",
+            "LAHI_KTKA_Lakástakarék": "deal.housing_savings",
+            "LAHI_KTKA_Kiváltandó_kölcsön_szlaszám": "deal.refinance_account",
+            "LAHI_KTKA_Kölcsön_tipusa_OTP": "deal.product_type",
             # === MA_ – Munkáltatói/meghatalmazás ===
-            "MA_IG_adós_neve": "Contact.Name",
-            "MA_IG_munáltató_neve": "Contact.Name_of_employer__c",
-            "MA_IG_munkavállaló_neve": "Contact.Name",
-            "MA_IG_vállalkozás_neve": "participant.business_name",
-            "MA_IG_munáltató_adósz": "participant.employer_tax_id",
-            "MA_IG_vállalkozás_adószám": "participant.business_tax_id",
+            "MA_IG_adós_neve": "participant.borrower.name",
+            "MA_IG_munáltató_neve": "participant.borrower.employer",
+            "MA_IG_munkavállaló_neve": "participant.borrower.name",
+            "MA_IG_vállalkozás_neve": "participant.borrower.employer",
+            "MA_IG_munáltató_adósz": "participant.borrower.employer_tax_number",
+            "MA_IG_vállalkozás_adószám": "participant.borrower.employer_tax_number",
         }
 
         # C8 (date fragmentation ground-work): these OTP PDF fields each carry
@@ -2381,23 +2212,24 @@ A koordináta-rendszer bal felső sarokban indul (0,0)."""
 
         # Szöveg kinyerése az oldalakról – mezők beazonosítása
         fields = []
+        # Cutover Task 4: Genie canonical útvonalak (audited fordítás).
         field_labels_hu = [
-            ("Név", "Contact.Name", FieldType.TEXT),
-            ("Születési név", "Contact.Szuletesi_nev__c", FieldType.TEXT),
-            ("Anyja neve", "Contact.Mother_s_Name__c", FieldType.TEXT),
-            ("Születési hely", "Contact.Place_of_Birth__c", FieldType.TEXT),
-            ("Születési dátum", "Contact.Date_of_birth__c", FieldType.DATE),
-            ("Személyi szám", "Contact.ID_Card_Number__c", FieldType.TEXT),
-            ("Adóazonosító", "Contact.Tax_ID__c", FieldType.TEXT),
-            ("Lakcím", "Contact.Permanent_address__c", FieldType.TEXT),
-            ("Irányítószám", "Contact.ZIP__c", FieldType.TEXT),
-            ("Település", "Contact.MailingCity", FieldType.TEXT),
-            ("Telefonszám", "Contact.Phone", FieldType.TEXT),
-            ("E-mail", "Contact.Email", FieldType.TEXT),
-            ("Hitelösszeg", "Opportunity.Hitel_sszeg__c", FieldType.NUMBER),
-            ("Futamidő", "Contact.Term_in_year_c__c", FieldType.NUMBER),
-            ("Helyrajzi szám", "Lead.Ingatlan_megjegyzes__c", FieldType.TEXT),
-            ("Terület", "Lead.Ingatlan_alapterulet__c", FieldType.NUMBER),
+            ("Név", "participant.borrower.name", FieldType.TEXT),
+            ("Születési név", "participant.borrower.birth_name", FieldType.TEXT),
+            ("Anyja neve", "participant.borrower.mother_name", FieldType.TEXT),
+            ("Születési hely", "participant.borrower.birth_place", FieldType.TEXT),
+            ("Születési dátum", "participant.borrower.birth_date", FieldType.DATE),
+            ("Személyi szám", "participant.borrower.personal_number", FieldType.TEXT),
+            ("Adóazonosító", "participant.borrower.tax_id", FieldType.TEXT),
+            ("Lakcím", "participant.borrower.permanent_address", FieldType.TEXT),
+            ("Irányítószám", "participant.borrower.address.zip_code", FieldType.TEXT),
+            ("Település", "participant.borrower.mailing_address.city", FieldType.TEXT),
+            ("Telefonszám", "participant.borrower.phone", FieldType.TEXT),
+            ("E-mail", "participant.borrower.email", FieldType.TEXT),
+            ("Hitelösszeg", "deal.loan_amount", FieldType.NUMBER),
+            ("Futamidő", "deal.loan_term_years", FieldType.NUMBER),
+            ("Helyrajzi szám", "property.parcel_number", FieldType.TEXT),
+            ("Terület", "property.area_sqm", FieldType.NUMBER),
         ]
 
         for page_num in range(num_pages):

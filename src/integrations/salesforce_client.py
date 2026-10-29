@@ -11,12 +11,26 @@ A PoC-ban dummy JSON adatokból dolgozik.
 
 import json
 import logging
+import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from src.integrations.salesforce_schema import SalesforceSchema, load_field_map
+
 logger = logging.getLogger(__name__)
+
+_SF_FIELD_MAP = load_field_map()
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_SF_SCHEMA_DEFAULT_PATH = _PROJECT_ROOT / "config" / "sf_schema_snapshot.json"
+_SCHEMA_SYNC_INSTRUCTION = (
+    "Salesforce live mode requires an approved local schema snapshot. "
+    "Set SF_SCHEMA_PATH or provide config/sf_schema_snapshot.json. "
+    "Run `python3 scripts/sync_sf_schema.py --org-id YOUR_ORG_ID "
+    "--output config/sf_schema_snapshot.json` (describe-only)."
+)
 
 
 @dataclass
@@ -65,6 +79,89 @@ def _fold_name(s: str) -> str:
     )
 
 
+def _safe_salesforce_id(value) -> Optional[str]:
+    """Return an exact valid Salesforce ID, never a transformed identity."""
+    if not isinstance(value, str):
+        return None
+    if re.fullmatch(r"(?:[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})", value):
+        return value
+    return None
+
+
+_SF_ID_CHECKSUM_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+
+def _to_18_char_salesforce_id(sf_id: str) -> Optional[str]:
+    """Return the case-insensitive 18-character form of a valid Salesforce ID.
+
+    The deliberate 15↔18 equivalence used for related-row ownership: the first
+    15 characters identify the record case-insensitively, and the last three
+    characters are the documented case-checksum of those 15. A 15-char ID is
+    expanded with that checksum; an 18-char ID is returned unchanged. Invalid
+    inputs return ``None``. No substring shortcuts are used.
+    """
+    if not isinstance(sf_id, str):
+        return None
+    if len(sf_id) == 18:
+        return sf_id if re.fullmatch(r"[a-zA-Z0-9]{18}", sf_id) else None
+    if len(sf_id) != 15 or not re.fullmatch(r"[a-zA-Z0-9]{15}", sf_id):
+        return None
+    suffix = ""
+    for chunk_start in (0, 5, 10):
+        value = 0
+        for offset, char in enumerate(sf_id[chunk_start : chunk_start + 5]):
+            if char.isupper():
+                value += 1 << offset
+        suffix += _SF_ID_CHECKSUM_ALPHABET[value]
+    return sf_id + suffix
+
+
+def _sanitize_salesforce_ids(purpose: str, ids) -> tuple[list[str], list]:
+    """Validate IDs before SOQL; return (valid_ids, malformed_ids).
+
+    Malformed IDs are never quoted into a query; the caller warns once with an
+    actionable message. An empty result must not produce a malformed query.
+    """
+    safe_ids: list[str] = []
+    malformed_ids: list = []
+    for candidate in ids:
+        validated = _safe_salesforce_id(candidate)
+        if validated is None:
+            malformed_ids.append(candidate)
+        else:
+            safe_ids.append(validated)
+    if malformed_ids:
+        logger.warning(
+            "%s rejected malformed Contact ID value(s) %r; expected exact "
+            "15 or 18 alphanumeric characters. Records for these IDs were "
+            "not queried.",
+            purpose,
+            malformed_ids,
+        )
+    return list(dict.fromkeys(safe_ids)), malformed_ids
+
+
+def _load_local_schema_snapshot() -> SalesforceSchema:
+    """Load a strict local metadata snapshot; never fall back to live describe."""
+    configured = os.getenv("SF_SCHEMA_PATH", "").strip()
+    snapshot_path = Path(configured).expanduser() if configured else _SF_SCHEMA_DEFAULT_PATH
+    if not snapshot_path.is_absolute():
+        snapshot_path = _PROJECT_ROOT / snapshot_path
+    if not snapshot_path.is_file():
+        raise RuntimeError(
+            f"Salesforce schema snapshot not found at {snapshot_path}. "
+            f"{_SCHEMA_SYNC_INSTRUCTION}"
+        )
+    try:
+        document = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        return SalesforceSchema.from_dict(document)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Salesforce schema snapshot at {snapshot_path} is unreadable or invalid "
+            f"({type(exc).__name__}). {_SCHEMA_SYNC_INSTRUCTION}"
+        ) from exc
+
+
 class SalesforceClient:
     """
     Salesforce integráció – olvasás és visszaírás.
@@ -82,8 +179,10 @@ class SalesforceClient:
         domain: str = "test",
         mock_mode: bool = True,
         mock_data_dir: Path = None,
+        schema=None,
     ):
         self._mock_mode = mock_mode
+        self._schema = schema
         self._state = MockSalesforceState()
         
         if mock_mode:
@@ -91,6 +190,8 @@ class SalesforceClient:
             self._load_mock_data()
             logger.info("Salesforce mock mód aktív")
         else:
+            if self._schema is None:
+                self._schema = _load_local_schema_snapshot()
             try:
                 from simple_salesforce import Salesforce
                 if not username or not password:
@@ -248,32 +349,25 @@ class SalesforceClient:
         return total
 
     def _resolve_participant_roles(self, opp: dict, deal_id: str) -> tuple[dict, dict]:
-        """Résztvevő-szerepek feloldása OCR-first, custom lookup fallbackkel.
+        """Merge OCR and lookup roles without discarding distinct participants.
 
-        A valós ügyleteknél a szerep-hozzárendelést a standard
-        OpportunityContactRole (OCR) objektum tartja (pl. "Adós-jovedelemmel",
-        "Adóstárs1-jövedelem nélkül bevont", "Adóstárs 2"), míg a custom
-        lookup mezők (First_Co_debtor__c stb.) üresek. Ezért az OCR az
-        elsődleges forrás; a lookupok a zálogkötelezett/haszonélvező szerepekre
-        és OCR=0 esetén (fallback) maradnak.
-
-        Returns:
-            (roles_map, income_flags) — roles_map: {szerep_címke: contact_id}
-            adós → adóstárs_1..N → kezes → haszonélvező sorrendben;
-            income_flags: {szerep_címke: True/False/None} ("jovedelemmel" /
-            "jövedelem nélkül" jelölés alapján, None = nem jelölt).
+        Lookup co-borrowers are seeded first, then OCR records fill explicit or
+        next-free indices. Borrower/co-borrower Contact IDs are unique across
+        that group; other roles are deduplicated only within the same role so a
+        Contact may legitimately be both guarantor and mortgagor.
         """
         import re
 
-        lookup_map = {
-            "adós": opp.get("Opportunity_Contact_Name__c"),
-            "adóstárs_1": opp.get("First_Co_debtor__c"),
-            "adóstárs_2": opp.get("Second_Co_debtor__c"),
-            "adóstárs_3": opp.get("Third_Co_debtor__c"),
-            "kezes": opp.get("Mortgagor__c"),
-            "haszonélvező": opp.get("Usufructuary__c"),
-        }
-        income_flags: dict = {}
+        lookup_specs = (
+            ("adóstárs", 1, "First_Co_debtor__c"),
+            ("adóstárs", 2, "Second_Co_debtor__c"),
+            ("adóstárs", 3, "Third_Co_debtor__c"),
+            ("kezes", 1, "Guarantor__c"),
+            ("kezes", 1, "Kezes__c"),
+            ("zálogkötelezett", 1, "Mortgagor__c"),
+            ("haszonélvező", 1, "Usufructuary__c"),
+        )
+        lookup_borrower = opp.get("Opportunity_Contact_Name__c")
 
         try:
             safe_deal_id = re.sub(r"[^a-zA-Z0-9]", "", str(deal_id or ""))
@@ -282,93 +376,133 @@ class SalesforceClient:
                 f"WHERE OpportunityId = '{safe_deal_id}'"
             )
             ocr_records = ocr_res.get("records", [])
-        except Exception as e:
-            logger.warning(f"OCR lekérés sikertelen ({deal_id}): {e}")
+        except Exception as exc:
+            logger.warning("OCR lekérés sikertelen (%s): %s", deal_id, exc)
             ocr_records = []
 
-        if not ocr_records:
-            logger.info(f"OCR üres ({deal_id}) — custom lookup fallback")
-            return lookup_map, income_flags
-
-        ocr_map: dict = {}
-        seen_cids: set = set()
+        candidates = []
         for rec in ocr_records:
-            role_str = (rec.get("Role") or "").strip()
             cid = rec.get("ContactId")
             if not cid:
                 continue
-            low = role_str.lower()
-            if low.startswith("adóstárs") or low.startswith("adostars"):
-                mnum = re.search(r"ad[oó]st[aá]rs\s*(\d+)", low)
-                idx = int(mnum.group(1)) if mnum else 1
-                while f"adóstárs_{idx}" in ocr_map and ocr_map[f"adóstárs_{idx}"] != cid:
-                    idx += 1
-                label = f"adóstárs_{idx}"
-            elif low.startswith("adós") or low.startswith("ados"):
-                label = "adós"
-            elif low.startswith(("kezes", "zálogkötelezett", "zalogkotelezett")):
-                label = "kezes"
-            elif low.startswith(("haszonélvező", "haszonelvezo")):
-                label = "haszonélvező"
+            role_str = (rec.get("Role") or "").strip()
+            low = _fold_name(role_str)
+            if low.startswith("adostars"):
+                base = "adóstárs"
+                match = re.match(r"adostars\s*(\d+)", low)
+            elif low.startswith("ados"):
+                base = "adós"
+                match = None
+            elif low.startswith("kezes"):
+                base = "kezes"
+                match = re.match(r"kezes\s*(\d+)", low)
+            elif low.startswith("zalogkotelezett"):
+                base = "zálogkötelezett"
+                match = re.match(r"zalogkotelezett\s*(\d+)", low)
+            elif low.startswith("haszonelvezo"):
+                base = "haszonélvező"
+                match = re.match(r"haszonelvezo\s*(\d+)", low)
             elif not low:
-                # Üres Role az OCR-ben: ha még nincs főadós, ő az adós, különben adóstárs
-                if "adós" not in ocr_map:
-                    label = "adós"
-                else:
-                    idx = 1
-                    while f"adóstárs_{idx}" in ocr_map and ocr_map[f"adóstárs_{idx}"] != cid:
-                        idx += 1
-                    label = f"adóstárs_{idx}"
+                base = "adós" if not any(c[0] == "adós" for c in candidates) else "adóstárs"
+                match = None
             else:
-                logger.info(f"Ismeretlen OCR szerep ({deal_id}): {role_str!r} — kihagyva")
+                logger.info("Ismeretlen OCR szerep (%s): %r — kihagyva", deal_id, role_str)
                 continue
 
-            if label in ("adós",) or label.startswith("adóstárs_"):
-                if cid in seen_cids:
-                    logger.warning(
-                        f"⚠️ Ugyanaz a Contact ({cid}) több adós/adóstárs szerepben is szerepel ({deal_id}, {label}) — duplikátum kihagyva!"
-                    )
-                    continue
-                seen_cids.add(cid)
-
-            ocr_map[label] = cid
-            if "jövedelem nélkül" in low or "jovedelem nelkul" in low:
-                income_flags[label] = False
-            elif "jovedelemmel" in low or "jövedelemmel" in low:
-                income_flags[label] = True
+            if "jovedelem nelkul" in low:
+                income_flag = False
+            elif "jovedelemmel" in low:
+                income_flag = True
             else:
-                income_flags[label] = None
+                income_flag = None
+            candidates.append(
+                (base, int(match.group(1)) if match else None, cid, income_flag)
+            )
 
-        if "adós" not in ocr_map:
-            if opp.get("Opportunity_Contact_Name__c"):
-                ocr_map["adós"] = opp.get("Opportunity_Contact_Name__c")
-            else:
-                co_keys = sorted(
-                    (int(k.rsplit("_", 1)[1]), k)
-                    for k in ocr_map
-                    if k.startswith("adóstárs_")
+        ocr_borrower = next((c[2] for c in candidates if c[0] == "adós"), None)
+        if ocr_borrower and lookup_borrower and ocr_borrower != lookup_borrower:
+            logger.warning(
+                "Eltérő OCR és lookup főadós (%s); az OCR főadós kerül felhasználásra",
+                deal_id,
+            )
+        borrower = ocr_borrower or lookup_borrower
+        if not borrower:
+            borrower = next(
+                (c[2] for c in candidates if c[0] == "adóstárs"),
+                next((opp.get(field) for _, _, field in lookup_specs[:3] if opp.get(field)), None),
+            )
+
+        merged: dict[str, str] = {}
+        income_flags: dict[str, bool] = {}
+        borrower_ids = {borrower} if borrower else set()
+        if borrower:
+            merged["adós"] = borrower
+
+        def add_role(base, index, cid, income_flag=None, *, compact=False):
+            if not cid:
+                return
+            prefix = f"{base}_"
+            existing = next(
+                (label for label, value in merged.items() if label.startswith(prefix) and value == cid),
+                None,
+            )
+            if existing:
+                if income_flag is not None:
+                    income_flags[existing] = income_flag
+                return
+            if base == "adóstárs" and cid in borrower_ids:
+                logger.warning(
+                    "Ugyanaz a Contact (%s) több adós/adóstárs szerepben szerepel (%s); duplikátum kihagyva",
+                    cid, deal_id,
                 )
-                if co_keys and not any(lookup_map.values()):
-                    first_key = co_keys[0][1]
-                    ocr_map["adós"] = ocr_map.pop(first_key)
-                    if first_key in income_flags:
-                        income_flags["adós"] = income_flags.pop(first_key)
-                else:
-                    logger.warning(f"OCR-ben nincs adós ({deal_id}) — custom lookup fallback")
-                    return lookup_map, income_flags
+                return
 
-        # Sorrend: adós, adóstárs_1..N, kezes, haszonélvező
-        roles_map: dict = {"adós": ocr_map["adós"]}
-        for i in sorted(
-            int(k.rsplit("_", 1)[1]) for k in ocr_map if k.startswith("adóstárs_")
-        ):
-            roles_map[f"adóstárs_{i}"] = ocr_map[f"adóstárs_{i}"]
-        roles_map["kezes"] = ocr_map.get("kezes") or opp.get("Mortgagor__c")
-        roles_map["haszonélvező"] = ocr_map.get("haszonélvező") or opp.get("Usufructuary__c")
+            idx = 1 if compact or not index or index < 1 else index
+            while f"{base}_{idx}" in merged:
+                idx += 1
+            label = f"{base}_{idx}"
+            merged[label] = cid
+            if base == "adóstárs":
+                borrower_ids.add(cid)
+            if income_flag is not None:
+                income_flags[label] = income_flag
+
+        # The three lookup fields are an ordered pool. If one conflicts with the
+        # borrower, later lookup participants move up rather than disappearing.
+        for base, index, field_name in lookup_specs[:3]:
+            add_role(base, index, opp.get(field_name), compact=True)
+        for base, index, cid, income_flag in candidates:
+            if base == "adós":
+                if cid == borrower and income_flag is not None:
+                    income_flags["adós"] = income_flag
+                continue
+            if base == "adóstárs":
+                add_role(base, index, cid, income_flag)
+        for base, index, field_name in lookup_specs[3:]:
+            add_role(base, index, opp.get(field_name))
+        for base, index, cid, income_flag in candidates:
+            if base not in ("adós", "adóstárs"):
+                add_role(base, index, cid, income_flag)
+
+        roles_map: dict[str, str] = {}
+        if "adós" in merged:
+            roles_map["adós"] = merged["adós"]
+        for base in ("adóstárs", "kezes", "zálogkötelezett", "haszonélvező"):
+            numbered = sorted(
+                (
+                    (int(label.rsplit("_", 1)[1]), label)
+                    for label in merged
+                    if label.startswith(f"{base}_")
+                ),
+                key=lambda item: item[0],
+            )
+            for _, label in numbered:
+                roles_map[label] = merged[label]
 
         logger.info(
-            f"Résztvevők OCR-ből ({deal_id}): "
-            + ", ".join(f"{k}={v}" for k, v in roles_map.items() if v)
+            "Résztvevők összevonva (%s): %s",
+            deal_id,
+            ", ".join(f"{key}={value}" for key, value in roles_map.items()),
         )
         return roles_map, income_flags
 
@@ -408,6 +542,127 @@ class SalesforceClient:
                     ", ".join(enriched),
                 )
 
+    def _describe_filtered_fields(self, object_name: str, candidates) -> list[str]:
+        """Return static SOQL candidates filtered by an injected describe snapshot."""
+        candidates = list(dict.fromkeys(candidates))
+        schema = getattr(self, "_schema", None)
+        if schema is None:
+            raise RuntimeError(_SCHEMA_SYNC_INSTRUCTION)
+        available = schema.available_fields(object_name, candidates)
+        available_set = set(available)
+        missing = [field for field in candidates if field not in available_set]
+        if missing:
+            logger.warning(
+                "%s missing fields; omitting from SOQL: %s",
+                object_name,
+                ", ".join(missing),
+            )
+        return available
+
+    @staticmethod
+    def _related_record_sort_key(record: dict) -> tuple:
+        """Sort related rows deterministically without comparing mixed raw types."""
+        raw_sequence = record.get("Sorszam__c")
+        if raw_sequence is None:
+            sequence_key = (2, 0.0, "")
+        else:
+            try:
+                sequence_key = (0, float(raw_sequence), "")
+            except (TypeError, ValueError):
+                sequence_key = (1, 0.0, str(raw_sequence))
+        return (
+            *sequence_key,
+            str(record.get("CreatedDate") or ""),
+            str(record.get("Id") or ""),
+        )
+
+    def _query_related_records(self, object_name: str, contact_ids: list) -> dict:
+        """Fetch one describe-approved related collection, grouped by Contact ID."""
+        safe_ids = []
+        malformed_ids = []
+        for contact_id in contact_ids:
+            validated_id = _safe_salesforce_id(contact_id)
+            if validated_id is None:
+                malformed_ids.append(contact_id)
+            else:
+                safe_ids.append(validated_id)
+        safe_ids = list(dict.fromkeys(safe_ids))
+        if malformed_ids:
+            logger.warning(
+                "%s related records rejected malformed Contact ID value(s) %r; "
+                "expected exact 15 or 18 alphanumeric characters. Related rows "
+                "for these participants were not queried or attached.",
+                object_name,
+                malformed_ids,
+            )
+        if not safe_ids:
+            return {}
+
+        schema = getattr(self, "_schema", None)
+        if schema is None:
+            raise RuntimeError(_SCHEMA_SYNC_INSTRUCTION)
+        required_fields = ["Id", "CreatedDate", *_SF_FIELD_MAP[object_name]]
+        has_object = getattr(schema, "has_object", None)
+        if callable(has_object) and not has_object(object_name):
+            logger.warning(
+                "%s related records skipped: object is missing from the approved "
+                "Salesforce schema. Run scripts/sync_sf_schema.py describe-only "
+                "and approve the refreshed snapshot.",
+                object_name,
+            )
+            return {}
+
+        available = schema.available_fields(object_name, required_fields)
+        available_set = set(available)
+        missing = [field for field in required_fields if field not in available_set]
+        if missing:
+            logger.warning(
+                "%s related records skipped: required fields are missing from "
+                "the approved Salesforce schema: %s. Run "
+                "scripts/sync_sf_schema.py describe-only and approve the "
+                "refreshed snapshot.",
+                object_name,
+                ", ".join(missing),
+            )
+            return {}
+
+        id_list = ", ".join(f"'{contact_id}'" for contact_id in safe_ids)
+        query = (
+            f"SELECT {', '.join(required_fields)} FROM {object_name} "
+            f"WHERE Contact__c IN ({id_list}) "
+            "ORDER BY Sorszam__c, CreatedDate, Id"
+        )
+        try:
+            records = self._sf.query(query).get("records", [])
+        except Exception as exc:
+            logger.warning(
+                "%s related query failed; returning no related rows: %s",
+                object_name,
+                exc,
+            )
+            return {}
+
+        # Ownership equivalence: Salesforce may return either the 15- or the
+        # 18-character form of the same Contact Id. Rows are grouped by the
+        # canonical 18-character checksum form so a valid 15↔18 match is never
+        # silently lost; participant identity keeps its exact queried form.
+        key_by_owner = {}
+        for contact_id in safe_ids:
+            canonical_key = _to_18_char_salesforce_id(contact_id)
+            if canonical_key is not None:
+                key_by_owner[canonical_key] = contact_id
+        grouped = {contact_id: [] for contact_id in safe_ids}
+        for record in records:
+            owner_key = _to_18_char_salesforce_id(record.get("Contact__c"))
+            if owner_key is None:
+                continue
+            owner_id = key_by_owner.get(owner_key)
+            if owner_id is not None:
+                grouped[owner_id].append(record)
+        for rows in grouped.values():
+            rows.sort(key=self._related_record_sort_key)
+        return grouped
+
     def get_deal(self, deal_id: str) -> Optional[dict]:
         """
         Ügylet lekérése azonosító alapján.
@@ -439,48 +694,56 @@ class SalesforceClient:
 
                 contact_ids = list(dict.fromkeys(cid for cid in roles_map.values() if cid))
                 contacts = {}
-                contact_fields = (
-                    "Id, Name, FirstName, LastName, Salutation, Szuletesi_nev__c, "
-                    "Mother_s_Name__c, Place_of_Birth__c, Date_of_birth__c, Birthdate, "
-                    "ID_Card_Number__c, Address_Card_Number__c, Tax_ID__c, "
-                    "Permanent_address__c, Phone, MobilePhone, Email, "
-                    "Name_of_employer__c, Occupation__c, Average_monthly_net_income__c, "
-                    "Other_monthly_income__c, Term_in_year_c__c, Interest_Period__c, "
-                    "Highest_Educational_Qualification__c, Marital_Status__c, "
-                    "Dependents_count__c, Citizenship__c, Income_type__c, "
-                    "Foglalkozas_tipusa__c, Employment_Type_c__c, Relation__c, "
-                    "Legal_Title_of_permanent_residence__c, Jovairas_vallalasa__c, "
-                    "Loan_Purpose__c, Current_debt_Credit_limit__c, "
-                    "Current_employment_started__c, Date_of_notification_for_residence__c, "
-                    "Date_of_signature__c, Description, "
-                    "MailingCity, MailingPostalCode, MailingStreet, "
-                    "OtherCity, OtherStreet, OtherCountry, ZIP__c, "
-                    "Account_holding_bank__c, Cafeteria_bonus__c, "
-                    "Continuous_TB_2_years__c, Contract_end_date__c, Contract_start_date__c, "
-                    "Date_of_handover__c, Date_of_transfer__c, "
-                    "Description_of_loan_purpose_comments__c, Divident__c, "
-                    "Employee_registration_c__c, Employer_s_company_type__c, "
-                    "Income_from_self_owned_company__c, Industry__c, "
-                    "Monthly_Payment_details__c, "
-                    "Mortgagor__c, Numer_and_Age_of_Children__c, "
-                    "Other_income__c, Other_monthly_deductions__c, "
-                    "Property_50pct_ownership_details__c, Property_encumbrances__c, "
-                    "Property_value__c, Self_employment_details__c, State_Support__c, "
-                    "Town_or_possibly_the_exact_address__c, Usufructuary__c, "
-                    "What_type_of_loan__c, Loan_amount__c, Loan_period__c, "
-                    "Affordable_monthly_installments__c, Interest_rate__c, "
-                    "Residence_Status__c, Ownership_in_employer__c, Preferalt_bank__c"
+                contact_field_candidates = (
+                    "Id", "Name", "FirstName", "LastName", "Salutation", "Szuletesi_nev__c",
+                    "Mother_s_Name__c", "Place_of_Birth__c", "Date_of_birth__c", "Birthdate",
+                    "ID_Card_Number__c", "Address_Card_Number__c", "Tax_ID__c",
+                    "Permanent_address__c", "Phone", "MobilePhone", "Email",
+                    "Name_of_employer__c", "Occupation__c", "Average_monthly_net_income__c",
+                    "Other_monthly_income__c", "Term_in_year_c__c", "Interest_Period__c",
+                    "Highest_Educational_Qualification__c", "Marital_Status__c",
+                    "Dependents_count__c", "Citizenship__c", "Income_type__c",
+                    "Foglalkozas_tipusa__c", "Employment_Type_c__c", "Relation__c",
+                    "Legal_Title_of_permanent_residence__c", "Jovairas_vallalasa__c",
+                    "Loan_Purpose__c", "Current_debt_Credit_limit__c",
+                    "Current_employment_started__c", "Date_of_notification_for_residence__c",
+                    "Date_of_signature__c", "Description",
+                    "MailingCity", "MailingPostalCode", "MailingStreet",
+                    "OtherCity", "OtherStreet", "OtherCountry", "ZIP__c",
+                    "Account_holding_bank__c", "Cafeteria_bonus__c",
+                    "Continuous_TB_2_years__c", "Contract_end_date__c", "Contract_start_date__c",
+                    "Date_of_handover__c", "Date_of_transfer__c",
+                    "Description_of_loan_purpose_comments__c", "Divident__c",
+                    "Employee_registration_c__c", "Employer_s_company_type__c",
+                    "Income_from_self_owned_company__c", "Industry__c",
+                    "Monthly_Payment_details__c", "Monthly_installment_payment__c",
+                    "Mortgagor__c", "Numer_and_Age_of_Children__c",
+                    "Other_income__c", "Other_monthly_deductions__c", "Own_resources__c",
+                    "Property_50pct_ownership_details__c", "Property_encumbrances__c",
+                    "Property_value__c", "Self_employment_details__c", "State_Support__c",
+                    "Town_or_possibly_the_exact_address__c", "Usufructuary__c",
+                    "What_type_of_loan__c", "Loan_amount__c", "Loan_period__c",
+                    "Affordable_monthly_installments__c", "Interest_rate__c",
+                    "Residence_Status__c", "Ownership_in_employer__c", "Preferalt_bank__c",
+                    *_SF_FIELD_MAP["Contact"],
                 )
+                contact_field_names = self._describe_filtered_fields(
+                    "Contact", contact_field_candidates
+                )
+                contact_fields = ", ".join(contact_field_names)
                 
                 # 3. Contact adatok lekérdezése
                 # NOTE (FIX M12): the SOQL below is built with f-string
                 # interpolation (id_list_str / prop_id_list_str), NOT with
                 # simple-salesforce's `:változó` parameter binding, despite
-                # what an earlier comment claimed. The deal_id values used
-                # here originate from Salesforce lookup fields (already
-                # 18-char IDs), so injection risk is low — but do not assume
-                # the driver is escaping these values.
-                if contact_ids:
+                # what an earlier comment claimed. Every ID quoted here has
+                # passed the exact 15/18-character validation (quotes and
+                # malformed values are dropped with a warning), so injection
+                # risk is blocked — but do not assume the driver escapes.
+                contact_ids, _ = _sanitize_salesforce_ids(
+                    "Contact lookup", contact_ids
+                )
+                if contact_ids and contact_fields:
                     id_list_str = ", ".join(f"'{cid}'" for cid in contact_ids)
                     query_str = (
                         f"SELECT {contact_fields} FROM Contact "
@@ -495,7 +758,16 @@ class SalesforceClient:
                 # Két cél: duplikált Contact-rekordokból enrichment (üres mezők
                 # pótlása), és ha az OCR/lookup üres volt, az Account kontaktokból
                 # felépítjük a résztvevőket.
-                account_id = opp.get("AccountId")
+                raw_account_id = opp.get("AccountId")
+                if raw_account_id and _safe_salesforce_id(raw_account_id) is None:
+                    logger.warning(
+                        "Opportunity AccountId %r is malformed; expected exact "
+                        "15 or 18 alphanumeric characters. Account pool, "
+                        "Account record and account-property queries were "
+                        "skipped for this deal.",
+                        raw_account_id,
+                    )
+                account_id = _safe_salesforce_id(raw_account_id)
                 pool_records: list = []
                 pool_extra_names: list = []
                 if account_id and contact_fields:
@@ -543,14 +815,30 @@ class SalesforceClient:
                     except Exception as exc:
                         logger.warning("Account rekord lekérése sikertelen (%s): %s", account_id, exc)
 
-                # 4. Résztvevők listájának felépítése (valós SF adatokból, fiktív teszt-fallbackek nélkül)
+                # 4. Kapcsolódó jövedelmek és hitelek Contact ID szerinti csoportosítása.
+                incomes_by_contact = self._query_related_records(
+                    "Jovedelem__c", contact_ids
+                )
+                loans_by_contact = self._query_related_records(
+                    "Meglevo_hitel__c", contact_ids
+                )
+
+                # 5. Résztvevők listájának felépítése (valós SF adatokból, fiktív teszt-fallbackek nélkül)
                 participants_records = []
                 for role_label, cid in roles_map.items():
                     if not cid or cid not in contacts:
                         continue
                     c = contacts[cid]
                     
-                    role_str = "adóstárs" if role_label.startswith("adóstárs") else role_label
+                    role_suffix = role_label.rsplit("_", 1)[-1] if "_" in role_label else ""
+                    role_index = int(role_suffix) if role_suffix.isdigit() else None
+                    role_str = (
+                        "adóstárs"
+                        if role_label.startswith("adóstárs")
+                        else role_label.rsplit("_", 1)[0]
+                        if role_index is not None
+                        else role_label
+                    )
                     perm_addr = (c.get("Permanent_address__c") or "").strip()
                     zip_raw = str(c.get("ZIP__c") or "").strip()
                     address_dict = (
@@ -566,6 +854,11 @@ class SalesforceClient:
 
                     participant_record = {
                         "role": role_str,
+                        "role_index": role_index,
+                        "contact_id": cid,
+                        "_contact": c,
+                        "_incomes": list(incomes_by_contact.get(cid, [])),
+                        "_existing_loans": list(loans_by_contact.get(cid, [])),
                         "name": full_name,
                         "birth_name": c.get("Szuletesi_nev__c") or None,
                         "mother_name": c.get("Mother_s_Name__c") or None,
@@ -623,11 +916,7 @@ class SalesforceClient:
                         "income_from_self_owned": c.get("Income_from_self_owned_company__c") or 0,
                         "industry": c.get("Industry__c") or "",
                         "monthly_payment_details": c.get("Monthly_Payment_details__c") or "",
-                        "monthly_installment_payment": (
-                            c.get("Monthly_installment_payment__c")
-                            or c.get("Affordable_monthly_installments__c")
-                            or 0
-                        ),
+                        "monthly_installment_payment": c.get("Monthly_installment_payment__c"),
                         "mortgagor": c.get("Mortgagor__c") or "",
                         "numer_and_age_of_children": c.get("Numer_and_Age_of_Children__c") or "",
                         "other_income": c.get("Other_income__c") or 0,
@@ -656,13 +945,17 @@ class SalesforceClient:
                 #    sandbox ügyleteknél az ingatlanok közvetlenül az Accountra
                 #    vannak kötve, és az Ingatlan_szerepe__c a Property__c-n él).
                 properties_records = []
-                prop_fields = (
-                    "Id, Name, Property_Type__c, Ingatlan_hrsz__c, Ingatlan_alapterulet__c, "
-                    "Property_value__c, Purchase_price__c, Ingatlan_irsz__c, Ingatlan_telepules__c, "
-                    "Ingatlan_kozterulet_neve__c, Ingatlan_Kozterulet_jellege__c, Ingatlan_hazszam__c, "
-                    "Ingatlan_emelet__c, Ingatlan_energetika__c, Ingatlan_terhek__c, "
-                    "Ingatlan_szerepe__c, Ingatlan_jellege__c, Ingatlan_megjegyzes__c, "
-                    "Ingatlan_osztatlan__c, Ingatlan_neve__c, Ingatlan_hasznalatbaveteli__c"
+                prop_field_candidates = (
+                    "Id", "Name", "Property_Type__c", "Ingatlan_hrsz__c", "Ingatlan_alapterulet__c",
+                    "Property_value__c", "Purchase_price__c", "Ingatlan_irsz__c", "Ingatlan_telepules__c",
+                    "Ingatlan_kozterulet_neve__c", "Ingatlan_Kozterulet_jellege__c", "Ingatlan_hazszam__c",
+                    "Ingatlan_emelet__c", "Ingatlan_energetika__c", "Ingatlan_terhek__c",
+                    "Ingatlan_szerepe__c", "Ingatlan_jellege__c", "Ingatlan_megjegyzes__c",
+                    "Ingatlan_osztatlan__c", "Ingatlan_neve__c", "Ingatlan_hasznalatbaveteli__c",
+                    *_SF_FIELD_MAP["Property__c"],
+                )
+                prop_fields = ", ".join(
+                    self._describe_filtered_fields("Property__c", prop_field_candidates)
                 )
                 import re as _re
                 safe_deal_id = _re.sub(r"[^a-zA-Z0-9]", "", str(deal_id or ""))
@@ -684,7 +977,7 @@ class SalesforceClient:
                         _re.sub(r"[^a-zA-Z0-9]", "", str(pr["Property__c"]))
                         for pr in prop_roles if pr.get("Property__c")
                     ]
-                    if prop_ids:
+                    if prop_ids and prop_fields:
                         prop_id_list_str = ", ".join(f"'{pid}'" for pid in prop_ids)
                         prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
@@ -698,12 +991,11 @@ class SalesforceClient:
                                 p_rec = props_by_id[pid]
                                 role_override = pr.get("Ingatlan_szerepe__c") or p_rec.get("Ingatlan_szerepe__c") or ""
                                 ordered_props.append((p_rec, role_override))
-                elif account_id:
-                    safe_acc_id = _re.sub(r"[^a-zA-Z0-9]", "", str(account_id))
+                elif account_id and prop_fields:
                     try:
                         acc_prop_query = (
                             f"SELECT {prop_fields} FROM Property__c "
-                            f"WHERE Account__c = '{safe_acc_id}'"
+                            f"WHERE Account__c = '{account_id}'"
                         )
                         acc_props = self._sf.query(acc_prop_query).get("records", [])
                         # Sorrend: Célingatlan előre, Pótfedezet másodiknak
@@ -735,12 +1027,31 @@ class SalesforceClient:
                         street_parts.append(kozterulet_jelleg)
 
                     street_name = " ".join(street_parts).strip()
-                    zip_val = p.get("Ingatlan_irsz__c")
-                    zip_str = str(int(zip_val)) if zip_val else ""
+                    # String-preserving postal code: numeric values are
+                    # canonicalized via int(), but a non-numeric postal code
+                    # must stay text (with a warning) instead of aborting the
+                    # whole deal through int().
+                    zip_raw = p.get("Ingatlan_irsz__c")
+                    if zip_raw is None or zip_raw == "":
+                        zip_str = ""
+                    else:
+                        try:
+                            zip_str = str(int(zip_raw))
+                        except (TypeError, ValueError):
+                            zip_str = str(zip_raw).strip()
+                            logger.warning(
+                                "Ingatlan_irsz__c %r on Property %s is not "
+                                "numeric; preserved as text instead of a "
+                                "4-digit postal code.",
+                                zip_str,
+                                p.get("Id") or p.get("Name"),
+                            )
 
                     prop_record = {
+                        "property_id": p.get("Id"),
+                        "_property": p,
                         "property_type": p.get("Property_Type__c") or "lakás",
-                        "parcel_number": p.get("Ingatlan_hrsz__c") or p.get("Ingatlan_megjegyzes__c") or "",
+                        "parcel_number": p.get("Ingatlan_hrsz__c") or "",
                         "area_sqm": p.get("Ingatlan_alapterulet__c"),
                         "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
                         "purchase_price": p.get("Purchase_price__c"),
@@ -748,7 +1059,8 @@ class SalesforceClient:
                         "energetika": p.get("Ingatlan_energetika__c", "") or "",
                         "terhek": p.get("Ingatlan_terhek__c", "") or "",
                         "ingatlan_szerepe": role_val or p.get("Ingatlan_szerepe__c", "") or "",
-                        "epites_eve": str(p.get("Ingatlan_hasznalatbaveteli__c", "") or ""),
+                        # Ambiguous legacy consumer (Lead.Term_in_year__c) must stay empty.
+                        "epites_eve": "",
                         "ingatlan_megjegyzes": p.get("Ingatlan_megjegyzes__c", "") or "",
                         "ingatlan_neve": p.get("Ingatlan_neve__c", "") or "",
                         "ingatlan_osztatlan": p.get("Ingatlan_osztatlan__c", "") or "",
@@ -763,8 +1075,11 @@ class SalesforceClient:
                     }
                     properties_records.append(prop_record)
 
-                # 6. Futamidő meghatározása (Opportunity vagy első résztvevő Term_in_year_c__c mezőjéből)
-                loan_term_months = 240  # alapértelmezett 20 év
+                # 6. Futamidő meghatározása (első résztvevő Term_in_year_c__c
+                # mezőjéből). A futamidő kizárólag explicit adat lehet: ha
+                # sehol nincs kitöltve, None marad — sosem találunk ki 240
+                # hónapot.
+                loan_term_months = None
                 for cid in contact_ids:
                     if cid in contacts and contacts[cid].get("Term_in_year_c__c"):
                         try:
@@ -797,7 +1112,9 @@ class SalesforceClient:
                     "AFA_Support__c": opp.get("AFA_Support__c") or opp.get("Afa__c"),
                     "Housing_Savings__c": opp.get("Housing_Savings__c") or opp.get("Lakastakarek__c"),
                     "CreatedDate": opp.get("CreatedDate"),
-                    "Description": opp.get("Description") or opp.get("remark__c") or opp.get("Name") or None,
+                    # Notes come only from explicit description/notes fields;
+                    # the Opportunity Name is a label, not a note.
+                    "Description": opp.get("Description") or opp.get("remark__c") or None,
                     "Participants__r": {
                         "records": participants_records
                     },
@@ -826,9 +1143,21 @@ class SalesforceClient:
                 for did in self._state.deals
             ]
         else:
-            query = "SELECT Id, Name, StageName FROM Opportunity ORDER BY CreatedDate DESC LIMIT 500"
+            query = (
+                "SELECT Id, Name, StageName, CloseDate, Account.Name "
+                "FROM Opportunity ORDER BY CreatedDate DESC LIMIT 500"
+            )
             result = self._sf.query(query)
-            return result.get("records", [])
+            return [
+                {
+                    "Id": deal.get("Id"),
+                    "Name": deal.get("Name"),
+                    "StageName": deal.get("StageName"),
+                    "CloseDate": deal.get("CloseDate"),
+                    "AccountName": (deal.get("Account") or {}).get("Name"),
+                }
+                for deal in result.get("records", [])
+            ]
 
     def get_deal_stage(self, deal_id: str) -> Optional[str]:
         """Ügylet aktuális stage-ének lekérése."""

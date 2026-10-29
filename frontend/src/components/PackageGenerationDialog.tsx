@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { generatePackage, listDeals } from "@/api/client";
+import { downloadFile, generatePackage, listDeals } from "@/api/client";
 import type { PackageResult } from "@/types";
 import DealCombobox from "./DealCombobox";
 
@@ -13,8 +13,8 @@ interface PackageGenerationDialogProps {
 
 interface Deal {
   Id: string;
-  Name?: string;
-  StageName?: string;
+  Name?: string | null;
+  StageName?: string | null;
 }
 
 export default function PackageGenerationDialog({
@@ -30,7 +30,9 @@ export default function PackageGenerationDialog({
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<PackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [uploadToSf, setUploadToSf] = useState(true);
+  // Explicit opt-in: Salesforce upload is never pre-checked (matching the
+  // backend's upload_to_sf opt-in default).
+  const [uploadToSf, setUploadToSf] = useState(false);
 
   useEffect(() => {
     listDeals()
@@ -57,12 +59,16 @@ export default function PackageGenerationDialog({
     }
   }, [bankId, productId, selectedDealId, uploadToSf]);
 
-  const handleDownload = useCallback(() => {
-    if (result?.package_url) {
-      const a = document.createElement("a");
-      a.href = result.package_url;
-      a.download = `package_${bankId}_${productId}.zip`;
-      a.click();
+  const handleDownload = useCallback(async () => {
+    if (!result?.package_url) return;
+    setError(null);
+    try {
+      await downloadFile(
+        result.package_url,
+        `package_${bankId}_${productId}.zip`,
+      );
+    } catch (e) {
+      setError((e as Error).message || "ZIP letöltése sikertelen.");
     }
   }, [result, bankId, productId]);
 

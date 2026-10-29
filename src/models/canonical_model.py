@@ -14,7 +14,7 @@ Entitások:
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Any, Optional, List
 from enum import Enum
 from datetime import date
 
@@ -24,6 +24,7 @@ class ParticipantRole(str, Enum):
     BORROWER = "adós"
     CO_BORROWER = "adóstárs"
     GUARANTOR = "kezes"
+    MORTGAGOR = "zálogkötelezett"
     BENEFICIARY = "haszonélvező"
 
 
@@ -51,32 +52,67 @@ class Address(BaseModel):
         return ", ".join(parts)
 
 
+class IncomeEntry(BaseModel):
+    """Egy szereplőhöz tartozó jövedelemsor."""
+
+    income_type: Optional[str] = Field(None, description="Jövedelem típusa")
+    amount: Optional[float] = Field(None, description="Jövedelem összege")
+    currency: Optional[str] = Field(None, description="Pénznem")
+    destination: Optional[str] = Field(None, description="Jövedelem érkezésének helye")
+    bank_name: Optional[str] = Field(None, description="Bank neve")
+    account_number: Optional[str] = Field(None, description="Számlaszám")
+    sequence: Optional[int] = Field(None, description="Sorrend")
+
+
+class ExistingLoan(BaseModel):
+    """Egy szereplő meglévő hitelének adatai."""
+
+    loan_type: Optional[str] = Field(None, description="Hitel típusa")
+    bank_name: Optional[str] = Field(None, description="Bank neve")
+    account_number: Optional[str] = Field(None, description="Számlaszám")
+    original_amount: Optional[float] = Field(None, description="Eredeti hitelösszeg")
+    outstanding_amount: Optional[float] = Field(None, description="Fennálló tartozás")
+    monthly_payment: Optional[float] = Field(None, description="Havi törlesztő")
+    currency: Optional[str] = Field(None, description="Pénznem")
+    refinance: Optional[bool] = Field(None, description="Kiváltandó hitel-e")
+    sequence: Optional[int] = Field(None, description="Sorrend")
+
+
 class Participant(BaseModel):
     """
     Egy szereplő az ügyletben.
-    
+
     Az OTP nyomtatványokon a személyes adatok blokk szereplőnként ismétlődik.
     Az is_active mező jelzi, hogy a szereplő releváns-e (nem „kuka").
     """
     role: ParticipantRole = Field(..., description="Szerep az ügyletben")
     name: str = Field(..., description="Teljes név")
+    contact_id: Optional[str] = Field(None, description="Stabil Contact azonosító")
     birth_name: Optional[str] = Field(None, description="Születési név")
     mother_name: Optional[str] = Field(None, description="Anyja neve")
     birth_place: Optional[str] = Field(None, description="Születési hely")
     birth_date: Optional[date] = Field(None, description="Születési dátum")
     personal_id: Optional[str] = Field(None, description="Személyi igazolvány szám")
+    personal_number: Optional[str] = Field(None, description="Személyi szám")
     tax_id: Optional[str] = Field(None, description="Adóazonosító jel")
     id_card_number: Optional[str] = Field(None, description="Személyi szám")
+    id_document_type: Optional[str] = Field(None, description="Okmány típusa")
     address: Optional[Address] = Field(None, description="Állandó lakcím")
     mailing_address: Optional[Address] = Field(None, description="Levelezési cím")
     phone: Optional[str] = Field(None, description="Telefonszám")
     email: Optional[str] = Field(None, description="E-mail cím")
     employer: Optional[str] = Field(None, description="Munkáltató neve")
+    employer_tax_number: Optional[str] = Field(None, description="Munkáltató adószáma")
+    employer_company_form: Optional[str] = Field(None, description="Munkáltató cégformája")
     monthly_income: Optional[int] = Field(None, description="Havi nettó jövedelem (Ft)")
     income_bearing: Optional[bool] = Field(None, description="Jövedelemmel szerepel-e (OCR 'jovedelemmel' / 'jövedelem nélkül bevont' jelölés; None = nem jelölt)")
     marital_status: Optional[str] = Field(None, description="Családi állapot (Contact.Marital_Status__c)")
     citizenship: Optional[str] = Field(None, description="Állampolgárság (Contact.Citizenship__c)")
+    gender: Optional[str] = Field(None, description="Nem")
+    household_size: Optional[int] = Field(None, description="Háztartás létszáma")
     dependents_count: Optional[int] = Field(None, description="Eltartottak száma (Contact.Dependents_count__c)")
+    children_count: Optional[int] = Field(None, description="Gyermekek száma")
+    credit_commitment: Optional[str] = Field(None, description="Hitelvállalás")
     education: Optional[str] = Field(None, description="Legmagasabb végzettség (Contact.Highest_Educational_Qualification__c)")
     income_type: Optional[str] = Field(None, description="Jövedelem típusa (Contact.Income_type__c)")
     is_active: bool = Field(True, description="Aktív szereplő-e (nem kuka)")
@@ -136,6 +172,22 @@ class Participant(BaseModel):
     ownership_in_employer: Optional[str] = Field(None, description="Tulajdonrész a munkáltatóban")
     preferalt_bank: Optional[str] = Field(None, description="Preferált bank")
     residence_status: Optional[str] = Field(None, description="Tartózkodási státusz")
+    consents: dict[str, bool] = Field(
+        default_factory=dict,
+        description="Explicit nyilatkozatok és hozzájárulások",
+    )
+    extra: dict[str, Any] = Field(
+        default_factory=dict,
+        description="További kanonikus szereplőmezők",
+    )
+    incomes: List[IncomeEntry] = Field(
+        default_factory=list,
+        description="Szereplőhöz tartozó jövedelemsorok",
+    )
+    existing_loans: List[ExistingLoan] = Field(
+        default_factory=list,
+        description="Szereplő meglévő hitelei",
+    )
 
     @property
     def is_borrower(self) -> bool:
@@ -160,10 +212,20 @@ class Property(BaseModel):
 
     Az OTP nyomtatványon az ingatlanrész ingatlanonként ismétlődik.
     """
+    property_id: Optional[str] = Field(None, description="Stabil Property azonosító")
     address: Address = Field(default_factory=Address, description="Ingatlan címe")
     parcel_number: str = Field("", description="Helyrajzi szám")
     area_sqm: Optional[float] = Field(None, description="Terület (m²)")
     property_type: PropertyType = Field(PropertyType.APARTMENT, description="Ingatlan típusa")
+    property_type_detail: Optional[str] = Field(None, description="Részletes ingatlantípus")
+    condition: Optional[str] = Field(None, description="Ingatlan állapota")
+    heating: Optional[str] = Field(None, description="Fűtés típusa")
+    lift: Optional[bool] = Field(None, description="Lift van-e")
+    insurance: Optional[str] = Field(None, description="Biztosítás")
+    extra: dict[str, Any] = Field(
+        default_factory=dict,
+        description="További kanonikus ingatlanmezők",
+    )
     estimated_value: Optional[int] = Field(None, description="Becsült érték (Ft)")
     year_built: Optional[int] = Field(None, description="Építés éve")
     number_of_rooms: Optional[int] = Field(None, description="Szobák száma")
@@ -179,7 +241,11 @@ class Property(BaseModel):
 class LoanDetails(BaseModel):
     """Hitelparaméterek."""
     loan_amount: int = Field(0, description="Hitelösszeg (Ft)")
-    loan_term_months: int = Field(240, description="Futamidő (hónap)")
+    loan_term_months: Optional[int] = Field(
+        None,
+        description="Futamidő (hónap). None = explicit adat nélkül ismeretlen; "
+        "soha nem találunk ki alapértelmezett futamidőt.",
+    )
     interest_period: Optional[str] = Field(None, description="Kamatperiódus (pl. 5 év fix)")
     loan_purpose: Optional[str] = Field(None, description="Hitel célja (pl. lakásvásárlás)")
     product_name: Optional[str] = Field(None, description="Termék neve (pl. OTP Lakáshitel)")
@@ -191,12 +257,25 @@ class LoanDetails(BaseModel):
     afa_support: Optional[int] = Field(None, description="ÁFA támogatás összege (Ft)")
     housing_savings: Optional[int] = Field(None, description="Lakástakarék összeg (Ft)")
     refinance_account: Optional[str] = Field(None, description="Refinanszírozott hitel számlaszáma")
+    discount_action: Optional[str] = Field(None, description="Kedvezményakció")
+
+    @property
+    def loan_term_years(self) -> float | int | None:
+        """Futamidő években, a kanonikus hónapértékből származtatva.
+
+        None, ha a hónapérték explicit adat nélkül ismeretlen — sosem
+        kitalált alapértelmezés.
+        """
+        months = self.loan_term_months
+        if months is None:
+            return None
+        return months // 12 if months % 12 == 0 else months / 12
 
 
 class DealData(BaseModel):
     """
     Teljes ügylet – ez a kanonikus adatmodell gyökéreleme.
-    
+
     Egy DealData tartalmaz minden adatot, ami a nyomtatványkitöltéshez
     szükséges: hitelparamétereket, szereplőket és ingatlanokat.
     """
@@ -224,6 +303,10 @@ class DealData(BaseModel):
         default_factory=dict,
         description="Account rekord nyers mezői (Account.* canonical forrása)",
     )
+    extra: dict[str, Any] = Field(
+        default_factory=dict,
+        description="További kanonikus ügyletmezők",
+    )
 
     @property
     def active_participants(self) -> List[Participant]:
@@ -239,6 +322,22 @@ class DealData(BaseModel):
     def co_borrowers(self) -> List[Participant]:
         """Adóstársak listája."""
         return [p for p in self.active_participants if p.is_co_borrower]
+
+    @property
+    def has_mortgagor(self) -> bool:
+        """Van-e aktív zálogkötelezett az ügyletben."""
+        return any(
+            participant.role == ParticipantRole.MORTGAGOR
+            for participant in self.active_participants
+        )
+
+    @property
+    def has_usufructuary(self) -> bool:
+        """Van-e aktív haszonélvező az ügyletben."""
+        return any(
+            participant.role == ParticipantRole.BENEFICIARY
+            for participant in self.active_participants
+        )
 
     @property
     def guarantors(self) -> List[Participant]:

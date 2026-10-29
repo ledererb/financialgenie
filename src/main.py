@@ -34,17 +34,24 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.models.canonical_model import DealData, ParticipantRole
+from src.canonical.paths import parse_path
+from src.canonical.registry import canonical_registry
+from src.canonical.resolver import CanonicalResolver, ResolutionContext
 from src.normalizer.data_normalizer import DataNormalizer
 from src.integrations.salesforce_client import SalesforceClient
 from src.engine.document_assembler import (
     DocumentAssembler, ProductType,
     INSTANCE_ROLE_CO_BORROWER, INSTANCE_ROLE_GUARANTOR, INSTANCE_ROLE_BENEFICIARY,
-    INSTANCE_ROLE_PROPERTY,
+    INSTANCE_ROLE_MORTGAGOR, INSTANCE_ROLE_PROPERTY, INSTANCE_ROLE_TO_CANONICAL,
 )
 from src.engine.pdf_filler import AcroFormFiller, OverlayFiller, TextPlacement, fmt_money, expand_character_groups
-from src.engine.completeness_checker import CompletenessChecker, CompletenessStatus
+from src.engine.completeness_checker import (
+    CompletenessChecker,
+    CompletenessStatus,
+    FieldIssue,
+    IssueType,
+)
 from src.engine.role_instance_logic import RoleInstancePlanner, ParticipantRole as _RRole
-from src.utils.gender import guess_gender
 from src.ai.field_recognizer import (
     FieldRecognizer,
     MappingConfig,
@@ -53,81 +60,334 @@ from src.ai.field_recognizer import (
 )
 from src.ai.legal_classifier import (
     LegalClassifier,
+    explicit_crm_consent_evidence,
     extract_unmapped_checkboxes,
     fill_legal_declarations_on_pdf,
+    points_managed_fields,
 )
 
 logger = logging.getLogger(__name__)
 
 
-# Jövedelem-jellegű kanonikus mezők — ezek kerülnek kizárásra a kitöltésből,
-# ha egy szereplő az SF OpportunityContactRole-ban "jövedelem nélkül bevont"
-# jelöléssel szerepel (Participant.income_bearing is False).
-_INCOME_CANONICAL_KEYS = frozenset({
-    "Contact.Average_monthly_net_income__c",
-    "Contact.Other_monthly_income__c",
-    "Contact.Other_income__c",
-    "Contact.Income_type__c",
-    "Contact.Cafeteria_bonus__c",
-    "Contact.Divident__c",
-    "Contact.Income_from_self_owned_company__c",
-    "Contact.Self_employment_details__c",
-    "Contact.Jovairas_vallalasa__c",
+# === Cutover Task 2/3: resolver-backed (Genie canonical) pipeline ===
+# A mapping is Genie-style when at least one mapped canonical value is a
+# registry-approved canonical path (the shape scripts.migrate_mappings_to_genie
+# produces and applies to every active src/mapping/*.json). Cutover Task 3
+# deleted the temporary legacy compatibility branch: legacy SF-name mappings
+# are rejected (see _mapping_has_legacy_canonical) instead of silently
+# resolved.
+_CANONICAL_ROLE_ENUM = {
+    "borrower": ParticipantRole.BORROWER,
+    "co_borrower": ParticipantRole.CO_BORROWER,
+    "guarantor": ParticipantRole.GUARANTOR,
+    "mortgagor": ParticipantRole.MORTGAGOR,
+    "usufructuary": ParticipantRole.BENEFICIARY,
+}
+
+# Cutover Task 3 (additional requirement 3) — explicit Genie kötelező útvonalak
+# a teljességellenőrzéshez. A régi hardcoded ``Contact.*`` lista helyett minden
+# kötelező mező registry-approved canonical path; a hiányzó érték
+# diagnosztika/notice, sosem gyártott érték. Az igénylői személyes mezők az
+# ÖSSZES adósra/adóstársra vonatkoznak (a létező szereplőkre), a hitelmezők
+# ügylet-szintűek.
+# Cutover Task 4 (additional requirement 4): a tuple maga is VALIDÁLVA van —
+# import-időben (startup) és így minden tesztben is hangosan elbukik, ha egy
+# kötelező útvonal nincs a registry-ben (elírás/törölt mező), ahelyett hogy a
+# teljességellenőrzés csendben átugraná.
+_REQUIRED_CANONICAL_PATHS: tuple[str, ...] = (
+    "deal.loan_amount",
+    "deal.loan_term_years",
+    "participant.borrower.name",
+    "participant.borrower.birth_name",
+    "participant.borrower.mother_name",
+    "participant.borrower.birth_date",
+    "participant.borrower.birth_place",
+    "participant.borrower.tax_id",
+    "participant.borrower.phone",
+    "participant.co_borrower.name",
+    "participant.co_borrower.birth_date",
+    "participant.co_borrower.tax_id",
+)
+
+
+def validate_required_canonical_paths(
+    paths: tuple[str, ...] = _REQUIRED_CANONICAL_PATHS,
+) -> None:
+    """Fail loudly when a required completeness path is not in the registry.
+
+    Additional requirement 4: an unknown required path is a configuration
+    defect — it must abort startup (module import) instead of silently
+    skipping the completeness check at runtime.
+    """
+    unknown = [path for path in paths if not canonical_registry.validate(path)]
+    if unknown:
+        raise ValueError(
+            "A _REQUIRED_CANONICAL_PATHS lista ismeretlen canonical útvonalakat "
+            "tartalmaz (nincsenek a Genie registry-ben): "
+            + ", ".join(repr(path) for path in unknown)
+        )
+
+
+validate_required_canonical_paths()
+
+
+class LegacyCanonicalMappingError(ValueError):
+    """A mapping still carries legacy (Salesforce-named) canonical values.
+
+    Cutover Task 3 rejects such mappings in the activated pipeline; Cutover
+    Task 4 (additional requirement 6) gives the rejection a dedicated type so
+    the API layer can translate it into an operator-facing 422 instead of a
+    generic 500.
+    """
+
+# Canonical equivalents of the legacy "Egyéb: ____" picklist canonicals: when a
+# standard (non-"Egyéb") option matched in a checkbox group, the companion
+# free-text field mapped to the same participant attribute stays empty.
+_EGYEB_PARTICIPANT_FIELDS = frozenset({
+    "citizenship",
+    "employer_company_type",
+    "foglalkozas_tipusa",
+    "legal_title",
+    "marital_status",
+    "education",
 })
 
 
-# === Érték-fordítás, dátum-fragmentek, konstrukció-osztályozás (pipeline) ===
-# A mapping-ben deklarált canonical kulcsok egy része NEM nyers CRM-érték,
-# hanem származtatott/fordított érték. Három eszköz:
-#   1) _VALUE_TRANSLATIONS: canonical → {forrásérték → célérték} szótár
-#      (pl. SF Salutation "Mr." → a nyomtatvány "Férfi" opciója).
-#   2) Dátum-fragment kulcsok: ``<canonical>#ev`` / ``#ho`` (digit-boxok).
-#   3) Konstrukció-gate: ``<canonical>#piaci`` / ``#tamogatott`` kulcsok,
-#      amelyek csak akkor kapnak értéket, ha a hitel konstrukciótípusa
-#      alapján az adott szekció (3.1 államilag kamattámogatott / 3.2 piaci)
-#      tényleg kitöltendő.
+def _genie_mapping_entries(mapping) -> list[dict]:
+    """Normalize mapping fields (dicts or RecognizedField) into plain dicts."""
 
-_VALUE_TRANSLATIONS: dict[str, dict[str, str]] = {
-    "Contact.Salutation": {
-        "mr": "Férfi", "mr.": "Férfi", "ur": "Férfi",
-        "ms": "Nő", "ms.": "Nő", "mrs": "Nő", "mrs.": "Nő",
-        "miss": "Nő", "holgy": "Nő", "asszony": "Nő",
-    },
-    "Contact.Employer_s_company_type__c": {
-        "kft": "Korlátolt felelősségű társaság",
-        "kft.": "Korlátolt felelősségű társaság",
-        "korlatolt felelossegu tarsasag": "Korlátolt felelősségű társaság",
-        "zrt": "Részvénytársaság",
-        "zrt.": "Részvénytársaság",
-        "nyrt": "Részvénytársaság",
-        "nyrt.": "Részvénytársaság",
-        "reszvenytarsasag": "Részvénytársaság",
-        "bt": "Közkereseti társaság vagy betéti társaság",
-        "bt.": "Közkereseti társaság vagy betéti társaság",
-        "kkt": "Közkereseti társaság vagy betéti társaság",
-        "kkt.": "Közkereseti társaság vagy betéti társaság",
-        "beteti tarsasag": "Közkereseti társaság vagy betéti társaság",
-        "kozkereseti tarsasag": "Közkereseti társaság vagy betéti társaság",
-    },
-    "Contact.Foglalkozas_tipusa__c": {
-        "alkalmazott vezeto": "Vezető alkalmazott (felső vagy középvezető)",
-        "vezeto alkalmazott": "Vezető alkalmazott (felső vagy középvezető)",
-        "vezeto allasu": "Vezető alkalmazott (felső vagy középvezető)",
-        "vezeto": "Vezető alkalmazott (felső vagy középvezető)",
-        "alkalmazott": "Szellemi munkát végző alkalmazott",
-        "szellemi alkalmazott": "Szellemi munkát végző alkalmazott",
-        "szellemi munkat vegzo alkalmazott": "Szellemi munkát végző alkalmazott",
-        "fizikai alkalmazott": "Fizikai munkát végző alkalmazott",
-        "fizikai munkat vegzo alkalmazott": "Fizikai munkát végző alkalmazott",
-    },
+    fields = (
+        mapping.get("fields", [])
+        if isinstance(mapping, dict)
+        else getattr(mapping, "fields", [])
+    )
+    entries: list[dict] = []
+    for f in fields:
+        if isinstance(f, dict):
+            f_type = f.get("field_type") or "text"
+            entries.append({
+                "pdf_field_name": f.get("pdf_field_name") or "",
+                "label": f.get("label") or "",
+                "field_type": str(getattr(f_type, "value", f_type) or "text"),
+                "canonical_field": f.get("canonical_field"),
+                "fragment": f.get("fragment"),
+                "checkbox_group": f.get("checkbox_group"),
+                "fill_rule": f.get("fill_rule"),
+                "product_gate": f.get("product_gate"),
+                "page_number": int(f.get("page_number") or 1),
+            })
+        else:
+            f_type_raw = getattr(f, "field_type", "text")
+            entries.append({
+                "pdf_field_name": getattr(f, "pdf_field_name", "") or "",
+                "label": getattr(f, "label", "") or "",
+                "field_type": str(getattr(f_type_raw, "value", f_type_raw) or "text"),
+                "canonical_field": getattr(f, "canonical_field", None),
+                "fragment": getattr(f, "fragment", None),
+                "checkbox_group": getattr(f, "checkbox_group", None),
+                "fill_rule": getattr(f, "fill_rule", None),
+                "product_gate": getattr(f, "product_gate", None),
+                "page_number": int(getattr(f, "page_number", 1) or 1),
+            })
+    return entries
+
+
+def _mapping_uses_canonical_paths(mapping) -> bool:
+    """True when any mapped canonical value is a registered canonical path."""
+
+    def _check(canonical) -> bool:
+        return isinstance(canonical, str) and canonical_registry.validate(canonical)
+
+    for entry in _genie_mapping_entries(mapping):
+        if _check(entry["canonical_field"]):
+            return True
+    groups = (
+        mapping.get("character_groups", [])
+        if isinstance(mapping, dict)
+        else (getattr(mapping, "character_groups", None) or [])
+    )
+    for group in groups:
+        if isinstance(group, dict) and _check(group.get("canonical_field")):
+            return True
+    return False
+
+
+def _mapping_has_legacy_canonical(mapping) -> bool:
+    """True when any canonical value is NOT a registry-approved path.
+
+    Cutover Task 3: a mapping that still carries ``Contact.*``/``Lead.*``/
+    ``Opportunity.*``/``Account.*``/``loan.*`` names, ``-társ`` suffixes or
+    ``#…`` canonical suffixes (even mixed with valid paths) is NOT silently
+    resolved — the pipeline raises. A mapping with no mapped canonical at
+    all (all null) is not legacy; it simply fills nothing through the
+    canonical branch.
+    """
+
+    def _check(canonical) -> bool:
+        return isinstance(canonical, str) and bool(
+            canonical
+        ) and not canonical_registry.validate(canonical)
+
+    for entry in _genie_mapping_entries(mapping):
+        if _check(entry["canonical_field"]):
+            return True
+    groups = (
+        mapping.get("character_groups", [])
+        if isinstance(mapping, dict)
+        else (getattr(mapping, "character_groups", None) or [])
+    )
+    for group in groups:
+        if isinstance(group, dict) and _check(group.get("canonical_field")):
+            return True
+    return False
+
+
+def _canonical_field_matches(canonical: str, namespace: str, field: str) -> bool:
+    """Parse-based canonical path match (handles explicit indexes)."""
+
+    try:
+        parsed = parse_path(canonical)
+    except ValueError:
+        return False
+    return parsed.namespace == namespace and parsed.field == field
+
+
+def _resolve_canonical_text(
+    resolver: CanonicalResolver,
+    deal: DealData,
+    path: str,
+    context: ResolutionContext | None,
+    fragment: str | None = None,
+) -> str:
+    """Canonical path feloldása per-applicant kiválasztási szemantikával.
+
+    Cutover Task 2 review F2 — ha a kontextus kiválaszt egy résztvevőt
+    („adott igénylő példánydokumentuma"), akkor minden ALAP participant path
+    (explicit index nélküli, tetszőleges deklarált szereppel) a KIVÁLASZTOTT
+    résztvevő adatait kapja — a legacy példánymásolat-viselkedés reprodukálása
+    migrált mappingekre. Az explicit indexelt path-ok fixek maradnak
+    (resolver garancia), a tartományon kívüli kiválasztás pedig üresen
+    hagyja a behelyettesített path-okat (nincs adós-fallback).
+    """
+
+    selected = context.participant if context is not None else None
+    if selected is not None:
+        try:
+            parsed = parse_path(path)
+        except ValueError:
+            pass
+        else:
+            if parsed.namespace == "participant" and parsed.participant_index is None:
+                role, index = selected
+                rest = path.split(".", 2)[2]
+                path = f"participant.{role}[{index}].{rest}"
+    return resolver.resolve_text(deal, path, context, fragment=fragment)
+
+
+# A gate-kulcsszavak review-olt explicit metadata-táblája: lásd
+# ``_PRODUCT_GATE_KEYWORDS`` (Cutover Task 4, additional requirement 5). A
+# korábbi ``_PRODUCT_GATE_SUPPORT_KEYWORDS`` substring-lista törölve — a
+# besorolás whole-token illesztéssel dolgozik, és a jelen-lévő-de-nem-illeszkedő
+# explicit termékértékekre warning szól.
+
+
+# Cutover Task 4 (additional requirement 5) — REVIEW-OLT EXPLICIT KULCSSZÓ-
+# METADATA a product-gate besoroláshoz. Minden kulcsszó ékezet-mentesített
+# (folded) forma, szóhatáron illesztve: a "csok" NEM tüzel "csokkal"-ra, a
+# "piaci" NEM tüzel "piacivezer"-re. Új terméknév csak ebben a táblában
+# engedélyezhető (explicit review-val), a pipeline sosem találgat.
+_PRODUCT_GATE_KEYWORDS: dict[str, str] = {
+    "piaci": "piaci",
+    # Kamattámogatott jellegű termékek (CSÖK, Babaváró, Otthonteremtő, …).
+    "csok": "tamogatott",
+    "csok plusz": "tamogatott",
+    "falusi csok": "tamogatott",
+    "babavaro": "tamogatott",
+    "kamattamogatott": "tamogatott",
+    "kamattamogatas": "tamogatott",
+    "otthon start": "tamogatott",
+    "otthon_start": "tamogatott",
+    "otthonteremto": "tamogatott",
+    "otthonfelujito": "tamogatott",
+    "osp": "tamogatott",
+}
+_PRODUCT_GATE_KEYWORD_RES = {
+    keyword: re.compile(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])")
+    for keyword in _PRODUCT_GATE_KEYWORDS
 }
 
-# Konstrukciótípus → a nyomtatvány "Választott konstrukció típusa" opciófelirata
-_CONSTRUCTION_OPTION_LABELS: dict[str, str] = {
-    "tamogatott": "Államilag kamattámogatott forint lakáshitel(ek)",
-    "piaci": "Piaci kamatozású forint lakáshitel(ek)",
-    "mindketto": "Államilag kamattámogatott és Piaci kamatozású forint lakáshitel együttes igénylése",
-}
+
+def _active_product_gates(
+    deal: DealData, notices: list | None = None
+) -> frozenset[str]:
+    """Canonical termék-gate-ek kizárólag explicit canonical deal mezőkből.
+
+    Forrásmezők (minden más ignorált): ``deal.products`` (modell attribútum),
+    ``deal.product_type`` és ``deal.product_name`` (registry-approved
+    canonical paths, a resolveren keresztül). A besorolás a review-olt
+    ``_PRODUCT_GATE_KEYWORDS`` metadata szerint WHOLE-TOKEN illesztéssel
+    történik (nincs substring túlbekapás). Ha mindhárom forrás hiányzik, a
+    gate-elt bejegyzések üresen maradnak egy explicit warninggal; ha az
+    explicit értékek jelen vannak, de egyik kulcsszó sem illeszkedik, az
+    szintén warning — a pipeline sosem talál ki terméket.
+    """
+
+    products = [str(p) for p in (getattr(deal, "products", []) or [])]
+    resolver = CanonicalResolver()
+    product_type = resolver.resolve(deal, "deal.product_type") or ""
+    product_name = resolver.resolve(deal, "deal.product_name") or ""
+    explicit_values = [p for p in products if p.strip()] + [
+        str(product_type).strip(),
+        str(product_name).strip(),
+    ]
+    explicit_values = [v for v in explicit_values if v]
+
+    if not explicit_values:
+        msg = (
+            "Az ügylet termékjellegét leíró explicit canonical mezők "
+            "(deal.products, deal.product_type, deal.product_name) mind "
+            "hiányoznak — a product_gate-elt szekciók üresen maradnak, "
+            "a pipeline nem találgat."
+        )
+        logger.warning("   ⚠️ %s", msg)
+        if notices is not None and msg not in notices:
+            notices.append(msg)
+        return frozenset()
+
+    gates: set[str] = set()
+    matched_values: set[str] = set()
+    for value in explicit_values:
+        folded = _fold_text(value)
+        for keyword, gate in _PRODUCT_GATE_KEYWORDS.items():
+            if _PRODUCT_GATE_KEYWORD_RES[keyword].search(folded):
+                gates.add(gate)
+                matched_values.add(value)
+
+    unmatched = [value for value in explicit_values if value not in matched_values]
+    if unmatched:
+        msg = (
+            "Explicit termékjelleg-adat(ok) jelen vannak, de egyik sem "
+            "illeszkedik a review-olt product-gate kulcsszó-metadatára "
+            "(_PRODUCT_GATE_KEYWORDS): "
+            + ", ".join(repr(v) for v in unmatched)
+            + " — a rájuk vonatkozó product_gate-elt szekciók üresen "
+            "maradnak. Új terméknév only explicit metadata-bővítéssel "
+            "engedélyezett."
+        )
+        logger.warning("   ⚠️ %s", msg)
+        if notices is not None and msg not in notices:
+            notices.append(msg)
+
+    return frozenset(gates)
+
+def _applicant_participant_count(deal: DealData) -> int:
+    """Applicants (adós + adóstárs) that drive személyi adatlap duplication.
+
+    Guarantors, mortgagors and beneficiaries are non-applicant participants:
+    they must never generate extra társigénylő (co-borrower) page copies in the
+    document assembly plan.
+    """
+    return len(deal.borrowers) + len(deal.co_borrowers)
 
 
 def _fold_text(s: str) -> str:
@@ -137,84 +397,6 @@ def _fold_text(s: str) -> str:
         c for c in unicodedata.normalize("NFD", (s or "").strip().lower())
         if unicodedata.category(c) != "Mn"
     )
-
-
-def _translate_value(canonical: str, value: str) -> str:
-    """Canonical-szintű értékfordítás (pl. Salutation → nem). Ismeretlen
-    értékre az eredetit adja vissza."""
-    table = _VALUE_TRANSLATIONS.get(canonical)
-    if not table or not value:
-        return value
-    return table.get(_fold_text(value), value)
-
-
-def _date_parts(value: str) -> tuple[str, str, str]:
-    """Dátum-szövegből (YYYY-MM-DD / YYYY.MM.DD / YYYY.MM / YYYY) (év, hónap, nap)."""
-    if not value:
-        return "", "", ""
-    s = str(value).strip()
-    m3 = re.match(r"^(\d{4})[-./](\d{1,2})[-./](\d{1,2})", s)
-    if m3:
-        return m3.group(1), m3.group(2).zfill(2), m3.group(3).zfill(2)
-    m2 = re.match(r"^(\d{4})[-./](\d{1,2})", s)
-    if m2:
-        return m2.group(1), m2.group(2).zfill(2), ""
-    m1 = re.match(r"^(\d{4})$", s)
-    if m1:
-        return m1.group(1), "", ""
-    return "", "", ""
-
-
-def _date_year_month(value: str) -> tuple[str, str]:
-    """Dátum-szövegből (YYYY-MM-DD / YYYY.MM.DD / YYYY.MM) (év, hónap) pár.
-    Nem dátum jellegű inputra ("", "")."""
-    y, m, _ = _date_parts(value)
-    return y, m
-
-
-def _classify_construction(loan, deal=None) -> str:
-    """Hitel konstrukciótípusának besorolása.
-
-    Forrás: LoanDetails.product_type (SF Product_Type__c), fallbackként a
-    product_name kulcsszavai, majd az ügylet products / notes mezői.
-    Visszatérés: "tamogatott" | "piaci" | "mindketto" | "" (nem állapítható meg).
-    """
-    pt = _fold_text(getattr(loan, "product_type", "") or "")
-    pn = _fold_text(getattr(loan, "product_name", "") or "")
-    sub_kw = (
-        "csok", "falusi", "babavaro", "kamattamogat",
-        "otthon start", "otthon_start", "otthonteremt", "otthonfelujit", "osp",
-    )
-
-    def _match(text: str) -> str:
-        if not text:
-            return ""
-        has_sub = any(k in text for k in sub_kw)
-        has_mkt = "piaci" in text
-        if has_sub and has_mkt:
-            return "mindketto"
-        if has_sub:
-            return "tamogatott"
-        if has_mkt:
-            return "piaci"
-        return ""
-
-    res = _match(f"{pt} {pn}".strip())
-    if res:
-        return res
-
-    # Fallback: deal.products és deal.notes (pl. Opportunity.Name = "Szabó Jolán OSP")
-    if deal is not None:
-        prods = " ".join(_fold_text(str(p)) for p in (getattr(deal, "products", []) or []))
-        notes = _fold_text(getattr(deal, "notes", "") or "")
-        res = _match(f"{prods} {notes}".strip())
-        if res:
-            return res
-
-    # Terméknév-fallback: sima lakás-/jelzáloghitel → piaci konstrukció
-    if any(k in pn for k in ("lakashitel", "jelzalog", "hitel")):
-        return "piaci"
-    return ""
 
 
 def _apply_fragment(value, fragment):
@@ -316,22 +498,35 @@ def _infer_date_fragment(pdf_field_name: str, label: str = "") -> str | None:
     return None
 
 
-_SINGLE_VALUE_CODE_CANONICALS = {
-    "Lead.Ingatlan_irsz__c",
-    "Lead.PostalCode",
-    "Contact.ZIP__c",
-    "Contact.MailingPostalCode",
-    "Contact.OtherPostalCode",
-    "Account.BillingPostalCode",
-    "Account.ShippingPostalCode",
-    "Contact.Tax_ID__c",
-    "Contact.Personal_ID__c",
-    "Contact.ID_Card_Number__c",
-    "Contact.Address_Card_Number__c",
-    "Contact.Birthdate_year",
-    "Contact.Birthdate_month",
-    "Contact.Birthdate_day",
-}
+# Cutover Task 3: a régi legacy-kulcsos ``_SINGLE_VALUE_CODE_CANONICALS``
+# készlet (Lead.PostalCode, Contact.Tax_ID__c, …) canonical-path predikátummá
+# portolva — a runtime karaktercsoport-becslés CANONICAL mezőjelleg alapján
+# kap kaput, nem Salesforce-nevekből. (A születési év/hónap/nap dobozok a
+# migrált ``fragment`` metaadatból töltődnek, nem karaktercsoportból.)
+_SINGLE_VALUE_CODE_FIELDS = frozenset({
+    "tax_id", "personal_id", "id_card_number",
+})
+_SINGLE_VALUE_CODE_POSTAL_FIELDS = frozenset({
+    "zip_code", "billing_postal_code", "shipping_postal_code",
+})
+
+
+def _is_single_value_code_path(canonical: str) -> bool:
+    """True, ha a canonical path egy egyszeri-érték kódmező (irányítószám,
+    adóazonosító, szem./lakcímkártya szám) — runtime char-group jelölt."""
+
+    try:
+        parsed = parse_path(canonical)
+    except ValueError:
+        return False
+    if parsed.namespace == "participant" and parsed.field in (
+        _SINGLE_VALUE_CODE_FIELDS
+    ):
+        return True
+    return parsed.field in _SINGLE_VALUE_CODE_POSTAL_FIELDS or (
+        parsed.field.startswith("address.")
+        and parsed.field.split(".", 1)[1] in _SINGLE_VALUE_CODE_POSTAL_FIELDS
+    )
 
 
 def _infer_runtime_character_groups(mapping) -> list[dict]:
@@ -408,7 +603,6 @@ def _infer_runtime_character_groups(mapping) -> list[dict]:
             continue
 
         # 2. eset: szekvenciális mezőnevek (pl. postalCodePart0..3, irsz_1..4)
-        base_canon = canon[:-len("-társ")] if canon.endswith("-társ") else canon
         seq_matches = []
         prefixes = set()
         for pdf_name, _ in items:
@@ -419,7 +613,7 @@ def _infer_runtime_character_groups(mapping) -> list[dict]:
         if len(seq_matches) == len(items) and len(prefixes) == 1:
             pref = next(iter(prefixes))
             has_box_kw = any(kw in pref for kw in ("postalcode", "irsz", "zip", "jegy", "digit", "char", "adoazonosito", "tax"))
-            if has_box_kw or base_canon in _SINGLE_VALUE_CODE_CANONICALS:
+            if has_box_kw or _is_single_value_code_path(canon):
                 seq_matches.sort(key=lambda x: x[0])
                 idxs = [i for i, _ in seq_matches]
                 # Check consecutive indices (e.g. 0,1,2,3 or 1,2,3,4)
@@ -665,6 +859,7 @@ class FormFillerPipeline:
         force_recreate_mapping: bool = False,
         participant_override: int | None = None,
         upload_to_sf: bool = False,
+        context: ResolutionContext | None = None,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
@@ -679,6 +874,10 @@ class FormFillerPipeline:
                 None = adós adatai.
             upload_to_sf: Ha True (vagy mock_mode=True), a generált PDF-et
                 csatolja a Salesforce Opportunity-hoz és frissíti a stage-et.
+            context: Explicit ``(role, index)`` feloldási kontextus
+                (Cutover Task 2). A ``participant_override``-ot belsőleg
+                erre csomagoljuk; a PDF-mezőnevek sosem választanak
+                résztvevőt.
 
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
@@ -732,10 +931,14 @@ class FormFillerPipeline:
         # 4. Mezőadatok összeállítása
         logger.info("📋 4. Mezőadatok összeállítása")
         notices: list = []
+        # Cutover Task 3 (additional requirement 5): a ``context`` átadás
+        # FELTÉTEL NÉLKÜLI — a participant_override-ot a
+        # _prepare_field_data csomagolja kontextussá.
         field_data = self._prepare_field_data(
             deal, mapping_config, participant_override=participant_override,
             raw_opportunity=raw_data.get("_opportunity") or raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
             notices=notices,
+            context=context,
         )
         result["notices"] = notices
         logger.info(f"   {len(field_data)} mező kitöltve")
@@ -762,12 +965,29 @@ class FormFillerPipeline:
                     except ValueError:
                         pass
                 if not products_enum:
+                    # Cutover Task 3 (additional requirement 4): nincs csendes
+                    # termék-alapértelmezés — a PIACI_HITEL assembly-fallback
+                    # mellett explicit notice jelzi, hogy az ügylet termékei
+                    # nem határozták meg a dokumentum-összeállítást.
                     products_enum = [ProductType.PIACI_HITEL]
-                
+                    fallback_note = (
+                        "Az ügylet products listája üres vagy ismeretlen "
+                        "termékeket tartalmaz — a dokumentum-összeállítás a "
+                        "PIACI_HITEL alapértelmezett szekciókkal készült."
+                    )
+                    logger.warning("   ⚠️ %s", fallback_note)
+                    if fallback_note not in notices:
+                        notices.append(fallback_note)
+
+                # Cutover Task 3 (Review F1 aktiválás): a személyi
+                # adatlap-példányok száma mindig az IGÉNYLŐK száma (adós +
+                # adóstárs) — a nem-igénylő szerepek (kezes, zálogkötelezett,
+                # haszonélvező) sosem készítenek társigénylő-példányt.
+                assembly_participants = _applicant_participant_count(deal)
                 assembly = assembler.assemble(
                     master_pdf=template_pdf,
                     products=products_enum,
-                    num_participants=len(deal.active_participants),
+                    num_participants=assembly_participants,
                     num_properties=len(deal.properties),
                     output_path=temp_assembled_path
                 )
@@ -789,13 +1009,27 @@ class FormFillerPipeline:
             result["skipped_fields"] = skipped_fields
             logger.info(f"   ✓ Kitöltött PDF: {output_path}")
 
-            # 5b. Jogi nyilatkozatok automatikus kitöltése (AI + config hibrid).
-            # A canonical mapping MELLÉ jön: a leképezetlen checkbox-okat kategóriák
-            # szerint pipálja be (consent → true, decline → false, stb.).
+            # 5b. Jogi nyilatkozatok kezelése (safe declaration policy,
+            # Cutover Task 5). A canonical mapping MELLÉ jön: a points-managed
+            # role/signature mezőket a pont-motor már kitöltötte; a maradék
+            # leképezetlen nyilatkozatokra NINNEK automatikus értékek — a
+            # feloldatlanokat kézi döntésként listázzuk (validation list).
             try:
-                legal_count = self._fill_legal_declarations(
+                legal_info = self._fill_legal_declarations(
                     output_path, mapping_config, deal
                 )
+                # Backward compatibility: a lépés korábban int-et adott vissza.
+                if isinstance(legal_info, dict):
+                    legal_count = legal_info.get("modified", 0)
+                    result["manual_declarations"] = legal_info.get("manual", [])
+                    if result["manual_declarations"]:
+                        logger.info(
+                            "   ⚠️ Jogi nyilatkozat: %d kézi döntés listázva "
+                            "(manual_declarations).",
+                            len(result["manual_declarations"]),
+                        )
+                else:
+                    legal_count = int(legal_info or 0)
                 if legal_count:
                     logger.info(
                         "   ✓ Jogi nyilatkozat: %d checkbox módosítva", legal_count
@@ -825,50 +1059,171 @@ class FormFillerPipeline:
 
     def _check_completeness(self, deal: DealData, mapping: MappingConfig):
         """
-        Teljességellenőrzés a professional CompletenessChecker-rel.
+        Teljességellenőrzés explicit Genie canonical kötelező utvonalakkal.
 
-        A kötelező mezők a mapping-ből származnak (a canonical_field hivatkozások),
-        kiegészítve a strukturális ellenőrzésekkel (van adós, van ingatlan stb.).
+        Cutover Task 3 (additional requirement 3): a régi hardcoded
+        ``Contact.*`` lista és a raw PDF-névből való következtetés is törölve.
+        A kötelező mezők explicit canonical path-ok; az értékeket a
+        ``CanonicalResolver`` olvassa (a mapping függetlenül — a hiányzó
+        érték mindig diagnosztika/notice, SOSEM gyártott érték). A
+        strukturális ellenőrzéseket (van adós, van ingatlan, …) továbbra is a
+        professional CompletenessChecker végzi.
         """
-        required_fields = [
-            "Contact.Loan_amount__c",
-            "Contact.Loan_period__c",
-            "Contact.Name",
-            "Contact.Szuletesi_nev__c",
-            "Contact.Mother_s_Name__c",
-            "Contact.Birthdate",
-            "Contact.Place_of_Birth__c",
-            "Contact.Tax_ID__c",
-            "Contact.MobilePhone",
-        ]
         checker = CompletenessChecker(run_suspicious_checks=True)
-        report = checker.check(deal, required_fields)
+        # Strukturális ellenőrzések üres required-listával (nincs mező-útvonal
+        # átadva — azokat lentebb a canonical resolver ellenőrzi).
+        report = checker.check(deal, [])
+        resolver = CanonicalResolver()
+
+        for template in _REQUIRED_CANONICAL_PATHS:
+            parsed = parse_path(template)
+            if parsed.namespace == "participant":
+                role_enum = _CANONICAL_ROLE_ENUM[parsed.role]
+                same_role = [
+                    participant
+                    for participant in deal.active_participants
+                    if participant.role == role_enum
+                ]
+                if not same_role:
+                    # Review fix (defect 1): a required participant path csak
+                    # a LÉTEZŐ (aktív) résztvevőkre vonatkozik. Üres szerep-
+                    # lista (nincs adóstárs, vagy csak inaktív van) NEM ad
+                    # fantom MISSING diagnosztikát — a szerep saját maga nem
+                    # hiányzó mező. (A "van adós?" strukturális ellenőrzést a
+                    # CompletenessChecker végzi.)
+                    continue
+                targets = [
+                    (
+                        f"participant.{parsed.role}[{index}].{parsed.field}",
+                        ResolutionContext(
+                            participant=(parsed.role, index)
+                        ),
+                    )
+                    for index in range(1, len(same_role) + 1)
+                ]
+            else:
+                targets = [(template, None)]
+
+            for path, resolution_context in targets:
+                report.checked_fields += 1
+                try:
+                    value = resolver.resolve(deal, path, resolution_context)
+                except ValueError as error:
+                    # Additional requirement 4: ismeretlen kötelező útvonal =
+                    # konfigurációs hiba — HANGOS hiba, nem csendes kihagyás.
+                    raise ValueError(
+                        "Teljességellenőrzés: ismeretlen canonical kötelező "
+                        f"útvonal: {path!r} ({error})"
+                    ) from error
+                if value is None:
+                    report.issues.append(
+                        FieldIssue(
+                            field_path=path,
+                            issue_type=IssueType.MISSING,
+                            message=f"A(z) '{path}' mező hiányzik.",
+                            severity=1,
+                        )
+                    )
+                elif isinstance(value, str) and not value.strip():
+                    report.issues.append(
+                        FieldIssue(
+                            field_path=path,
+                            issue_type=IssueType.EMPTY,
+                            message=f"A(z) '{path}' mező üres.",
+                            severity=1,
+                        )
+                    )
+
+        report.status = CompletenessStatus.INCOMPLETE if (
+            report.blocking_issues
+        ) else (
+            CompletenessStatus.WARNING if report.warnings
+            else CompletenessStatus.COMPLETE
+        )
         return report
 
-    def _prepare_field_data(self, deal: DealData, mapping: MappingConfig, participant_override: int | None = None, raw_opportunity: dict | None = None, notices: list | None = None) -> dict:
+    def _prepare_field_data(
+        self,
+        deal: DealData,
+        mapping: MappingConfig,
+        participant_override: int | None = None,
+        raw_opportunity: dict | None = None,
+        notices: list | None = None,
+        context: ResolutionContext | None = None,
+    ) -> dict:
         """
-        Kanonikus adatokból mező-értékpárok összeállítása.
-        A mapping alapján a PDF mezőnevekre képezi le az értékeket.
-        
-        Speciális logika:
-        - OTP nyomtatványoknál a -társ suffix a társigénylő mezőit jelöli
-        - participant.role checkbox-ok nem kapnak szövegértéket
-        - Az igénylő és társigénylő adatai külön canonical namespace-ben
+        Kanonikus adatokból mező-értékpárok összeállítása a CanonicalResolveren.
+
+        Cutover Task 3 — a pipeline CSAK Genie canonical mappingeket fogad:
+        minden fogyasztó (direkt mező, checkbox-csoport, fill rule, pont,
+        karaktercsoport, dátum/számjegy fragment, példány-mezők) a
+        ``CanonicalResolver``-en keresztül oldja fel a registry-approved
+        canonical path-okat explicit ``(role, index)`` kontextussal. A
+        PDF-mezőnevek SOSEM választanak résztvevőt.
+
+        A Task 2-es ideiglenes legacy kompatibilitási ágat ez a feladat
+        törölte: egy legacy (Salesforce-neves) canonical mapping itt
+        ``ValueError``-t dob ahelyett, hogy csendben feloldana — a migrálás
+        a ``scripts/migrate_mappings_to_genie --apply`` audited futtatása.
+
+        ``raw_opportunity`` a legacy ág maradványa: elfogadott, de már nem
+        használt (a canonical ág a normalizált DealData-ból dolgozik).
         """
-        field_data = {}
+        # participant_override → explicit (role, index) kontextus csomagolása.
+        # A resolver csak az azonos szerepű, index nélküli path-okon
+        # helyettesít; eltérő szerepű path-ra sosem "szivárog" át.
+        if context is None and participant_override is not None:
+            context = ResolutionContext(
+                participant=("co_borrower", participant_override + 1)
+            )
 
-        # === Kanonikus mezők összeállítása ===
-        borrower_data = {}
-        co_borrower_data = {}
+        if _mapping_has_legacy_canonical(mapping):
+            raise LegacyCanonicalMappingError(
+                "Legacy (Salesforce-neves) canonical mapping — a pipeline csak "
+                "Genie canonical path-okat fogad. Futtasd a "
+                "scripts/migrate_mappings_to_genie.py --apply audited migrációt."
+            )
 
-        borrowers = deal.borrowers
-        co_borrowers = deal.co_borrowers
+        return self._prepare_field_data_canonical(
+            deal, mapping, context=context, notices=notices
+        )
 
-        borrower = borrowers[0] if borrowers else None
-        co_borrower = co_borrowers[0] if co_borrowers else None
+    # =====================================================================
+    # Resolver-backed consumers (Genie canonical mappings)
+    # =====================================================================
 
-        # Account kontakt-pool: az ügyfélhez tartozik, de nem ügylet-szereplő
-        # (minden hívási útvonalon fusson — validate, generate, field_values)
+
+    def _prepare_field_data_canonical(
+        self,
+        deal: DealData,
+        mapping: MappingConfig,
+        context: ResolutionContext | None = None,
+        notices: list | None = None,
+    ) -> dict:
+        """Resolver-alapú mezőadatok Genie canonical mappingekhez.
+
+        Minden fogyasztó — direkt mező, checkbox-csoport, fill rule, pont,
+        karaktercsoport, dátum/számjegy fragment — a ``CanonicalResolver``-en
+        keresztül oldja fel a registry-approved canonical path-okat az explicit
+        ``(role, index)`` kontextussal. A PDF-mezőnevek SOSEM választanak
+        résztvevőt. A jövedelem-kizárás a resolver policy-jén keresztül
+        érvényesül (``income_bearing=False`` szereplő jövedlemsorai üresek) és
+        notice-t kap. Nincs borrower/co-borrower dict duplikáció.
+        """
+        resolver = CanonicalResolver()
+        entries = _genie_mapping_entries(mapping)
+        loan = deal.loan
+        field_data: dict = {}
+        active_gates = _active_product_gates(deal, notices=notices)
+
+        def resolve_text(path: str, fragment: str | None = None) -> str:
+            try:
+                return _resolve_canonical_text(resolver, deal, path, context, fragment)
+            except ValueError as error:
+                logger.warning("Canonical feloldási hiba: %s", error)
+                return ""
+
+        # Account kontakt-pool notice (a legacy ággal azonos üzenet).
         if notices is not None and getattr(deal, "account_pool_extra", None):
             extra = deal.account_pool_extra
             msg = (
@@ -879,463 +1234,298 @@ class FormFillerPipeline:
             if msg not in notices:
                 notices.append(msg)
 
-        for participant, target in (
-            (borrower, "borrower"),
-            (co_borrower, "co_borrower"),
-        ):
-            if participant is None:
-                continue
-            p_data = self._participant_to_dict(participant)
+        # Minden hivatkozott canonical path előre feloldva (szabály/pont motor).
+        referenced: list[str] = []
+        seen_paths: set[str] = set()
 
-            if participant.address:
-                p_data.update(self._address_to_dict(participant.address, "address"))
-            if participant.mailing_address:
-                p_data.update(self._address_to_dict(participant.mailing_address, "mailing_address"))
-            elif participant.address:
-                for mk, mv in self._address_to_dict(participant.address, "mailing_address").items():
-                    if not p_data.get(mk):
-                        p_data[mk] = mv
+        def _refer(path) -> None:
+            if (
+                isinstance(path, str)
+                and path not in seen_paths
+                and canonical_registry.validate(path)
+            ):
+                seen_paths.add(path)
+                referenced.append(path)
 
-            # Jövedelem nélkül bevont szereplő: jövedelem-mezők ürítése
-            p_data = self._apply_income_exclusion(participant, p_data, notices)
-
-            if target == "borrower":
-                borrower_data = p_data
-            else:
-                co_borrower_data = p_data
-
-        # Per-applicant override: ha a dokumentumot az adott adóstárs
-        # adataival kell kitölteni (pl. társigénylő lap N. példánya),
-        # akkor a "sima" (nem -társ) mezők is a megfelelő adóstárs adatait
-        # kapják — a borrower_data-t felülírjuk a co_borrower adataival.
-        if participant_override is not None and participant_override < len(co_borrowers):
-            override_participant = co_borrowers[participant_override]
-            borrower_data = self._apply_income_exclusion(
-                override_participant,
-                dict(self._participant_to_dict(override_participant)),
-                notices,
-            )
-            if override_participant.address:
-                borrower_data.update(self._address_to_dict(override_participant.address, "address"))
-            if override_participant.mailing_address:
-                borrower_data.update(self._address_to_dict(override_participant.mailing_address, "mailing_address"))
-            elif override_participant.address:
-                for mk, mv in self._address_to_dict(override_participant.address, "mailing_address").items():
-                    if not borrower_data.get(mk):
-                        borrower_data[mk] = mv
-
-        # Kezes (guarantor) és haszonélvező (beneficiary) mezők hozzáadása.
-        # A mapping Contact.Mortgagor__c és Contact.Usufructuary__c canonical
-        # mezőkhöz "Igen"-t vár ha létezik a szereplő.
-        guarantors = deal.guarantors if hasattr(deal, "guarantors") else []
-        beneficiaries = deal.beneficiaries if hasattr(deal, "beneficiaries") else []
-        if guarantors:
-            borrower_data["Contact.Mortgagor__c"] = "Igen"
-        if beneficiaries:
-            borrower_data["Contact.Usufructuary__c"] = "Igen"
-
-        # Hiteladatok – a kanonikus modellből származnak (1c: új mezők)
-        loan = deal.loan
-        loan_amount_fmt = fmt_money(loan.loan_amount)
-        loan_purpose = loan.loan_purpose or ""
-
-        def _money_or_blank(v) -> str:
-            return fmt_money(v) if v else ""
-
-        term_years_str = (
-            str(loan.loan_term_months // 12)
-            if loan.loan_term_months and loan.loan_term_months % 12 == 0
-            else ""
+        for entry in entries:
+            _refer(entry["canonical_field"])
+            rule = entry["fill_rule"]
+            if isinstance(rule, dict):
+                _refer(rule.get("sf_field"))
+        declared_groups = (
+            mapping.get("character_groups", [])
+            if isinstance(mapping, dict)
+            else (getattr(mapping, "character_groups", None) or [])
         )
+        for group in declared_groups:
+            if isinstance(group, dict):
+                _refer(group.get("canonical_field"))
+        values_by_path: dict[str, str] = {path: resolve_text(path) for path in referenced}
 
-        # Contact-level loan fields (merged into borrower_data below)
-        contact_loan_data = {
-            "Contact.Loan_amount__c": loan_amount_fmt,
-            "Contact.Loan_period__c": str(loan.loan_term_months) if loan.loan_term_months else "",
-            # Futamidő években (mindkét névváltozattal: szimpla és dupla alulvonás)
-            "Contact.Term_in_year_c": term_years_str,
-            "Contact.Term_in_year_c__c": term_years_str,
-            "Contact.Interest_Period__c": loan.interest_period or "",
-            "Contact.Loan_Purpose__c": loan_purpose,
-            # H4: Contact.* mezők, amik a hitelből származnak.
-            "Contact.Monthly_Payment_details__c": _money_or_blank(loan.monthly_payment),
-            "Contact.State_Support__c": _money_or_blank(loan.afa_support),
-        }
-        # Merge Contact-level loan fields into borrower (and co-borrower) dicts
-        # without clobbering existing Contact-level values with empty strings.
-        for k, v in contact_loan_data.items():
-            if v or not borrower_data.get(k):
-                borrower_data[k] = v
-            if co_borrower_data and (v or not co_borrower_data.get(k)):
-                co_borrower_data[k] = v
+        # Jövedelem-kizárás notice a resolver policy mellett (a hatékony,
+        # kontextussal kiválasztott résztvevőre számolva).
+        self._note_canonical_income_exclusions(deal, entries, notices, context=context)
 
-        # Opportunity-level loan fields + loan.* canonical namespace (H4)
-        loan_data = {
-            "Opportunity.Hitel_sszeg__c": loan_amount_fmt,
-            "Opportunity.Hitelc_l__c": loan_purpose,
-            "Opportunity.Term_k__c": loan.product_name or "",
-            "loan.loan_amount": loan_amount_fmt,
-            "loan.loan_purpose": loan_purpose,
-            "loan.monthly_payment": _money_or_blank(loan.monthly_payment),
-            "loan.down_payment": _money_or_blank(loan.down_payment),
-            "loan.purchase_price": _money_or_blank(loan.purchase_price),
-            "loan.csok_amount": _money_or_blank(loan.csok_amount),
-            "loan.afa_support": _money_or_blank(loan.afa_support),
-            "loan.housing_savings": _money_or_blank(loan.housing_savings),
-            "loan.product_type": loan.product_type or "",
-            "loan.refinance_account": loan.refinance_account or "",
-        }
-
-        if raw_opportunity:
-            for k, v in raw_opportunity.items():
-                if v is not None and v != "" and not k.startswith("attributes"):
-                    loan_data.setdefault(f"Opportunity.{k}", str(v))
-
-        # Ellenőrizzük, hogy a mapping-ben van-e külön házszám mező
-        mapping_fields_list = mapping.get("fields", []) if isinstance(mapping, dict) else getattr(mapping, "fields", [])
-        has_separate_hazszam = any(
-            (f.get("canonical_field") if isinstance(f, dict) else getattr(f, "canonical_field", ""))
-            in ("Lead.Ingtalan_hazszam__c", "Lead.Ingatlan_hazszam__c")
-            for f in mapping_fields_list
-        )
-
-        # Ingatlan adatok → Lead fields
-        prop_data = {}
-        for i, prop in enumerate(deal.properties):
-            street_val = prop.address.street or ""
-            hn_val = prop.address.house_number or ""
-            if has_separate_hazszam or not hn_val or street_val.endswith(hn_val):
-                kozterulet_val = street_val
-            else:
-                kozterulet_val = f"{street_val} {hn_val}".strip()
-
-            pd = {
-                "Lead.Ingatlan_irsz__c": prop.address.zip_code,
-                "Lead.Ingatlan_telepules__c": prop.address.city,
-                "Lead.Ingatlan_kozterulet_neve__c": kozterulet_val,
-                "Lead.Ingtalan_hazszam__c": hn_val,
-                "Lead.Ingatlan_hazszam__c": hn_val,
-                "Lead.Ingatlan_megjegyzes__c": prop.parcel_number,
-                "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
-                "Lead.Ingatlan_jellege__c": prop.property_type.value,
-                "Lead.Estimated__c": fmt_money(prop.estimated_value),
-                "Lead.Ingatlan_emelet__c": getattr(prop, "address", None).floor if getattr(prop, "address", None) else "",
-                "Lead.Form_Type__c": getattr(prop, "form_type", "") or "",
-                "Lead.Ingatlan_energetika__c": getattr(prop, "energetika", "") or "",
-                "Lead.Ingatlan_terhek__c": getattr(prop, "terhek", "") or "",
-                "Lead.Ingatlan_szerepe__c": getattr(prop, "ingatlan_szerepe", "") or "",
-                "Lead.Term_in_year__c": str(getattr(prop, "epites_eve", "") or ""),
-            }
-            if i == 0:
-                prop_data = pd
-            else:
-                # Második+ ingatlan: _N suffix azonos kanonikus kulcsokra
-                suffix = f"_{i+1}"
-                for k, v in pd.items():
-                    prop_data[f"{k}{suffix}"] = v
-
-        prop_data.setdefault("Lead.Tervezett_onero__c", _money_or_blank(loan.down_payment))
-        prop_data.setdefault("Lead.Purchase_price__c", _money_or_blank(loan.purchase_price))
-        prop_data.setdefault("Lead.Tervezett_CSOK_Plusz__c", _money_or_blank(loan.csok_amount))
-
-        if not prop_data.get("Lead.Ingatlan_megjegyzes__c"):
-            fallback_hrsz = (
-                borrower_data.get("Contact.Town_or_possibly_the_exact_address__c", "")
-                or (co_borrower_data.get("Contact.Town_or_possibly_the_exact_address__c", "") if co_borrower_data else "")
-            ).strip()
-            if fallback_hrsz:
-                prop_data["Lead.Ingatlan_megjegyzes__c"] = fallback_hrsz
-
-        # Ingatlan-szintű adatok tükrözése a Contact.* fallback kulcsokba is,
-        # mert az AI gyakran Contact.Property_Type__c / Contact.Property_value__c
-        # mezőre mappeli az ingatlan típusát/értékét, míg a valós SF adat a
-        # Property__c (Lead.*) rekordban él.
-        prop_contact_fallbacks = {
-            "Contact.Property_Type__c": prop_data.get("Lead.Ingatlan_jellege__c", ""),
-            "Contact.Property_value__c": prop_data.get("Lead.Estimated__c", ""),
-            "Contact.Estimated_market_value__c": prop_data.get("Lead.Estimated__c", ""),
-            "Contact.Property_encumbrances__c": prop_data.get("Lead.Ingatlan_terhek__c", ""),
-        }
-        for k, v in prop_contact_fallbacks.items():
-            if v:
-                if not borrower_data.get(k):
-                    borrower_data[k] = v
-                if co_borrower_data and not co_borrower_data.get(k):
-                    co_borrower_data[k] = v
-
-        # Account.* névtér — az ügyfél Account rekordjának nyers mezői.
-        account_data: dict = {}
-        for k, v in (getattr(deal, "account", None) or {}).items():
-            if v is None or v == "" or isinstance(v, (dict, list)):
-                continue
-            account_data[f"Account.{k}"] = str(v)
-
-        # === Származtatott értékek: nem, konstrukció-gate, fordítások ===
-        self._enrich_derived_values(
-            borrower_data, co_borrower_data, loan_data, deal, notices
-        )
-
-        # Ha participant_override aktív, a -társ mezők is az adott adóstárs
-        # (borrower_data-ba töltött) adatait kapják.
-        effective_co_data = borrower_data if participant_override is not None else co_borrower_data
-
-        # Karakter-csoport (digit box) tagmezők — ezeket a 1-karakteres
-        # mezőket CSAK az expand_character_groups töltheti, különben a
-        # teljes felbontatlan string (pl. "2020-03-01", "Havi torleszto...")
-        # belekerülne az egyes számjegy-dobozokba.
-        # Futásidőben is detektáljuk a számozott digit-box sorozatokat
-        # (pl. postalCodePart0..3), ha a mapping JSON character_groups üres.
+        # Karaktercsoport-tagok (deklarált + futásidőben felismert csoportok).
         runtime_char_groups = _infer_runtime_character_groups(mapping)
         char_group_members: set[str] = set()
         for grp in runtime_char_groups:
-            members = grp.get("member_fields", []) if isinstance(grp, dict) else getattr(grp, "member_fields", [])
+            members = (
+                grp.get("member_fields", [])
+                if isinstance(grp, dict)
+                else getattr(grp, "member_fields", [])
+            )
             if members:
                 char_group_members.update(members)
 
-        # === Mapping alkalmazása – SF-kulcs alapú routing ===
-        for f in mapping.fields:
-            if not f.canonical_field:
-                continue
-
-            pdf_name = f.pdf_field_name
-            canonical = f.canonical_field
-            f_label = getattr(f, "label", "") or ""
-            _ft_raw = getattr(f, "field_type", "text")
-            f_type = _ft_raw.value if hasattr(_ft_raw, "value") else (str(_ft_raw or "text"))
-
-            if pdf_name in char_group_members:
-                continue
-
-            # Contact.Relation__c → checkbox, szöveggel nem töltjük
-            if canonical == "Contact.Relation__c":
-                continue
-
-            # Radio-group checkbox opciók (___suffix, checkbox_group vagy fill_rule):
-            # ezeket nem szövegként kell kitölteni, hanem a checkbox group
-            # / fill_rule logika kezeli (match_value → "igen" + base name).
-            if "___" in pdf_name or getattr(f, 'checkbox_group', None) or getattr(f, 'fill_rule', None):
-                continue
-
-            # Ha egy szövegmező neve vagy címkéje kifejezetten helyrajzi számot kér,
-            # de az AI tévesen más címmezőre (pl. Contact.Town_or_possibly_the_exact_address__c)
-            # mappelte, irányítsuk a helyrajzi számra (Lead.Ingatlan_megjegyzes__c).
-            folded_name_lbl = _fold_text(f"{pdf_name} {f_label}")
-            if f_type == "text" and ("helyrajzi" in folded_name_lbl or re.search(r"\bhrsz\b", folded_name_lbl)):
-                hrsz_val = prop_data.get("Lead.Ingatlan_megjegyzes__c", "")
-                if hrsz_val:
-                    field_data[pdf_name] = hrsz_val
-                continue
-
-            raw_val = None
-            if canonical.startswith("Contact."):
-                canon_tars = canonical.endswith("-társ")
-                is_co_borrower = (
-                    canon_tars or
-                    "-társ" in pdf_name or
-                    "társigénylő" in pdf_name.lower() or
-                    "tarsigenylő" in pdf_name.lower() or
-                    "SZA_IG_" in pdf_name and "-társ" in pdf_name
-                )
-                lookup_key = canonical[:-len("-társ")] if canon_tars else canonical
-                source = effective_co_data if is_co_borrower else borrower_data
-                if lookup_key in source and source[lookup_key]:
-                    raw_val = source[lookup_key]
-
-            elif canonical.startswith("Lead."):
-                if canonical in prop_data and prop_data[canonical]:
-                    raw_val = prop_data[canonical]
-
-            elif canonical.startswith("Account."):
-                if canonical in account_data and account_data[canonical]:
-                    raw_val = account_data[canonical]
-
-            elif canonical.startswith("Opportunity."):
-                if canonical in loan_data and loan_data[canonical]:
-                    raw_val = loan_data[canonical]
-
-            elif canonical.startswith("loan."):
-                if canonical in loan_data and loan_data[canonical]:
-                    raw_val = loan_data[canonical]
-
-            if raw_val:
-                # Önálló checkbox mezőre csak valódi logikai értéket engedünk
-                # (ne írjuk bele pl. az Opportunity.Offer_Status__c = "Aktív" szöveget).
-                if f_type == "checkbox":
-                    folded_rv = _fold_text(str(raw_val))
-                    if folded_rv in ("igen", "true", "yes", "1"):
-                        field_data[pdf_name] = "igen"
-                    elif folded_rv in ("nem", "false", "no", "0"):
-                        field_data[pdf_name] = "nem"
-                else:
-                    field_data[pdf_name] = raw_val
-
-        # === Checkbox group resolution ===
-        # Group checkbox fields by (group_id, canonical, is_co_field), then tick
-        # only the one whose match_value matches the SF picklist value.
-        groups: dict[tuple, list] = {}
-        matched_standard_canonicals: set[tuple[str, bool]] = set()
-        for f in mapping.fields:
-            cbg = getattr(f, 'checkbox_group', None)
-            if isinstance(f, dict):
-                cbg = f.get('checkbox_group')
-            if not cbg:
-                continue
-            canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
+        # === Direkt mezők — resolver + kontextus ===
+        for entry in entries:
+            canonical = entry["canonical_field"]
             if not canonical:
                 continue
-            gid = cbg.get('group_id', '') if isinstance(cbg, dict) else ''
-            if gid:
-                fn_low = (f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')).lower()
-                is_co_fn = ('coborrower' in fn_low or '-társ' in fn_low or 'tarsigenyl' in fn_low or 'társigényl' in fn_low)
-                gkey = (gid, canonical, is_co_fn)
-                if gkey not in groups:
-                    groups[gkey] = []
-                groups[gkey].append((f, cbg))
+            pdf_name = entry["pdf_field_name"]
+            if pdf_name in char_group_members:
+                continue
+            if "___" in pdf_name or entry["checkbox_group"] or entry["fill_rule"]:
+                continue  # a csoport- / szabálymotor tölti
+            # F4 — nem aktív termék-szekció (product_gate) mezője üres marad.
+            gate = entry["product_gate"]
+            if gate and gate not in active_gates:
+                logger.debug(
+                    "product_gate %s inaktív — %s mező kihagyva", gate, pdf_name
+                )
+                continue
+            try:
+                parsed = parse_path(canonical)
+            except ValueError:
+                logger.warning(
+                    "Nem canonical path a Genie mappingben: %r (%s)",
+                    canonical, pdf_name,
+                )
+                continue
+            # A résztvevő "kapcsolat" mezője szövegesen sosem töltendő
+            # (a legacy Contact.Relation__c skip megfelelője).
+            if parsed.namespace == "participant" and parsed.field == "relation":
+                continue
+            value = resolve_text(canonical, entry["fragment"])
+            if not value:
+                continue
+            if not entry["fragment"] and re.match(
+                r"^\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}", value
+            ):
+                inferred = _infer_date_fragment(pdf_name, entry["label"])
+                if inferred:
+                    value = _apply_fragment(value, inferred)
+                    if not value:
+                        continue
+            if entry["field_type"] == "checkbox":
+                folded = _fold_text(str(value))
+                if folded in ("igen", "true", "yes", "1"):
+                    field_data[pdf_name] = "igen"
+                elif folded in ("nem", "false", "no", "0"):
+                    field_data[pdf_name] = "nem"
+            else:
+                field_data[pdf_name] = value
 
-        all_data = {**borrower_data, **loan_data, **prop_data, **account_data}
+        # === Checkbox csoportok — a canonical path választ résztvevőt ===
+        groups: dict[tuple[str, str], list] = {}
+        matched_standard_canonicals: set[str] = set()
+        for entry in entries:
+            cbg = entry["checkbox_group"]
+            canonical = entry["canonical_field"]
+            if not cbg or not canonical:
+                continue
+            gid = cbg.get("group_id", "") if isinstance(cbg, dict) else ""
+            if not gid:
+                continue
+            groups.setdefault((gid, canonical), []).append((entry, cbg))
 
-        for (gid, canonical, is_co_fn), group_items in groups.items():
-            # 1) Ha a csoport bármelyik tagján explicit típusos fill_rule van
-            #    (pl. {"type": "static", "value": "igen"}), az elsőbbséget élvez.
+        for (gid, canonical), group_items in groups.items():
+            # F4 — a csoport által deklarált product_gate-ek: ha a deal
+            # termékei egyiket sem aktiválják, a teljes szekció-csoport
+            # érintetlen marad (nincs pipa, nincs 'nem' sem — a legacy
+            # gate-elt kulcs hiányának megfelelője).
+            group_gates = {
+                entry_item["product_gate"]
+                for entry_item, _cbg in group_items
+                if entry_item["product_gate"]
+            }
+            if group_gates and not group_gates.issubset(active_gates):
+                logger.debug(
+                    "product_gate %s inaktív — %s csoport kihagyva",
+                    sorted(group_gates), gid,
+                )
+                continue
             explicit_best = None
-            for f_item, cbg_item in group_items:
-                fr = getattr(f_item, 'fill_rule', None) if not isinstance(f_item, dict) else f_item.get('fill_rule')
-                if isinstance(fr, dict) and fr.get('type'):
-                    ev = self._eval_fill_rule(fr, all_data, borrower_data, effective_co_data, deal, None)
-                    if ev == 'igen':
-                        explicit_best = (f_item, cbg_item)
+            for entry_item, cbg_item in group_items:
+                rule = entry_item["fill_rule"]
+                if isinstance(rule, dict) and rule.get("type"):
+                    ev = self._eval_fill_rule(
+                        rule, values_by_path, values_by_path, values_by_path,
+                        deal, values_by_path.get(canonical),
+                    )
+                    if ev == "igen":
+                        explicit_best = (entry_item, cbg_item)
                         break
 
-            sf_value = None
-            if canonical.startswith(('Contact.', 'participant.')):
-                canon_tars = canonical.endswith('-társ')
-                lookup_key = canonical[:-len('-társ')] if canon_tars else canonical
-                if is_co_fn or canon_tars:
-                    sf_value = effective_co_data.get(lookup_key, '') if effective_co_data else ''
-                else:
-                    sf_value = borrower_data.get(lookup_key, '')
-                    if not borrower_data and effective_co_data:
-                        sf_value = effective_co_data.get(lookup_key, '')
-            elif canonical.startswith('Lead.'):
-                sf_value = prop_data.get(canonical, '')
-            elif canonical.startswith('Account.'):
-                sf_value = account_data.get(canonical, '')
-            elif canonical.startswith('Opportunity.'):
-                sf_value = loan_data.get(canonical, '')
-            elif canonical.startswith('loan.'):
-                sf_value = loan_data.get(canonical, '')
+            sf_value = values_by_path.get(canonical, "")
 
-            # 2) Ha a csoport Igen/Nem (true/false) eldöntendő kérdés, de a
-            #    canonical mező összeg- vagy szerep-jellegű (pl. Tervezett_CSOK_Plusz__c,
-            #    Ingatlan_szerepe__c), vezessük le a logikai Igen/Nem választ.
+            # Igen/Nem csoportok levezetése (a legacy logika canonical párjai).
             opt_tokens = {
-                _fold_text((cbg_i.get('match_value') or cbg_i.get('option_value') or cbg_i.get('option_label') or ''))
+                _fold_text(
+                    (cbg_i.get("match_value") or cbg_i.get("option_value")
+                     or cbg_i.get("option_label") or "")
+                )
                 for _, cbg_i in group_items if isinstance(cbg_i, dict)
-            } - {''}
-            is_bool_group = bool(opt_tokens) and opt_tokens.issubset({'igen', 'nem', 'true', 'false', 'yes', 'no', '1', '0'})
+            } - {""}
+            is_bool_group = bool(opt_tokens) and opt_tokens.issubset(
+                {"igen", "nem", "true", "false", "yes", "no", "1", "0"}
+            )
             if is_bool_group:
-                folded_sf = _fold_text(str(sf_value or ''))
-                if folded_sf not in ('igen', 'nem', 'true', 'false', 'yes', 'no', '1', '0'):
-                    if canonical in ('Lead.Tervezett_CSOK_Plusz__c', 'loan.csok_amount', 'Contact.State_Support__c', 'loan.afa_support'):
-                        digits = re.sub(r'[^\d]', '', str(sf_value or ''))
+                folded_sf = _fold_text(str(sf_value or ""))
+                if folded_sf not in ("igen", "nem", "true", "false", "yes", "no", "1", "0"):
+                    if canonical in ("deal.csok_amount", "deal.afa_support"):
+                        digits = re.sub(r"[^\d]", "", str(sf_value or ""))
                         has_support = bool(digits and int(digits) > 0)
-                        if not has_support and canonical in ('Lead.Tervezett_CSOK_Plusz__c', 'loan.csok_amount'):
-                            prod_txt = _fold_text(f"{loan.product_name or ''} {' '.join(str(p) for p in (getattr(deal, 'products', []) or []))}")
-                            has_support = 'csok' in prod_txt
-                        sf_value = 'true' if has_support else 'false'
-                    elif canonical == 'Lead.Ingatlan_szerepe__c' and folded_sf:
-                        first_fn = (group_items[0][0].pdf_field_name if hasattr(group_items[0][0], 'pdf_field_name') else group_items[0][0].get('pdf_field_name', '')).lower()
-                        grp_lbl = _fold_text((group_items[0][1].get('group_label', '') if isinstance(group_items[0][1], dict) else '') + ' ' + gid + ' ' + first_fn)
-                        if 'collateral' in grp_lbl or 'fedezet' in grp_lbl:
-                            sf_value = 'igen' if ('celingatlan' in folded_sf or 'potfedezet' in folded_sf or 'fedezet' in folded_sf) else ''
-                        elif 'loanpurpose' in grp_lbl or 'hitel celja' in grp_lbl or 'hitelcel' in grp_lbl:
-                            if 'celingatlan' in folded_sf:
-                                sf_value = 'igen'
-                            elif 'potfedezet' in folded_sf:
-                                sf_value = 'nem'
-                        elif 'residental' in grp_lbl or 'residential' in grp_lbl or 'laknak' in grp_lbl:
-                            jelleg_fold = _fold_text(prop_data.get('Lead.Ingatlan_jellege__c', ''))
-                            if 'celingatlan' in folded_sf and any(w in jelleg_fold for w in ('lakas', 'lakohaz', 'haz', 'ikerhaz', 'sorhaz', 'udulo')):
-                                sf_value = 'igen'
-                            elif 'potfedezet' in folded_sf:
-                                sf_value = 'nem'
+                        if not has_support and canonical == "deal.csok_amount":
+                            prod_txt = _fold_text(
+                                f"{loan.product_name or ''} "
+                                f"{' '.join(str(p) for p in (getattr(deal, 'products', []) or []))}"
+                            )
+                            has_support = "csok" in prod_txt
+                        sf_value = "true" if has_support else "false"
+                    elif (
+                        _canonical_field_matches(canonical, "property", "ingatlan_szerepe")
+                        and folded_sf
+                    ):
+                        first_fn = group_items[0][0]["pdf_field_name"].lower()
+                        grp_lbl = _fold_text(
+                            (group_items[0][1].get("group_label", "")
+                             if isinstance(group_items[0][1], dict) else "")
+                            + " " + gid + " " + first_fn
+                        )
+                        if "collateral" in grp_lbl or "fedezet" in grp_lbl:
+                            sf_value = (
+                                "igen"
+                                if ("celingatlan" in folded_sf
+                                    or "potfedezet" in folded_sf
+                                    or "fedezet" in folded_sf)
+                                else ""
+                            )
+                        elif ("loanpurpose" in grp_lbl
+                              or "hitel celja" in grp_lbl
+                              or "hitelcel" in grp_lbl):
+                            if "celingatlan" in folded_sf:
+                                sf_value = "igen"
+                            elif "potfedezet" in folded_sf:
+                                sf_value = "nem"
+                        elif ("residental" in grp_lbl
+                              or "residential" in grp_lbl
+                              or "laknak" in grp_lbl):
+                            jelleg_fold = _fold_text(
+                                resolve_text("property.property_type")
+                            )
+                            if ("celingatlan" in folded_sf
+                                    and any(w in jelleg_fold for w in (
+                                        "lakas", "lakohaz", "haz", "ikerhaz",
+                                        "sorhaz", "udulo",
+                                    ))):
+                                sf_value = "igen"
+                            elif "potfedezet" in folded_sf:
+                                sf_value = "nem"
 
             if explicit_best is None and not sf_value:
                 continue
 
-            sf_value_lower = str(sf_value or '').strip().lower()
-
+            sf_value_lower = str(sf_value or "").strip().lower()
             best_item = explicit_best
             best_score = -1
             if best_item is None and sf_value_lower:
-                for f_item, cbg_item in group_items:
-                    match_val = (cbg_item.get('match_value') or cbg_item.get('option_value', '')) if isinstance(cbg_item, dict) else ''
-                    opt_lbl = cbg_item.get('option_label', '') if isinstance(cbg_item, dict) else ''
+                for entry_item, cbg_item in group_items:
+                    match_val = (
+                        (cbg_item.get("match_value") or cbg_item.get("option_value", ""))
+                        if isinstance(cbg_item, dict) else ""
+                    )
+                    opt_lbl = (
+                        cbg_item.get("option_label", "")
+                        if isinstance(cbg_item, dict) else ""
+                    )
                     if _opt_matches(match_val, sf_value_lower, opt_lbl):
-                        score = min(len(_fold_text(match_val or opt_lbl)), len(_fold_text(sf_value_lower)))
+                        score = min(
+                            len(_fold_text(match_val or opt_lbl)),
+                            len(_fold_text(sf_value_lower)),
+                        )
                         if score > best_score:
                             best_score = score
-                            best_item = (f_item, cbg_item)
+                            best_item = (entry_item, cbg_item)
             if best_item is not None:
                 matched_cbg = best_item[1]
-                matched_mv = (matched_cbg.get('match_value') or matched_cbg.get('option_value', '')) if isinstance(matched_cbg, dict) else ''
+                matched_mv = (
+                    (matched_cbg.get("match_value")
+                     or matched_cbg.get("option_value", ""))
+                    if isinstance(matched_cbg, dict) else ""
+                )
                 if "egyeb" not in _fold_text(matched_mv):
-                    base_canon = canonical[:-len('-társ')] if canonical.endswith('-társ') else canonical
-                    matched_standard_canonicals.add((base_canon, is_co_fn or canonical.endswith('-társ')))
-            for f_item, cbg_item in group_items:
-                pdf_name = f_item.pdf_field_name if hasattr(f_item, 'pdf_field_name') else f_item.get('pdf_field_name', '')
-                if best_item is not None and f_item is best_item[0]:
+                    matched_standard_canonicals.add(canonical)
+            for entry_item, _cbg in group_items:
+                pdf_name = entry_item["pdf_field_name"]
+                if best_item is not None and entry_item is best_item[0]:
                     if "___" in pdf_name:
                         base_name, export_val = pdf_name.split("___", 1)
                         field_data[base_name] = export_val
-                        field_data[pdf_name] = 'igen'  # For completeness tracking
+                        field_data[pdf_name] = "igen"
                     else:
-                        field_data[pdf_name] = 'igen'
+                        field_data[pdf_name] = "igen"
                 else:
                     if "___" not in pdf_name:
-                        field_data[pdf_name] = 'nem'
+                        field_data[pdf_name] = "nem"
 
-        # === Fill Rule engine ===
-        for f in mapping.fields:
-            fill_rule = getattr(f, 'fill_rule', None)
-            if isinstance(f, dict):
-                fill_rule = f.get('fill_rule')
+        # === Fill Rule engine — canonical_value a resolverből ===
+        for entry in entries:
+            fill_rule = entry["fill_rule"]
             if not fill_rule:
                 continue
-
-            # Ha a mező már egy checkbox_group tagja és a fill_rule csak egy
-            # duplikált {"match_value": "..."} (típus nélkül), azt a fenti
-            # Checkbox group resolution már feloldotta — ne írjuk felül!
-            cbg = getattr(f, 'checkbox_group', None) if not isinstance(f, dict) else f.get('checkbox_group')
+            cbg = entry["checkbox_group"]
             if (
                 isinstance(cbg, dict)
-                and cbg.get('group_id')
+                and cbg.get("group_id")
                 and isinstance(fill_rule, dict)
-                and not fill_rule.get('type')
-                and fill_rule.get('match_value') is not None
+                and not fill_rule.get("type")
+                and fill_rule.get("match_value") is not None
             ):
-                continue
-
-            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
-            canonical = f.canonical_field if hasattr(f, 'canonical_field') else f.get('canonical_field')
-            canonical_value = None
-            is_co = False
-            lookup_key = canonical
-            if canonical:
-                canon_tars = canonical.endswith("-társ")
-                lookup_key = canonical[:-len("-társ")] if canon_tars else canonical
-                is_co = (
-                    canon_tars
-                    or "-társ" in pdf_name
-                    or "társigénylő" in pdf_name.lower()
-                    or "tarsigenylő" in pdf_name.lower()
+                continue  # a checkbox csoport feloldás már kezelte
+            pdf_name = entry["pdf_field_name"]
+            # F4 — nem aktív termék-szekció szabálya sem tölt.
+            gate = entry["product_gate"]
+            if gate and gate not in active_gates:
+                logger.debug(
+                    "product_gate %s inaktív — %s szabály kihagyva", gate, pdf_name
                 )
-                if is_co:
-                    canonical_value = effective_co_data.get(lookup_key) if effective_co_data else None
-                else:
-                    canonical_value = all_data.get(lookup_key) or borrower_data.get(lookup_key) or (effective_co_data.get(lookup_key) if effective_co_data else None)
+                continue
+            # F3 — a canonical conditional szabály sf_field-je csak registry-
+            # approved canonical path lehet; egy legacy (még nem fordított)
+            # kulcs sosem egyezne — ezt NEM hagyjuk csendben.
+            if isinstance(fill_rule, dict) and fill_rule.get("type") == "conditional":
+                sf_field = fill_rule.get("sf_field", "")
+                if not sf_field or not canonical_registry.validate(sf_field):
+                    msg = (
+                        f"A(z) '{pdf_name}' mező feltételes fill_rule "
+                        f"'sf_field'-je ({sf_field!r}) nem registry-approved "
+                        f"canonical path — a szabály kihagyva, a mező üres "
+                        f"marad. (Legacy→canonical fordítás a Task 3 "
+                        f"aktiválásban.)"
+                    )
+                    logger.warning("   ⚠️ %s", msg)
+                    if notices is not None and msg not in notices:
+                        notices.append(msg)
+                    continue
+            canonical = entry["canonical_field"]
+            canonical_value = values_by_path.get(canonical) if canonical else None
             try:
-                value = self._eval_fill_rule(fill_rule, all_data, borrower_data, effective_co_data, deal, canonical_value)
+                value = self._eval_fill_rule(
+                    fill_rule, values_by_path, values_by_path, values_by_path,
+                    deal, canonical_value,
+                )
                 if value is not None:
                     field_data[pdf_name] = value
                     if "___" in pdf_name and value == "igen":
@@ -1349,11 +1539,11 @@ class FormFillerPipeline:
                         and not fill_rule.get("type")
                         and "egyeb" not in _fold_text(str(fill_rule.get("match_value", "")))
                     ):
-                        matched_standard_canonicals.add((lookup_key, is_co))
+                        matched_standard_canonicals.add(canonical)
             except Exception as e:
                 logger.debug(f"fill_rule error on {pdf_name}: {e}")
 
-        # === Round-2 point-level fill engine ===
+        # === Round-2 point-level fill engine — canonical_values a resolverből ===
         if isinstance(mapping, dict):
             points = mapping.get("points") or []
         else:
@@ -1363,18 +1553,19 @@ class FormFillerPipeline:
                 points = (_to_dict().get("points") if callable(_to_dict) else None) or []
         if points:
             from src.engine.fill_rules import RuleContext, RULE_REGISTRY, Point
+            # Re-review guard: a pont-motor sem töltheti újra a nem aktív
+            # termék-szekció (product_gate) mezőit.
+            gated_off_fields = {
+                entry["pdf_field_name"]
+                for entry in entries
+                if entry["product_gate"] and entry["product_gate"] not in active_gates
+            }
             ctx = RuleContext(
                 active_participants=deal.active_participants,
                 products=getattr(deal, "products", []) or [],
                 loan_purpose=loan.loan_purpose,
                 product_name=loan.product_name,
-                canonical_values={
-                    **effective_co_data, **borrower_data, **loan_data, **prop_data, **account_data,
-                    # "-társ" szuffixes canonicalok (2. igénylő szekció,
-                    # generikus mezőnevek) az adóstárs értékeire mutatnak
-                    **{f"{k}-társ": v for k, v in effective_co_data.items()
-                       if isinstance(k, str) and k.startswith("Contact.")},
-                },
+                canonical_values=values_by_path,
             )
             for p_def in points:
                 rt = p_def.get("rule_type")
@@ -1395,7 +1586,10 @@ class FormFillerPipeline:
                 )
                 if is_auto and rt == 3:
                     canonical_field = _infer_canonical_from_blocks(p_def, mapping)
-                    actual_value = ctx.canonical_values.get(canonical_field) if canonical_field else None
+                    actual_value = (
+                        ctx.canonical_values.get(canonical_field)
+                        if canonical_field else None
+                    )
                     matched_block = next(
                         (
                             b.get("block_id") for b in p_def.get("blocks", [])
@@ -1403,10 +1597,12 @@ class FormFillerPipeline:
                         ),
                         None,
                     )
-                    if matched_block is not None and canonical_field and "egyeb" not in _fold_text(matched_block):
-                        canon_tars = canonical_field.endswith("-társ")
-                        base_canon = canonical_field[:-len("-társ")] if canon_tars else canonical_field
-                        matched_standard_canonicals.add((base_canon, canon_tars))
+                    if (
+                        matched_block is not None
+                        and canonical_field
+                        and "egyeb" not in _fold_text(matched_block)
+                    ):
+                        matched_standard_canonicals.add(canonical_field)
                     if matched_block is None:
                         logger.info(
                             "auto_group pont %s: a canonical érték %r nem illik "
@@ -1428,6 +1624,12 @@ class FormFillerPipeline:
                 )
                 result = fn(point, ctx)
                 for pdf_field, tick_value in result.ticks.items():
+                    if pdf_field in gated_off_fields:
+                        logger.debug(
+                            "point %s kihagyta a product-gate-elt mezőt: %s",
+                            point.point_id, pdf_field,
+                        )
+                        continue
                     if pdf_field in field_data and field_data[pdf_field] != tick_value:
                         logger.debug(
                             "point %s felülírja a %s mezőt: %r -> %r",
@@ -1436,108 +1638,119 @@ class FormFillerPipeline:
                         )
                     field_data[pdf_field] = tick_value
 
-        # Ha egy picklisthez tartozó checkbox-csoportban egy standard (nem "Egyéb")
-        # opció illeszkedett, akkor az ugyanarra a canonical_field-re mappelt
-        # "Egyéb: _____" kiegészítő szövegmezőt ne töltsük ki a standard értékkel
-        # (pl. Állampolgárság = "Magyar" pipálva → az "Egyéb állampolgárság" szövegmező üres marad).
+        # === "Egyéb: ____" kiegészítő mezők elnyomása standard egyezéskor ===
+        # Csak szabad szöveges kiegészítő mezőket nyomunk el — a checkbox
+        # tagokat (pl. auto_group pontok által pipált opciók) megtartjuk.
         if matched_standard_canonicals:
-            _EGYEB_PICKLIST_CANONICALS = {
-                "Contact.Citizenship__c",
-                "Contact.Employer_s_company_type__c",
-                "Contact.Foglalkozas_tipusa__c",
-                "Contact.Legal_Title_of_permanent_residence__c",
-                "Contact.Marital_Status__c",
-                "Contact.Highest_Educational_Qualification__c",
-            }
-            for f in mapping.fields:
-                canonical = f.canonical_field if hasattr(f, "canonical_field") else f.get("canonical_field")
-                if not canonical:
+            for entry in entries:
+                canonical = entry["canonical_field"]
+                if not canonical or canonical not in matched_standard_canonicals:
                     continue
-                pdf_name = f.pdf_field_name if hasattr(f, "pdf_field_name") else f.get("pdf_field_name", "")
+                pdf_name = entry["pdf_field_name"]
                 if (
-                    "___" in pdf_name
-                    or getattr(f, "checkbox_group", None)
-                    or getattr(f, "fill_rule", None)
+                    entry["field_type"] == "checkbox"
+                    or "___" in pdf_name
+                    or entry["checkbox_group"]
+                    or entry["fill_rule"]
                     or pdf_name in char_group_members
                 ):
                     continue
-                canon_tars = canonical.endswith("-társ")
-                base_canon = canonical[:-len("-társ")] if canon_tars else canonical
-                is_co = (
-                    canon_tars
-                    or "-társ" in pdf_name
-                    or "társigénylő" in pdf_name.lower()
-                    or "tarsigenylő" in pdf_name.lower()
-                )
-                if (base_canon, is_co) in matched_standard_canonicals:
-                    ctx_snip = (getattr(f, "context_snippet", "") or "") if hasattr(f, "context_snippet") else (f.get("context_snippet", "") if isinstance(f, dict) else "")
-                    if "egyeb" in _fold_text(pdf_name) or "egyeb" in _fold_text(ctx_snip) or base_canon in _EGYEB_PICKLIST_CANONICALS:
-                        field_data.pop(pdf_name, None)
-
-        # === C8: Apply per-field fragment transforms (date / digit splitting) ===
-        for f in mapping.fields:
-            fragment = getattr(f, 'fragment', None)
-            if isinstance(f, dict):
-                fragment = f.get('fragment')
-            pdf_name = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
-            f_label = (getattr(f, 'label', '') if not isinstance(f, dict) else f.get('label', '')) or ''
-            if not fragment and pdf_name in field_data and field_data[pdf_name]:
-                # Automatikus év/hónap/nap fragment felismerés (pl. Kelt_ing_adatlap_év)
-                val_str = str(field_data[pdf_name]).strip()
-                if re.match(r"^\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}", val_str):
-                    fragment = _infer_date_fragment(pdf_name, f_label)
-            if not fragment:
-                continue
-            if pdf_name in field_data and field_data[pdf_name]:
-                field_data[pdf_name] = _apply_fragment(field_data[pdf_name], fragment)
-
-        # === M5: Character-split groups (digit boxes / comb text) ===
-        char_groups = runtime_char_groups
-        if char_groups:
-            for grp in char_groups:
-                if isinstance(grp, dict):
-                    canonical = grp.get('canonical_field') or ''
-                    members = grp.get('member_fields') or []
-                else:
-                    canonical = getattr(grp, 'canonical_field', '') or ''
-                    members = getattr(grp, 'member_fields', []) or []
-                if not members or not canonical:
+                try:
+                    parsed = parse_path(canonical)
+                except ValueError:
                     continue
-                canon_tars = canonical.endswith('-társ')
-                if canon_tars:
-                    canonical = canonical[:-len('-társ')]
-                if canonical.startswith('Contact.'):
-                    all_co = all(
-                        ('társ' in str(m).lower()) or ('coborrower' in str(m).lower())
-                        for m in members
-                    )
-                    if all_co or canon_tars:
-                        src = effective_co_data if effective_co_data else {}
-                    else:
-                        src = borrower_data if borrower_data else (effective_co_data or {})
-                elif canonical.startswith('Lead.'):
-                    src = prop_data
-                elif canonical.startswith('Account.'):
-                    src = account_data
-                elif canonical.startswith(('Opportunity.', 'loan.')):
-                    src = loan_data
-                else:
-                    src = all_data
-                if isinstance(grp, dict):
-                    grp_eff = {**grp, 'canonical_field': canonical}
-                elif hasattr(grp, 'to_dict'):
-                    grp_eff = {**grp.to_dict(), 'canonical_field': canonical}
-                else:
-                    grp_eff = {
-                        'group_id': getattr(grp, 'group_id', ''),
-                        'canonical_field': canonical,
-                        'member_fields': members,
-                        'direction': getattr(grp, 'direction', 'left_to_right'),
-                        'separator': getattr(grp, 'separator', ''),
-                    }
-                field_data.update(expand_character_groups(src, [grp_eff]))
+                if (
+                    parsed.namespace == "participant"
+                    and parsed.field in _EGYEB_PARTICIPANT_FIELDS
+                ) or "egyeb" in _fold_text(pdf_name):
+                    field_data.pop(pdf_name, None)
+
+        # === M5: karakter-csoportok — a canonical path értékéből bontva ===
+        for grp in runtime_char_groups:
+            if not isinstance(grp, dict):
+                continue
+            canonical = grp.get("canonical_field") or ""
+            members = grp.get("member_fields") or []
+            if not members or not canonical:
+                continue
+            if canonical not in values_by_path:
+                values_by_path[canonical] = resolve_text(canonical)
+            field_data.update(
+                expand_character_groups({canonical: values_by_path[canonical]}, [grp])
+            )
 
         return field_data
+
+    def _note_canonical_income_exclusions(
+        self,
+        deal: DealData,
+        entries: list[dict],
+        notices: list | None,
+        context: ResolutionContext | None = None,
+    ) -> None:
+        """Notice a resolver általi jövedelem-kizárásról (policy a resolverben).
+
+        A ``CanonicalResolver`` az ``income_bearing=False`` szereplő
+        jövedelemsorait üresen oldja fel; itt csak jelezzük a felhasználó
+        felé, mert a notice a legacy ág garanciája.
+
+        Re-review fix: a számolás a HATÁKONY résztvevőt követi. F2
+        helyettesítéssel az ALAP (index nélküli) participant income path-ok a
+        KIVÁLASZTOTT résztvevőre oldódnak fel — a notice is ahhoz tartozik.
+        Explicit indexelt path-ok (és a kontextus nélküli futás) a deklarált
+        szerepkör szerint számolódnak, mint korábban.
+        """
+        if notices is None:
+            return
+        selected = context.participant if context is not None else None
+        selected_income_paths = 0
+        declared_income_paths: dict[str, int] = {}
+        for entry in entries:
+            canonical = entry["canonical_field"]
+            if not canonical:
+                continue
+            try:
+                parsed = parse_path(canonical)
+            except ValueError:
+                continue
+            if parsed.namespace == "participant" and parsed.collection == "income":
+                if selected is not None and parsed.participant_index is None:
+                    selected_income_paths += 1
+                else:
+                    declared_income_paths[parsed.role] = (
+                        declared_income_paths.get(parsed.role, 0) + 1
+                    )
+        if not selected_income_paths and not declared_income_paths:
+            return
+        for participant in deal.active_participants:
+            if participant.income_bearing is not False:
+                continue
+            role_name = next(
+                (
+                    role
+                    for role, role_enum in _CANONICAL_ROLE_ENUM.items()
+                    if role_enum == participant.role
+                ),
+                "",
+            )
+            count = declared_income_paths.get(role_name, 0)
+            if selected is not None and selected_income_paths:
+                same_role = [
+                    p for p in deal.active_participants if p.role == participant.role
+                ]
+                position = same_role.index(participant) + 1
+                if role_name == selected[0] and position == selected[1]:
+                    count += selected_income_paths
+            if not count:
+                continue
+            msg = (
+                f"{participant.name} ({participant.role.value}) a Salesforce-ban "
+                f"'jövedelem nélkül bevont' szerepben szerepel — "
+                f"{count} jövedelem-jellegű mező üresen marad a nyomtatványon."
+            )
+            logger.warning("   ⚠️ %s", msg)
+            if msg not in notices:
+                notices.append(msg)
 
     def _eval_fill_rule(self, rule, all_data: dict, borrower: dict, co_borrower: dict, deal, canonical_value: str | None = None) -> str | None:
         """
@@ -1607,281 +1820,6 @@ class FormFillerPipeline:
             return None
 
         return None
-
-    def _apply_income_exclusion(self, participant, p_data: dict, notices: list | None) -> dict:
-        """Jövedelem nélkül bevont szereplő (income_bearing=False) jövedelem-
-        jellegű mezőit üríti, hogy azok ne kerüljenek a nyomtatványra.
-        None (jelöletlen szerep) esetén nem nyúl az adatokhoz — ilyenkor
-        nem veszítünk adatot, minden kitöltődik."""
-        if getattr(participant, "income_bearing", None) is not False:
-            return p_data
-        stripped = sorted(k for k in _INCOME_CANONICAL_KEYS if p_data.get(k))
-        for k in stripped:
-            p_data[k] = ""
-        if stripped:
-            role_val = getattr(getattr(participant, "role", None), "value", "") or "résztvevő"
-            msg = (
-                f"{getattr(participant, 'name', '?')} ({role_val}) a Salesforce-ban "
-                f"'jövedelem nélkül bevont' szerepben szerepel — "
-                f"{len(stripped)} jövedelem-jellegű mező üresen marad a nyomtatványon."
-            )
-            logger.warning("   ⚠️ %s [%s]", msg, ", ".join(stripped))
-            if notices is not None:
-                notices.append(msg)
-        return p_data
-
-    def _enrich_derived_values(
-        self,
-        borrower_data: dict,
-        co_borrower_data: dict,
-        loan_data: dict,
-        deal,
-        notices: list | None = None,
-    ) -> None:
-        """Származtatott/fordított kanonikus értékek előállítása.
-
-        1) Contact.Salutation: SF megszólítás → nyomtatvány nem-opció
-           ("Férfi"/"Nő"). Ha a Salutation üres, magyar keresztnév-tábla
-           alapján becslünk — ezt mindig notice-szal jelezzük, mert nem
-           CRM-adat.
-        2) Konstrukció-gate: a ``#piaci`` / ``#tamogatott`` szuffixes
-           canonical kulcsok csak a hitel típusának megfelelő szekcióhoz
-           kapnak értéket (3.1 államilag kamattámogatott / 3.2 piaci).
-           A ``loan.product_type`` értéket a konstrukció-opció feliratára
-           cseréljük, hogy a "Választott konstrukció típusa" checkbox
-           bepipálható legyen.
-        """
-        # 1) Nem (Salutation fordítás + név-alapú fallback) és egyéb értékfordítások
-        for data in (borrower_data, co_borrower_data):
-            if not data:
-                continue
-            raw_sal = (data.get("Contact.Salutation") or "").strip()
-            translated = _translate_value("Contact.Salutation", raw_sal) if raw_sal else ""
-            guess = guess_gender(data.get("Contact.Name") or "")
-            if translated in ("Férfi", "Nő"):
-                if guess and guess != translated:
-                    data["Contact.Salutation"] = guess
-                    msg = (
-                        f"{data.get('Contact.Name') or 'A szereplő'} neme név "
-                        f"alapján javítva ({guess}) — a Salesforce Salutation mező "
-                        f"({raw_sal} → {translated}) ellentmond a keresztnévnek."
-                    )
-                    logger.warning(msg)
-                    if notices is not None and msg not in notices:
-                        notices.append(msg)
-                else:
-                    data["Contact.Salutation"] = translated
-            else:
-                # Üres VAGY nem-gender Salutation (pl. "Dr.") → név-fallback
-                if guess:
-                    data["Contact.Salutation"] = guess
-                    sal_note = (
-                        f"a Salesforce Salutation mező üres"
-                        if not raw_sal
-                        else f"a Salesforce Salutation értéke ({raw_sal}) nem hordoz nemet"
-                    )
-                    msg = (
-                        f"{data.get('Contact.Name') or 'A szereplő'} neme név "
-                        f"alapján becsülve ({guess}) — {sal_note}, "
-                        f"ellenőrizd a nyomtatványon."
-                    )
-                    logger.warning(msg)
-                    if notices is not None and msg not in notices:
-                        notices.append(msg)
-
-            # Cégforma fordítása (pl. "Kft." → "Korlátolt felelősségű társaság")
-            raw_comp = (data.get("Contact.Employer_s_company_type__c") or "").strip()
-            if raw_comp:
-                data["Contact.Employer_s_company_type__c"] = _translate_value(
-                    "Contact.Employer_s_company_type__c", raw_comp
-                )
-
-            # Foglalkozás típusa fordítása (pl. "Alkalmazott vezető" → "Vezető alkalmazott (felső vagy középvezető)")
-            raw_occ = (data.get("Contact.Foglalkozas_tipusa__c") or "").strip()
-            if raw_occ:
-                data["Contact.Foglalkozas_tipusa__c"] = _translate_value(
-                    "Contact.Foglalkozas_tipusa__c", raw_occ
-                )
-
-        # 2) Konstrukció-gate
-        loan = deal.loan
-        construction = _classify_construction(loan, deal)
-        if not construction:
-            msg = (
-                "A hitel konstrukciótípusa nem állapítható meg "
-                "(Product_Type__c és terméknév alapján sem) — a 3.1/3.2 "
-                "konstrukciós szekciók és a konstrukciótípus-checkbox "
-                "üresen marad."
-            )
-            logger.warning(msg)
-            if notices is not None and msg not in notices:
-                notices.append(msg)
-            return
-
-        loan_data["loan.product_type"] = _CONSTRUCTION_OPTION_LABELS[construction]
-        gates = []
-        if construction in ("tamogatott", "mindketto"):
-            gates.append("tamogatott")
-        if construction in ("piaci", "mindketto"):
-            gates.append("piaci")
-
-        amount = loan_data.get("Opportunity.Hitel_sszeg__c", "")
-        purpose = loan_data.get("Opportunity.Hitelc_l__c", "")
-        insurance = loan_data.get("Opportunity.Insurance__c", "")
-        term_years = borrower_data.get("Contact.Term_in_year_c", "")
-        for gate in gates:
-            if amount:
-                loan_data[f"Opportunity.Hitel_sszeg__c#{gate}"] = amount
-            if insurance:
-                loan_data[f"Opportunity.Insurance__c#{gate}"] = insurance
-            if purpose:
-                loan_data[f"Opportunity.Hitelc_l__c#{gate}"] = purpose
-                for data in (borrower_data, co_borrower_data):
-                    if data:
-                        data[f"Contact.Loan_Purpose__c#{gate}"] = purpose
-            if term_years:
-                for data in (borrower_data, co_borrower_data):
-                    if data:
-                        data[f"Contact.Term_in_year_c#{gate}"] = term_years
-                        data[f"Contact.Term_in_year_c__c#{gate}"] = term_years
-
-    def _participant_to_dict(self, p) -> dict:
-        """Participant → kanonikus dict. Csak SF-ből származó adatok kerülnek ide."""
-        _pid_clean = re.sub(r"[\s\-]", "", str(p.personal_id or ""))
-        d = {
-            "Contact.Name": p.name,
-            "Contact.Szuletesi_nev__c": p.birth_name or "",
-            "Contact.Mother_s_Name__c": p.mother_name or "",
-            "Contact.Place_of_Birth__c": p.birth_place or "",
-            "Contact.Birthdate": p.birth_date.strftime("%Y.%m.%d") if p.birth_date else "",
-            "Contact.Birthdate_year": p.birth_date.strftime("%Y") if p.birth_date else "",
-            "Contact.Birthdate_month": p.birth_date.strftime("%m") if p.birth_date else "",
-            "Contact.Birthdate_day": p.birth_date.strftime("%d") if p.birth_date else "",
-            # SF-ben a személyazonosító igazolvány száma (pl. 234567IJ) a
-            # Contact.ID_Card_Number__c mezőben van (p.personal_id), míg a
-            # lakcímkártya száma a Contact.Address_Card_Number__c-ben (p.id_card_number).
-            # A régi 11 jegyű személyi azonosító szám (Contact.Personal_ID__c) csak akkor
-            # töltendő, ha valóban 11 számjegyű személyi számról van szó (ne duplikálja a szem.ig. számot).
-            "Contact.ID_Card_Number__c": p.personal_id or getattr(p, "id_card_number", "") or "",
-            "Contact.Personal_ID__c": _pid_clean if re.fullmatch(r"\d{11}", _pid_clean) else "",
-            "Contact.Address_Card_Number__c": getattr(p, "id_card_number", "") or "",
-            "Contact.Tax_ID__c": p.tax_id or "",
-            "Contact.MobilePhone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
-            "Contact.Phone": p.phone.replace("+", "").replace(" ", "").replace("-", "") if p.phone else "",
-            "Contact.Email": p.email or "",
-            "Contact.Name_of_employer__c": p.employer or "",
-            "Contact.Average_monthly_net_income__c": fmt_money(p.monthly_income),
-            "Contact.Relation__c": p.role.value,
-            "participant.role": p.role.value,
-            # SF-ből töltjük — ha nincs adat, üresen hagyjuk
-            "Contact.Citizenship__c": getattr(p, "citizenship", "") or "",
-            "Contact.Marital_Status__c": getattr(p, "marital_status", "") or "",
-            "Contact.Highest_Educational_Qualification__c": getattr(p, "education", "") or "",
-            "Contact.Income_type__c": getattr(p, "income_type", "") or "",
-            "Contact.Dependents_count__c": str(p.dependents_count) if getattr(p, "dependents_count", None) is not None else "",
-        }
-
-        emp_type_val = getattr(p, "employment_type", "") or ""
-        contract_end_val = getattr(p, "contract_end_date", "") or ""
-        # Határozatlan idejű munkaviszony esetén a "Határozott munkaviszony vége" mező üresen marad
-        if "hatarozatlan" in _fold_text(emp_type_val):
-            contract_end_val = ""
-
-        contract_start_val = getattr(p, "contract_start_date", "") or getattr(p, "current_employment_started", "") or ""
-        curr_emp_start_val = getattr(p, "current_employment_started", "") or contract_start_val
-
-        # Extra Contact mezők (SOQL-ból jönnek, lehetnek üresek)
-        extra_mappings = {
-            "Contact.Salutation": getattr(p, "salutation", "") or "",
-            "Contact.Occupation__c": getattr(p, "occupation", "") or "",
-            "Contact.Foglalkozas_tipusa__c": getattr(p, "foglalkozas_tipusa", "") or "",
-            "Contact.Employment_Type_c__c": emp_type_val,
-            "Contact.Legal_Title_of_permanent_residence__c": getattr(p, "legal_title", "") or "",
-            "Contact.Jovairas_vallalasa__c": getattr(p, "jovairas_vallalasa", "") or "",
-            "Contact.Loan_Purpose__c": getattr(p, "loan_purpose", "") or "",
-            "Contact.Interest_Period__c": getattr(p, "interest_period", "") or "",
-            "Contact.Other_monthly_income__c": fmt_money(getattr(p, "other_monthly_income", None)) if getattr(p, "other_monthly_income", None) else "",
-            "Contact.Current_debt_Credit_limit__c": getattr(p, "current_debt_credit_limit", "") or "",
-            "Contact.Current_employment_started__c": curr_emp_start_val,
-            "Contact.Date_of_notification_for_residence__c": getattr(p, "date_of_notification_for_residence", "") or "",
-            "Contact.Date_of_signature__c": getattr(p, "date_of_signature", "") or "",
-            "Contact.Description": getattr(p, "description", "") or "",
-            "Contact.MailingCity": getattr(p, "mailing_city", "") or "",
-            "Contact.MailingPostalCode": getattr(p, "mailing_postal_code", "") or "",
-            "Contact.MailingStreet": getattr(p, "mailing_street", "") or "",
-            "Contact.OtherCity": getattr(p, "other_city", "") or "",
-            "Contact.OtherStreet": getattr(p, "other_street", "") or "",
-            "Contact.OtherCountry": getattr(p, "other_country", "") or "",
-            "Contact.Account_holding_bank__c": getattr(p, "account_holding_bank", "") or "",
-            "Contact.Cafeteria_bonus__c": fmt_money(getattr(p, "cafeteria_bonus", None)) if getattr(p, "cafeteria_bonus", None) else "",
-            "Contact.Continuous_TB_2_years__c": getattr(p, "continuous_tb_2_years", "") or "",
-            "Contact.Contract_end_date__c": contract_end_val,
-            "Contact.Contract_start_date__c": contract_start_val,
-            "Contact.Date_of_handover__c": getattr(p, "date_of_handover", "") or "",
-            "Contact.Date_of_transfer__c": getattr(p, "date_of_transfer", "") or "",
-            "Contact.Description_of_loan_purpose_comments__c": getattr(p, "description_of_loan_purpose", "") or "",
-            "Contact.Divident__c": fmt_money(getattr(p, "divident", None)) if getattr(p, "divident", None) else "",
-            "Contact.Employee_registration_c__c": getattr(p, "employee_registration", "") or "",
-            "Contact.Employer_s_company_type__c": getattr(p, "employer_company_type", "") or "",
-            "Contact.Income_from_self_owned_company__c": fmt_money(getattr(p, "income_from_self_owned", None)) if getattr(p, "income_from_self_owned", None) else "",
-            "Contact.Industry__c": getattr(p, "industry", "") or "",
-            "Contact.Monthly_Payment_details__c": getattr(p, "monthly_payment_details", "") or "",
-            "Contact.Monthly_installment_payment__c": fmt_money(getattr(p, "monthly_installment_payment", None)) if getattr(p, "monthly_installment_payment", None) else "",
-            "Contact.Mortgagor__c": getattr(p, "mortgagor", "") or "",
-            "Contact.Numer_and_Age_of_Children__c": getattr(p, "numer_and_age_of_children", "") or "",
-            "Contact.Other_income__c": fmt_money(getattr(p, "other_income", None)) if getattr(p, "other_income", None) else "",
-            "Contact.Other_monthly_deductions__c": fmt_money(getattr(p, "other_monthly_deductions", None)) if getattr(p, "other_monthly_deductions", None) else "",
-            "Contact.Own_resources__c": fmt_money(getattr(p, "own_resources", None)) if getattr(p, "own_resources", None) else "",
-            "Contact.Property_50pct_ownership_details__c": getattr(p, "property_50pct_ownership_details", "") or "",
-            "Contact.Property_encumbrances__c": getattr(p, "property_encumbrances", "") or "",
-            "Contact.Property_value__c": getattr(p, "property_value", "") or "",
-            "Contact.Self_employment_details__c": getattr(p, "self_employment_details", "") or "",
-            "Contact.State_Support__c": getattr(p, "state_support", "") or "",
-            "Contact.Town_or_possibly_the_exact_address__c": getattr(p, "town_or_possibly_exact_address", "") or "",
-            "Contact.Usufructuary__c": getattr(p, "usufructuary", "") or "",
-            "Contact.What_type_of_loan__c": getattr(p, "what_type_of_loan", "") or "",
-            "Contact.Ownership_in_employer__c": getattr(p, "ownership_in_employer", "") or "",
-            "Contact.Preferalt_bank__c": getattr(p, "preferalt_bank", "") or "",
-            "Contact.Residence_Status__c": getattr(p, "residence_status", "") or "",
-        }
-        d.update(extra_mappings)
-
-        # Dátum-fragmentek (#ev / #ho / #nap) minden releváns dátummezőhöz
-        for date_canon in (
-            "Contact.Date_of_notification_for_residence__c",
-            "Contact.Current_employment_started__c",
-            "Contact.Contract_start_date__c",
-            "Contact.Contract_end_date__c",
-        ):
-            dy, dm, dd = _date_parts(d.get(date_canon, ""))
-            d[f"{date_canon}#ev"] = dy
-            d[f"{date_canon}#ho"] = dm
-            d[f"{date_canon}#nap"] = dd
-
-        # Gyermekek száma fragment (pl. "1, 5 éves" → "1")
-        children_raw = d.get("Contact.Numer_and_Age_of_Children__c", "")
-        m_ch = re.match(r"^\s*(\d+)", str(children_raw))
-        d["Contact.Numer_and_Age_of_Children__c#count"] = (
-            m_ch.group(1) if m_ch else d.get("Contact.Dependents_count__c", "")
-        )
-        return d
-
-
-    def _address_to_dict(self, addr, prefix: str = "address") -> dict:
-        """Address → kanonikus dict."""
-        if prefix == "mailing_address":
-            return {
-                "Contact.MailingStreet": f"{addr.street} {addr.house_number}".strip(),
-                "Contact.MailingCity": addr.city,
-                "Contact.MailingPostalCode": addr.zip_code,
-            }
-        else:
-            return {
-                "Contact.OtherStreet": f"{addr.street} {addr.house_number}".strip(),
-                "Contact.OtherCity": addr.city,
-                "Contact.ZIP__c": addr.zip_code,
-                "Contact.Permanent_address__c": addr.full_address,
-            }
 
     def _fill_pdf(
         self,
@@ -1989,156 +1927,165 @@ class FormFillerPipeline:
         mapping: MappingConfig,
         instance_fields: list,
     ) -> dict:
-        """C6: kiegészíti a field_data-t a duplikált példányok ``_N`` mezőivel."""
-        pdf_to_canonical = mapping.mapping_dict
+        """C6: kiegészíti a field_data-t a duplikált példányok ``_N`` mezőivel.
+
+        Cutover Task 3: a legacy (SF-kulcsos) felő fele törölve — minden
+        példány-mező a ``CanonicalResolver``-en keresztül oldódik fel
+        (lásd ``_apply_instance_data_canonical``)."""
+        return self._apply_instance_data_canonical(
+            field_data, deal, mapping, instance_fields
+        )
+
+    def _apply_instance_data_canonical(
+        self,
+        field_data: dict,
+        deal: DealData,
+        mapping: MappingConfig,
+        instance_fields: list,
+    ) -> dict:
+        """Cutover Task 2 — példány-mezők resolver + explicit (role, index).
+
+        Minden duplikált oldali ``_N`` mező a saját szerepe (co_borrower /
+        guarantor / mortgagor / usufructuary / property) N-edik példányának
+        adatait kapja a ``CanonicalResolver``-en keresztül — sosem
+        co-borrower adatokat kezes/zálogkötelezett oldalakra.
+        """
+        resolver = CanonicalResolver()
+        canonical_by_base: dict[str, str] = {}
         frag_by_base: dict[str, str] = {}
-        for f in mapping.fields:
-            base = f.pdf_field_name if hasattr(f, 'pdf_field_name') else f.get('pdf_field_name', '')
-            frag = getattr(f, 'fragment', None) if not isinstance(f, dict) else f.get('fragment')
-            if base and frag:
-                frag_by_base[base] = frag
+        for entry in _genie_mapping_entries(mapping):
+            base = entry["pdf_field_name"]
+            canonical = entry["canonical_field"]
+            if (
+                base
+                and isinstance(canonical, str)
+                and canonical_registry.validate(canonical)
+            ):
+                canonical_by_base[base] = canonical
+            if base and entry["fragment"]:
+                frag_by_base[base] = entry["fragment"]
 
         result = dict(field_data)  # ne mutáljuk a hívó szótárát
-
+        assigned = 0
         for im in instance_fields:
-            instance_idx = im.instance - 1  # 0-based: 2. példány → idx 1
-            data_dict = self._instance_data_dict(deal, im.role, instance_idx)
-            if not data_dict:
-                continue
-
+            canonical_role = INSTANCE_ROLE_TO_CANONICAL.get(
+                im.role, INSTANCE_ROLE_CO_BORROWER
+            )
+            if canonical_role == "property":
+                instance_ctx = ResolutionContext(property_index=im.instance)
+            else:
+                instance_ctx = ResolutionContext(
+                    participant=(canonical_role, im.instance)
+                )
             for base in im.base_fields:
-                canonical = pdf_to_canonical.get(base)
+                canonical = canonical_by_base.get(base)
                 if not canonical:
                     continue
-                raw = data_dict.get(canonical)
+                try:
+                    # F2 — a példány-kontextus ugyanazt a per-applicant
+                    # kiválasztási szemantikát alkalmazza: az alap (index
+                    # nélküli) participant path-ok a példány résztvevőjének
+                    # adatait kapják; explicit index fix marad.
+                    raw = _resolve_canonical_text(
+                        resolver, deal, canonical, instance_ctx,
+                        frag_by_base.get(base),
+                    )
+                except ValueError as error:
+                    logger.debug(
+                        "instance canonical feloldási hiba (%s): %s", base, error
+                    )
+                    continue
                 if raw is None or raw == "":
                     continue
-                frag = frag_by_base.get(base)
-                if frag:
-                    raw = _apply_fragment(raw, frag)
-                    if raw is None or raw == "":
-                        continue
                 result[f"{base}_{im.instance}"] = raw
+                assigned += 1
 
-        if len(result) != len(field_data):
+        if assigned:
             logger.info(
-                "   C6: %d átnevezett _N mezőhöz példányadat rendelve",
-                len(result) - len(field_data),
+                "   C6: %d átnevezett _N mezőhöz példányadat rendelve "
+                "(canonical resolver)",
+                assigned,
             )
         return result
-
-    def _instance_data_dict(self, deal: DealData, role: str, instance_idx: int) -> dict:
-        """Visszaadja a megadott szerep + sorszámú példány kanonikus adatait."""
-        if role == INSTANCE_ROLE_PROPERTY:
-            return self._property_to_dict_indexed(deal, instance_idx)
-        participant = self._instance_participant(deal, role, instance_idx)
-        if participant is None:
-            return {}
-        data = self._participant_to_dict(participant)
-        if participant.address:
-            data.update(self._address_to_dict(participant.address, "address"))
-            if not participant.mailing_address:
-                for mk, mv in self._address_to_dict(participant.address, "mailing_address").items():
-                    if not data.get(mk):
-                        data[mk] = mv
-        return data
-
-    @staticmethod
-    def _instance_participant(deal: DealData, role: str, idx: int):
-        """Kiválasztja az idx-edik (0-based) aktív szereplőt a megadott szerepben."""
-        if role == INSTANCE_ROLE_GUARANTOR:
-            lst = deal.guarantors
-        elif role == INSTANCE_ROLE_BENEFICIARY:
-            lst = deal.get_participants_by_role(ParticipantRole.BENEFICIARY)
-        else:  # INSTANCE_ROLE_CO_BORROWER (és ismeretlen → alapértelmezett)
-            lst = deal.co_borrowers
-        return lst[idx] if 0 <= idx < len(lst) else None
-
-    def _property_to_dict_indexed(self, deal: DealData, idx: int) -> dict:
-        """Az idx-edik (0-based) ingatlan adatai kanonikus dict-ként (Lead.*)."""
-        if not (0 <= idx < len(deal.properties)):
-            return {}
-        prop = deal.properties[idx]
-        return self._property_to_dict(prop)
-
-    @staticmethod
-    def _property_to_dict(prop) -> dict:
-        """Egy ingatlan adatai kanonikus dict-ként (Lead.* namespace)."""
-        street_val = prop.address.street or ""
-        hn_val = prop.address.house_number or ""
-        kozterulet_val = street_val if (not hn_val or street_val.endswith(hn_val)) else f"{street_val} {hn_val}".strip()
-        return {
-            "Lead.Ingatlan_irsz__c": prop.address.zip_code,
-            "Lead.Ingatlan_telepules__c": prop.address.city,
-            "Lead.Ingatlan_kozterulet_neve__c": kozterulet_val,
-            "Lead.Ingtalan_hazszam__c": hn_val,
-            "Lead.Ingatlan_hazszam__c": hn_val,
-            "Lead.Ingatlan_megjegyzes__c": prop.parcel_number,
-            "Lead.Ingatlan_alapterulet__c": str(prop.area_sqm) if prop.area_sqm else "",
-            "Lead.Ingatlan_jellege__c": prop.property_type.value,
-            "Lead.Estimated__c": fmt_money(prop.estimated_value),
-            "Lead.Ingatlan_emelet__c": getattr(prop, "address", None).floor if getattr(prop, "address", None) else "",
-            "Lead.Form_Type__c": getattr(prop, "form_type", "") or "",
-            "Lead.Ingatlan_energetika__c": getattr(prop, "energetika", "") or "",
-            "Lead.Ingatlan_terhek__c": getattr(prop, "terhek", "") or "",
-            "Lead.Ingatlan_szerepe__c": getattr(prop, "ingatlan_szerepe", "") or "",
-            "Lead.Term_in_year__c": str(getattr(prop, "epites_eve", "") or ""),
-        }
 
     def _fill_legal_declarations(
         self,
         pdf_path: Path,
         mapping: MappingConfig,
         deal: DealData,
-    ) -> int:
+    ) -> dict:
         """
-        Jogi nyilatkozat checkbox-ok automatikus kitöltése a már
-        kitöltött PDF-en (canonical mapping MELLÉ).
+        Jogi nyilatkozat checkbox-ok kezelése a már kitöltött PDF-en
+        (canonical mapping MELLÉ) — Cutover Task 5 safe declaration policy.
 
         Lépések:
-        1. Kinyeri a canonical_field nélküli checkbox-okat a mapping-ből.
+        1. Kinyeri a canonical_field nélküli checkbox-okat a mapping-ből
+           (points-managed role/signature mezők KIMARADNAK — azokat a
+           pont-motor kezelte).
         2. LegalClassifier.classify_batch() → kategóriák.
-        3. LegalClassifier.apply_defaults(deal) → true/false értékek.
-        4. Beírja az értékeket a PDF AcroForm checkbox-aiba.
+        3. LegalClassifier.apply_defaults(deal, points_managed) → értékek.
+           A v2.0 safe táblával ez gyakorlatilag üres (nincs automatikus
+           true/false); csak felülvizsgált explicit override-okat tartalmaz.
+        4. Beírja az értékeket a PDF AcroForm checkbox-aiba, a feloldatlan
+           nyilatkozatokat pedig kézi döntésként listázza.
 
         Returns:
-            Módosított checkbox mezők száma.
+            {"modified": int, "manual": [{"pdf_field_name", "label",
+             "page_number", "category"}, ...]}
         """
+        points_managed = points_managed_fields(mapping)
         unmapped = extract_unmapped_checkboxes(mapping)
         if not unmapped:
             logger.debug("Nincsenek leképezetlen checkbox-ok – jogi lépés kihagyva.")
-            return 0
+            return {"modified": 0, "manual": []}
 
         classifier = LegalClassifier()
         classified = classifier.classify_batch(unmapped)
-        values = classifier.apply_defaults(classified, deal)
+        # Review fix 4: consent override-ok kizárólag explicit CRM canonical
+        # evidence mellett élhetnek — a mapping consent canonical útjai és a
+        # deal consents adatai alapján számoljuk a fedezeti halmazt.
+        crm_evidence = explicit_crm_consent_evidence(mapping, deal)
+        values = classifier.apply_defaults(
+            classified,
+            deal,
+            points_managed=points_managed,
+            crm_consent_evidence=crm_evidence,
+        )
 
-        if not values:
-            logger.info(
-                "   Jogi nyilatkozat: %d mező vizsgálva, de egyetlen sem "
-                "illeszkedett egy 'always' vagy 'conditional' szabályhoz.",
-                len(unmapped),
-            )
-            return 0
+        manual = [
+            {
+                "pdf_field_name": u["pdf_field_name"],
+                "label": u["label"],
+                "page_number": u["page_number"],
+                "category": classified.get(u["pdf_field_name"], "unknown"),
+            }
+            for u in unmapped
+            if u["pdf_field_name"] not in values
+        ]
+        logger.info(
+            "   Jogi nyilatkozat: %d mező vizsgálva, %d automatikus érték "
+            "(safe policy), %d KÉZI döntés listázva.",
+            len(unmapped),
+            len(values),
+            len(manual),
+        )
 
-        modified = fill_legal_declarations_on_pdf(Path(pdf_path), values)
-        if modified:
-            logger.info(
-                "   Jogi nyilatkozat: %d/%d checkbox beállítva "
-                "(vizsgált leképezetlen: %d).",
-                modified,
-                len(values),
-                len(unmapped),
-            )
-        else:
-            logger.info(
-                "   Jogi nyilatkozat: %d érték kalkulálva, de a PDF-ben nem "
-                "található a hozzá tartozó AcroForm checkbox (mapping: %d "
-                "leképezetlen checkbox).",
-                len(values),
-                len(unmapped),
-            )
-        return modified
+        modified = 0
+        if values:
+            modified = fill_legal_declarations_on_pdf(Path(pdf_path), values)
+            if modified:
+                logger.info(
+                    "   Jogi nyilatkozat: %d/%d checkbox beállítva.",
+                    modified,
+                    len(values),
+                )
+            else:
+                logger.info(
+                    "   Jogi nyilatkozat: %d érték kalkulálva, de a PDF-ben "
+                    "nem található a hozzá tartozó AcroForm checkbox.",
+                    len(values),
+                )
+        return {"modified": modified, "manual": manual}
 
     # =========================================================================
     # ELAVULT metódusok – korábban inline pikepdf/PyMuPDF logikát tartalmaztak.
@@ -2308,7 +2255,13 @@ def main():
                 deal = pipeline.normalizer.normalize_deal(raw)
                 cli.info("📊 Demo ügylet normalizálva:")
                 cli.info("   ID: %s", deal.deal_id)
-                cli.info("   Hitel: %s Ft, %s hónap", fmt_money(deal.loan.loan_amount), deal.loan.loan_term_months)
+                cli.info(
+                    "   Hitel: %s Ft, %s hónap",
+                    fmt_money(deal.loan.loan_amount),
+                    deal.loan.loan_term_months
+                    if deal.loan.loan_term_months is not None
+                    else "ismeretlen",
+                )
                 cli.info("   Szereplők: %d", len(deal.active_participants))
                 for p in deal.active_participants:
                     cli.info("     - %s (%s)", p.name, p.role.value)

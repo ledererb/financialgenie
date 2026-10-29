@@ -191,7 +191,7 @@
       "pdf_field_name": "flat_1_11",
       "label": "Kelt",
       "field_type": "text",
-      "canonical_field": "Contact.Date_of_signature__c",
+      "canonical_field": "participant.borrower.date_of_signature",
       "confidence": "high",
       "page_number": 1,
       "coordinates": {

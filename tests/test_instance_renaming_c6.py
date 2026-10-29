@@ -262,14 +262,19 @@ def _deal_with_coborrowers(cities):
 
 
 def _tars_mapping():
-    """'-társ' field names → Contact.* (co-borrower routing for instance 1)."""
+    """Co-borrower template: canonical paths select the participant, not names.
+
+    Cutover Task 3 port: a legacy "-társ PDF-név + Contact.* canonical"
+    páros helyett explicit ``participant.co_borrower.*`` útvonalak — a PDF
+    mezőnevek a bank nyomtatványáról maradnak (a "-társ" név sosem választ
+    résztvevőt), a résztvevő-választás kizárólag a canonical path + kontextus."""
     return MappingConfig(
         bank_name="OTP", form_name="t", form_type="acroform",
         fields=[
             RecognizedField("SZA_IG_név-társ", "Név", FieldType.TEXT,
-                            "Contact.Name", MappingConfidence.HIGH, 1),
+                            "participant.co_borrower.name", MappingConfidence.HIGH, 1),
             RecognizedField("SZA_IG_település-társ", "Település", FieldType.TEXT,
-                            "Contact.MailingCity", MappingConfidence.HIGH, 1),
+                            "participant.co_borrower.address.city", MappingConfidence.HIGH, 1),
         ],
     )
 
@@ -315,10 +320,11 @@ class TestApplyInstanceData:
                 address=Address(zip_code="1", city="c", street="s", house_number="1"))],
             properties=props,
         )
+        # Cutover Task 3 port: Lead.Ingatlan_telepules__c → property.address.city
         mapping = MappingConfig(
             bank_name="OTP", form_name="t", form_type="acroform",
             fields=[RecognizedField("IA_település", "Település", FieldType.TEXT,
-                                    "Lead.Ingatlan_telepules__c", MappingConfidence.HIGH, 1)],
+                                    "property.address.city", MappingConfidence.HIGH, 1)],
         )
         instance_fields = [
             InstanceFieldMap(section="ingatlan_adatlap_2", instance=2,
@@ -349,11 +355,12 @@ class TestApplyInstanceData:
         """C8 fragment on a base field applies to its _N instance copy too."""
         deal = _deal_with_coborrowers(["X"])
         deal.co_borrowers[0].birth_date = date(1990, 7, 8)
+        # Cutover Task 3 port: Contact.Birthdate → participant.co_borrower.birth_date
         mapping = MappingConfig(
             bank_name="OTP", form_name="t", form_type="acroform",
             fields=[
                 RecognizedField("SZA_IG_szül_év-társ", "Év", FieldType.DATE,
-                                "Contact.Birthdate", MappingConfidence.HIGH, 1, fragment="year"),
+                                "participant.co_borrower.birth_date", MappingConfidence.HIGH, 1, fragment="year"),
             ],
         )
         instance_fields = [

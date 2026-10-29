@@ -887,7 +887,7 @@ class AcroFormFiller(BaseFiller):
                         widget.update()
                         needs_save = True
                         extra_filled += 1
-                        filled_set.add(wname)
+                        handled_set.add(wname)
                         result.filled_fields.append(wname)
                         logger.debug(
                             "PyMuPDF fallback kitöltés: %s = %s (← %s)",
@@ -919,7 +919,7 @@ class AcroFormFiller(BaseFiller):
                         widget.update()
                         needs_save = True
                         extra_filled += 1
-                        filled_set.add(wname)
+                        handled_set.add(wname)
                         result.filled_fields.append(wname)
 
             if needs_save:
