@@ -56,6 +56,10 @@ scratch/
 # OTP cégkivonat (valós cégadatot tartalmazó üzleti dokumentum) — sosem kerül repo-ba
 otp/**/*gkivonat*.pdf
 
+# Valós E2E bizonyítékok és org-specifikus sémasnapshot — csak helyben
+/gui-test-screenshots/
+/config/sf_schema_snapshot.json
+
 # Ad hoc PDF-ek a gyökérben (csak a samples/ mappában tartjuk a mintákat)
 /*.pdf
 

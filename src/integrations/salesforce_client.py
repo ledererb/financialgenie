@@ -1103,7 +1103,7 @@ class SalesforceClient:
                     "Loan_Term__c": loan_term_months,
                     "Interest_Period__c": opp.get("Interest_Period__c") or None,
                     "Loan_Purpose__c": opp.get("Hitelc_l__c") or opp.get("Loan_Purpose__c") or None,
-                    "Product_Name__c": opp.get("Term_k__c") or opp.get("Name") or None,
+                    "Product_Name__c": opp.get("Term_k__c") or None,
                     "Product_Type__c": opp.get("Product_Type__c") or opp.get("Term_k__c") or None,
                     "Down_Payment__c": opp.get("Down_Payment__c"),
                     "Monthly_Payment__c": opp.get("Monthly_Payment__c"),

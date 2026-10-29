@@ -1173,6 +1173,19 @@ def test_resolve_pdf_preserves_valid_root_paths(tmp_path, monkeypatch, root_name
     assert backend_config.resolve_pdf(pdf_ids[style]) == pdf_path.resolve()
 
 
+def test_resolve_pdf_preserves_uppercase_legacy_otp_root(tmp_path, monkeypatch):
+    """Legacy catalog paths use OTP/, while approved roots use otp/."""
+    import config as backend_config
+
+    _configure_pdf_roots(tmp_path, monkeypatch)
+    uppercase_root = tmp_path / "OTP"
+    uppercase_root.mkdir(exist_ok=True)
+    pdf_path = uppercase_root / "partner.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n%%EOF")
+
+    assert backend_config.resolve_pdf("OTP/partner.pdf") == pdf_path.resolve()
+
+
 @pytest.mark.parametrize("pdf_id", ["samples/missing.pdf", "samples"])
 def test_resolve_pdf_missing_and_directory_are_not_found(tmp_path, monkeypatch, pdf_id):
     import config as backend_config

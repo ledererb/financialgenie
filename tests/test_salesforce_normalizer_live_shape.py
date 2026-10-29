@@ -547,6 +547,33 @@ def test_live_soql_uses_describe_available_fields_and_aggregates_warnings(tmp_pa
     assert raw["Properties__r"]["records"][0]["_property"] == prop
 
 
+def test_missing_product_fields_do_not_use_opportunity_name_as_product(tmp_path):
+    schema = make_schema(["Id", "Name"], ["Id"])
+    opportunity = {
+        "Id": "006PRODUCTNAME00001",
+        "Name": "dr. Kántor Zoltán",
+        "AccountId": "001PRODUCTACCOUNT1",
+        "Opportunity_Contact_Name__c": "003PRODUCTCONTACT1",
+    }
+    contact = {"Id": "003PRODUCTCONTACT1", "Name": "Product Adós"}
+    fake = DescribeFakeSalesforce(
+        opportunity,
+        contact,
+        {"Id": "a00NOPROPERTY000001"},
+        {"Id": "001PRODUCTACCOUNT1", "Name": "Product Account"},
+    )
+    client = SalesforceClient(mock_mode=True, mock_data_dir=tmp_path, schema=schema)
+    client._mock_mode = False
+    client._sf = fake
+
+    raw = client.get_deal(opportunity["Id"])
+    deal = DataNormalizer().normalize_deal(raw)
+
+    assert raw["Product_Name__c"] is None
+    assert deal.loan.product_name is None
+    assert deal.products == ["piaci_hitel"]
+
+
 def test_missing_described_object_skips_invalid_static_query(tmp_path):
     schema = make_schema(["Id", "Name"], [])
     opportunity = {

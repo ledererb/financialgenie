@@ -63,7 +63,22 @@ def resolve_pdf(pdf_id: str) -> Path:
     resolved_roots = [root.resolve() for root in PDF_ROOTS]
 
     def is_contained(path: Path) -> bool:
-        return any(path.is_relative_to(root) for root in resolved_roots)
+        for root in resolved_roots:
+            if path.is_relative_to(root):
+                return True
+            # Case-variant legacy roots (OTP/ vs otp/) share the same directory
+            # on case-insensitive filesystems; compare real ancestors, not text.
+            current = path
+            while True:
+                try:
+                    if current.samefile(root):
+                        return True
+                except (FileNotFoundError, OSError):
+                    pass
+                if current.parent == current:
+                    break
+                current = current.parent
+        return False
 
     # Handle legacy absolute paths (e.g. /Users/.../documents/otp_bank/split/fedlap.pdf)
     legacy_candidates: list[Path] = []
