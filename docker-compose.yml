@@ -26,6 +26,8 @@ services:
       - ./src/mapping:/app/src/mapping
       # Katalógus adatbázis (perzisztens — bank/termék/dokumentum hierarchia)
       - ./catalog:/app/catalog
+      # Describe-only Salesforce sémasnapshot (élő módhoz, read-only)
+      - ./config/sf_schema_snapshot.json:/app/config/sf_schema_snapshot.json:ro
       # Dokumentum katalógus (master split PDF-ek)
       - ./documents:/app/documents
     expose:
