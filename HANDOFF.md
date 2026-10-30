@@ -137,6 +137,7 @@ A rendszer úgy lett felépítve, hogy új PDF nyomtatványok feltöltésekor é
 | `docs/superpowers/reports/2026-10-29-genie-cutover-verification.md` | A cutover offline igazolása (migrátor-audit, OTP csomag- és CIB smoke) |
 | `docs/superpowers/reports/2026-10-29-live-e2e-verification.md` | Valós Salesforce-adatú GUI + API E2E: 11/11 PDF, valós mezőértékek és hitelesített ZIP letöltés |
 | `docs/superpowers/reports/2026-10-30-live-e2e-page-review-final.md` | Végső oldalankénti audit: 36/36 oldal PASS, 9/9 PDF, 926 teszt, valós mező- és layout-ellenőrzés |
+| `docs/superpowers/reports/2026-10-30-production-deploy.md` | Éles deploy és E2E: Hetzner healthy, Vercel GUI, 9/9 dokumentum és hitelesített ZIP letöltés |
 | `docs/SALESFORCE_SETUP_RUNBOOK.md` | Salesforce Setup-runbook: Lead→Opportunity kockázatok, `Property__c` bővítés, `Jovedelem__c`/`Meglevo_hitel__c` séma, consent/audit mezők, snapshot-folyamat, deployment-óvintézkedések |
 | `vercel.json` | Vercel frontend build és `/api/*` → Hetzner backend reverse proxy konfiguráció |
 | `config/.env` | ⚠️ Hitelesítő adatok (`SF_USERNAME`, `SF_PASSWORD`, `SF_SECURITY_TOKEN`, `ANTHROPIC_API_KEY`) |
