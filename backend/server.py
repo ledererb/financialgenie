@@ -90,6 +90,8 @@ from auth_service import AuthService  # noqa: E402
 # Cutover Task 4: the backend validates canonical values against the shared
 # Genie registry (same parser the pipeline uses), not a backend-side catalog.
 from src.canonical.registry import canonical_registry  # noqa: E402
+from src.canonical.resolver import ResolutionContext  # noqa: E402
+from src.models.canonical_model import ParticipantRole  # noqa: E402
 
 auth_service = AuthService()
 
@@ -1428,6 +1430,10 @@ def generate_package(body: dict):
         notices = []  # jövedelem-kizárás stb. felhasználói tájékoztatások
         output_files = []  # (filename_in_zip, absolute_path)
 
+        # Resolve mappings up front without recognition/network activity. Their
+        # metadata drives participant copies and manifest count categories;
+        # fedlap is generated last so it sees every successful/failed document.
+        prepared_docs = []
         for doc in docs:
             title = doc.get("title", doc["id"])
             per_applicant = doc.get("per_applicant", False)
@@ -1441,33 +1447,103 @@ def generate_package(body: dict):
                     "error": "PDF fájl nem található",
                 })
                 continue
+            prepared_docs.append({
+                "doc": doc,
+                "title": title,
+                "per_applicant": per_applicant,
+                "pdf_path": pdf_path,
+                "mapping": mapping_service.load(file_path),
+            })
+        prepared_docs.sort(
+            key=lambda item: item["mapping"].get("form_name") == "fedlap"
+        )
 
-            # Determine how many copies to produce.
-            # Co-borrower-only forms (sza_ig_tarsigenylo) get 1 copy per co-borrower
-            # (none if there are no co-borrowers, since the main borrower has sza_ig_igenylo).
-            # General per_applicant documents (e.g. sza_esz) get 1 copy for the borrower
-            # plus 1 copy for each co-borrower.
-            doc_id_low = str(doc.get("id", "")).lower()
-            title_low = str(title).lower()
-            is_coborrower_only_form = (
-                "tarsigenylo" in doc_id_low
-                or "tarsigenylő" in doc_id_low
-                or "tarsigenylo" in title_low
-                or "tarsigenylő" in title_low
-                or "társigénylő" in title_low
-            )
-            if is_coborrower_only_form:
-                if not has_co_borrower:
-                    continue
-                copies = [(f"adóstárs {i+1}", i) for i in range(len(deal.co_borrowers))]
-            elif per_applicant and has_co_borrower:
-                copies = [(None, None)]  # adós
-                for i in range(len(deal.co_borrowers)):
-                    copies.append((f"adóstárs {i+1}", i))
+        def successful_manifest_counts() -> dict[str, int]:
+            counts: dict[str, int] = {}
+            for item in results:
+                count_key = item.get("package_count_key")
+                if item.get("success") and count_key:
+                    counts[count_key] = counts.get(count_key, 0) + 1
+            return counts
+
+        for item in prepared_docs:
+            doc = item["doc"]
+            title = item["title"]
+            per_applicant = item["per_applicant"]
+            pdf_path = item["pdf_path"]
+            mapping = item["mapping"]
+            package_count_key = mapping.get("package_count_key")
+
+            # Generic PDF-name overrides, configured by the mapping. Every
+            # declared value is present, including an intentional zero.
+            package_values = None
+            count_fields = mapping.get("package_value_fields") or {}
+            if count_fields:
+                manifest_counts = successful_manifest_counts()
+                package_values = {
+                    pdf_field: str(manifest_counts.get(count_key, 0))
+                    for count_key, pdf_field in count_fields.items()
+                }
+
+            # Mapping-level role metadata is authoritative when present. The
+            # legacy filename/per_applicant logic remains only as a fallback
+            # for older mappings that have no participant_roles declaration.
+            participant_roles = mapping.get("participant_roles")
+            copies = []
+            if isinstance(participant_roles, list) and participant_roles:
+                role_enums = {
+                    "borrower": ParticipantRole.BORROWER,
+                    "co_borrower": ParticipantRole.CO_BORROWER,
+                    "guarantor": ParticipantRole.GUARANTOR,
+                    "mortgagor": ParticipantRole.MORTGAGOR,
+                    "usufructuary": ParticipantRole.BENEFICIARY,
+                }
+                for canonical_role in participant_roles:
+                    role_enum = role_enums.get(canonical_role)
+                    if role_enum is None:
+                        log.warning(
+                            "Unknown participant_role %r in mapping for %s",
+                            canonical_role,
+                            title,
+                        )
+                        continue
+                    participants = deal.get_participants_by_role(role_enum)
+                    for index, participant in enumerate(participants, start=1):
+                        suffix = f"{participant.role.value} {index}"
+                        if canonical_role == "borrower" and len(participants) == 1:
+                            suffix = None
+                        copies.append((
+                            suffix,
+                            index - 1 if canonical_role == "co_borrower" else None,
+                            ResolutionContext(
+                                participant=(canonical_role, index)
+                            ),
+                        ))
             else:
-                copies = [(None, None)]
+                doc_id_low = str(doc.get("id", "")).lower()
+                title_low = str(title).lower()
+                is_coborrower_only_form = (
+                    "tarsigenylo" in doc_id_low
+                    or "tarsigenylő" in doc_id_low
+                    or "tarsigenylo" in title_low
+                    or "tarsigenylő" in title_low
+                    or "társigénylő" in title_low
+                )
+                if is_coborrower_only_form:
+                    if not has_co_borrower:
+                        continue
+                    copies = [
+                        (f"adóstárs {i+1}", i, None)
+                        for i in range(len(deal.co_borrowers))
+                    ]
+                elif per_applicant and has_co_borrower:
+                    copies = [(None, None, None)]  # adós
+                    for i in range(len(deal.co_borrowers)):
+                        copies.append((f"adóstárs {i+1}", i, None))
+                else:
+                    copies = [(None, None, None)]
 
-            for suffix, override in copies:
+            for suffix, override, context in copies:
                 try:
                     result = pipeline.run_for_deal(
                         deal_id=deal_id,
@@ -1476,6 +1552,8 @@ def generate_package(body: dict):
                         force_recreate_mapping=False,
                         participant_override=override,
                         upload_to_sf=False,
+                        context=context,
+                        package_values=package_values,
                     )
                     if not result["success"]:
                         err_msg = ", ".join(result.get("issues", [])) or "Ismeretlen hiba"
@@ -1498,14 +1576,17 @@ def generate_package(body: dict):
                             notices.append(n)
 
                     output_files.append((zip_name, result["output_path"]))
-                    results.append({
+                    result_item = {
                         "title": f"{title} ({suffix})" if suffix else title,
                         "file": zip_name,
                         "success": True,
                         "filled_fields": len(result.get("filled_fields", [])),
                         "skipped_fields": len(result.get("skipped_fields", [])),
                         "per_applicant": per_applicant,
-                    })
+                    }
+                    if package_count_key:
+                        result_item["package_count_key"] = package_count_key
+                    results.append(result_item)
                 except Exception as e:
                     log.exception("Package fill error on %s", title)
                     errors.append({"document": title, "error": str(e)})

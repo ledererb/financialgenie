@@ -5,6 +5,10 @@
   "approved": false,
   "approved_by": null,
   "notes": "Összefésült mapping: heurisztikus + AI (94 leképezve).",
+  "participant_roles": [
+    "co_borrower"
+  ],
+  "package_count_key": "sza_ig",
   "page_structure": {
     "1": "per_participant",
     "2": "per_participant",
@@ -991,7 +995,10 @@
         "option_label": "Vezető alkalmazott (felső vagy középvezető)"
       },
       "fill_rule": {
-        "match_value": "Vezető alkalmazott"
+        "match_value": "Vezető alkalmazott",
+        "aliases": [
+          "Alkalmazott vezető"
+        ]
       },
       "fragment": null
     },
@@ -1256,10 +1263,10 @@
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk1-társ___1,2",
-      "label": "Munkabér érkezése: OTP-s számlára érkezik",
+      "label": "Munkabér érkezése – OTP-s számlára érkezik",
       "field_type": "checkbox",
       "canonical_field": "participant.co_borrower.jovairas_vallalasa",
-      "confidence": "medium",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
@@ -1270,7 +1277,10 @@
         "option_label": "OTP-s számlára érkezik"
       },
       "fill_rule": {
-        "match_value": "OTP-s számlára érkezik"
+        "match_value": "OTP-s számlára érkezik",
+        "aliases": [
+          "igen, 0-499 ezer Ft"
+        ]
       },
       "fragment": null
     },
@@ -1344,7 +1354,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.co_borrower.income_type",
+        "match": "Családi pótlék",
+        "value_from": "participant.co_borrower.other_monthly_income"
+      },
       "fragment": null
     },
     {
@@ -1450,7 +1465,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.co_borrower.income_type",
+        "match": "Cafetéria",
+        "value_from": "participant.co_borrower.cafeteria_bonus"
+      },
       "fragment": null
     },
     {
@@ -1556,7 +1576,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.co_borrower.income_type",
+        "match": "Vállalkozásból származó jövedelem",
+        "value_from": "participant.co_borrower.income_from_self_owned"
+      },
       "fragment": null
     },
     {

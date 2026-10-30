@@ -7,10 +7,11 @@ Updated section map a v5 master PDF valós tartalma alapján:
   csak OTTHON_START-nak van saját oldala (69-82, 14 oldal)
 - TARSADOS_SECTION eltávolítva (fiktív volt — a 31-36 valójában CSOK TKA)
 
-Base oldalak (1 participant, 1 property):
-  fedlap(1) + sza_ig_igenylo(4) + sza_esz(1) + munkaltato_adatlap(2) +
-  ingatlan_adatlap(3) + hitelfeltetelek(6) + altalanos_nyilatkozatok(9) = 26
-  (sza_ig_tarsigenylo csak 2+ participantnál)
+Base oldalak (1 participant, 1 property, fedezeti szereplő nélkül):
+  fedlap(1) + sza_ig_igenylo(4) + munkaltato_adatlap(2) +
+  ingatlan_adatlap(3) + hitelfeltetelek(6) + altalanos_nyilatkozatok(9) = 25
+  (sza_ig_tarsigenylo csak 2+ participantnál, sza_esz csak tényleges
+  zálogkötelezett/haszonélvező szereplővel)
 """
 import pytest
 from pathlib import Path
@@ -27,7 +28,7 @@ class TestPagePlan:
         self.assembler = DocumentAssembler()
 
     def test_single_participant_base_pages(self):
-        """1 szereplő, 1 ingatlan, Piaci hitel → 26 alap oldal (nincs társigénylő)."""
+        """1 szereplő, 1 ingatlan, fedezeti szereplő nélkül → 25 alap oldal."""
         summary = self.assembler.get_assembly_summary(
             [ProductType.PIACI_HITEL], num_participants=1, num_properties=1
         )
@@ -36,7 +37,7 @@ class TestPagePlan:
         assert "sza_ig_igenylő" in summary["sections"]
         assert "munkaltato_adatlap" in summary["sections"]
         # Piaci hitelnek nincs saját oldala (base KTKA-t használ)
-        assert summary["total_pages"] == 26
+        assert summary["total_pages"] == 25
 
     def test_two_participants_adds_tarsigenylo(self):
         """2 szereplő → társigénylő szekció hozzáadódik (4 oldal)."""
@@ -44,8 +45,8 @@ class TestPagePlan:
             [ProductType.PIACI_HITEL], num_participants=2, num_properties=1
         )
         assert "sza_ig_tarsigenylő_1" in summary["sections"]
-        # 26 base + 4 társigénylő
-        assert summary["total_pages"] == 30
+        # 25 base + 4 társigénylő
+        assert summary["total_pages"] == 29
 
     def test_three_participants_extra_pages(self):
         """3 szereplő → extra társigénylő szekció."""
@@ -54,8 +55,8 @@ class TestPagePlan:
         )
         assert "sza_ig_tarsigenylő_1" in summary["sections"]
         assert "sza_ig_tarsigenylő_2" in summary["sections"]
-        # 26 base + 4 + 4 (két extra társigénylő)
-        assert summary["total_pages"] == 34
+        # 25 base + 4 + 4 (két extra társigénylő)
+        assert summary["total_pages"] == 33
 
     def test_two_properties_extra_pages(self):
         """2 ingatlan → dupla ingatlan adatlap."""
@@ -64,8 +65,8 @@ class TestPagePlan:
         )
         assert "ingatlan_adatlap_1" in summary["sections"]
         assert "ingatlan_adatlap_2" in summary["sections"]
-        # 30 (2 participant, 1 property) + 3 (extra property)
-        assert summary["total_pages"] == 33
+        # 29 (2 participant, 1 property) + 3 (extra property)
+        assert summary["total_pages"] == 32
 
     def test_piaci_hitel_no_product_sections(self):
         """Piaci hitel → nincs saját product szekció (base KTKA-t használ)."""
@@ -73,7 +74,7 @@ class TestPagePlan:
             [ProductType.PIACI_HITEL], num_participants=2, num_properties=1
         )
         assert "piaci_hitel" not in summary["sections"]
-        assert summary["total_pages"] == 30  # csak base
+        assert summary["total_pages"] == 29  # csak base
 
     def test_szabadfelhasznalasu_no_product_sections(self):
         """Szabadfelhasználású hitel → nincs saját product szekció."""
@@ -81,7 +82,7 @@ class TestPagePlan:
             [ProductType.SZABADFELHASZNALASU], num_participants=2, num_properties=1
         )
         assert "szab_hitel" not in summary["sections"]
-        assert summary["total_pages"] == 30  # csak base
+        assert summary["total_pages"] == 29  # csak base
 
     def test_otthon_start_adds_sections(self):
         """Otthon Start → alap + otthon_start (14 oldal)."""
@@ -89,8 +90,8 @@ class TestPagePlan:
             [ProductType.OTTHON_START], num_participants=2, num_properties=1
         )
         assert "otthon_start" in summary["sections"]
-        # 30 base + 14 otthon_start
-        assert summary["total_pages"] == 44
+        # 29 base + 14 otthon_start
+        assert summary["total_pages"] == 43
 
     def test_combo_piaci_otthon_start(self):
         """Piaci hitel + Otthon Start kombó."""
@@ -101,15 +102,15 @@ class TestPagePlan:
         # Piaci hitel nem ad saját oldalt
         assert "piaci_hitel" not in summary["sections"]
         assert "otthon_start" in summary["sections"]
-        # 30 base + 14 otthon_start
-        assert summary["total_pages"] == 44
+        # 29 base + 14 otthon_start
+        assert summary["total_pages"] == 43
 
     def test_ertekbecsles_no_extra_sections(self):
         """Előzetes értékbecslés → nincs master szekció."""
         summary = self.assembler.get_assembly_summary(
             [ProductType.ERTEKBECSLES], num_participants=2, num_properties=1
         )
-        assert summary["total_pages"] == 30  # csak base + társigénylő
+        assert summary["total_pages"] == 29  # csak base + társigénylő
 
     def test_complex_scenario(self):
         """Komplex: Piaci + Otthon Start, 3 szereplő, 2 ingatlan."""
@@ -117,10 +118,10 @@ class TestPagePlan:
             [ProductType.PIACI_HITEL, ProductType.OTTHON_START],
             num_participants=3, num_properties=2
         )
-        # Base(3 szem, 2 ing): 26 + 4(társ) + 4(extra társ) + 3(extra ing) = 37
+        # Base(3 szem, 2 ing): 25 + 4(társ) + 4(extra társ) + 3(extra ing) = 36
         # + Otthon Start: 14
-        # Total = 37 + 14 = 51
-        assert summary["total_pages"] == 51
+        # Total = 36 + 14 = 50
+        assert summary["total_pages"] == 50
 
     def test_no_duplicate_sections(self):
         """Ugyanaz a termék kétszer → nem duplikálja a szekciót."""
@@ -128,7 +129,37 @@ class TestPagePlan:
             [ProductType.OTTHON_START, ProductType.OTTHON_START],
             num_participants=2, num_properties=1
         )
-        assert summary["total_pages"] == 44  # 30 + 14, not doubled
+        assert summary["total_pages"] == 43  # 29 + 14, not doubled
+
+    def test_no_collateral_participant_omits_sza_esz(self):
+        plan = self.assembler._build_page_plan(
+            [ProductType.PIACI_HITEL],
+            num_participants=2,
+            num_properties=1,
+            collateral_participants=[],
+        )
+        assert not any(entry["section"].startswith("sza_esz") for entry in plan)
+
+    @pytest.mark.parametrize(
+        ("canonical_role", "section"),
+        [
+            ("mortgagor", "sza_esz_mortgagor_1"),
+            ("usufructuary", "sza_esz_usufructuary_1"),
+        ],
+    )
+    def test_collateral_participant_gets_its_own_sza_esz_page(
+        self, canonical_role, section
+    ):
+        plan = self.assembler._build_page_plan(
+            [ProductType.PIACI_HITEL],
+            num_participants=2,
+            num_properties=1,
+            collateral_participants=[(canonical_role, 1)],
+        )
+        matching = [entry for entry in plan if entry["section"] == section]
+        assert len(matching) == 1
+        assert matching[0]["participant_role"] == canonical_role
+        assert matching[0]["participant_index"] == 1
 
 
 class TestProductType:

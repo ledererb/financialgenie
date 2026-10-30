@@ -390,6 +390,21 @@ def _applicant_participant_count(deal: DealData) -> int:
     return len(deal.borrowers) + len(deal.co_borrowers)
 
 
+def _collateral_participant_instances(deal: DealData) -> list[tuple[str, int]]:
+    """Actual SZA ESZ participants as canonical ``(role, 1-based index)`` pairs."""
+    instances: list[tuple[str, int]] = []
+    for canonical_role, role_enum in (
+        ("mortgagor", ParticipantRole.MORTGAGOR),
+        ("usufructuary", ParticipantRole.BENEFICIARY),
+    ):
+        participants = deal.get_participants_by_role(role_enum)
+        instances.extend(
+            (canonical_role, index)
+            for index in range(1, len(participants) + 1)
+        )
+    return instances
+
+
 def _fold_text(s: str) -> str:
     """Ékezet-mentes, kisbetűs, trimmelt szöveg (egyeztetéshez)."""
     import unicodedata
@@ -632,11 +647,27 @@ def _infer_runtime_character_groups(mapping) -> list[dict]:
     return inferred
 
 
+def _fill_rule_match_values(rule) -> list[str]:
+    """Declared canonical values for an untyped match rule, including aliases."""
+    if not isinstance(rule, dict) or rule.get("type"):
+        return []
+    aliases = rule.get("aliases") or []
+    if isinstance(aliases, str):
+        aliases = [aliases]
+    if not isinstance(aliases, (list, tuple)):
+        aliases = []
+    values = []
+    for value in [rule.get("match_value"), *aliases]:
+        if isinstance(value, str) and value.strip() and value.strip() not in values:
+            values.append(value.strip())
+    return values
+
+
 def _opt_matches(option: str, value: str, option_label: str = "") -> bool:
-    """Picklist- és rádiógomb-opció egyezés: pontos (kisbetűs), '/' előtti
-    szegmens, valamint bankközi szemantikus szinonimák (ingatlantípus,
+    """Picklist- és rádiógomb-opció egyezés: pontos (kisbetűs), prefix,
+    valamint bankközi szemantikus szinonimák (ingatlantípus,
     hitelcél, szerepkör, boolean igen/nem ↔ true/false). Ékezet- és
-    kötőjel-független."""
+    írásjelfüggetlen, az egymást követő whitespace-eket egységesíti."""
     import unicodedata
 
     def _norm(s: str) -> str:
@@ -644,7 +675,7 @@ def _opt_matches(option: str, value: str, option_label: str = "") -> bool:
             c for c in unicodedata.normalize("NFD", str(s or "").strip().lower())
             if unicodedata.category(c) != "Mn"
         )
-        return re.sub(r"[^a-z0-9/]+", " ", folded).strip()
+        return re.sub(r"[^a-z0-9]+", " ", folded).strip()
 
     opt, val = _norm(option), _norm(value)
     opt_lbl = _norm(option_label) if option_label else ""
@@ -713,9 +744,7 @@ def _opt_matches(option: str, value: str, option_label: str = "") -> bool:
     if ("korszerusites" in val or "felujitas" in val) and ("korszerusites" in combined_opt or "felujitas" in combined_opt):
         return True
 
-    # 6. Slash-előtti szegmens vagy prefix egyezés
-    if opt.split("/", 1)[0].strip() == val:
-        return True
+    # 6. Prefix egyezés (az elválasztójelek már normalizált whitespace-ek)
     if len(opt) >= 3 and len(val) >= 3 and not opt.startswith("nem ") and not val.startswith("nem "):
         return opt.startswith(val) or val.startswith(opt)
     return False
@@ -860,6 +889,7 @@ class FormFillerPipeline:
         participant_override: int | None = None,
         upload_to_sf: bool = False,
         context: ResolutionContext | None = None,
+        package_values: dict | None = None,
     ) -> dict:
         """
         Teljes pipeline futtatása egy ügylethez.
@@ -878,6 +908,9 @@ class FormFillerPipeline:
                 (Cutover Task 2). A ``participant_override``-ot belsőleg
                 erre csomagoljuk; a PDF-mezőnevek sosem választanak
                 résztvevőt.
+            package_values: Opcionális, PDF-mezőnév szerinti végleges
+                csomag-szintű felülírások (például a ténylegesen generált
+                dokumentummanifesztből számolt fedlap-darabszámok).
 
         Returns:
             Eredmény dict: {success, output_path, issues, ...}
@@ -934,11 +967,16 @@ class FormFillerPipeline:
         # Cutover Task 3 (additional requirement 5): a ``context`` átadás
         # FELTÉTEL NÉLKÜLI — a participant_override-ot a
         # _prepare_field_data csomagolja kontextussá.
+        prepare_kwargs = {
+            "participant_override": participant_override,
+            "raw_opportunity": raw_data.get("_opportunity") or raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
+            "notices": notices,
+            "context": context,
+        }
+        if package_values is not None:
+            prepare_kwargs["package_values"] = package_values
         field_data = self._prepare_field_data(
-            deal, mapping_config, participant_override=participant_override,
-            raw_opportunity=raw_data.get("_opportunity") or raw_data.get("Opportunity__c") or raw_data.get("opportunity") or raw_data,
-            notices=notices,
-            context=context,
+            deal, mapping_config, **prepare_kwargs
         )
         result["notices"] = notices
         logger.info(f"   {len(field_data)} mező kitöltve")
@@ -989,7 +1027,8 @@ class FormFillerPipeline:
                     products=products_enum,
                     num_participants=assembly_participants,
                     num_properties=len(deal.properties),
-                    output_path=temp_assembled_path
+                    output_path=temp_assembled_path,
+                    collateral_participants=_collateral_participant_instances(deal),
                 )
                 actual_template = assembly.output_path
                 # C6: a darabolás során a duplikált oldalakon átnevezett _N
@@ -1150,6 +1189,7 @@ class FormFillerPipeline:
         raw_opportunity: dict | None = None,
         notices: list | None = None,
         context: ResolutionContext | None = None,
+        package_values: dict | None = None,
     ) -> dict:
         """
         Kanonikus adatokból mező-értékpárok összeállítása a CanonicalResolveren.
@@ -1185,7 +1225,11 @@ class FormFillerPipeline:
             )
 
         return self._prepare_field_data_canonical(
-            deal, mapping, context=context, notices=notices
+            deal,
+            mapping,
+            context=context,
+            notices=notices,
+            package_values=package_values,
         )
 
     # =====================================================================
@@ -1199,6 +1243,7 @@ class FormFillerPipeline:
         mapping: MappingConfig,
         context: ResolutionContext | None = None,
         notices: list | None = None,
+        package_values: dict | None = None,
     ) -> dict:
         """Resolver-alapú mezőadatok Genie canonical mappingekhez.
 
@@ -1439,25 +1484,40 @@ class FormFillerPipeline:
 
             sf_value_lower = str(sf_value or "").strip().lower()
             best_item = explicit_best
+            # Static "Egyéb" is only a fallback: a canonical standard option
+            # must win when it matches. Other typed rules retain priority.
+            if (
+                best_item is not None
+                and best_item[0].get("fill_rule", {}).get("type") == "static"
+            ):
+                best_item = None
             best_score = -1
             if best_item is None and sf_value_lower:
                 for entry_item, cbg_item in group_items:
-                    match_val = (
-                        (cbg_item.get("match_value") or cbg_item.get("option_value", ""))
-                        if isinstance(cbg_item, dict) else ""
-                    )
+                    match_values = _fill_rule_match_values(entry_item["fill_rule"])
+                    if isinstance(cbg_item, dict):
+                        match_values = [
+                            cbg_item.get("option_value", ""),
+                            cbg_item.get("match_value", ""),
+                            *match_values,
+                        ]
                     opt_lbl = (
                         cbg_item.get("option_label", "")
                         if isinstance(cbg_item, dict) else ""
                     )
-                    if _opt_matches(match_val, sf_value_lower, opt_lbl):
-                        score = min(
-                            len(_fold_text(match_val or opt_lbl)),
-                            len(_fold_text(sf_value_lower)),
-                        )
-                        if score > best_score:
-                            best_score = score
-                            best_item = (entry_item, cbg_item)
+                    for match_val in match_values:
+                        if not isinstance(match_val, str):
+                            continue
+                        if _opt_matches(match_val, sf_value_lower, opt_lbl):
+                            score = min(
+                                len(_fold_text(match_val or opt_lbl)),
+                                len(_fold_text(sf_value_lower)),
+                            )
+                            if score > best_score:
+                                best_score = score
+                                best_item = (entry_item, cbg_item)
+            if best_item is None:
+                best_item = explicit_best
             if best_item is not None:
                 matched_cbg = best_item[1]
                 matched_mv = (
@@ -1494,6 +1554,19 @@ class FormFillerPipeline:
                 and fill_rule.get("match_value") is not None
             ):
                 continue  # a checkbox csoport feloldás már kezelte
+            if (
+                isinstance(fill_rule, dict)
+                and fill_rule.get("type") == "static"
+                and entry["canonical_field"] in matched_standard_canonicals
+                and "egyeb" in _fold_text(
+                    str(
+                        (cbg or {}).get("option_value", "")
+                        or (cbg or {}).get("option_label", "")
+                        or entry["pdf_field_name"]
+                    )
+                )
+            ):
+                continue  # a standard opció már kiválasztott; Egyéb csak fallback
             pdf_name = entry["pdf_field_name"]
             # F4 — nem aktív termék-szekció szabálya sem tölt.
             gate = entry["product_gate"]
@@ -1679,6 +1752,12 @@ class FormFillerPipeline:
                 expand_character_groups({canonical: values_by_path[canonical]}, [grp])
             )
 
+        # Administrative package values are final, PDF-name-keyed overrides.
+        # Unlike canonical deal data they can populate otherwise unmapped
+        # fields and can intentionally contain zero/empty values.
+        if package_values:
+            field_data.update(package_values)
+
         return field_data
 
     def _note_canonical_income_exclusions(
@@ -1779,15 +1858,21 @@ class FormFillerPipeline:
         rule_type = rule.get("type", "")
 
         # Legacy match_value format (radio button option): checked if the
-        # canonical field's deal value matches this option's match_value.
-        match_value = rule.get("match_value")
-        if match_value is not None and not rule_type:
+        # canonical field's deal value matches any declared value or alias.
+        match_values = _fill_rule_match_values(rule)
+        if match_values and not rule_type:
             if canonical_value is not None:
-                if _opt_matches(str(match_value), str(canonical_value)):
+                if any(
+                    _opt_matches(match_value, str(canonical_value))
+                    for match_value in match_values
+                ):
                     return "igen"
             return None
 
         value = rule.get("value", "")
+        value_from = rule.get("value_from", "")
+        if value_from:
+            value = all_data.get(value_from, "")
 
         # static — always this value
         if rule_type == "static":
@@ -1805,8 +1890,19 @@ class FormFillerPipeline:
         if rule_type == "conditional":
             sf_field = rule.get("sf_field", "")
             match = rule.get("match", "")
+            match_not = rule.get("match_not", "")
             sf_value = all_data.get(sf_field, "") or borrower.get(sf_field, "")
-            if sf_value and str(sf_value).strip().lower() == str(match).strip().lower():
+            required_field = rule.get("required_field", "")
+            required_match = rule.get("required_match", "")
+            if required_field:
+                required_value = all_data.get(required_field, "") or borrower.get(required_field, "")
+                if not required_value or not _opt_matches(str(required_match), str(required_value)):
+                    return None
+            if match_not:
+                if sf_value and not _opt_matches(str(match_not), str(sf_value)):
+                    return value
+                return None
+            if sf_value and _opt_matches(str(match), str(sf_value)):
                 return value
             return None
 
@@ -1953,6 +2049,7 @@ class FormFillerPipeline:
         resolver = CanonicalResolver()
         canonical_by_base: dict[str, str] = {}
         frag_by_base: dict[str, str] = {}
+        virtual_sources_by_base: dict[str, list[str]] = {}
         for entry in _genie_mapping_entries(mapping):
             base = entry["pdf_field_name"]
             canonical = entry["canonical_field"]
@@ -1964,6 +2061,9 @@ class FormFillerPipeline:
                 canonical_by_base[base] = canonical
             if base and entry["fragment"]:
                 frag_by_base[base] = entry["fragment"]
+            if base and "___" in base:
+                actual_base = base.split("___", 1)[0]
+                virtual_sources_by_base.setdefault(actual_base, []).append(base)
 
         result = dict(field_data)  # ne mutáljuk a hívó szótárát
         assigned = 0
@@ -1971,13 +2071,48 @@ class FormFillerPipeline:
             canonical_role = INSTANCE_ROLE_TO_CANONICAL.get(
                 im.role, INSTANCE_ROLE_CO_BORROWER
             )
+            role_index = im.role_index if im.role_index is not None else im.instance
             if canonical_role == "property":
-                instance_ctx = ResolutionContext(property_index=im.instance)
+                instance_ctx = ResolutionContext(property_index=role_index)
             else:
                 instance_ctx = ResolutionContext(
-                    participant=(canonical_role, im.instance)
+                    participant=(canonical_role, role_index)
                 )
+
+            if canonical_role in ("mortgagor", "usufructuary"):
+                # SZA ESZ contains radio/checkbox groups whose real AcroForm
+                # names are base fields while the mapping uses virtual
+                # ``base___export`` entries. Resolve the WHOLE participant copy
+                # through the normal direct/group/fill-rule engine, then rebind
+                # its prepared values to this master page's actual field names.
+                instance_data = self._prepare_field_data(
+                    deal, mapping, context=instance_ctx
+                )
+                for base in im.base_fields:
+                    target_name = (
+                        base if im.instance == 1 else f"{base}_{im.instance}"
+                    )
+                    result.pop(target_name, None)
+                    virtual_sources = virtual_sources_by_base.get(base, [])
+                    if im.instance == 1:
+                        for source in virtual_sources:
+                            result.pop(source, None)
+                    if base in instance_data:
+                        result[target_name] = instance_data[base]
+                        assigned += 1
+                    if im.instance == 1:
+                        for source in virtual_sources:
+                            if source in instance_data:
+                                result[source] = instance_data[source]
+                continue
+
             for base in im.base_fields:
+                target_name = base if im.instance == 1 else f"{base}_{im.instance}"
+                if im.instance == 1:
+                    # The first SZA ESZ page keeps unsuffixed AcroForm names.
+                    # Remove borrower values even when the selected collateral
+                    # participant has no value, preventing cross-role leakage.
+                    result.pop(target_name, None)
                 canonical = canonical_by_base.get(base)
                 if not canonical:
                     continue
@@ -1997,7 +2132,7 @@ class FormFillerPipeline:
                     continue
                 if raw is None or raw == "":
                     continue
-                result[f"{base}_{im.instance}"] = raw
+                result[target_name] = raw
                 assigned += 1
 
         if assigned:

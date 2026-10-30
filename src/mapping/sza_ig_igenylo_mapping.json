@@ -5,6 +5,10 @@
   "approved": false,
   "approved_by": null,
   "notes": "Összefésült mapping: heurisztikus + AI (95 leképezve).",
+  "participant_roles": [
+    "borrower"
+  ],
+  "package_count_key": "sza_ig",
   "page_structure": {
     "1": "per_participant",
     "2": "per_participant",
@@ -1255,7 +1259,12 @@
       "coordinates": null,
       "notes": "Havi munkabér összege (Ft vagy deviza)",
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.income_type",
+        "match": "Munkabér (belföldről)",
+        "value_from": "participant.borrower.monthly_income"
+      },
       "fragment": null
     },
     {
@@ -1275,8 +1284,8 @@
       "pdf_field_name": "SZA_IG_jövedelem_érk1___1,2",
       "label": "Munkabér érkezése – OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.jovairas_vallalasa",
-      "confidence": "medium",
+      "canonical_field": "participant.borrower.account_holding_bank",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
@@ -1287,7 +1296,12 @@
         "option_label": "OTP-s számlára érkezik"
       },
       "fill_rule": {
-        "match_value": "OTP-s számlára érkezik"
+        "type": "conditional",
+        "sf_field": "participant.borrower.account_holding_bank",
+        "match": "OTP Bank",
+        "required_field": "participant.borrower.income_type",
+        "required_match": "Munkabér (belföldről)",
+        "value": "igen"
       },
       "fragment": null
     },
@@ -1295,8 +1309,8 @@
       "pdf_field_name": "SZA_IG_jövedelem_érk1___2,3",
       "label": "Munkabér érkezése – Nem OTP-s számlára érkezik",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.jovairas_vallalasa",
-      "confidence": "medium",
+      "canonical_field": "participant.borrower.account_holding_bank",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
@@ -1307,7 +1321,12 @@
         "option_label": "Nem OTP-s számlára érkezik"
       },
       "fill_rule": {
-        "match_value": "Nem OTP-s számlára érkezik"
+        "type": "conditional",
+        "sf_field": "participant.borrower.account_holding_bank",
+        "match_not": "OTP Bank",
+        "required_field": "participant.borrower.income_type",
+        "required_match": "Munkabér (belföldről)",
+        "value": "igen"
       },
       "fragment": null
     },
@@ -1361,7 +1380,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.income_type",
+        "match": "Családi pótlék",
+        "value_from": "participant.borrower.other_monthly_income"
+      },
       "fragment": null
     },
     {
@@ -1446,7 +1470,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.income_type",
+        "match": "Cafetéria",
+        "value_from": "participant.borrower.cafeteria_bonus"
+      },
       "fragment": null
     },
     {
@@ -1531,7 +1560,12 @@
       "coordinates": null,
       "notes": null,
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.income_type",
+        "match": "Vállalkozásból származó jövedelem",
+        "value_from": "participant.borrower.income_from_self_owned"
+      },
       "fragment": null
     },
     {
@@ -1757,78 +1791,114 @@
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem7",
-      "label": "Sza Ig Jövedelem7",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Jövedelem típusa – Külföldről származó munkabér (checkbox)",
+      "field_type": "checkbox",
+      "canonical_field": "participant.borrower.income_type",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null,
+      "checkbox_group": {
+        "group_id": "jovedelem_tipusa",
+        "group_label": "Jövedelmi adatok – jövedelem típusa",
+        "option_value": "Külföldről származó munkabér",
+        "option_label": "Külföldről származó munkabér"
+      },
+      "fill_rule": {
+        "match_value": "Külföldről származó munkabér"
+      },
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_összeg7",
-      "label": "Sza Ig Jövedelem Összeg7",
+      "label": "Külföldről származó munkabér – összeg",
       "field_type": "number",
-      "canonical_field": null,
-      "confidence": "low",
+      "canonical_field": "participant.borrower.monthly_income",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Havi külföldi munkabér összege (Ft vagy deviza)",
       "checkbox_group": null,
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.income_type",
+        "match": "Külföldről származó munkabér",
+        "value_from": "participant.borrower.monthly_income"
+      },
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_deviza7",
-      "label": "Sza Ig Jövedelem Deviza7",
+      "label": "Külföldről származó munkabér – deviza",
       "field_type": "text",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Devizanem megadása, ha nem Ft-ban kapja",
       "checkbox_group": null,
       "fill_rule": null,
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___1,2",
-      "label": "Sza Ig Jövedelem Érk7   1,2",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Külföldi munkabér érkezése – OTP-s számlára érkezik",
+      "field_type": "checkbox",
+      "canonical_field": "participant.borrower.account_holding_bank",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null,
+      "checkbox_group": {
+        "group_id": "kulfold_munkaber_erkezes",
+        "group_label": "Külföldről származó munkabér – hova érkezik?",
+        "option_value": "OTP-s számlára érkezik",
+        "option_label": "OTP-s számlára érkezik"
+      },
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.account_holding_bank",
+        "match": "OTP Bank",
+        "required_field": "participant.borrower.income_type",
+        "required_match": "Külföldről származó munkabér",
+        "value": "igen"
+      },
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___2,3",
-      "label": "Sza Ig Jövedelem Érk7   2,3",
-      "field_type": "text",
-      "canonical_field": null,
-      "confidence": "low",
+      "label": "Külföldi munkabér érkezése – Nem OTP-s számlára érkezik",
+      "field_type": "checkbox",
+      "canonical_field": "participant.borrower.account_holding_bank",
+      "confidence": "high",
       "page_number": 3,
       "coordinates": null,
       "notes": null,
-      "checkbox_group": null,
-      "fill_rule": null,
+      "checkbox_group": {
+        "group_id": "kulfold_munkaber_erkezes",
+        "group_label": "Külföldről származó munkabér – hova érkezik?",
+        "option_value": "Nem OTP-s számlára érkezik",
+        "option_label": "Nem OTP-s számlára érkezik"
+      },
+      "fill_rule": {
+        "type": "conditional",
+        "sf_field": "participant.borrower.account_holding_bank",
+        "match_not": "OTP Bank",
+        "required_field": "participant.borrower.income_type",
+        "required_match": "Külföldről származó munkabér",
+        "value": "igen"
+      },
       "fragment": null
     },
     {
       "pdf_field_name": "SZA_IG_jövedelem_érk7___3,4",
-      "label": "Sza Ig Jövedelem Érk7   3,4",
-      "field_type": "text",
+      "label": "Külföldi munkabér érkezése – Nem bankszámlára érkezik",
+      "field_type": "checkbox",
       "canonical_field": null,
       "confidence": "low",
       "page_number": 3,
       "coordinates": null,
-      "notes": null,
+      "notes": "Csak akkor jelölhető, ha a jövedelem nem bankszámlára érkezik",
       "checkbox_group": null,
       "fill_rule": null,
       "fragment": null

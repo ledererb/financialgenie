@@ -687,7 +687,81 @@ class AcroFormFiller(BaseFiller):
             if not any_updated:
                 return
 
-            # 3. Patch /Encoding /Differences on Type1 fonts and restore true Unicode /V
+            # 3. Fit only values whose generated appearance is actually clipped.
+            # Measuring the rendered result also handles custom fonts whose
+            # metrics differ from the Base-14 fonts available to estimates.
+            doc = fitz.open(str(output_path))
+            fit_expected: dict[int, str] = {}
+            for page in doc:
+                for w in page.widgets():
+                    if w.field_type != fitz.PDF_WIDGET_TYPE_TEXT:
+                        continue
+                    fn = w.field_name or ""
+                    val = true_values.get(fn, w.field_value or "")
+                    if not val:
+                        continue
+                    mapped_val = val.translate(_HU_TO_WINANSI)
+                    expected = "".join(mapped_val.split())
+                    rendered = "".join(page.get_text(clip=w.rect).split())
+                    if expected in rendered:
+                        continue
+                    appearance_val = mapped_val
+                    if w.field_flags & (1 << 24):
+                        # Keep the original cells. A leading international '+'
+                        # is optional display syntax; remove only that character
+                        # when the remaining complete digits fit exactly. The
+                        # original value is restored to /V below.
+                        digits = mapped_val[1:] if mapped_val.startswith("+") else ""
+                        if (
+                            w.text_maxlen
+                            and digits.isdigit()
+                            and len(digits) == w.text_maxlen
+                        ):
+                            appearance_val = digits
+                        else:
+                            logger.warning(
+                                "Comb field %s cannot fit its complete value; "
+                                "preserving /MaxLen and cell layout",
+                                fn,
+                            )
+                            continue
+                    elif (
+                        not w.field_flags & (1 << 12)
+                        and w.text_fontsize > 0
+                        and "\n" not in mapped_val
+                        and "\r" not in mapped_val
+                    ):
+                        # A zero font size delegates horizontal shrinking to
+                        # MuPDF without changing the field's stored value.
+                        w.text_fontsize = 0
+                    else:
+                        continue
+                    w.field_value = appearance_val
+                    w.update()
+                    fit_expected[w.xref] = appearance_val
+            if fit_expected:
+                doc.saveIncr()
+            doc.close()
+
+            # Reopen after update(): saved text extraction is the independent
+            # verification that fitting made the complete appearance visible.
+            if fit_expected:
+                doc = fitz.open(str(output_path))
+                for page in doc:
+                    for w in page.widgets():
+                        if w.xref not in fit_expected:
+                            continue
+                        expected = "".join(fit_expected[w.xref].split())
+                        rendered = "".join(page.get_text(clip=w.rect).split())
+                        if expected not in rendered:
+                            logger.warning(
+                                "Appearance fitting did not make the complete "
+                                "value visible for field %s",
+                                w.field_name or "",
+                            )
+                doc.close()
+
+            # 4. Patch /Encoding /Differences on Type1 fonts and restore true Unicode /V
             with pikepdf.open(str(output_path), allow_overwriting_input=True) as pdf:
                 hu_enc = pdf.make_indirect(pikepdf.Dictionary({
                     "/Type": pikepdf.Name("/Encoding"),

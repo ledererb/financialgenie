@@ -5,6 +5,7 @@
   "approved": false,
   "approved_by": null,
   "notes": "Összefésült mapping: heurisztikus + AI (41 leképezve).",
+  "package_count_key": "ma_ig",
   "page_structure": {
     "1": "per_participant",
     "2": "per_participant"

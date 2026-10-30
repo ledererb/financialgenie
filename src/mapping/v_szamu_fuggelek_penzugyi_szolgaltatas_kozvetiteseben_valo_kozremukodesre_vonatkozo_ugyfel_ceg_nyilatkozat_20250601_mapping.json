@@ -772,11 +772,11 @@
       "pdf_field_name": "Szövegmező 35",
       "label": "Születési helye és ideje (záradék)",
       "field_type": "text",
-      "canonical_field": "participant.borrower.birth_place",
+      "canonical_field": "participant.borrower.birth_place_and_date",
       "confidence": "medium",
       "page_number": 4,
       "coordinates": null,
-      "notes": "Kombinált mező: születési hely + ország + dátum",
+      "notes": "Kombinált mező: születési hely + dátum",
       "checkbox_group": null,
       "fill_rule": null,
       "fragment": null

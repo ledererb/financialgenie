@@ -136,6 +136,7 @@ A rendszer úgy lett felépítve, hogy új PDF nyomtatványok feltöltésekor é
 | `scripts/migrate_mappings_to_genie.py` + `scripts/rebuild_altalanos_nyilatkozatok_mapping.py` | Determinista, idempotens mapping-migrátor (audit/rollback: runbook §7) és a nyilatkozat-mapping PDF-widgetekből történő újraépítője (`--check` mód) |
 | `docs/superpowers/reports/2026-10-29-genie-cutover-verification.md` | A cutover offline igazolása (migrátor-audit, OTP csomag- és CIB smoke) |
 | `docs/superpowers/reports/2026-10-29-live-e2e-verification.md` | Valós Salesforce-adatú GUI + API E2E: 11/11 PDF, valós mezőértékek és hitelesített ZIP letöltés |
+| `docs/superpowers/reports/2026-10-30-live-e2e-page-review-final.md` | Végső oldalankénti audit: 36/36 oldal PASS, 9/9 PDF, 926 teszt, valós mező- és layout-ellenőrzés |
 | `docs/SALESFORCE_SETUP_RUNBOOK.md` | Salesforce Setup-runbook: Lead→Opportunity kockázatok, `Property__c` bővítés, `Jovedelem__c`/`Meglevo_hitel__c` séma, consent/audit mezők, snapshot-folyamat, deployment-óvintézkedések |
 | `vercel.json` | Vercel frontend build és `/api/*` → Hetzner backend reverse proxy konfiguráció |
 | `config/.env` | ⚠️ Hitelesítő adatok (`SF_USERNAME`, `SF_PASSWORD`, `SF_SECURITY_TOKEN`, `ANTHROPIC_API_KEY`) |
@@ -150,7 +151,7 @@ A teljes automata tesztcsomag helyben egyetlen paranccsal futtatható:
 python3 -m pytest -q
 ```
 
-Jelenlegi állapot (2026-10-29, Genie cutover után): **886 passed, 4 skipped, 8 deselected**.
+Jelenlegi állapot (2026-10-30, Genie cutover után): **926 passed, 4 skipped, 8 deselected**.
 A 4 skip a repositoryban nem jelen lévő `acroform_sample.pdf` miatt van, a 8
 deselect a `pytest.ini`-ben beállított `-m "not live_api"` (élő AI/Salesforce
 hitelesítő adatot igénylő) tesztek kizárása. Frontend oldalon:

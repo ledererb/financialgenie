@@ -515,12 +515,11 @@ def test_every_actual_mapping_occurrence_resolves_to_a_registered_path():
         except ValueError as error:
             unresolved.append((origin, legacy, str(error)))
 
-    # Cutover Task 5 (safe declaration rebuild): the altalanos_nyilatkozatok
-    # rebuild removed the 8 BOGUS canonical mappings from declaration
-    # signature-column checkboxes (4x deal.has_usufructuary, 4x
-    # participant.borrower.citizenship) — those ticks are points-managed now.
-    # 1222 (pre-Task 5) - 8 = 1214 registered canonical occurrences.
-    assert len(mapping_occurrences()) == 1214
+    # Cutover Task 5 (safe declaration rebuild): 1222 - 8 bogus declaration
+    # canonicals = 1214. The visual-E2E income-row fix then adds four explicit
+    # canonical fields for the previously unmapped foreign-income row:
+    # type, amount and two destination options => 1218 occurrences.
+    assert len(mapping_occurrences()) == 1218
     assert unresolved == []
     assert invalid == []
     # Every mapped entry in the active mappings AND every recognizer-catalog
@@ -746,6 +745,16 @@ def _populate_sentinel(deal, definition):
                 return address.full_address
             setattr(address, attribute, sentinel)
             return sentinel
+        if field == "permanent_country_category":
+            participant.other_country = "Magyarország"
+            return "Magyarország"
+        if field == "birth_place_and_date":
+            participant.birth_place = "Budapest"
+            participant.birth_date = date(2001, 2, 3)
+            return "Budapest, 2001.02.03"
+        if field == "mailing_address_relation":
+            participant.mailing_address = participant.address.model_copy(deep=True)
+            return "Megegyezik"
         setattr(participant, field, sentinel)
         return sentinel
     if namespace == "property":

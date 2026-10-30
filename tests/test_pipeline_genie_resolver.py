@@ -14,6 +14,7 @@ produces. They prove that:
   never generate co-borrower (társigénylő) page copies.
 """
 
+import json
 import logging
 import types
 from datetime import date
@@ -527,6 +528,44 @@ class TestRunForDealContextForwarding:
         assert result["success"] is True, result["issues"]
         assert "context" in captured
         assert captured["context"] is None
+
+    def test_package_values_reach_prepare_field_data(self, pipeline, tmp_path):
+        deal = make_genie_deal()
+        mapping = _mapping([_field("Fedlap darab", None)])
+        template = self._stubbed_pipeline(pipeline, deal, tmp_path)
+        captured = {}
+        real_prepare = pipeline._prepare_field_data
+
+        def spy(deal_arg, mapping_arg, **kwargs):
+            captured.update(kwargs)
+            return real_prepare(deal_arg, mapping_arg, **kwargs)
+
+        pipeline._prepare_field_data = spy
+        package_values = {"Fedlap darab": "0"}
+        result = pipeline.run_for_deal(
+            "GENIE-1",
+            template,
+            mapping_config=mapping,
+            upload_to_sf=False,
+            package_values=package_values,
+        )
+        assert result["success"] is True, result["issues"]
+        assert captured["package_values"] == package_values
+
+    def test_package_values_override_null_and_canonical_fields(self, pipeline):
+        mapping = _mapping(
+            [
+                _field("Fedlap darab", None),
+                _field("Felülírt név", "participant.borrower.name"),
+            ]
+        )
+        field_data = pipeline._prepare_field_data(
+            make_genie_deal(),
+            mapping,
+            package_values={"Fedlap darab": "0", "Felülírt név": "Csomag érték"},
+        )
+        assert field_data["Fedlap darab"] == "0"
+        assert field_data["Felülírt név"] == "Csomag érték"
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1361,6 +1400,33 @@ class TestRoleInstancesCanonical:
         assert fd["ZAL_nev_2"] == "Zálog Zoltánné"
         assert fd["ZAL_nev_2"] not in ("Szabó Béla", "Nagy Erika")
 
+    def test_first_master_sza_esz_copy_uses_its_collateral_role_index(self, pipeline):
+        from src.engine.document_assembler import (
+            INSTANCE_ROLE_MORTGAGOR,
+            InstanceFieldMap,
+        )
+
+        mapping = _mapping([_field("SZA_ESZ_név", "participant.borrower.name")])
+        deal = make_genie_deal()
+        initial = pipeline._prepare_field_data(deal, mapping)
+        assert initial["SZA_ESZ_név"] == "Kovács Anna"
+
+        field_data = pipeline._apply_instance_data(
+            initial,
+            deal,
+            mapping,
+            [
+                InstanceFieldMap(
+                    section="sza_esz_mortgagor_1",
+                    instance=1,
+                    role=INSTANCE_ROLE_MORTGAGOR,
+                    base_fields=["SZA_ESZ_név"],
+                    role_index=2,
+                )
+            ],
+        )
+        assert field_data["SZA_ESZ_név"] == "Zálog Zoltánné"
+
     def test_property_instance_gets_second_property(self, pipeline):
         from src.engine.document_assembler import INSTANCE_ROLE_PROPERTY
 
@@ -1460,8 +1526,10 @@ class TestAssemblyParticipantCount:
         captured = {}
 
         def fake_assemble(self, master_pdf, products, num_participants,
-                          num_properties, output_path=None):
+                          num_properties, output_path=None,
+                          collateral_participants=None):
             captured["num_participants"] = num_participants
+            captured["collateral_participants"] = collateral_participants
             return AssemblyResult(output_path=Path(master_pdf), instance_fields=[])
 
         monkeypatch.setattr(DocumentAssembler, "assemble", fake_assemble)
@@ -1494,6 +1562,23 @@ class TestAssemblyParticipantCount:
         # F1 + Task 3 aktiválás: mindig csak igénylők — kezes/zálogkötelezett
         # sosem generál társigénylő oldalt.
         assert captured["num_participants"] == 3
+
+    def test_master_assembly_receives_actual_collateral_participants(
+        self, pipeline, tmp_path, monkeypatch
+    ):
+        deal = make_genie_deal()
+        template, captured = self._stubbed_pipeline(
+            pipeline, deal, tmp_path, monkeypatch
+        )
+        mapping = _mapping([_field("ados_nev", "participant.borrower.name")])
+        result = pipeline.run_for_deal(
+            "GENIE-1", template, mapping_config=mapping, upload_to_sf=False
+        )
+        assert result["success"] is True, result["issues"]
+        assert captured["collateral_participants"] == [
+            ("mortgagor", 1),
+            ("mortgagor", 2),
+        ]
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1863,7 +1948,84 @@ class TestProductGate:
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# 12. Legacy mappings keep working (temporary compatibility branch)
+# 12. Production field-semantic regressions
+# ──────────────────────────────────────────────────────────────────────────
+
+
+class TestProductionFieldSemanticRegressions:
+    @staticmethod
+    def _production_mapping(filename):
+        path = PROJECT_ROOT / "src" / "mapping" / filename
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_v_szamu_birth_field_contains_place_and_formatted_date(self, pipeline):
+        mapping = self._production_mapping(
+            "v_szamu_fuggelek_penzugyi_szolgaltatas_kozvetiteseben_valo_"
+            "kozremukodesre_vonatkozo_ugyfel_ceg_nyilatkozat_20250601_mapping.json"
+        )
+        deal = make_genie_deal()
+        deal.borrowers[0].birth_place = "Budapest"
+
+        field_data = pipeline._prepare_field_data(deal, mapping)
+
+        birth_field = next(
+            field for field in mapping["fields"]
+            if field["pdf_field_name"] == "Szövegmező 35"
+        )
+        assert birth_field["canonical_field"] == (
+            "participant.borrower.birth_place_and_date"
+        )
+        assert field_data["Szövegmező 35"] == "Budapest, 1985.05.12"
+
+    def test_v_szamu_birth_field_keeps_place_when_date_is_missing(self, pipeline):
+        mapping = self._production_mapping(
+            "v_szamu_fuggelek_penzugyi_szolgaltatas_kozvetiteseben_valo_"
+            "kozremukodesre_vonatkozo_ugyfel_ceg_nyilatkozat_20250601_mapping.json"
+        )
+        deal = make_genie_deal()
+        deal.borrowers[0].birth_place = "Budapest"
+        deal.borrowers[0].birth_date = None
+
+        field_data = pipeline._prepare_field_data(deal, mapping)
+
+        assert field_data["Szövegmező 35"] == "Budapest"
+
+    @pytest.mark.parametrize(
+        "occupation",
+        [
+            "Közalkalmazott/ kormánytisztviselő/ köztisztviselő/ "
+            "egészségügyi szolgálati jogviszony",
+            "Közalkalmazott, kormánytisztviselő, köztisztviselő, "
+            "egészségügyi szolgálati jogviszony",
+        ],
+    )
+    def test_d10_occupation_variant_selects_standard_option_not_egyeb(
+        self, pipeline, occupation
+    ):
+        mapping = self._production_mapping("sza_ig_igenylo_mapping.json")
+        deal = make_genie_deal()
+        deal.borrowers[0].foglalkozas_tipusa = occupation
+
+        field_data = pipeline._prepare_field_data(deal, mapping)
+
+        assert field_data["SZA_IG_foglalkoztatás-3"] == "igen"
+        assert "SZA_IG_foglalkoztatás_egyéb" not in field_data
+
+    def test_d11_reversed_occupation_alias_selects_standard_option_not_egyeb(
+        self, pipeline
+    ):
+        mapping = self._production_mapping("sza_ig_tarsigenylo_mapping.json")
+        deal = make_genie_deal()
+        deal.co_borrowers[0].foglalkozas_tipusa = "Alkalmazott vezető"
+
+        field_data = pipeline._prepare_field_data(deal, mapping)
+
+        assert field_data["SZA_IG_foglalkoztatás-társ-2"] == "igen"
+        assert "SZA_IG_foglalkoztatás_egyéb-társ" not in field_data
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# 13. Legacy mappings keep working (temporary compatibility branch)
 # ──────────────────────────────────────────────────────────────────────────
 
 

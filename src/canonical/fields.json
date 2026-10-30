@@ -945,6 +945,13 @@
       "repeat": "participant"
     },
     {
+      "path": "participant.{role}.birth_place_and_date",
+      "label": "Születési hely és idő",
+      "type": "string",
+      "source": "participant.birth_place_and_date",
+      "repeat": "participant"
+    },
+    {
       "path": "participant.{role}.cafeteria_bonus",
       "label": "Cafeteria, bónusz",
       "type": "money",
@@ -1344,6 +1351,13 @@
       "repeat": "participant"
     },
     {
+      "path": "participant.{role}.mailing_address_relation",
+      "label": "Levelezési cím viszonya az állandó lakcímhez",
+      "type": "string",
+      "source": "participant.mailing_address_relation",
+      "repeat": "participant"
+    },
+    {
       "path": "participant.{role}.mailing_country",
       "label": "Levelezési ország",
       "type": "string",
@@ -1509,6 +1523,13 @@
       "label": "Állandó lakcím",
       "type": "string",
       "source": "participant.address.full_address",
+      "repeat": "participant"
+    },
+    {
+      "path": "participant.{role}.permanent_country_category",
+      "label": "Állandó lakcím országkategóriája",
+      "type": "string",
+      "source": "participant.permanent_country_category",
       "repeat": "participant"
     },
     {

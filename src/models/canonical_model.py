@@ -17,6 +17,17 @@ from pydantic import BaseModel, Field
 from typing import Any, Optional, List
 from enum import Enum
 from datetime import date
+import unicodedata
+
+
+def _fold_derivation_text(value: Any) -> str:
+    """Accent-insensitive, whitespace-normalized text for explicit derivations."""
+    if value is None:
+        return ""
+    text = unicodedata.normalize("NFD", str(value).strip().casefold())
+    return " ".join(
+        "".join(char for char in text if unicodedata.category(char) != "Mn").split()
+    )
 
 
 class ParticipantRole(str, Enum):
@@ -50,6 +61,30 @@ class Address(BaseModel):
         if self.door:
             parts.append(f"{self.door}. ajtó")
         return ", ".join(parts)
+
+    @property
+    def comparison_key(self) -> Optional[tuple[str, ...]]:
+        """Complete normalized key for safe permanent/mailing comparison.
+
+        Salesforce street text may already contain the house number, so ZIP,
+        city and street are required. Every model component is compared once
+        those required values exist; optional components still affect equality.
+        """
+        parts = tuple(
+            _fold_derivation_text(getattr(self, field_name)).rstrip(".")
+            for field_name in (
+                "zip_code",
+                "city",
+                "street",
+                "house_number",
+                "floor",
+                "door",
+                "district",
+            )
+        )
+        if any(not parts[index] for index in (0, 1, 2)):
+            return None
+        return parts
 
 
 class IncomeEntry(BaseModel):
@@ -196,6 +231,43 @@ class Participant(BaseModel):
     @property
     def is_co_borrower(self) -> bool:
         return self.role == ParticipantRole.CO_BORROWER
+
+    @property
+    def birth_place_and_date(self) -> Optional[str]:
+        """Birth place and centrally formatted date for combined document fields."""
+        place = (self.birth_place or "").strip()
+        formatted_date = (
+            self.birth_date.strftime("%Y.%m.%d") if self.birth_date else ""
+        )
+        if place and formatted_date:
+            return f"{place}, {formatted_date}"
+        return place or formatted_date or None
+
+    @property
+    def permanent_country_category(self) -> Optional[str]:
+        """Explicit Hungary/other category from authoritative OtherCountry data.
+
+        No address-based inference is allowed: absent or explicitly unknown
+        country data stays unresolved, while any known non-Hungarian country is
+        categorized as ``Egyéb`` for the bank option group.
+        """
+        country = _fold_derivation_text(self.other_country)
+        if country in ("", "ismeretlen", "unknown", "n/a", "na", "none", "null", "-"):
+            return None
+        if country in ("magyarorszag", "hungary", "magyar", "hu", "hun"):
+            return "Magyarország"
+        return "Egyéb"
+
+    @property
+    def mailing_address_relation(self) -> Optional[str]:
+        """Same/different category from two complete normalized addresses."""
+        if self.address is None or self.mailing_address is None:
+            return None
+        permanent = self.address.comparison_key
+        mailing = self.mailing_address.comparison_key
+        if permanent is None or mailing is None:
+            return None
+        return "Megegyezik" if permanent == mailing else "Eltér"
 
 
 class PropertyType(str, Enum):

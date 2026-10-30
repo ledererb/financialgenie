@@ -5,6 +5,12 @@
   "approved": false,
   "approved_by": null,
   "notes": "Összefésült mapping: heurisztikus + AI (13 leképezve).",
+  "package_value_fields": {
+    "sza_ig": "Fedlap LAHI személyi igénylő",
+    "ma_ig": "Fedlap LAHI Munkavállalói_adatlap",
+    "ia": "Fedlap LAHI ingatlan adatlap",
+    "sza_esz": "Fedlap LAHI személyi adatlap egyéb"
+  },
   "page_structure": {
     "1": "global"
   },

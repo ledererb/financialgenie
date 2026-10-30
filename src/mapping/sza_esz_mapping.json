@@ -5,6 +5,11 @@
   "approved": false,
   "approved_by": null,
   "notes": "Összefésült mapping: heurisztikus + AI (37 leképezve).",
+  "participant_roles": [
+    "mortgagor",
+    "usufructuary"
+  ],
+  "package_count_key": "sza_esz",
   "page_structure": {
     "1": "per_participant"
   },
@@ -13,7 +18,7 @@
       "pdf_field_name": "SZA_ESZ_szerep___Igen",
       "label": "Fedezet tulajdonosa (zálogkötelezett)",
       "field_type": "checkbox",
-      "canonical_field": "deal.has_mortgagor",
+      "canonical_field": "participant.borrower.role",
       "confidence": "high",
       "page_number": 1,
       "coordinates": null,
@@ -33,7 +38,7 @@
       "pdf_field_name": "SZA_ESZ_szerep___no",
       "label": "Fedezet haszonélvezője / Özvegyi jog jogosultja",
       "field_type": "checkbox",
-      "canonical_field": "deal.has_usufructuary",
+      "canonical_field": "participant.borrower.role",
       "confidence": "high",
       "page_number": 1,
       "coordinates": null,
@@ -375,7 +380,7 @@
       "pdf_field_name": "SZA_ESZ_állandó_cím___Igen",
       "label": "Állandó lakcím országa: Magyarország",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.permanent_address",
+      "canonical_field": "participant.borrower.permanent_country_category",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
@@ -395,7 +400,7 @@
       "pdf_field_name": "SZA_ESZ_állandó_cím___no",
       "label": "Állandó lakcím országa: Egyéb",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.permanent_address",
+      "canonical_field": "participant.borrower.permanent_country_category",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
@@ -467,19 +472,19 @@
       "pdf_field_name": "SZA_ESZ_levelezés_cím___Igen",
       "label": "Levelezési cím: megegyezik az állandó lakcímmel",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.mailing_address.street",
+      "canonical_field": "participant.borrower.mailing_address_relation",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Ha be van jelölve, a levelezési cím = állandó lakcím; Salesforce-ban a Mailing* mezőket az állandó cím értékeivel kell feltölteni",
+      "notes": "Normalizált állandó és levelezési cím összetevők összevetésével választ; hiányos cím esetén üres",
       "checkbox_group": {
         "group_id": "levelezesi_cim_tipus",
         "group_label": "Levelezési cím",
-        "option_value": "Megegyezik az állandó lakcímmel",
+        "option_value": "Megegyezik",
         "option_label": "Megegyezik az állandó lakcímmel"
       },
       "fill_rule": {
-        "match_value": "Megegyezik az állandó lakcímmel"
+        "match_value": "Megegyezik"
       },
       "fragment": null
     },
@@ -487,19 +492,19 @@
       "pdf_field_name": "SZA_ESZ_levelezés_cím___no",
       "label": "Levelezési cím: eltér az állandó lakcímtől",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.mailing_address.street",
+      "canonical_field": "participant.borrower.mailing_address_relation",
       "confidence": "medium",
       "page_number": 1,
       "coordinates": null,
-      "notes": "Ha be van jelölve, az alábbi levelezési cím mezők aktívak",
+      "notes": "Normalizált állandó és levelezési cím összetevők összevetésével választ; hiányos cím esetén üres",
       "checkbox_group": {
         "group_id": "levelezesi_cim_tipus",
         "group_label": "Levelezési cím",
-        "option_value": "Eltér az állandó lakcímtől",
+        "option_value": "Eltér",
         "option_label": "Eltér az állandó lakcímtől, mégpedig:"
       },
       "fill_rule": {
-        "match_value": "Eltér az állandó lakcímtől"
+        "match_value": "Eltér"
       },
       "fragment": null
     },

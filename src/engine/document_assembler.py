@@ -93,6 +93,9 @@ INSTANCE_ROLE_TO_CANONICAL = {
     INSTANCE_ROLE_MORTGAGOR: "mortgagor",
     INSTANCE_ROLE_PROPERTY: "property",
 }
+_CANONICAL_TO_INSTANCE_ROLE = {
+    canonical: role for role, canonical in INSTANCE_ROLE_TO_CANONICAL.items()
+}
 
 
 def _classify_instance_role(section: str) -> str:
@@ -121,11 +124,15 @@ class InstanceFieldMap:
             (``co_borrower`` | ``property`` | ``guarantor`` | ``beneficiary``).
         base_fields: Original (unsuffixed) PDF field names defined on this
             template page; the renamed copies are ``f"{name}_{instance}"``.
+        role_index: Optional 1-based index within the canonical role. This is
+            required when copies of one source page represent different roles
+            (for example mortgagor[1] followed by usufructuary[1]).
     """
     section: str
     instance: int
     role: str
     base_fields: list[str] = field(default_factory=list)
+    role_index: Optional[int] = None
 
 
 @dataclass
@@ -184,6 +191,7 @@ class DocumentAssembler:
         num_participants: int = 2,
         num_properties: int = 1,
         output_path: Optional[Path] = None,
+        collateral_participants: Optional[list[tuple[str, int]]] = None,
     ) -> AssemblyResult:
         """
         Összeállítja a végleges PDF-et a master dokumentumból.
@@ -198,6 +206,10 @@ class DocumentAssembler:
                 nem-igénylő szerepek sosem készítenek társigénylő másolatot.
             num_properties: Ingatlanok száma
             output_path: Kimeneti PDF útvonala (opcionális)
+            collateral_participants: SZA ESZ példányok explicit
+                ``(canonical_role, role_index)`` listája. Csak zálogkötelezett
+                és haszonélvező szerep engedélyezett; üres lista esetén az
+                SZA ESZ oldal elmarad.
 
         Returns:
             ``AssemblyResult`` — a kész PDF útvonala, plusz a C6
@@ -210,7 +222,20 @@ class DocumentAssembler:
             raise FileNotFoundError(f"Master PDF nem található: {master_pdf}")
 
         # 1. Összeállítandó oldalak meghatározása
-        page_plan = self._build_page_plan(products, num_participants, num_properties)
+        if collateral_participants is None:
+            # Preserve the long-standing three-argument extension point for
+            # callers/tests that patch _build_page_plan. None and [] have the
+            # same no-collateral behavior in the concrete implementation.
+            page_plan = self._build_page_plan(
+                products, num_participants, num_properties
+            )
+        else:
+            page_plan = self._build_page_plan(
+                products,
+                num_participants,
+                num_properties,
+                collateral_participants=collateral_participants,
+            )
 
         logger.info("📋 Document Assembly:")
         with pikepdf.open(master_pdf) as _pdf_for_log:
@@ -279,8 +304,26 @@ class DocumentAssembler:
                 instance = page_instance_count[page_idx]
 
                 if instance == 1:
-                    # Első használat — eredeti mezőnevek maradnak.
+                    # Első használat — eredeti mezőnevek maradnak. A role-meta-
+                    # adattal rendelkező SZA ESZ példánynál az eredeti mezők is
+                    # példánykontextust igényelnek: a pipeline felülírja az
+                    # alapértelmezett adós-adatokat a tényleges szereplővel.
                     dst_pdf.pages.append(src_pdf.pages[page_idx])
+                    canonical_role = entry.get("participant_role")
+                    if canonical_role and has_acroform:
+                        base_names = [
+                            name
+                            for name in self._source_page_field_names(src_pdf, page_idx)
+                            if name
+                        ]
+                        if base_names:
+                            instance_fields.append(InstanceFieldMap(
+                                section=entry["section"],
+                                instance=instance,
+                                role=_CANONICAL_TO_INSTANCE_ROLE[canonical_role],
+                                base_fields=base_names,
+                                role_index=entry.get("participant_index"),
+                            ))
                 else:
                     # C6: duplikált oldal — másoljuk az oldalt (független
                     # widget+mező objektumokkal), és nevezzük át a mezőket.
@@ -296,11 +339,17 @@ class DocumentAssembler:
                             renamed_field_objs,
                         )
                         if base_names:
+                            canonical_role = entry.get("participant_role")
                             instance_fields.append(InstanceFieldMap(
                                 section=entry["section"],
                                 instance=instance,
-                                role=_classify_instance_role(entry["section"]),
+                                role=(
+                                    _CANONICAL_TO_INSTANCE_ROLE[canonical_role]
+                                    if canonical_role
+                                    else _classify_instance_role(entry["section"])
+                                ),
                                 base_fields=base_names,
+                                role_index=entry.get("participant_index"),
                             ))
 
             # AcroForm másolása ha van (globális beállítások: NeedAppearances,
@@ -440,6 +489,7 @@ class DocumentAssembler:
         products: list[ProductType],
         num_participants: int,
         num_properties: int,
+        collateral_participants: Optional[list[tuple[str, int]]] = None,
     ) -> list[dict]:
         """
         Oldaltervrajz összeállítása.
@@ -470,8 +520,23 @@ class DocumentAssembler:
                 note=f"Extra társigénylő #{extra_idx}",
             )
 
-        # Egyéb szereplő (fedezet tulajdonosa/haszonélvezője)
-        self._add_section(plan, "sza_esz", *BASE_SECTIONS["sza_esz"])
+        # Egyéb szereplő (SZA ESZ) csak tényleges fedezeti szereplőnként.
+        # A canonical szerep és a szerepen belüli index a page plan része, így
+        # a kitöltés nem fájlnév-heurisztikára vagy adós-fallbackre támaszkodik.
+        for canonical_role, role_index in collateral_participants or []:
+            if canonical_role not in ("mortgagor", "usufructuary"):
+                raise ValueError(
+                    f"SZA ESZ nem támogatott résztvevő-szerep: {canonical_role}"
+                )
+            section_name = f"sza_esz_{canonical_role}_{role_index}"
+            self._add_section(
+                plan,
+                section_name,
+                *BASE_SECTIONS["sza_esz"],
+                note=f"SZA ESZ – {canonical_role} #{role_index}",
+                participant_role=canonical_role,
+                participant_index=role_index,
+            )
 
         # Munkáltatói és vállalkozói adatlap
         self._add_section(plan, "munkaltato_adatlap", *BASE_SECTIONS["munkaltato_adatlap"])
@@ -509,23 +574,35 @@ class DocumentAssembler:
         start_page: int,
         end_page: int,
         note: Optional[str] = None,
+        participant_role: Optional[str] = None,
+        participant_index: Optional[int] = None,
     ):
         """Egy szekció oldalait hozzáadja a tervhez."""
         for page_num in range(start_page, end_page + 1):
-            plan.append({
+            entry = {
                 "page": page_num,
                 "section": section_name,
                 "note": note or section_name,
-            })
+            }
+            if participant_role is not None:
+                entry["participant_role"] = participant_role
+                entry["participant_index"] = participant_index
+            plan.append(entry)
 
     def get_assembly_summary(
         self,
         products: list[ProductType],
         num_participants: int = 2,
         num_properties: int = 1,
+        collateral_participants: Optional[list[tuple[str, int]]] = None,
     ) -> dict:
         """Összesítő a tervezett darabolásról (preview, PDF létrehozása nélkül)."""
-        plan = self._build_page_plan(products, num_participants, num_properties)
+        plan = self._build_page_plan(
+            products,
+            num_participants,
+            num_properties,
+            collateral_participants=collateral_participants,
+        )
 
         # Szekciók csoportosítása
         sections = {}
