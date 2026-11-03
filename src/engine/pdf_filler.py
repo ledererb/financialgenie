@@ -105,6 +105,11 @@ def expand_character_groups(
         compact = value.replace(" ", "")
         if compact and compact.isdigit():
             value = compact
+        # An international '+' is optional display syntax. Drop only that
+        # character when all remaining digits fit exactly in the boxes.
+        digits = compact[1:] if compact.startswith("+") else ""
+        if digits.isdigit() and len(digits) == len(members):
+            value = digits
 
         direction = (group.get("direction") or "left_to_right").lower()
         canon_low = str(canonical).lower()

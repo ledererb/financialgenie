@@ -1079,7 +1079,7 @@
       "pdf_field_name": "Check Box 38___1,2",
       "label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén? Tulajdonos",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.legal_title",
+      "canonical_field": "participant.borrower.residence_status",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
@@ -1097,7 +1097,7 @@
       "pdf_field_name": "Check Box 38___2,3",
       "label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén? Bérlő",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.legal_title",
+      "canonical_field": "participant.borrower.residence_status",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
@@ -1115,7 +1115,7 @@
       "pdf_field_name": "Check Box 38___3,4",
       "label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén? Családtag",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.legal_title",
+      "canonical_field": "participant.borrower.residence_status",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
@@ -1133,7 +1133,7 @@
       "pdf_field_name": "Check Box 38___4,5",
       "label": "Milyen jogcímen lakik jelenlegi tartózkodási helyén? Egyéb",
       "field_type": "checkbox",
-      "canonical_field": "participant.borrower.legal_title",
+      "canonical_field": "participant.borrower.residence_status",
       "confidence": "medium",
       "page_number": 3,
       "coordinates": null,
@@ -1806,7 +1806,10 @@
         "option_value": "Igen",
         "option_label": "Igen"
       },
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "presence",
+        "value": "igen"
+      },
       "fragment": null
     },
     {
@@ -6707,7 +6710,10 @@
         "option_value": "Igen",
         "option_label": "Igen"
       },
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "presence",
+        "value": "igen"
+      },
       "fragment": null
     },
     {
@@ -6771,7 +6777,7 @@
       "pdf_field_name": "Check Box 90___1,2",
       "label": "Milyen jogcímen lakik: Tulajdonos",
       "field_type": "checkbox",
-      "canonical_field": "participant.co_borrower.legal_title",
+      "canonical_field": "participant.co_borrower.residence_status",
       "confidence": "medium",
       "page_number": 6,
       "coordinates": null,
@@ -6789,7 +6795,7 @@
       "pdf_field_name": "Check Box 90___2,3",
       "label": "Milyen jogcímen lakik: Bérlő",
       "field_type": "checkbox",
-      "canonical_field": "participant.co_borrower.legal_title",
+      "canonical_field": "participant.co_borrower.residence_status",
       "confidence": "medium",
       "page_number": 6,
       "coordinates": null,
@@ -6807,7 +6813,7 @@
       "pdf_field_name": "Check Box 90___3,4",
       "label": "Milyen jogcímen lakik: Családtag",
       "field_type": "checkbox",
-      "canonical_field": "participant.co_borrower.legal_title",
+      "canonical_field": "participant.co_borrower.residence_status",
       "confidence": "medium",
       "page_number": 6,
       "coordinates": null,
@@ -6825,7 +6831,7 @@
       "pdf_field_name": "Check Box 90___4,5",
       "label": "Milyen jogcímen lakik: Egyéb",
       "field_type": "checkbox",
-      "canonical_field": "participant.co_borrower.legal_title",
+      "canonical_field": "participant.co_borrower.residence_status",
       "confidence": "medium",
       "page_number": 6,
       "coordinates": null,
@@ -7781,7 +7787,10 @@
         "option_value": "Igen",
         "option_label": "Igen"
       },
-      "fill_rule": null,
+      "fill_rule": {
+        "type": "presence",
+        "value": "igen"
+      },
       "fragment": null
     },
     {
@@ -15768,7 +15777,7 @@
       "pdf_field_name": "Text Field 1255",
       "label": "Kelt (dátum, 2. nyilatkozat - dátum)",
       "field_type": "date",
-      "canonical_field": "participant.borrower.date_of_handover",
+      "canonical_field": "participant.borrower.date_of_signature",
       "confidence": "medium",
       "page_number": 18,
       "coordinates": null,
@@ -16329,6 +16338,42 @@
         "Text Field 1057"
       ],
       "direction": "ltr",
+      "separator": ""
+    },
+    {
+      "group_id": "chargroup_purchase_price",
+      "canonical_field": "deal.purchase_price",
+      "member_fields": [
+        "Text Field 1172",
+        "Text Field 1173",
+        "Text Field 1174",
+        "Text Field 1175",
+        "Text Field 1176",
+        "Text Field 1177",
+        "Text Field 1178",
+        "Text Field 1179",
+        "Text Field 1180"
+      ],
+      "direction": "right_to_left",
+      "separator": ""
+    },
+    {
+      "group_id": "chargroup_borrower_phone",
+      "canonical_field": "participant.borrower.phone",
+      "member_fields": [
+        "Text Field 346",
+        "Text Field 347",
+        "Text Field 348",
+        "Text Field 349",
+        "Text Field 350",
+        "Text Field 351",
+        "Text Field 352",
+        "Text Field 353",
+        "Text Field 354",
+        "Text Field 355",
+        "Text Field 356"
+      ],
+      "direction": "left_to_right",
       "separator": ""
     }
   ],

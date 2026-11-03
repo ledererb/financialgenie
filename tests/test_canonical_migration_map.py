@@ -518,8 +518,9 @@ def test_every_actual_mapping_occurrence_resolves_to_a_registered_path():
     # Cutover Task 5 (safe declaration rebuild): 1222 - 8 bogus declaration
     # canonicals = 1214. The visual-E2E income-row fix then adds four explicit
     # canonical fields for the previously unmapped foreign-income row:
-    # type, amount and two destination options => 1218 occurrences.
-    assert len(mapping_occurrences()) == 1218
+    # type, amount and two destination options => 1218 occurrences. The
+    # pre-assessment purchase-price and phone character groups add two more.
+    assert len(mapping_occurrences()) == 1220
     assert unresolved == []
     assert invalid == []
     # Every mapped entry in the active mappings AND every recognizer-catalog

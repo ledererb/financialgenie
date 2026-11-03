@@ -1748,8 +1748,11 @@ class FormFillerPipeline:
                 continue
             if canonical not in values_by_path:
                 values_by_path[canonical] = resolve_text(canonical)
+            value = values_by_path[canonical]
+            if grp.get("fragment"):
+                value = resolve_text(canonical, grp["fragment"])
             field_data.update(
-                expand_character_groups({canonical: values_by_path[canonical]}, [grp])
+                expand_character_groups({canonical: value}, [grp])
             )
 
         # Administrative package values are final, PDF-name-keyed overrides.
@@ -1873,6 +1876,18 @@ class FormFillerPipeline:
         value_from = rule.get("value_from", "")
         if value_from:
             value = all_data.get(value_from, "")
+
+        # presence — only meaningful non-empty source values may produce true.
+        if rule_type == "presence":
+            normalized = _fold_text(str(canonical_value or "")).strip(" .!?")
+            tokens = re.findall(r"[a-z0-9]+", normalized)
+            if normalized not in {
+                "", "nem", "nincs", "no", "none", "false", "0", "0 ft", "-", "n/a",
+            } and tokens and tokens[0] not in {
+                "nem", "nincs", "no", "none", "false", "0",
+            }:
+                return value
+            return None
 
         # static — always this value
         if rule_type == "static":

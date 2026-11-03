@@ -1047,11 +1047,21 @@ class SalesforceClient:
                                 p.get("Id") or p.get("Name"),
                             )
 
+                    parcel_number = p.get("Ingatlan_hrsz__c") or ""
+                    parcel_comment = (p.get("Ingatlan_megjegyzes__c") or "").strip()
+                    # A free-text property description is not a parcel number.
+                    if not parcel_number and re.fullmatch(
+                        r"\d+(?:\s*/\s*[A-Za-z0-9.-]+)+"
+                        r"(?:\s+[A-Za-z0-9.-]+(?:\s*/\s*[A-Za-z0-9.-]+)+)*",
+                        parcel_comment,
+                    ):
+                        parcel_number = parcel_comment
+
                     prop_record = {
                         "property_id": p.get("Id"),
                         "_property": p,
                         "property_type": p.get("Property_Type__c") or "lakás",
-                        "parcel_number": p.get("Ingatlan_hrsz__c") or "",
+                        "parcel_number": parcel_number,
                         "area_sqm": p.get("Ingatlan_alapterulet__c"),
                         "estimated_value": p.get("Property_value__c") or p.get("Purchase_price__c"),
                         "purchase_price": p.get("Purchase_price__c"),
